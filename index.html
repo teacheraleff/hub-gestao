@@ -51,7 +51,7 @@
         .status-completed { background-color: #F3F4F6; color: #4B5563; }
         
         /* --- ESTILOS ATUALIZADOS: Lista de Tarefas --- */
-        .task-card { background-color: #ffffff; border-radius: 0.75rem; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid #e7e5e4; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 1rem; }
+        .task-card { background-color: #ffffff; border-radius: 0.75rem; padding: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid #e7e5e4; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 1rem; }
         .assignee-tag { display: inline-flex; align-items: center; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; margin-left: 0.5rem; }
         .tag-ana { background-color: #FEF3C7; color: #92400E; } /* Amarelo */
         .tag-bruno { background-color: #DBEAFE; color: #1E40AF; } /* Azul */
@@ -606,11 +606,13 @@
                 </div>
             `;
         }
-
+        
         // --- FUNÇÕES DE MODAL E FORMULÁRIO ---
         function openSignUpModal() { /* ... */ }
         function showSuccessMessage(title, message) { /* ... */ }
-        function closeFormModal() { /* ... */ }
+        function closeFormModal() {
+            document.getElementById('form-modal').classList.remove('visible');
+        }
         // ... (outras funções de modal)
 
         // --- INICIALIZAÇÃO ---
