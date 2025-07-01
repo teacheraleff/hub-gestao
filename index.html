@@ -10,7 +10,6 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Palette: SLAP Brand Colors: #F1D24B (Yellow), #FF5C3D (Orange), #84C7DF (Blue), #8671D1 (Purple) -->
     <style>
         body {
             font-family: 'DM Sans', sans-serif;
@@ -89,7 +88,6 @@
 </head>
 <body class="bg-stone-50 text-stone-800">
 
-    <!-- Tela de Login -->
     <div id="login-view" class="flex items-center justify-center min-h-screen bg-stone-100">
         <div class="w-full max-w-md p-8 space-y-6 bg-white rounded-xl shadow-lg">
             <div class="text-center">
@@ -116,7 +114,6 @@
         </div>
     </div>
 
-    <!-- Tela de Aprovação Pendente -->
     <div id="pending-view" class="hidden flex items-center justify-center min-h-screen bg-stone-100">
         <div class="w-full max-w-md p-8 space-y-6 bg-white rounded-xl shadow-lg text-center">
             <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-12 w-12 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -128,7 +125,6 @@
         </div>
     </div>
 
-    <!-- Hub Principal (Inicialmente Oculto) -->
     <div id="hub-view" class="hidden">
         <div id="app-container" class="min-h-screen md:flex">
             <aside class="md:w-64 bg-white md:border-r border-b border-stone-200 p-4 md:p-6 flex flex-col">
@@ -137,8 +133,7 @@
                 </div>
                 <h1 class="text-xl font-bold text-stone-800 mb-6 text-center">Hub de Marketing</h1>
                 <nav id="main-navigation" class="space-y-1 flex-1">
-                    <!-- Itens do menu são gerados aqui -->
-                </nav>
+                    </nav>
                 <div class="mt-4">
                     <button id="logout-button" class="nav-item w-full text-left px-4 py-2.5 rounded-lg text-stone-700 hover:bg-red-50 hover:text-red-600 transition-colors flex items-center font-semibold">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-3"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
@@ -154,13 +149,11 @@
                 </header>
                 
                 <div id="content-area">
-                    <!-- Conteúdo será injetado aqui dinamicamente -->
-                </div>
+                    </div>
             </main>
         </div>
     </div>
 
-    <!-- Modal Genérico para Forms -->
     <div id="form-modal" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
@@ -194,6 +187,7 @@
         let campaigns = [];
         let calendarEvents = {};
         let unsubscribeTasks, unsubscribeCampaigns, unsubscribeCalendar;
+        const appId = 'hub-marketing-slap'; // ID Fixo para o app
 
         // --- CONFIGURAÇÃO E INICIALIZAÇÃO DO FIREBASE ---
         async function initializeFirebase() {
@@ -246,7 +240,6 @@
         }
 
         function setupFirestoreListeners() {
-            const appId = 'hub-marketing-slap';
             if (unsubscribeTasks) unsubscribeTasks();
             if (unsubscribeCampaigns) unsubscribeCampaigns();
             if (unsubscribeCalendar) unsubscribeCalendar();
@@ -469,8 +462,7 @@
                         <button class="primary-btn w-auto" onclick="openTaskForm()">+ Adicionar Tarefa</button>
                     </div>
                     <div id="task-list-container" class="space-y-4">
-                        <!-- As tarefas serão renderizadas aqui pelo JavaScript -->
-                    </div>
+                        </div>
                 </section>
             `;
 
@@ -608,12 +600,186 @@
         }
         
         // --- FUNÇÕES DE MODAL E FORMULÁRIO ---
-        function openSignUpModal() { /* ... */ }
-        function showSuccessMessage(title, message) { /* ... */ }
+        function openSignUpModal() {
+            const modalTitle = document.getElementById('form-modal-title');
+            const modalContentArea = document.getElementById('form-modal-content-area');
+            
+            modalContentArea.innerHTML = '<form id="form-modal-body" class="space-y-4"></form>';
+            modalTitle.textContent = "Criar Nova Conta";
+            
+            const modalBody = document.getElementById('form-modal-body');
+            modalBody.innerHTML = `
+                <div>
+                    <label for="signup-name" class="text-sm font-medium text-stone-700">Nome Completo</label>
+                    <input type="text" id="signup-name" name="name" required class="form-input mt-1">
+                </div>
+                <div>
+                    <label for="signup-email" class="text-sm font-medium text-stone-700">Email</label>
+                    <input type="email" id="signup-email" name="email" required class="form-input mt-1">
+                </div>
+                <div>
+                    <label for="signup-password" class="text-sm font-medium text-stone-700">Palavra-passe (mínimo 6 caracteres)</label>
+                    <input type="password" id="signup-password" name="password" required class="form-input mt-1">
+                </div>
+                <p id="signup-error" class="text-sm text-red-600"></p>
+                <div class="text-right">
+                    <button type="submit" class="primary-btn w-auto">Registar</button>
+                </div>
+            `;
+            modalBody.onsubmit = handleSignUp;
+            document.getElementById('form-modal').classList.add('visible');
+        }
+
+        function showSuccessMessage(title, message) {
+            const modalTitle = document.getElementById('form-modal-title');
+            const modalContentArea = document.getElementById('form-modal-content-area');
+            
+            modalTitle.textContent = title;
+            modalContentArea.innerHTML = `
+                <div class="text-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-12 w-12 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <p class="mt-4 text-stone-600">${message}</p>
+                    <button onclick="closeFormModal()" class="primary-btn mt-6 w-auto px-8">OK</button>
+                </div>
+            `;
+            document.getElementById('form-modal').classList.add('visible');
+        }
+        
         function closeFormModal() {
             document.getElementById('form-modal').classList.remove('visible');
         }
-        // ... (outras funções de modal)
+
+        async function saveTask(event) {
+            event.preventDefault();
+            const form = event.target;
+            const description = form.description.value;
+            const deadline = form.deadline.value;
+            const assignedTo = Array.from(form.assignedTo.selectedOptions).map(option => option.value);
+            
+            if (!description || !deadline || assignedTo.length === 0) {
+                alert("Por favor, preencha todos os campos.");
+                return;
+            }
+
+            try {
+                await addDoc(collection(db, `artifacts/${appId}/public/data/tasks`), {
+                    description,
+                    deadline,
+                    assignedTo,
+                    createdAt: serverTimestamp()
+                });
+                closeFormModal();
+            } catch (error) {
+                console.error("Erro ao adicionar tarefa: ", error);
+            }
+        }
+
+        async function deleteTask(taskId) {
+            try {
+                await deleteDoc(doc(db, `artifacts/${appId}/public/data/tasks`, taskId));
+            } catch (error) {
+                console.error("Erro ao excluir tarefa: ", error);
+            }
+        }
+        
+        async function saveCalendarEvent(event) {
+            event.preventDefault();
+            const form = event.target;
+            const date = form.date.value;
+            const type = form.type.value;
+            const description = form.description.value;
+
+            if (!date || !type || !description) {
+                alert("Por favor, preencha todos os campos.");
+                return;
+            }
+
+            try {
+                await addDoc(collection(db, `artifacts/${appId}/public/data/calendarEvents`), {
+                    date,
+                    type,
+                    description,
+                    createdAt: serverTimestamp()
+                });
+                closeFormModal();
+            } catch (error) {
+                console.error("Erro ao adicionar evento no calendário: ", error);
+            }
+        }
+
+        async function deleteCalendarEvent(eventId) {
+            event.stopPropagation();
+            try {
+                await deleteDoc(doc(db, `artifacts/${appId}/public/data/calendarEvents`, eventId));
+            } catch (error) {
+                console.error("Erro ao excluir evento do calendário: ", error);
+            }
+        }
+
+        function openTaskForm() {
+            const modalTitle = document.getElementById('form-modal-title');
+            const modalContentArea = document.getElementById('form-modal-content-area');
+            
+            modalContentArea.innerHTML = '<form id="form-modal-body" class="space-y-4"></form>';
+            modalTitle.textContent = "Adicionar Nova Tarefa";
+            const modalBody = document.getElementById('form-modal-body');
+            modalBody.innerHTML = `
+                <div>
+                    <label for="description" class="block text-sm font-medium text-stone-700">Descrição</label>
+                    <input type="text" id="description" name="description" class="form-input mt-1" required>
+                </div>
+                <div>
+                    <label for="deadline" class="block text-sm font-medium text-stone-700">Prazo Final</label>
+                    <input type="date" id="deadline" name="deadline" class="form-input mt-1" required>
+                </div>
+                <div>
+                    <label for="assignedTo" class="block text-sm font-medium text-stone-700">Atribuir para (segure Ctrl/Cmd para selecionar vários)</label>
+                    <select id="assignedTo" name="assignedTo" class="form-input mt-1" multiple required>
+                        <option value="Ana">Ana</option>
+                        <option value="Bruno">Bruno</option>
+                        <option value="Carla">Carla</option>
+                        <option value="Daniel">Daniel</option>
+                    </select>
+                </div>
+                <div class="text-right">
+                    <button type="submit" class="primary-btn w-auto">Salvar Tarefa</button>
+                </div>
+            `;
+            modalBody.onsubmit = saveTask;
+            document.getElementById('form-modal').classList.add('visible');
+        }
+
+        function openCalendarEventForm(date) {
+            const modalTitle = document.getElementById('form-modal-title');
+            const modalContentArea = document.getElementById('form-modal-content-area');
+
+            modalContentArea.innerHTML = '<form id="form-modal-body" class="space-y-4"></form>';
+            modalTitle.textContent = `Adicionar Post para ${new Date(date + 'T03:00:00Z').toLocaleDateString('pt-BR')}`;
+            const modalBody = document.getElementById('form-modal-body');
+            modalBody.innerHTML = `
+                <input type="hidden" name="date" value="${date}">
+                <div>
+                    <label for="type" class="block text-sm font-medium text-stone-700">Tipo de Post</label>
+                    <select id="type" name="type" class="form-input mt-1" required>
+                        <option value="stories">Stories</option>
+                        <option value="reels">Reels</option>
+                        <option value="tiktok">TikTok</option>
+                        <option value="youtube">YouTube</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="description" class="block text-sm font-medium text-stone-700">Descrição do Post</label>
+                    <input type="text" id="description" name="description" class="form-input mt-1" required>
+                </div>
+                <div class="text-right">
+                    <button type="submit" class="primary-btn w-auto">Salvar Post</button>
+                </div>
+            `;
+            modalBody.onsubmit = saveCalendarEvent;
+            document.getElementById('form-modal').classList.add('visible');
+        }
 
         // --- INICIALIZAÇÃO ---
         document.addEventListener('DOMContentLoaded', () => {
@@ -662,10 +828,15 @@
             });
         });
 
-        // Expor funções ao escopo global
+        // Expor funções ao escopo global para serem chamadas pelo HTML
         window.openSignUpModal = openSignUpModal;
         window.closeFormModal = closeFormModal;
-        // ... (outras funções globais) ...
+        window.openTaskForm = openTaskForm;
+        window.deleteTask = deleteTask;
+        window.openCalendarEventForm = openCalendarEventForm;
+        window.deleteCalendarEvent = deleteCalendarEvent;
+        window.openCampaignForm = () => alert('A funcionalidade para adicionar/ver campanhas será implementada.'); // Placeholder
+        window.openCampaignModal = (id) => alert(`Ver detalhes da campanha: ${id}`); // Placeholder
     </script>
 </body>
 </html>
