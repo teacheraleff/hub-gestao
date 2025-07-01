@@ -123,7 +123,7 @@
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <h2 class="text-2xl font-bold text-stone-800">Aprovação Pendente</h2>
-            <p class="text-stone-600">O seu registo foi concluído com sucesso. Aguarde a aprovação de um administrador para aceder ao Hub. Será notificado por email.</p>
+            <p class="text-stone-600">O seu registo foi concluído com sucesso. Aguarde a aprovação de um administrador para aceder ao Hub.</p>
             <button id="logout-pending-button" class="mt-4 text-sm font-medium text-stone-500 hover:text-stone-800">Sair</button>
         </div>
     </div>
@@ -229,7 +229,6 @@
                                 showPendingView();
                             }
                         } else {
-                            // Se o documento ainda não foi criado, o utilizador fica pendente.
                             showPendingView();
                         }
                     } else {
@@ -247,7 +246,7 @@
         }
 
         function setupFirestoreListeners() {
-            const appId = 'hub-marketing-slap'; // ID Fixo para o app
+            const appId = 'hub-marketing-slap';
             if (unsubscribeTasks) unsubscribeTasks();
             if (unsubscribeCampaigns) unsubscribeCampaigns();
             if (unsubscribeCalendar) unsubscribeCalendar();
@@ -309,7 +308,6 @@
                     createdAt: serverTimestamp()
                 });
 
-                // **CORREÇÃO CRÍTICA: Desconecta o utilizador após o registo**
                 await signOut(auth);
 
                 console.log("Utilizador registado com função pendente e desconectado.");
@@ -396,19 +394,34 @@
             `;
         }
         
-        function renderCampanhasSection() { /* ... */ }
-        function renderTarefasSection() { /* ... */ }
-        function renderCalendarioSection() { /* ... */ }
+        function renderCampanhasSection() {
+            document.getElementById('main-title').textContent = 'Gestor de Campanhas';
+            document.getElementById('main-description').textContent = 'Acompanhe o status e os resultados de todas as campanhas de marketing.';
+            contentArea.innerHTML = `<div>Conteúdo das Campanhas</div>`;
+        }
+
+        function renderTarefasSection() {
+            document.getElementById('main-title').textContent = 'Lista de Tarefas';
+            document.getElementById('main-description').textContent = 'Gerencie e acompanhe as tarefas da equipa de marketing.';
+            contentArea.innerHTML = `<div id="task-list-container">Conteúdo das Tarefas</div>`;
+        }
+
+        function renderCalendarioSection() {
+            document.getElementById('main-title').textContent = 'Calendário de Conteúdo';
+            document.getElementById('main-description').textContent = 'Planeje e visualize todas as publicações.';
+            contentArea.innerHTML = `<div id="calendar-wrapper">Conteúdo do Calendário</div>`;
+        }
 
         // --- FUNÇÕES DE MODAL ---
         function openSignUpModal() {
             const modalTitle = document.getElementById('form-modal-title');
-            const modalForm = document.getElementById('form-modal-body');
+            const modalContentArea = document.getElementById('form-modal-content-area');
             
-            document.getElementById('form-modal-content-area').innerHTML = '<form id="form-modal-body" class="space-y-4"></form>';
-            
+            modalContentArea.innerHTML = '<form id="form-modal-body" class="space-y-4"></form>';
             modalTitle.textContent = "Criar Nova Conta";
-            document.getElementById('form-modal-body').innerHTML = `
+            
+            const modalBody = document.getElementById('form-modal-body');
+            modalBody.innerHTML = `
                 <div>
                     <label for="signup-name" class="text-sm font-medium text-stone-700">Nome Completo</label>
                     <input type="text" id="signup-name" name="name" required class="form-input mt-1">
@@ -426,7 +439,7 @@
                     <button type="submit" class="primary-btn w-auto">Registar</button>
                 </div>
             `;
-            document.getElementById('form-modal-body').onsubmit = handleSignUp;
+            modalBody.onsubmit = handleSignUp;
             document.getElementById('form-modal').classList.add('visible');
         }
 
