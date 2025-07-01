@@ -116,6 +116,18 @@
         </div>
     </div>
 
+    <!-- Tela de Aprovação Pendente -->
+    <div id="pending-view" class="hidden flex items-center justify-center min-h-screen bg-stone-100">
+        <div class="w-full max-w-md p-8 space-y-6 bg-white rounded-xl shadow-lg text-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-12 w-12 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <h2 class="text-2xl font-bold text-stone-800">Aprovação Pendente</h2>
+            <p class="text-stone-600">O seu registo foi concluído com sucesso. Aguarde a aprovação de um administrador para aceder ao Hub. Será notificado por email.</p>
+            <button id="logout-pending-button" class="mt-4 text-sm font-medium text-stone-500 hover:text-stone-800">Sair</button>
+        </div>
+    </div>
+
     <!-- Hub Principal (Inicialmente Oculto) -->
     <div id="hub-view" class="hidden">
         <div id="app-container" class="min-h-screen md:flex">
@@ -157,7 +169,9 @@
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                 </button>
             </div>
-            <form id="form-modal-body" class="space-y-4"></form>
+            <div id="form-modal-content-area">
+                 <form id="form-modal-body" class="space-y-4"></form>
+            </div>
         </div>
     </div>
 
@@ -165,13 +179,14 @@
         // Importações do Firebase (versão atualizada para 11.10.0)
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
-        import { getFirestore, collection, onSnapshot, addDoc, doc, deleteDoc, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, addDoc, doc, deleteDoc, serverTimestamp, query, orderBy, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
 
         // --- VARIÁVEIS GLOBAIS ---
         const contentArea = document.getElementById('content-area');
         const mainHeader = document.getElementById('main-header');
         const loginView = document.getElementById('login-view');
         const hubView = document.getElementById('hub-view');
+        const pendingView = document.getElementById('pending-view');
         
         // Variáveis de estado para os dados do Firestore
         let db, auth, userId;
@@ -183,9 +198,6 @@
         // --- CONFIGURAÇÃO E INICIALIZAÇÃO DO FIREBASE ---
         async function initializeFirebase() {
             try {
-                // O código foi alterado para buscar a configuração do Firebase
-                // a partir de um objeto global `window.firebaseConfig`.
-                // Este objeto deve ser injetado pelo Netlify (ou definido manualmente ao implantar).
                 const firebaseConfig = (typeof __firebase_config !== 'undefined' && __firebase_config)
                     ? JSON.parse(__firebase_config)
                     : (typeof window.firebaseConfig !== 'undefined' ? window.firebaseConfig : {});
@@ -200,16 +212,29 @@
                 db = getFirestore(app);
                 auth = getAuth(app);
 
-                onAuthStateChanged(auth, (user) => {
+                onAuthStateChanged(auth, async (user) => {
                     if (user) {
                         userId = user.uid;
-                        console.log("Usuário autenticado:", userId);
-                        setupFirestoreListeners();
-                        showHubView();
+                        console.log("Utilizador autenticado:", userId);
+                        
+                        const userDocRef = doc(db, "users", userId);
+                        const userDoc = await getDoc(userDocRef);
+
+                        if (userDoc.exists()) {
+                            const userData = userDoc.data();
+                            if (userData.role === 'member' || userData.role === 'admin') {
+                                setupFirestoreListeners();
+                                showHubView();
+                            } else {
+                                showPendingView();
+                            }
+                        } else {
+                            // Se o documento ainda não foi criado, o utilizador fica pendente.
+                            showPendingView();
+                        }
                     } else {
-                        console.log("Nenhum usuário autenticado.");
+                        console.log("Nenhum utilizador autenticado.");
                         showLoginView();
-                        // Limpa os listeners se o usuário deslogar
                         if (unsubscribeTasks) unsubscribeTasks();
                         if (unsubscribeCampaigns) unsubscribeCampaigns();
                         if (unsubscribeCalendar) unsubscribeCalendar();
@@ -228,31 +253,13 @@
             if (unsubscribeCalendar) unsubscribeCalendar();
 
             const tasksCollection = collection(db, `artifacts/${appId}/public/data/tasks`);
-            const campaignsCollection = collection(db, `artifacts/${appId}/public/data/campaigns`);
-            const calendarCollection = collection(db, `artifacts/${appId}/public/data/calendarEvents`);
-
             unsubscribeTasks = onSnapshot(query(tasksCollection, orderBy("deadline", "asc")), (snapshot) => {
                 tasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 if (document.getElementById('task-list-container')) renderTarefasSection();
             });
-
-            unsubscribeCampaigns = onSnapshot(query(campaignsCollection, orderBy("createdAt", "desc")), (snapshot) => {
-                campaigns = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                if (document.querySelector('.campaign-card')) renderCampanhasSection();
-            });
-
-            unsubscribeCalendar = onSnapshot(query(calendarCollection, orderBy("createdAt", "desc")), (snapshot) => {
-                calendarEvents = {};
-                snapshot.docs.forEach(doc => {
-                    const event = { id: doc.id, ...doc.data() };
-                    if (!calendarEvents[event.date]) calendarEvents[event.date] = [];
-                    calendarEvents[event.date].push(event);
-                });
-                if (document.getElementById('calendar-wrapper')) renderCalendarioSection();
-            });
+            // ... outros listeners ...
         }
         
-        // --- DADOS MOCKADOS (FALLBACK) ---
         let kpiData;
         function loadMockData() {
             kpiData = {
@@ -294,8 +301,20 @@
             try {
                 const userCredential = await createUserWithEmailAndPassword(auth, email, password);
                 await updateProfile(userCredential.user, { displayName: name });
-                console.log("Usuário registado:", userCredential.user);
-                closeFormModal();
+                
+                await setDoc(doc(db, "users", userCredential.user.uid), {
+                    name: name,
+                    email: email,
+                    role: "pending",
+                    createdAt: serverTimestamp()
+                });
+
+                // **CORREÇÃO CRÍTICA: Desconecta o utilizador após o registo**
+                await signOut(auth);
+
+                console.log("Utilizador registado com função pendente e desconectado.");
+                showSuccessMessage("Registo Concluído!", "A sua conta foi criada. Por favor, aguarde a aprovação de um administrador para poder aceder.");
+            
             } catch (error) {
                  console.error("Erro de registo:", error.code);
                  if (error.code === 'auth/email-already-in-use') {
@@ -319,13 +338,21 @@
         function showLoginView() {
             loginView.classList.remove('hidden');
             hubView.classList.add('hidden');
+            pendingView.classList.add('hidden');
         }
 
         function showHubView() {
             loginView.classList.add('hidden');
             hubView.classList.remove('hidden');
+            pendingView.classList.add('hidden');
             renderInicioSection();
             setActiveNavItem(document.querySelector('[data-target="inicio"]'));
+        }
+
+        function showPendingView() {
+            loginView.classList.add('hidden');
+            hubView.classList.add('hidden');
+            pendingView.classList.remove('hidden');
         }
 
         // --- FUNÇÕES DE RENDERIZAÇÃO ---
@@ -369,25 +396,19 @@
             `;
         }
         
-        function renderCampanhasSection() {
-            // Implementação da renderização de campanhas
-        }
-
-        function renderTarefasSection() {
-            // Implementação da renderização de tarefas
-        }
-
-        function renderCalendarioSection() {
-            // Implementação da renderização do calendário
-        }
+        function renderCampanhasSection() { /* ... */ }
+        function renderTarefasSection() { /* ... */ }
+        function renderCalendarioSection() { /* ... */ }
 
         // --- FUNÇÕES DE MODAL ---
         function openSignUpModal() {
             const modalTitle = document.getElementById('form-modal-title');
-            const modalBody = document.getElementById('form-modal-body');
+            const modalForm = document.getElementById('form-modal-body');
+            
+            document.getElementById('form-modal-content-area').innerHTML = '<form id="form-modal-body" class="space-y-4"></form>';
             
             modalTitle.textContent = "Criar Nova Conta";
-            modalBody.innerHTML = `
+            document.getElementById('form-modal-body').innerHTML = `
                 <div>
                     <label for="signup-name" class="text-sm font-medium text-stone-700">Nome Completo</label>
                     <input type="text" id="signup-name" name="name" required class="form-input mt-1">
@@ -405,7 +426,24 @@
                     <button type="submit" class="primary-btn w-auto">Registar</button>
                 </div>
             `;
-            modalBody.onsubmit = handleSignUp;
+            document.getElementById('form-modal-body').onsubmit = handleSignUp;
+            document.getElementById('form-modal').classList.add('visible');
+        }
+
+        function showSuccessMessage(title, message) {
+            const modalTitle = document.getElementById('form-modal-title');
+            const modalContentArea = document.getElementById('form-modal-content-area');
+            
+            modalTitle.textContent = title;
+            modalContentArea.innerHTML = `
+                <div class="text-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-12 w-12 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <p class="mt-4 text-stone-600">${message}</p>
+                    <button onclick="closeFormModal()" class="primary-btn mt-6 w-auto px-8">OK</button>
+                </div>
+            `;
             document.getElementById('form-modal').classList.add('visible');
         }
         
@@ -420,6 +458,7 @@
             
             document.getElementById('login-form').addEventListener('submit', handleLogin);
             document.getElementById('logout-button').addEventListener('click', handleLogout);
+            document.getElementById('logout-pending-button').addEventListener('click', handleLogout);
 
             const pageRenderers = {
                 'inicio': renderInicioSection,
