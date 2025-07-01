@@ -10,6 +10,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Palette: SLAP Brand Colors: #F1D24B (Yellow), #FF5C3D (Orange), #84C7DF (Blue), #8671D1 (Purple) -->
     <style>
         body {
             font-family: 'DM Sans', sans-serif;
@@ -48,6 +49,10 @@
         .status-active { background-color: #D1FAE5; color: #065F46; }
         .status-planned { background-color: #DBEAFE; color: #1E40AF; }
         .status-completed { background-color: #F3F4F6; color: #4B5563; }
+        .brand-color-swatch { width: 100%; height: 80px; border-radius: 0.5rem; display: flex; align-items: center; justify-content: center; font-weight: 600; color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.3); }
+        .persona-card { background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 0.75rem; padding: 1.5rem; }
+        .resource-link { display: block; background-color: #f9fafb; padding: 1rem; border-radius: 0.5rem; font-weight: 600; color: #4b5563; transition: all 0.2s ease; border-left: 4px solid #d1d5db; }
+        .resource-link:hover { background-color: #f3f4f6; border-color: #F1D24B; color: #1f2937; transform: translateX(4px); }
         
         /* --- ESTILOS ATUALIZADOS: Lista de Tarefas --- */
         .task-card { background-color: #ffffff; border-radius: 0.75rem; padding: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid #e7e5e4; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 1rem; }
@@ -88,6 +93,7 @@
 </head>
 <body class="bg-stone-50 text-stone-800">
 
+    <!-- Tela de Login -->
     <div id="login-view" class="flex items-center justify-center min-h-screen bg-stone-100">
         <div class="w-full max-w-md p-8 space-y-6 bg-white rounded-xl shadow-lg">
             <div class="text-center">
@@ -114,6 +120,7 @@
         </div>
     </div>
 
+    <!-- Tela de Aprovação Pendente -->
     <div id="pending-view" class="hidden flex items-center justify-center min-h-screen bg-stone-100">
         <div class="w-full max-w-md p-8 space-y-6 bg-white rounded-xl shadow-lg text-center">
             <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-12 w-12 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -125,6 +132,7 @@
         </div>
     </div>
 
+    <!-- Hub Principal (Inicialmente Oculto) -->
     <div id="hub-view" class="hidden">
         <div id="app-container" class="min-h-screen md:flex">
             <aside class="md:w-64 bg-white md:border-r border-b border-stone-200 p-4 md:p-6 flex flex-col">
@@ -133,7 +141,8 @@
                 </div>
                 <h1 class="text-xl font-bold text-stone-800 mb-6 text-center">Hub de Marketing</h1>
                 <nav id="main-navigation" class="space-y-1 flex-1">
-                    </nav>
+                    <!-- Itens do menu são gerados aqui -->
+                </nav>
                 <div class="mt-4">
                     <button id="logout-button" class="nav-item w-full text-left px-4 py-2.5 rounded-lg text-stone-700 hover:bg-red-50 hover:text-red-600 transition-colors flex items-center font-semibold">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-3"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
@@ -149,11 +158,13 @@
                 </header>
                 
                 <div id="content-area">
-                    </div>
+                    <!-- Conteúdo será injetado aqui dinamicamente -->
+                </div>
             </main>
         </div>
     </div>
 
+    <!-- Modal Genérico para Forms -->
     <div id="form-modal" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
@@ -268,7 +279,7 @@
             });
         }
         
-        let kpiData;
+        let kpiData, personasData;
         function loadMockData() {
             kpiData = {
                 novosLeads: { valor: "1,280", variacao: "+15%" },
@@ -276,6 +287,32 @@
                 engajamentoSocial: { valor: "12.3K", variacao: "-2%" },
                 custoAquisicao: { valor: "R$ 25,40", variacao: "+5%" }
             };
+             personasData = [
+                {
+                    nome: "Juliana, a Universitária",
+                    foto: "https://placehold.co/100x100/84C7DF/FFFFFF?text=J",
+                    detalhes: { Idade: 21, Ocupação: "Estudante de Relações Internacionais" },
+                    objetivos: ["Conseguir um estágio em uma multinacional.", "Fazer intercâmbio no próximo ano.", "Consumir conteúdo acadêmico em inglês."],
+                    desafios: ["Falta de tempo para estudar.", "Dificuldade com a fala e pronúncia.", "Orçamento limitado."],
+                    citacao: `"Preciso que o inglês abra portas na minha carreira, mas minha rotina é muito corrida."`
+                },
+                {
+                    nome: "Ricardo, o Profissional",
+                    foto: "https://placehold.co/100x100/FF5C3D/FFFFFF?text=R",
+                    detalhes: { Idade: 35, Ocupação: "Gerente de Projetos de TI" },
+                    objetivos: ["Participar de reuniões com equipes globais.", "Entender documentação técnica.", "Ter mais confiança para se comunicar."],
+                    desafios: ["Vergonha de cometer erros na frente dos colegas.", "Falta de prática de conversação.", "Vocabulário muito focado em TI."],
+                    citacao: `"Eu entendo bem, mas na hora de falar, eu travo. Isso está me prejudicando no trabalho."`
+                },
+                {
+                    nome: "Fernanda, a Viajante",
+                    foto: "https://placehold.co/100x100/8671D1/FFFFFF?text=F",
+                    detalhes: { Idade: 28, Ocupação: "Designer Gráfica Freelancer" },
+                    objetivos: ["Viajar o mundo como nômade digital.", "Se comunicar com facilidade em aeroportos, hotéis e restaurantes.", "Fazer amigos de outras culturas."],
+                    desafios: ["Medo de não ser entendida em situações cotidianas.", "Dificuldade com sotaques diferentes.", "Precisa de um aprendizado flexível."],
+                    citacao: `"Meu sonho é viajar sem perrengue. O inglês é a chave para a minha liberdade."`
+                }
+            ];
         }
         
         // --- FUNÇÕES DE AUTENTICAÇÃO ---
