@@ -49,10 +49,6 @@
         .status-active { background-color: #D1FAE5; color: #065F46; }
         .status-planned { background-color: #DBEAFE; color: #1E40AF; }
         .status-completed { background-color: #F3F4F6; color: #4B5563; }
-        .brand-color-swatch { width: 100%; height: 80px; border-radius: 0.5rem; display: flex; align-items: center; justify-content: center; font-weight: 600; color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.3); }
-        .persona-card { background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 0.75rem; padding: 1.5rem; }
-        .resource-link { display: block; background-color: #f9fafb; padding: 1rem; border-radius: 0.5rem; font-weight: 600; color: #4b5563; transition: all 0.2s ease; border-left: 4px solid #d1d5db; }
-        .resource-link:hover { background-color: #f3f4f6; border-color: #F1D24B; color: #1f2937; transform: translateX(4px); }
         
         /* --- ESTILOS ATUALIZADOS: Lista de Tarefas --- */
         .task-card { background-color: #ffffff; border-radius: 0.75rem; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid #e7e5e4; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 1rem; }
@@ -98,7 +94,7 @@
         <div class="w-full max-w-md p-8 space-y-6 bg-white rounded-xl shadow-lg">
             <div class="text-center">
                 <img src="https://res.cloudinary.com/dqfi22uz0/image/upload/v1749349751/DBB440C2-684E-4DCF-9CD3-B2DDC18F1E53_3_vgocga.jpg" alt="Logo SLAP" class="w-24 h-auto mx-auto rounded-lg mb-4">
-                <h2 class="text-2xl font-bold text-stone-800">Acessar Hub de Marketing</h2>
+                <h2 class="text-2xl font-bold text-stone-800">Aceder ao Hub de Marketing</h2>
             </div>
             <form id="login-form" class="space-y-4">
                 <div>
@@ -106,7 +102,7 @@
                     <input type="email" id="login-email" name="email" required class="form-input mt-1">
                 </div>
                 <div>
-                    <label for="login-password" class="text-sm font-medium text-stone-700">Senha</label>
+                    <label for="login-password" class="text-sm font-medium text-stone-700">Palavra-passe</label>
                     <input type="password" id="login-password" name="password" required class="form-input mt-1">
                 </div>
                 <p id="login-error" class="text-sm text-red-600"></p>
@@ -115,7 +111,7 @@
                 </div>
             </form>
             <p class="text-sm text-center text-stone-600">
-                Não tem uma conta? <button onclick="openSignUpModal()" class="font-medium text-[#F1D24B] hover:underline">Cadastre-se</button>
+                Não tem uma conta? <button onclick="openSignUpModal()" class="font-medium text-[#F1D24B] hover:underline">Registe-se</button>
             </p>
         </div>
     </div>
@@ -176,8 +172,7 @@
         const mainHeader = document.getElementById('main-header');
         const loginView = document.getElementById('login-view');
         const hubView = document.getElementById('hub-view');
-        let currentChart;
-
+        
         // Variáveis de estado para os dados do Firestore
         let db, auth, userId;
         let tasks = [];
@@ -188,18 +183,15 @@
         // --- CONFIGURAÇÃO E INICIALIZAÇÃO DO FIREBASE ---
         async function initializeFirebase() {
             try {
-                // O código de configuração do Firebase foi inserido aqui.
-                const firebaseConfig = {
-                   apiKey: "AIzaSyBeJ3d8dIbBOLDuxXPO94Kx8mFf7rPbsqI",
-                   authDomain: "hub-mkt.firebaseapp.com",
-                   projectId: "hub-mkt",
-                   storageBucket: "hub-mkt.appspot.com",
-                   messagingSenderId: "1085372538328",
-                   appId: "1:1085372538328:web:4e66315bf0debd2dd5e6ad"
-                };
+                // O código foi alterado para buscar a configuração do Firebase
+                // a partir de um objeto global `window.firebaseConfig`.
+                // Este objeto deve ser injetado pelo Netlify (ou definido manualmente ao implantar).
+                const firebaseConfig = (typeof __firebase_config !== 'undefined' && __firebase_config)
+                    ? JSON.parse(__firebase_config)
+                    : (typeof window.firebaseConfig !== 'undefined' ? window.firebaseConfig : {});
 
                 if (!firebaseConfig.apiKey) {
-                    console.error("Configuração do Firebase não encontrada.");
+                    console.error("Configuração do Firebase não encontrada. Adicione o snippet de injeção no Netlify ou a variável __firebase_config.");
                     document.getElementById('login-error').textContent = "Erro de configuração. Contate o administrador.";
                     return;
                 }
@@ -261,7 +253,7 @@
         }
         
         // --- DADOS MOCKADOS (FALLBACK) ---
-        let kpiData, personasData;
+        let kpiData;
         function loadMockData() {
             kpiData = {
                 novosLeads: { valor: "1,280", variacao: "+15%" },
@@ -269,7 +261,6 @@
                 engajamentoSocial: { valor: "12.3K", variacao: "-2%" },
                 custoAquisicao: { valor: "R$ 25,40", variacao: "+5%" }
             };
-            personasData = [ /* ... dados das personas ... */ ];
         }
         
         // --- FUNÇÕES DE AUTENTICAÇÃO ---
@@ -285,7 +276,7 @@
             } catch (error) {
                 console.error("Erro de login:", error.code);
                 if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-                    errorElement.textContent = "Email ou senha inválidos.";
+                    errorElement.textContent = "Email ou palavra-passe inválidos.";
                 } else {
                     errorElement.textContent = "Ocorreu um erro ao tentar fazer login.";
                 }
@@ -303,14 +294,14 @@
             try {
                 const userCredential = await createUserWithEmailAndPassword(auth, email, password);
                 await updateProfile(userCredential.user, { displayName: name });
-                console.log("Usuário cadastrado:", userCredential.user);
+                console.log("Usuário registado:", userCredential.user);
                 closeFormModal();
             } catch (error) {
-                 console.error("Erro de cadastro:", error.code);
+                 console.error("Erro de registo:", error.code);
                  if (error.code === 'auth/email-already-in-use') {
                     errorElement.textContent = "Este email já está em uso.";
                  } else if (error.code === 'auth/weak-password') {
-                    errorElement.textContent = "A senha deve ter pelo menos 6 caracteres.";
+                    errorElement.textContent = "A palavra-passe deve ter pelo menos 6 caracteres.";
                  } else {
                     errorElement.textContent = "Ocorreu um erro ao criar a conta.";
                  }
@@ -333,34 +324,62 @@
         function showHubView() {
             loginView.classList.add('hidden');
             hubView.classList.remove('hidden');
-            // Renderiza a página inicial por padrão ao logar
             renderInicioSection();
             setActiveNavItem(document.querySelector('[data-target="inicio"]'));
         }
 
-
         // --- FUNÇÕES DE RENDERIZAÇÃO ---
         function setActiveNavItem(element) {
             document.querySelectorAll('#main-navigation .nav-item').forEach(item => {
-                item.classList.remove('active', 'active-parent');
+                item.classList.remove('active');
             });
             if (element) {
                 element.classList.add('active');
-                const parentDropdown = element.closest('.nav-dropdown');
-                if (parentDropdown) {
-                    parentDropdown.querySelector('.dropdown-toggle').classList.add('active-parent');
-                }
             }
         }
 
         function renderInicioSection() {
             document.getElementById('main-title').textContent = 'Dashboard de Marketing';
-            document.getElementById('main-description').textContent = 'Visão geral dos principais indicadores e atividades da equipe.';
-            contentArea.innerHTML = `...`; // Conteúdo do dashboard
+            document.getElementById('main-description').textContent = 'Visão geral dos principais indicadores e atividades da equipa.';
+            contentArea.innerHTML = `
+                <section>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                        <div class="kpi-card kpi-card-blue">
+                            <h3 class="text-stone-600 font-semibold mb-2">Novos Leads (Mês)</h3>
+                            <p class="text-4xl font-bold text-stone-800">${kpiData.novosLeads.valor}</p>
+                            <p class="text-green-600 font-semibold mt-1">${kpiData.novosLeads.variacao}</p>
+                        </div>
+                        <div class="kpi-card kpi-card-purple">
+                            <h3 class="text-stone-600 font-semibold mb-2">Taxa de Conversão</h3>
+                            <p class="text-4xl font-bold text-stone-800">${kpiData.taxaConversao.valor}</p>
+                            <p class="text-green-600 font-semibold mt-1">${kpiData.taxaConversao.variacao}</p>
+                        </div>
+                        <div class="kpi-card kpi-card-orange">
+                            <h3 class="text-stone-600 font-semibold mb-2">Engajamento Social</h3>
+                            <p class="text-4xl font-bold text-stone-800">${kpiData.engajamentoSocial.valor}</p>
+                            <p class="text-red-600 font-semibold mt-1">${kpiData.engajamentoSocial.variacao}</p>
+                        </div>
+                        <div class="kpi-card kpi-card-yellow">
+                            <h3 class="text-stone-600 font-semibold mb-2">Custo por Aquisição</h3>
+                            <p class="text-4xl font-bold text-stone-800">${kpiData.custoAquisicao.valor}</p>
+                            <p class="text-red-600 font-semibold mt-1">${kpiData.custoAquisicao.variacao}</p>
+                        </div>
+                    </div>
+                </section>
+            `;
         }
         
-        // ... (As outras funções render* permanecem aqui, mas serão chamadas após o login) ...
-        // (renderCampanhasSection, renderTarefasSection, etc.)
+        function renderCampanhasSection() {
+            // Implementação da renderização de campanhas
+        }
+
+        function renderTarefasSection() {
+            // Implementação da renderização de tarefas
+        }
+
+        function renderCalendarioSection() {
+            // Implementação da renderização do calendário
+        }
 
         // --- FUNÇÕES DE MODAL ---
         function openSignUpModal() {
@@ -378,20 +397,18 @@
                     <input type="email" id="signup-email" name="email" required class="form-input mt-1">
                 </div>
                 <div>
-                    <label for="signup-password" class="text-sm font-medium text-stone-700">Senha (mínimo 6 caracteres)</label>
+                    <label for="signup-password" class="text-sm font-medium text-stone-700">Palavra-passe (mínimo 6 caracteres)</label>
                     <input type="password" id="signup-password" name="password" required class="form-input mt-1">
                 </div>
                 <p id="signup-error" class="text-sm text-red-600"></p>
                 <div class="text-right">
-                    <button type="submit" class="primary-btn w-auto">Cadastrar</button>
+                    <button type="submit" class="primary-btn w-auto">Registar</button>
                 </div>
             `;
             modalBody.onsubmit = handleSignUp;
             document.getElementById('form-modal').classList.add('visible');
         }
         
-        // ... (As outras funções de modal permanecem aqui) ...
-
         function closeFormModal() {
             document.getElementById('form-modal').classList.remove('visible');
         }
@@ -406,7 +423,9 @@
 
             const pageRenderers = {
                 'inicio': renderInicioSection,
-                // ... outras seções ...
+                'campanhas': renderCampanhasSection,
+                'tarefas': renderTarefasSection,
+                'calendario': renderCalendarioSection,
             };
             
             const mainNav = document.getElementById('main-navigation');
@@ -443,7 +462,6 @@
         // Expor funções ao escopo global
         window.openSignUpModal = openSignUpModal;
         window.closeFormModal = closeFormModal;
-        // ... (outras funções globais) ...
     </script>
 </body>
 </html>
