@@ -34,11 +34,11 @@
         
         .status-tag { padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; }
         /* Generic Statuses */
-        .status-aprovado, .status-presencial { background-color: #D1FAE5; color: #065F46; }
+        .status-aprovado, .status-presencial, .status-ativo { background-color: #D1FAE5; color: #065F46; }
         .status-online, .status-em-andamento { background-color: #DBEAFE; color: #1E40AF; }
         .status-concluída { background-color: #F3F4F6; color: #4B5563; }
-        .status-pendente { background-color: #FEF3C7; color: #92400E; }
-        .status-rejeitado { background-color: #FEE2E2; color: #991B1B; }
+        .status-pendente, .status-em-espera { background-color: #FEF3C7; color: #92400E; }
+        .status-rejeitado, .status-cancelado { background-color: #FEE2E2; color: #991B1B; }
 
         /* Event Sector Statuses */
         .status-financeiro { background-color: #D1FAE5; color: #065F46; } /* Green */
@@ -69,13 +69,15 @@
         .tag-turma { background-color: #FF5C3D; }
         .tag-vip { background-color: #8671D1; }
         
-        /* --- Payroll Styles --- */
-        .payroll-table { width: 100%; border-collapse: collapse; }
-        .payroll-table th, .payroll-table td { padding: 0.75rem 1rem; text-align: left; border-bottom: 1px solid #e5e7eb; }
-        .payroll-table th { font-weight: 600; font-size: 0.875rem; color: #6b7280; }
-        .payroll-table tbody tr:hover { background-color: #f9fafb; cursor: pointer; }
-        .payroll-total { margin-top: 1.5rem; text-align: right; }
-        .payroll-total p { font-size: 1.25rem; font-weight: 700; color: #1f2937; }
+        /* --- Payroll & Students Styles --- */
+        .data-table { width: 100%; border-collapse: collapse; }
+        .data-table th, .data-table td { padding: 0.75rem 1rem; text-align: left; border-bottom: 1px solid #e5e7eb; }
+        .data-table th { font-weight: 600; font-size: 0.875rem; color: #6b7280; }
+        .data-table tbody tr.paid { background-color: #f9fafb; color: #9ca3af; }
+        .data-table tbody tr.paid .font-medium { text-decoration: line-through; }
+        .data-table tbody tr:not(.paid):hover { background-color: #f9fafb; cursor: pointer; }
+        .data-total { margin-top: 1.5rem; text-align: right; }
+        .data-total p { font-size: 1.25rem; font-weight: 700; color: #1f2937; }
 
         .form-input { width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 0.375rem; }
         .primary-btn { background-color: #F1D24B; color: #44403c; padding: 0.75rem 1.5rem; border-radius: 0.375rem; font-weight: 600; transition: background-color 0.2s; width: 100%; border: none; cursor: pointer; }
@@ -126,7 +128,7 @@
         </div>
     </div>
 
-    <div id="hub-view" class="hidden">
+    <div id="hub-view" class="">
         <div id="app-container" class="min-h-screen md:flex bg-stone-50">
             <aside class="md:w-64 bg-white md:border-r border-b border-stone-200 p-4 md:p-6 flex flex-col">
                 <div class="mb-4 text-center relative">
@@ -188,7 +190,7 @@
         const pendingView = document.getElementById('pending-view');
         
         let db, auth, storage, userId, currentUserName, currentUserRole;
-        let tasks = [], events = [], budgets = [], collaborators = [], schedules = [], expenses = [];
+        let tasks = [], events = [], budgets = [], collaborators = [], schedules = [], expenses = [], students = [];
         let allUnsubscribers = [];
         let tasksChart = null;
         const appId = 'hub-gestao-slap';
@@ -213,42 +215,48 @@
 
                 onAuthStateChanged(auth, async (user) => {
                     if (user) {
-                        userId = user.uid;
-                        const userDocRef = doc(db, "users", userId);
-                        const userDoc = await getDoc(userDocRef);
-
-                        if (user.isAnonymous) {
-                            currentUserName = 'Admin (Preview)';
-                            currentUserRole = 'admin';
-                            setupFirestoreListeners();
-                            showHubView();
-                        } else if (userDoc.exists()) {
-                            const userData = userDoc.data();
-                            currentUserName = userData.name || user.displayName;
-                            currentUserRole = userData.role;
-                            document.getElementById('profile-picture').src = userData.photoURL || 'https://res.cloudinary.com/dqfi22uz0/image/upload/v1749349751/DBB440C2-684E-4DCF-9CD3-B2DDC18F1E53_3_vgocga.jpg';
-                            
-                            if (['admin', 'member', 'financeiro'].includes(currentUserRole)) {
-                                setupFirestoreListeners();
-                                showHubView();
-                            } else {
-                                showPendingView();
-                            }
-                        } else {
-                           showPendingView();
-                        }
+                        await initializeAppWithUser(user);
                     } else {
-                        userId = null;
-                        currentUserName = null;
-                        currentUserRole = null;
-                        allUnsubscribers.forEach(unsub => unsub && unsub());
-                        allUnsubscribers = [];
-                        showLoginView();
+                        // For preview purposes, sign in anonymously to bypass login and permission errors
+                        try {
+                            await signInAnonymously(auth);
+                        } catch (e) {
+                            console.error("Anonymous sign-in failed:", e);
+                            showLoginView();
+                        }
                     }
                 });
             } catch (error) {
                 console.error("Error initializing Firebase:", error);
                 showLoginView();
+            }
+        }
+
+        async function initializeAppWithUser(user) {
+            userId = user.uid;
+            
+            if (user.isAnonymous) {
+                currentUserName = 'Admin (Preview)';
+                currentUserRole = 'admin';
+            } else {
+                const userDocRef = doc(db, "users", userId);
+                const userDoc = await getDoc(userDocRef);
+                if (userDoc.exists()) {
+                    const userData = userDoc.data();
+                    currentUserName = userData.name || user.displayName;
+                    currentUserRole = userData.role;
+                    document.getElementById('profile-picture').src = userData.photoURL || 'https://res.cloudinary.com/dqfi22uz0/image/upload/v1749349751/DBB440C2-684E-4DCF-9CD3-B2DDC18F1E53_3_vgocga.jpg';
+                } else {
+                    showPendingView();
+                    return;
+                }
+            }
+            
+            if (['admin', 'member', 'financeiro'].includes(currentUserRole)) {
+                setupFirestoreListeners();
+                showHubView();
+            } else {
+                showPendingView();
             }
         }
         
@@ -267,7 +275,7 @@
                     const activePageId = contentArea.firstElementChild?.id;
                     if (renderFunc && activePageId) {
                         const pageBaseName = activePageId.replace('-section', '');
-                        if (pageBaseName === collectionName.toLowerCase() || pageBaseName === 'inicio') {
+                        if (pageBaseName.startsWith(collectionName.slice(0, -1)) || pageBaseName === 'inicio') {
                             renderFunc();
                         }
                     }
@@ -281,10 +289,12 @@
                 const activePageId = contentArea.firstElementChild?.id;
                 if (activePageId === 'grade-section') renderGradeSection();
                 if (activePageId === 'tasks-section') renderTarefasSection();
+                 if (activePageId === 'inicio-section') renderInicioSection();
             });
             getCollectionListener('events', events, renderEventosSection);
             getCollectionListener('schedules', schedules, renderGradeSection);
             getCollectionListener('expenses', expenses, renderFolhaPagamentoSection);
+            getCollectionListener('students', students, renderAlunosSection);
         }
 
         // --- AUTH, VIEW, and MENU FUNCTIONS ---
@@ -378,7 +388,7 @@
                 </div>`;
         }
 
-        function renderOrcamentosSection() { document.getElementById('main-title').textContent = 'Gestor de Orçamentos'; document.getElementById('main-description').textContent = 'Registre e acompanhe todas as propostas e orçamentos.'; contentArea.innerHTML = `<div id="budgets-section"><div class="text-right mb-6"><button class="primary-btn w-auto" onclick="openBudgetForm()">+ Adicionar Orçamento</button></div><div class="space-y-4">${budgets.map(b => `<div class="base-card flex flex-wrap justify-between items-center gap-4 cursor-pointer" onclick="openBudgetModal('${b.id}')"><div class="flex-1"><h3 class="text-lg font-bold text-stone-800">${b.titulo}</h3><p class="text-sm text-stone-500">Fornecedor: ${b.fornecedor}</p></div><div class="text-right"><p class="text-xl font-bold text-stone-800">R$ ${parseFloat(b.valor || 0).toFixed(2)}</p><span class="status-tag status-${b.status.toLowerCase()}">${b.status}</span></div></div>`).join('') || '<p class="text-center py-10 text-stone-500">Nenhum orçamento encontrado.</p>'}</div></div>`; }
+        function renderOrcamentosSection() { document.getElementById('main-title').textContent = 'Gestor de Orçamentos'; document.getElementById('main-description').textContent = 'Registre e acompanhe todas as propostas e orçamentos.'; contentArea.innerHTML = `<div id="budgets-section"><div class="text-right mb-6"><button class="primary-btn w-auto" onclick="openBudgetForm()">+ Adicionar Orçamento</button></div><div class="space-y-4">${budgets.map(b => `<div class="base-card flex flex-wrap justify-between items-center gap-4 cursor-pointer" onclick="openBudgetModal('${b.id}')"><div class="flex-1"><h3 class="text-lg font-bold text-stone-800">${b.titulo}</h3><p class="text-sm text-stone-500">Feito por: ${b.criadoPor || 'N/A'} em ${b.dataCriacao ? new Date(b.dataCriacao).toLocaleDateString('pt-BR') : 'N/A'}</p></div><div class="text-right"><p class="text-xl font-bold text-stone-800">R$ ${parseFloat(b.valor || 0).toFixed(2)}</p><span class="status-tag status-${b.status.toLowerCase()}">${b.status}</span></div></div>`).join('') || '<p class="text-center py-10 text-stone-500">Nenhum orçamento encontrado.</p>'}</div></div>`; }
         
         function renderTarefasSection() { 
             document.getElementById('main-title').textContent = 'Lista de Tarefas'; 
@@ -504,9 +514,10 @@
                          <button class="primary-btn w-auto" onclick="openExpenseForm()">+ Nova Despesa</button>
                     </div>
                     <div class="overflow-x-auto">
-                        <table class="payroll-table">
+                        <table class="data-table">
                             <thead>
                                 <tr>
+                                    <th>Status</th>
                                     <th>Descrição</th>
                                     <th>Vencimento</th>
                                     <th class="text-right">Valor (R$)</th>
@@ -514,64 +525,56 @@
                             </thead>
                             <tbody id="expenses-list">
                                 ${monthlyExpenses.length > 0 ? monthlyExpenses.map(exp => `
-                                    <tr onclick="openExpenseForm('${exp.id}')">
-                                        <td class="font-medium">${exp.description}</td>
-                                        <td>${new Date(exp.dueDate + 'T00:00:00').toLocaleDateString('pt-BR')}</td>
-                                        <td class="text-right font-mono">${Number(exp.amount).toFixed(2)}</td>
+                                    <tr class="${exp.isPaid ? 'paid' : ''}">
+                                        <td class="text-center"><input type="checkbox" onchange="toggleExpensePaid('${exp.id}', this.checked)" ${exp.isPaid ? 'checked' : ''}></td>
+                                        <td class="font-medium" onclick="openExpenseForm('${exp.id}')">${exp.description} ${exp.isFixedSalary ? `<span class="text-xs text-stone-500">(${exp.employeeRole || 'Salário Fixo'})</span>` : ''}</td>
+                                        <td onclick="openExpenseForm('${exp.id}')">${new Date(exp.dueDate + 'T00:00:00').toLocaleDateString('pt-BR')}</td>
+                                        <td class="text-right font-mono" onclick="openExpenseForm('${exp.id}')">${Number(exp.amount).toFixed(2)}</td>
                                     </tr>
-                                `).join('') : '<tr><td colspan="3" class="text-center py-8 text-stone-500">Nenhuma despesa para este mês.</td></tr>'}
+                                `).join('') : '<tr><td colspan="4" class="text-center py-8 text-stone-500">Nenhuma despesa para este mês.</td></tr>'}
                             </tbody>
                         </table>
                     </div>
-                    <div class="payroll-total">
+                    <div class="data-total">
                         <p>Total a Pagar: R$ ${totalAmount.toFixed(2)}</p>
                     </div>
                 </section>
             `;
         }
 
-        function openExpenseForm(expenseId = null) {
-            const expense = expenseId ? expenses.find(e => e.id === expenseId) : null;
-            document.getElementById('form-modal-title').textContent = expense ? "Editar Despesa" : "Adicionar Nova Despesa";
-            
-            document.getElementById('form-modal-content-area').innerHTML = `
-                <form id="form-modal-body" class="space-y-4">
-                    <input type="hidden" id="expense-id" value="${expenseId || ''}">
-                    <div><label class="font-medium text-sm">Descrição</label><input type="text" id="expense-description" class="form-input" required value="${expense?.description || ''}"></div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div><label class="font-medium text-sm">Valor (R$)</label><input type="number" step="0.01" id="expense-amount" class="form-input" required value="${expense?.amount || ''}"></div>
-                        <div><label class="font-medium text-sm">Data de Vencimento</label><input type="date" id="expense-duedate" class="form-input" required value="${expense?.dueDate || ''}"></div>
+        // --- STUDENTS FUNCTIONS ---
+        function renderAlunosSection() {
+            document.getElementById('main-title').textContent = 'Cadastro de Alunos';
+            document.getElementById('main-description').textContent = 'Gerencie todos os alunos da escola.';
+            contentArea.innerHTML = `
+                <section id="students-section" class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
+                     <div class="text-right mb-6">
+                         <button class="primary-btn w-auto" onclick="openAlunoForm()">+ Adicionar Aluno</button>
                     </div>
-                    <div class="pt-4 flex justify-end gap-2">
-                        ${expenseId ? `<button type="button" class="danger-btn" onclick="deleteItem('expenses', '${expenseId}')">Apagar</button>` : ''}
-                        <button type="submit" class="primary-btn w-auto">Salvar</button>
+                    <div class="overflow-x-auto">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>Status</th>
+                                    <th>Data de Início</th>
+                                    <th>Tipo de Contrato</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${students.map(s => `
+                                <tr class="cursor-pointer" onclick="openAlunoModal('${s.id}')">
+                                    <td class="font-medium">${s.name}</td>
+                                    <td><span class="status-tag status-${s.status.toLowerCase()}">${s.status}</span></td>
+                                    <td>${s.startDate ? new Date(s.startDate + 'T00:00:00').toLocaleDateString('pt-BR') : 'N/A'}</td>
+                                    <td>${s.contractType || 'N/A'}</td>
+                                </tr>
+                                `).join('') || '<tr><td colspan="4" class="text-center py-10 text-stone-500">Nenhum aluno encontrado.</td></tr>'}
+                            </tbody>
+                        </table>
                     </div>
-                </form>`;
-            
-            document.getElementById('form-modal-body').onsubmit = saveExpense;
-            document.getElementById('form-modal').classList.add('visible');
-        }
-
-        async function saveExpense(event) {
-            event.preventDefault();
-            const expenseId = document.getElementById('expense-id').value;
-            const data = {
-                description: document.getElementById('expense-description').value,
-                amount: parseFloat(document.getElementById('expense-amount').value),
-                dueDate: document.getElementById('expense-duedate').value,
-            };
-
-            if (!db) { console.warn("Offline mode."); closeFormModal(); return; }
-            try {
-                if (expenseId) {
-                    await updateDoc(doc(db, `artifacts/${appId}/public/data/expenses`, expenseId), data);
-                    showSuccessMessage("Sucesso!", "Despesa atualizada.");
-                } else {
-                    data.createdAt = serverTimestamp();
-                    await addDoc(collection(db, `artifacts/${appId}/public/data/expenses`), data);
-                    showSuccessMessage("Sucesso!", "Nova despesa adicionada.");
-                }
-            } catch (error) { console.error("Error saving expense:", error); }
+                </section>
+            `;
         }
 
         // --- MODAL & FORM FUNCTIONS ---
@@ -657,12 +660,15 @@
 
         function openBudgetForm(budgetId = null) {
             const budget = budgetId ? budgets.find(b => b.id === budgetId) : null;
+            const collaboratorOptions = collaborators.map(c => `<option value="${c.name}" ${budget?.criadoPor === c.name ? 'selected' : ''}>${c.name}</option>`).join('');
             document.getElementById('form-modal-title').textContent = budget ? "Editar Orçamento" : "Adicionar Novo Orçamento";
             document.getElementById('form-modal-content-area').innerHTML = `
                 <form id="form-modal-body" class="space-y-4">
                     <input type="hidden" id="budget-id" value="${budgetId || ''}">
                     <div><label class="font-medium text-sm">Título</label><input type="text" id="budget-title" class="form-input" required value="${budget?.titulo || ''}"></div>
                     <div><label class="font-medium text-sm">Fornecedor</label><input type="text" id="budget-provider" class="form-input" required value="${budget?.fornecedor || ''}"></div>
+                    <div><label class="font-medium text-sm">Data do Orçamento</label><input type="date" id="budget-date" class="form-input" required value="${budget?.dataCriacao || ''}"></div>
+                    <div><label class="font-medium text-sm">Criado por</label><select id="budget-owner" class="form-input" required>${collaboratorOptions}</select></div>
                     <div><label class="font-medium text-sm">Valor (R$)</label><input type="number" step="0.01" id="budget-value" class="form-input" required value="${budget?.valor || ''}"></div>
                     <div><label class="font-medium text-sm">Status</label><select id="budget-status" class="form-input" required><option>Pendente</option><option>Aprovado</option><option>Rejeitado</option></select></div>
                     <div><label class="font-medium text-sm">Descrição</label><textarea id="budget-description" rows="3" class="form-input">${budget?.descricao || ''}</textarea></div>
@@ -679,6 +685,8 @@
             const data = {
                 titulo: document.getElementById('budget-title').value,
                 fornecedor: document.getElementById('budget-provider').value,
+                dataCriacao: document.getElementById('budget-date').value,
+                criadoPor: document.getElementById('budget-owner').value,
                 valor: document.getElementById('budget-value').value,
                 status: document.getElementById('budget-status').value,
                 descricao: document.getElementById('budget-description').value,
@@ -703,6 +711,8 @@
             document.getElementById('form-modal-content-area').innerHTML = `
                 <div class="space-y-4">
                     <p><strong>Fornecedor:</strong> ${budget.fornecedor}</p>
+                    <p><strong>Data:</strong> ${budget.dataCriacao ? new Date(budget.dataCriacao + 'T00:00:00').toLocaleDateString('pt-BR') : 'N/A'}</p>
+                    <p><strong>Criado por:</strong> ${budget.criadoPor || 'N/A'}</p>
                     <p><strong>Valor:</strong> R$ ${parseFloat(budget.valor || 0).toFixed(2)}</p>
                     <p><strong>Status:</strong> <span class="status-tag status-${budget.status.toLowerCase()}">${budget.status}</span></p>
                     ${budget.descricao ? `<div><strong>Descrição:</strong><p class="mt-1 p-3 bg-stone-50 rounded-md">${budget.descricao}</p></div>` : ''}
@@ -752,6 +762,10 @@
             document.getElementById('form-modal-content-area').innerHTML = `
                 <form id="form-modal-body" class="space-y-4">
                     <div><label class="font-medium text-sm">Nome do Colaborador</label><input type="text" id="collaborator-name" class="form-input" required></div>
+                    <div class="grid grid-cols-2 gap-4">
+                         <div><label class="font-medium text-sm">Início do Turno</label><input type="time" id="collaborator-shift-start" class="form-input"></div>
+                         <div><label class="font-medium text-sm">Fim do Turno</label><input type="time" id="collaborator-shift-end" class="form-input"></div>
+                    </div>
                     <div class="text-right"><button type="submit" class="primary-btn w-auto">Salvar</button></div>
                 </form>`;
             document.getElementById('form-modal-body').onsubmit = saveCollaborator;
@@ -760,10 +774,12 @@
         async function saveCollaborator(event) {
             event.preventDefault();
             const name = document.getElementById('collaborator-name').value;
+            const shiftStart = document.getElementById('collaborator-shift-start').value;
+            const shiftEnd = document.getElementById('collaborator-shift-end').value;
             if (!name) return;
             if (!db) { console.warn("Offline mode."); closeFormModal(); return; }
             try {
-                await addDoc(collection(db, `artifacts/${appId}/public/data/collaborators`), { name: name });
+                await addDoc(collection(db, `artifacts/${appId}/public/data/collaborators`), { name, shiftStart, shiftEnd });
                 showSuccessMessage("Sucesso!", "Colaborador adicionado.");
             } catch (error) { console.error("Error saving collaborator:", error); }
         }
@@ -772,9 +788,11 @@
             const schedule = scheduleId ? schedules.find(s => s.id === scheduleId) : null;
             document.getElementById('form-modal-title').textContent = schedule ? "Editar Aula" : "Adicionar Nova Aula";
             const teacherOptions = collaborators.map(c => `<option value="${c.name}" ${schedule?.teacher === c.name ? 'selected' : ''}>${c.name}</option>`).join('');
-            const dayOptions = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta"].map(d => `<option value="${d}" ${schedule?.day === d ? 'selected' : ''}>${d}</option>`).join('');
+            const dayOptions = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Seg/Qua", "Ter/Qui"].map(d => `<option value="${d}" ${schedule?.day === d ? 'selected' : ''}>${d}</option>`).join('');
             const typeOptions = ["vip", "turma"].map(t => `<option value="${t}" ${schedule?.type === t ? 'selected' : ''}>${t.toUpperCase()}</option>`).join('');
-            let formHtml = `<form id="form-modal-body" class="space-y-4"><input type="hidden" id="schedule-id" value="${scheduleId || ''}"><div><label class="font-medium text-sm">Aluno/Turma</label><input type="text" id="schedule-student" class="form-input" required value="${schedule?.student || ''}"></div><div><label class="font-medium text-sm">Nível</label><input type="text" id="schedule-level" class="form-input" required value="${schedule?.level || ''}"></div><div><label class="font-medium text-sm">Professor</label><select id="schedule-teacher" class="form-input" required>${teacherOptions}</select></div><div class="grid grid-cols-2 gap-4"><div><label class="font-medium text-sm">Dia</label><select id="schedule-day" class="form-input" required>${dayOptions}</select></div><div><label class="font-medium text-sm">Tipo</label><select id="schedule-type" class="form-input" required>${typeOptions}</select></div></div><div class="grid grid-cols-2 gap-4"><div><label class="font-medium text-sm">Início</label><input type="time" id="schedule-start" class="form-input" required value="${schedule?.startTime || ''}"></div><div><label class="font-medium text-sm">Fim</label><input type="time" id="schedule-end" class="form-input" required value="${schedule?.endTime || ''}"></div></div><div class="pt-4 flex justify-end gap-2">${scheduleId ? `<button type="button" class="danger-btn" onclick="deleteItem('schedules', '${scheduleId}')">Apagar</button>` : ''}<button type="submit" class="primary-btn w-auto">Salvar</button></div></form>`;
+            const studentOptions = students.filter(s => s.status === 'Ativo').map(s => `<option value="${s.name}" ${schedule?.student === s.name ? 'selected' : ''}>${s.name}</option>`).join('');
+
+            let formHtml = `<form id="form-modal-body" class="space-y-4"><input type="hidden" id="schedule-id" value="${scheduleId || ''}"><div><label class="font-medium text-sm">Aluno/Turma</label><select id="schedule-student" class="form-input" required>${studentOptions}</select></div><div><label class="font-medium text-sm">Nível</label><input type="text" id="schedule-level" class="form-input" required value="${schedule?.level || ''}"></div><div><label class="font-medium text-sm">Professor</label><select id="schedule-teacher" class="form-input" required>${teacherOptions}</select></div><div class="grid grid-cols-2 gap-4"><div><label class="font-medium text-sm">Dia</label><select id="schedule-day" class="form-input" required>${dayOptions}</select></div><div><label class="font-medium text-sm">Tipo</label><select id="schedule-type" class="form-input" required>${typeOptions}</select></div></div><div class="grid grid-cols-2 gap-4"><div><label class="font-medium text-sm">Início</label><input type="time" id="schedule-start" class="form-input" required value="${schedule?.startTime || ''}"></div><div><label class="font-medium text-sm">Fim</label><input type="time" id="schedule-end" class="form-input" required value="${schedule?.endTime || ''}"></div></div><div class="pt-4 flex justify-end gap-2">${scheduleId ? `<button type="button" class="danger-btn" onclick="deleteItem('schedules', '${scheduleId}')">Apagar</button>` : ''}<button type="submit" class="primary-btn w-auto">Salvar</button></div></form>`;
             document.getElementById('form-modal-content-area').innerHTML = formHtml;
             document.getElementById('form-modal-body').onsubmit = saveScheduleEntry;
             document.getElementById('form-modal').classList.add('visible');
@@ -783,18 +801,111 @@
         async function saveScheduleEntry(event) {
             event.preventDefault();
             const scheduleId = document.getElementById('schedule-id').value;
-            const data = { student: document.getElementById('schedule-student').value, level: document.getElementById('schedule-level').value, teacher: document.getElementById('schedule-teacher').value, day: document.getElementById('schedule-day').value, type: document.getElementById('schedule-type').value, startTime: document.getElementById('schedule-start').value, endTime: document.getElementById('schedule-end').value };
+            const teacherName = document.getElementById('schedule-teacher').value;
+            const startTime = document.getElementById('schedule-start').value;
+            
+            const teacher = collaborators.find(c => c.name === teacherName);
+            if (teacher && teacher.shiftStart && teacher.shiftEnd) {
+                if (startTime < teacher.shiftStart || startTime > teacher.shiftEnd) {
+                    const confirmation = confirm(`Este horário (${startTime}) está fora do turno do professor (${teacher.shiftStart} - ${teacher.shiftEnd}). Tem a certeza que quer continuar?`);
+                    if (!confirmation) return;
+                }
+            }
+            
+            const daySelection = document.getElementById('schedule-day').value;
+            const daysToCreate = [];
+            if (daySelection === 'Seg/Qua') {
+                daysToCreate.push('Segunda', 'Quarta');
+            } else if (daySelection === 'Ter/Qui') {
+                daysToCreate.push('Terça', 'Quinta');
+            } else {
+                daysToCreate.push(daySelection);
+            }
+
+            const baseData = { 
+                student: document.getElementById('schedule-student').value, 
+                level: document.getElementById('schedule-level').value, 
+                teacher: teacherName, 
+                type: document.getElementById('schedule-type').value, 
+                startTime: startTime, 
+                endTime: document.getElementById('schedule-end').value 
+            };
+            
             if (!db) { console.warn("Offline mode."); closeFormModal(); return; }
             try {
                 if (scheduleId) { 
+                    const data = {...baseData, day: daySelection };
                     await updateDoc(doc(db, `artifacts/${appId}/public/data/schedules`, scheduleId), data); 
                     showSuccessMessage("Sucesso!", "Aula atualizada.");
                 } else { 
-                    data.createdAt = serverTimestamp(); 
-                    await addDoc(collection(db, `artifacts/${appId}/public/data/schedules`), data); 
-                    showSuccessMessage("Sucesso!", "Nova aula adicionada.");
+                    for (const day of daysToCreate) {
+                        const data = {...baseData, day: day, createdAt: serverTimestamp() };
+                        await addDoc(collection(db, `artifacts/${appId}/public/data/schedules`), data); 
+                    }
+                    showSuccessMessage("Sucesso!", "Aula(s) adicionada(s).");
                 }
             } catch (error) { console.error("Error saving schedule:", error); }
+        }
+
+        function openAlunoForm(studentId = null) {
+            const student = studentId ? students.find(s => s.id === studentId) : null;
+            document.getElementById('form-modal-title').textContent = student ? "Editar Aluno" : "Adicionar Novo Aluno";
+            const statusOptions = ["Ativo", "Cancelado", "Em Espera"].map(s => `<option value="${s}" ${student?.status === s ? 'selected' : ''}>${s}</option>`).join('');
+            const contractOptions = ["Mensal", "Trimestral", "Semestral", "Anual"].map(c => `<option value="${c}" ${student?.contractType === c ? 'selected' : ''}>${c}</option>`).join('');
+
+            document.getElementById('form-modal-content-area').innerHTML = `
+                <form id="form-modal-body" class="space-y-4">
+                    <input type="hidden" id="student-id" value="${studentId || ''}">
+                    <div><label class="font-medium text-sm">Nome do Aluno</label><input type="text" id="student-name" class="form-input" required value="${student?.name || ''}"></div>
+                    <div><label class="font-medium text-sm">Data de Início</label><input type="date" id="student-start-date" class="form-input" required value="${student?.startDate || ''}"></div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><label class="font-medium text-sm">Status</label><select id="student-status" class="form-input" required>${statusOptions}</select></div>
+                        <div><label class="font-medium text-sm">Tipo de Contrato</label><select id="student-contract" class="form-input" required>${contractOptions}</select></div>
+                    </div>
+                    <div class="text-right"><button type="submit" class="primary-btn w-auto">Salvar</button></div>
+                </form>
+            `;
+            document.getElementById('form-modal-body').onsubmit = saveAluno;
+            document.getElementById('form-modal').classList.add('visible');
+        }
+
+        async function saveAluno(event) {
+            event.preventDefault();
+            const studentId = document.getElementById('student-id').value;
+            const data = {
+                name: document.getElementById('student-name').value,
+                startDate: document.getElementById('student-start-date').value,
+                status: document.getElementById('student-status').value,
+                contractType: document.getElementById('student-contract').value,
+            };
+            if (!db) { console.warn("Offline mode."); closeFormModal(); return; }
+            try {
+                if (studentId) {
+                    await updateDoc(doc(db, `artifacts/${appId}/public/data/students`, studentId), data);
+                    showSuccessMessage("Sucesso!", "Aluno atualizado.");
+                } else {
+                    data.createdAt = serverTimestamp();
+                    await addDoc(collection(db, `artifacts/${appId}/public/data/students`), data);
+                    showSuccessMessage("Sucesso!", "Novo aluno adicionado.");
+                }
+            } catch (error) { console.error("Error saving student:", error); }
+        }
+
+        function openAlunoModal(studentId) {
+            const student = students.find(s => s.id === studentId);
+            if (!student) return;
+            document.getElementById('form-modal-title').textContent = student.name;
+            document.getElementById('form-modal-content-area').innerHTML = `
+                <div class="space-y-4">
+                    <p><strong>Status:</strong> <span class="status-tag status-${student.status.toLowerCase()}">${student.status}</span></p>
+                    <p><strong>Data de Início:</strong> ${student.startDate ? new Date(student.startDate + 'T00:00:00').toLocaleDateString('pt-BR') : 'N/A'}</p>
+                    <p><strong>Tipo de Contrato:</strong> ${student.contractType || 'N/A'}</p>
+                    <div class="border-t pt-4 flex justify-end gap-2">
+                        <button class="secondary-btn" onclick="openAlunoForm('${student.id}')">Editar</button>
+                        <button class="danger-btn" onclick="deleteItem('students', '${student.id}')">Apagar</button>
+                    </div>
+                </div>`;
+            document.getElementById('form-modal').classList.add('visible');
         }
         
         async function toggleTaskCompletion(taskId, currentStatus) { if (!db) return; const taskRef = doc(db, `artifacts/${appId}/public/data/tasks`, taskId); try { await updateDoc(taskRef, { completed: !currentStatus }); } catch (error) { console.error("Error updating task status:", error); } }
@@ -822,19 +933,35 @@
         // --- APP INITIALIZATION ---
         function renderMenu() {
             const mainNav = document.getElementById('main-navigation');
-            let menuItemsHTML = `<button data-target="inicio" class="nav-item w-full text-left px-4 py-2.5 rounded-lg flex items-center font-semibold"><svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>Início</button><button data-target="grade" class="nav-item w-full text-left px-4 py-2.5 rounded-lg flex items-center font-semibold"><svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" x2="16" y1="2" y2="6"></line><line x1="8" x2="8" y1="2" y2="6"></line><line x1="3" x2="21" y1="10" y2="10"></line></svg>Grade</button><button data-target="eventos" class="nav-item w-full text-left px-4 py-2.5 rounded-lg flex items-center font-semibold"><svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3z"/><path d="M12.44 8.917a4 4 0 0 0-4.88 0C4.965 10.685 3 13.982 3 17.5V22h18v-4.5c0-3.518-1.965-6.815-4.56-8.583z"/></svg>Eventos</button><button data-target="orcamentos" class="nav-item w-full text-left px-4 py-2.5 rounded-lg flex items-center font-semibold"><svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Orçamentos</button><button data-target="tarefas" class="nav-item w-full text-left px-4 py-2.5 rounded-lg flex items-center font-semibold"><svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>Tarefas</button>`;
+            const menuItems = [
+                { key: 'inicio', label: 'Início', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>', roles: null },
+                { key: 'alunos', label: 'Alunos', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3z"/><path d="M12.44 8.917a4 4 0 0 0-4.88 0C4.965 10.685 3 13.982 3 17.5V22h18v-4.5c0-3.518-1.965-6.815-4.56-8.583z"/></svg>', roles: null },
+                { key: 'grade', label: 'Grade', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" x2="16" y1="2" y2="6"></line><line x1="8" x2="8" y1="2" y2="6"></line><line x1="3" x2="21" y1="10" y2="10"></line></svg>', roles: null },
+                { key: 'eventos', label: 'Eventos', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3z"/><path d="M12.44 8.917a4 4 0 0 0-4.88 0C4.965 10.685 3 13.982 3 17.5V22h18v-4.5c0-3.518-1.965-6.815-4.56-8.583z"/></svg>', roles: null },
+                { key: 'orcamentos', label: 'Orçamentos', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>', roles: null },
+                { key: 'tarefas', label: 'Tarefas', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>', roles: null },
+                { key: 'folha-pagamento', label: 'Folha de Pgto.', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>', roles: ['admin', 'financeiro'] }
+            ];
+
+            const lockIcon = `<svg class="ml-auto h-4 w-4 text-stone-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>`;
+
+            let menuItemsHTML = menuItems.map(item => {
+                const hasAccess = !item.roles || item.roles.includes(currentUserRole);
+                if (hasAccess) {
+                    return `<button data-target="${item.key}" class="nav-item w-full text-left px-4 py-2.5 rounded-lg flex items-center font-semibold">${item.icon}${item.label}</button>`;
+                } else {
+                    return `<button disabled class="nav-item w-full text-left px-4 py-2.5 rounded-lg flex items-center font-semibold opacity-50 cursor-not-allowed">${item.icon}${item.label}${lockIcon}</button>`;
+                }
+            }).join('');
             
-            if (currentUserRole === 'admin' || currentUserRole === 'financeiro') {
-                menuItemsHTML += `<button data-target="folha-pagamento" class="nav-item w-full text-left px-4 py-2.5 rounded-lg flex items-center font-semibold"><svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>Folha de Pgto.</button>`;
-            }
             mainNav.innerHTML = menuItemsHTML;
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            const pageRenderers = { 'inicio': renderInicioSection, 'eventos': renderEventosSection, 'orcamentos': renderOrcamentosSection, 'tarefas': renderTarefasSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection };
+            const pageRenderers = { 'inicio': renderInicioSection, 'alunos': renderAlunosSection, 'eventos': renderEventosSection, 'orcamentos': renderOrcamentosSection, 'tarefas': renderTarefasSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection };
             document.getElementById('main-navigation').addEventListener('click', (event) => {
                 const target = event.target.closest('.nav-item');
-                if (!target) return;
+                if (!target || target.disabled) return;
                 const pageKey = target.dataset.target;
                 if (pageKey && pageRenderers[pageKey]) { pageRenderers[pageKey](); setActiveNavItem(target); }
             });
@@ -860,6 +987,10 @@
         window.saveScheduleEntry = saveScheduleEntry;
         window.openExpenseForm = openExpenseForm;
         window.saveExpense = saveExpense;
+        window.toggleExpensePaid = toggleExpensePaid;
+        window.openAlunoForm = openAlunoForm;
+        window.saveAluno = saveAluno;
+        window.openAlunoModal = openAlunoModal;
     </script>
 </body>
 </html>
