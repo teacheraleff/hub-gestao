@@ -425,8 +425,11 @@
             document.getElementById('main-description').textContent = 'Visualize e gerencie a grade de aulas da equipa.';
             
             const teacherOptions = collaborators.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
-            const addProfessorButton = currentUserRole === 'admin' 
+            const addProfessorButton = ['admin', 'pedagogico', 'ap'].includes(currentUserRole)
                 ? `<button class="secondary-btn" data-action="add-collaborator">+ Adicionar Professor</button>` 
+                : '';
+            const addAulaButton = ['admin', 'pedagogico', 'ap'].includes(currentUserRole)
+                ? `<button class="primary-btn w-auto" data-action="add-schedule">+ Adicionar Aula</button>`
                 : '';
 
             contentArea.innerHTML = `
@@ -441,7 +444,7 @@
                         </div>
                         <div class="flex gap-2">
                            ${addProfessorButton}
-                           <button class="primary-btn w-auto" data-action="add-schedule">+ Adicionar Aula</button>
+                           ${addAulaButton}
                         </div>
                     </div>
                     <div id="schedule-grid-container"></div>
