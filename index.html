@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hub de Marketing | SLAP</title>
+    <title>Hub Gestão | SLAP</title>
     <link rel="icon" type="image/png" href="https://res.cloudinary.com/dqfi22uz0/image/upload/v1749543469/SLAP_FAVICON_AMARELO_coilvj.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -33,46 +33,50 @@
         .base-card:hover { border-color: #F1D24B; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
         
         .status-tag { padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; }
-        /* Campaign & Event Statuses */
-        .status-ativa, .status-presencial { background-color: #D1FAE5; color: #065F46; }
-        .status-planejada, .status-online { background-color: #DBEAFE; color: #1E40AF; }
+        /* Generic Statuses */
+        .status-aprovado, .status-presencial { background-color: #D1FAE5; color: #065F46; }
+        .status-online, .status-em-andamento { background-color: #DBEAFE; color: #1E40AF; }
         .status-concluída { background-color: #F3F4F6; color: #4B5563; }
-        /* Budget Statuses */
-        .status-aprovado { background-color: #D1FAE5; color: #065F46; }
         .status-pendente { background-color: #FEF3C7; color: #92400E; }
         .status-rejeitado { background-color: #FEE2E2; color: #991B1B; }
 
-        .brand-color-swatch { width: 100%; height: 80px; border-radius: 0.5rem; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: 600; color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.3); }
-        
-        .task-card { background-color: #ffffff; border-radius: 0.75rem; padding: 1.25rem; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid #e7e5e4; transition: all 0.2s ease; cursor: pointer; }
+        /* Event Sector Statuses */
+        .status-financeiro { background-color: #D1FAE5; color: #065F46; } /* Green */
+        .status-pedagógico { background-color: #DBEAFE; color: #1E40AF; } /* Blue */
+        .status-comercial { background-color: #FEF3C7; color: #92400E; } /* Yellow */
+        .status-marketing { background-color: #FEE2E2; color: #991B1B; } /* Red */
+
+        .task-card { background-color: #ffffff; border-radius: 0.75rem; padding: 1.25rem; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid #e7e5e4; transition: all 0.2s ease; }
+        .task-card.completed { background-color: #f9fafb; border-color: #e5e7eb; }
+        .task-card.completed p { text-decoration: line-through; color: #9ca3af; }
         .task-card:hover { border-color: #F1D24B; box-shadow: 0 4px 12px rgba(0,0,0,0.1); transform: translateY(-2px); }
         .user-tag { display: inline-flex; align-items: center; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; }
-        .tag-everton { background-color: #FEF3C7; color: #92400E; }
-        .tag-maíra { background-color: #DBEAFE; color: #1E40AF; }
-        .tag-aleff { background-color: #D1FAE5; color: #065F46; }
         .tag-admin { background-color: #E5E7EB; color: #374151; }
         .deadline-text { font-weight: 600; color: #57534e; }
         .deadline-overdue { color: #b91c1c; }
         .task-delete-btn { background: none; border: none; cursor: pointer; color: #9ca3af; transition: color 0.2s; }
         .task-delete-btn:hover { color: #ef4444; }
 
-        .week-container { background-color: #ffffff; padding: 1.5rem; border-radius: 0.75rem; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid #e7e5e4; margin-bottom: 2rem; }
-        .week-header { font-size: 1.5rem; font-weight: 700; color: #44403c; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid #e7e5e4; }
-        .week-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; }
-        .day-card { background-color: #f9fafb; border-radius: 0.5rem; padding: 1rem; border: 1px solid #f3f4f6; min-height: 150px; cursor: pointer; transition: border-color 0.2s; }
-        .day-card:hover { border-color: #F1D24B; }
-        .day-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
-        .day-name { font-weight: 600; color: #a8a29e; font-size: 0.875rem; }
-        .day-number { font-weight: 700; color: #44403c; font-size: 1.25rem; }
-        .post-item { background-color: #ffffff; border-radius: 0.375rem; padding: 0.5rem; margin-bottom: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); position: relative; }
-        .post-type-tag { display: inline-block; padding: 0.125rem 0.5rem; border-radius: 9999px; font-size: 0.7rem; font-weight: 700; margin-bottom: 0.25rem; text-transform: uppercase; }
-        .post-tag-stories { background-color: #DBEAFE; color: #1E40AF; }
-        .post-tag-reels { background-color: #EFEBFF; color: #4C1D95; }
-        .post-tag-tiktok { background-color: #F3F4F6; color: #1F2937; }
-        .post-tag-youtube { background-color: #FEE2E2; color: #991B1B; }
-        .post-description { font-size: 0.875rem; color: #57534e; }
-        .delete-btn { position: absolute; top: 4px; right: 4px; background: none; border: none; cursor: pointer; color: #d1d5db; opacity: 1; transition: color 0.2s; }
-        .delete-btn:hover { color: #ef4444; }
+        /* --- Grade/Schedule Styles --- */
+        .grade-select-container { margin-bottom: 1.5rem; max-width: 400px; }
+        .grade-select { width: 100%; padding: 0.75rem 1rem; border-radius: 0.5rem; border: 1px solid #d6d3d1; background-color: #ffffff; font-weight: 600; color: #44403c; -webkit-appearance: none; appearance: none; background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); background-position: right 0.5rem center; background-repeat: no-repeat; background-size: 1.5em 1.5em; padding-right: 2.5rem; cursor: pointer; }
+        .schedule-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; }
+        .day-column { background-color: #f9fafb; border-radius: 0.75rem; padding: 1rem; border: 1px solid #f3f4f6; }
+        .day-column-header { font-weight: 700; color: #44403c; font-size: 1.25rem; padding-bottom: 0.75rem; margin-bottom: 0.75rem; border-bottom: 2px solid #F1D24B; }
+        .class-entry { background-color: #ffffff; border-radius: 0.5rem; padding: 0.75rem; margin-bottom: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
+        .class-entry:hover { transform: translateY(-2px); box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
+        .class-tag { font-size: 0.625rem; font-weight: 700; padding: 2px 8px; border-radius: 9999px; color: white; margin-bottom: 4px; display: inline-block; text-transform: uppercase; }
+        .tag-turma { background-color: #FF5C3D; }
+        .tag-vip { background-color: #8671D1; }
+        
+        /* --- Payroll Styles --- */
+        .payroll-table { width: 100%; border-collapse: collapse; }
+        .payroll-table th, .payroll-table td { padding: 0.75rem 1rem; text-align: left; border-bottom: 1px solid #e5e7eb; }
+        .payroll-table th { font-weight: 600; font-size: 0.875rem; color: #6b7280; }
+        .payroll-table tbody tr:hover { background-color: #f9fafb; cursor: pointer; }
+        .payroll-total { margin-top: 1.5rem; text-align: right; }
+        .payroll-total p { font-size: 1.25rem; font-weight: 700; color: #1f2937; }
+
         .form-input { width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 0.375rem; }
         .primary-btn { background-color: #F1D24B; color: #44403c; padding: 0.75rem 1.5rem; border-radius: 0.375rem; font-weight: 600; transition: background-color 0.2s; width: 100%; border: none; cursor: pointer; }
         .primary-btn:hover { background-color: #eab308; }
@@ -84,12 +88,12 @@
 </head>
 <body class="bg-stone-100 text-stone-800">
 
-    <!-- Tela de Login (Visível por padrão) -->
+    <!-- Login, Pending, and Hub Views remain the same -->
     <div id="login-view" class="flex items-center justify-center min-h-screen">
         <div class="w-full max-w-md p-8 space-y-6 bg-white rounded-xl shadow-lg">
             <div class="text-center">
                 <img src="https://res.cloudinary.com/dqfi22uz0/image/upload/v1749349751/DBB440C2-684E-4DCF-9CD3-B2DDC18F1E53_3_vgocga.jpg" alt="Logo SLAP" class="w-24 h-auto mx-auto rounded-lg mb-4">
-                <h2 class="text-2xl font-bold text-stone-800">Aceder ao Hub de Marketing</h2>
+                <h2 class="text-2xl font-bold text-stone-800">Aceder ao Hub Gestão</h2>
             </div>
             <form id="login-form" class="space-y-4">
                 <div>
@@ -111,7 +115,6 @@
         </div>
     </div>
 
-    <!-- Tela de Aprovação Pendente (Oculta por padrão) -->
     <div id="pending-view" class="hidden items-center justify-center min-h-screen">
         <div class="w-full max-w-md p-8 space-y-6 bg-white rounded-xl shadow-lg text-center">
             <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-12 w-12 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -123,14 +126,20 @@
         </div>
     </div>
 
-    <!-- Hub Principal (Oculto por padrão) -->
     <div id="hub-view" class="hidden">
         <div id="app-container" class="min-h-screen md:flex bg-stone-50">
             <aside class="md:w-64 bg-white md:border-r border-b border-stone-200 p-4 md:p-6 flex flex-col">
-                <div class="mb-6 text-center">
-                    <img src="https://res.cloudinary.com/dqfi22uz0/image/upload/v1749349751/DBB440C2-684E-4DCF-9CD3-B2DDC18F1E53_3_vgocga.jpg" alt="Logo SLAP" class="w-24 h-auto mx-auto rounded-lg">
+                <div class="mb-4 text-center relative">
+                    <label for="profile-picture-upload" class="cursor-pointer group">
+                        <img id="profile-picture" src="https://res.cloudinary.com/dqfi22uz0/image/upload/v1749349751/DBB440C2-684E-4DCF-9CD3-B2DDC18F1E53_3_vgocga.jpg" alt="Foto de Perfil" class="w-24 h-24 mx-auto rounded-full object-cover border-4 border-transparent group-hover:border-yellow-200 transition-all">
+                        <div id="profile-picture-loader" class="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center rounded-full hidden">
+                            <svg class="animate-spin h-8 w-8 text-yellow-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                        </div>
+                    </label>
+                    <input type="file" id="profile-picture-upload" class="hidden" accept="image/*">
                 </div>
-                <h1 class="text-xl font-bold text-stone-800 mb-6 text-center">Hub de Marketing</h1>
+                <h1 class="text-xl font-bold text-stone-800 text-center">Hub Gestão</h1>
+                <p id="welcome-message" class="text-center text-sm text-stone-600 mb-6"></p>
                 <nav id="main-navigation" class="space-y-1 flex-1">
                     <!-- Menu items are dynamically generated here -->
                 </nav>
@@ -169,6 +178,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
         import { getFirestore, collection, onSnapshot, addDoc, doc, deleteDoc, serverTimestamp, query, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-storage.js";
 
         // --- GLOBAL VARIABLES ---
         const contentArea = document.getElementById('content-area');
@@ -177,11 +187,11 @@
         const hubView = document.getElementById('hub-view');
         const pendingView = document.getElementById('pending-view');
         
-        let db, auth, userId, currentUserName;
-        let tasks = [], campaigns = [], events = [], budgets = [], calendarEvents = {};
-        let currentWeekStartDate = getStartOfWeek(new Date());
-        let unsubscribeTasks, unsubscribeCampaigns, unsubscribeEvents, unsubscribeBudgets, unsubscribeCalendar;
-        const appId = 'hub-marketing-slap';
+        let db, auth, storage, userId, currentUserName, currentUserRole;
+        let tasks = [], events = [], budgets = [], collaborators = [], schedules = [], expenses = [];
+        let allUnsubscribers = [];
+        let tasksChart = null;
+        const appId = 'hub-gestao-slap';
 
         // --- FIREBASE INITIALIZATION ---
         async function initializeFirebase() {
@@ -199,191 +209,143 @@
                 const app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
                 auth = getAuth(app);
+                storage = getStorage(app);
 
                 onAuthStateChanged(auth, async (user) => {
                     if (user) {
                         userId = user.uid;
-                        currentUserName = user.displayName;
                         const userDocRef = doc(db, "users", userId);
                         const userDoc = await getDoc(userDocRef);
 
                         if (userDoc.exists()) {
                             const userData = userDoc.data();
-                            if (userData.role === 'member' || userData.role === 'admin') {
+                            currentUserName = userData.name || user.displayName;
+                            currentUserRole = userData.role;
+                            document.getElementById('profile-picture').src = userData.photoURL || 'https://res.cloudinary.com/dqfi22uz0/image/upload/v1749349751/DBB440C2-684E-4DCF-9CD3-B2DDC18F1E53_3_vgocga.jpg';
+                            
+                            if (['admin', 'member', 'financeiro'].includes(currentUserRole)) {
                                 setupFirestoreListeners();
                                 showHubView();
                             } else {
                                 showPendingView();
                             }
                         } else {
-                            showPendingView();
+                           showPendingView();
                         }
                     } else {
                         userId = null;
                         currentUserName = null;
-                        if (unsubscribeTasks) unsubscribeTasks();
-                        if (unsubscribeCampaigns) unsubscribeCampaigns();
-                        if (unsubscribeEvents) unsubscribeEvents();
-                        if (unsubscribeBudgets) unsubscribeBudgets();
-                        if (unsubscribeCalendar) unsubscribeCalendar();
+                        currentUserRole = null;
+                        allUnsubscribers.forEach(unsub => unsub && unsub());
+                        allUnsubscribers = [];
                         showLoginView();
                     }
                 });
             } catch (error) {
                 console.error("Error initializing Firebase:", error);
+                showLoginView();
             }
         }
         
         // --- FIRESTORE LISTENERS ---
         function setupFirestoreListeners() {
-            if (!db) {
-                console.warn("Firestore not initialized.");
-                return;
-            }
-            if (unsubscribeTasks) unsubscribeTasks();
-            if (unsubscribeCampaigns) unsubscribeCampaigns();
-            if (unsubscribeEvents) unsubscribeEvents();
-            if (unsubscribeBudgets) unsubscribeBudgets();
-            if (unsubscribeCalendar) unsubscribeCalendar();
+            if (!db || !userId) return;
+            allUnsubscribers.forEach(unsub => unsub && unsub());
+            allUnsubscribers = [];
 
             const getCollectionListener = (collectionName, targetArray, renderFunc) => {
                 const collRef = collection(db, `artifacts/${appId}/public/data/${collectionName}`);
-                return onSnapshot(query(collRef), (snapshot) => {
-                    targetArray.length = 0; // Clear the array
+                const unsubscribe = onSnapshot(query(collRef), (snapshot) => {
+                    targetArray.length = 0;
                     snapshot.docs.forEach(doc => targetArray.push({ id: doc.id, ...doc.data() }));
-                    if (document.getElementById(`${collectionName}-section`)) renderFunc();
+                    
+                    const activePageId = contentArea.firstElementChild?.id;
+                    if (renderFunc && activePageId) {
+                        const pageBaseName = activePageId.replace('-section', '');
+                        if (pageBaseName === collectionName.toLowerCase() || pageBaseName === 'inicio') {
+                            renderFunc();
+                        }
+                    }
                 }, (error) => console.error(`Error on ${collectionName} listener:`, error));
+                allUnsubscribers.push(unsubscribe);
             };
-
-            unsubscribeTasks = getCollectionListener('tasks', tasks, renderTarefasSection);
-            unsubscribeCampaigns = getCollectionListener('campaigns', campaigns, renderCampanhasSection);
-            unsubscribeEvents = getCollectionListener('events', events, renderEventosSection);
-            unsubscribeBudgets = getCollectionListener('budgets', budgets, renderOrcamentosSection);
             
-            const calendarCollectionRef = collection(db, `artifacts/${appId}/public/data/calendarEvents`);
-            unsubscribeCalendar = onSnapshot(query(calendarCollectionRef), (snapshot) => {
-                calendarEvents = {};
-                snapshot.docs.forEach(doc => {
-                    const event = { id: doc.id, ...doc.data() };
-                    const dateKey = event.date.split('T')[0];
-                    if (!calendarEvents[dateKey]) calendarEvents[dateKey] = [];
-                    calendarEvents[dateKey].push(event);
-                });
-                if (document.getElementById('calendario-section')) renderCalendarioSection();
-            }, (error) => console.error("Error on calendar listener:", error));
+            getCollectionListener('tasks', tasks, renderTarefasSection);
+            getCollectionListener('budgets', budgets, renderOrcamentosSection);
+            getCollectionListener('collaborators', collaborators, renderGradeSection);
+            getCollectionListener('events', events, renderEventosSection);
+            getCollectionListener('schedules', schedules, renderGradeSection);
+            getCollectionListener('expenses', expenses, renderFolhaPagamentoSection);
         }
 
-        // --- AUTH & VIEW FUNCTIONS ---
-        function showLoginView() {
-            loginView.classList.remove('hidden');
+        // --- AUTH, VIEW, and MENU FUNCTIONS ---
+        function showLoginView() { 
+            hubView.classList.add('hidden');
+            pendingView.classList.add('hidden');
+            pendingView.classList.remove('flex');
+            loginView.classList.remove('hidden'); 
             loginView.classList.add('flex');
-            hubView.classList.add('hidden');
-            pendingView.classList.add('hidden');
-            pendingView.classList.remove('flex');
         }
-        function showHubView() {
-            hubView.classList.remove('hidden');
+        function showHubView() { 
             loginView.classList.add('hidden');
             loginView.classList.remove('flex');
             pendingView.classList.add('hidden');
             pendingView.classList.remove('flex');
-            renderInicioSection();
-            setActiveNavItem(document.querySelector('[data-target="inicio"]'));
+            hubView.classList.remove('hidden'); 
+            document.getElementById('welcome-message').textContent = `Bem-vindo, ${currentUserName || ''}`;
+            renderMenu(); 
+            renderInicioSection(); 
+            setActiveNavItem(document.querySelector('[data-target="inicio"]')); 
         }
-        function showPendingView() {
-            pendingView.classList.remove('hidden');
+        function showPendingView() { 
+            hubView.classList.add('hidden'); 
+            loginView.classList.add('hidden');
+            loginView.classList.remove('flex');
+            pendingView.classList.remove('hidden'); 
             pendingView.classList.add('flex');
-            loginView.classList.add('hidden');
-            loginView.classList.remove('flex');
-            hubView.classList.add('hidden');
         }
-        function setActiveNavItem(element) {
-            document.querySelectorAll('#main-navigation .nav-item').forEach(item => item.classList.remove('active'));
-            if (element) element.classList.add('active');
-        }
-        async function handleLogin(event) {
-            event.preventDefault();
-            const email = event.target.email.value;
-            const password = event.target.password.value;
-            const errorElement = document.getElementById('login-error');
-            errorElement.textContent = '';
-            try {
-                await signInWithEmailAndPassword(auth, email, password);
-            } catch (error) {
-                console.error("Erro de login:", error.code);
-                errorElement.textContent = "Email ou palavra-passe inválidos.";
-            }
-        }
-        async function handleSignUp(event) {
-            event.preventDefault();
-            const form = event.target;
-            const name = form.name.value;
-            const email = form.email.value;
-            const password = form.password.value;
-            const errorElement = document.getElementById('signup-error');
-            if(errorElement) errorElement.textContent = '';
+        function setActiveNavItem(element) { document.querySelectorAll('#main-navigation .nav-item').forEach(item => item.classList.remove('active')); if (element) element.classList.add('active'); }
+        async function handleLogin(event) { event.preventDefault(); const email = event.target.email.value; const password = event.target.password.value; try { await signInWithEmailAndPassword(auth, email, password); } catch (error) { document.getElementById('login-error').textContent = "Email ou palavra-passe inválidos."; } }
+        async function handleSignUp(event) { event.preventDefault(); const name = event.target.name.value; const email = event.target.email.value; const password = event.target.password.value; try { const cred = await createUserWithEmailAndPassword(auth, email, password); await updateProfile(cred.user, { displayName: name }); await setDoc(doc(db, "users", cred.user.uid), { name, email, role: "pending", createdAt: serverTimestamp() }); await signOut(auth); showSuccessMessage("Registo Concluído!", "Aguarde aprovação."); } catch (error) { document.getElementById('signup-error').textContent = "Erro ao criar conta."; } }
+        async function handleLogout() { await signOut(auth); }
+        
+        // --- PROFILE PICTURE UPLOAD ---
+        async function handleProfilePictureUpload(event) {
+            const file = event.target.files[0];
+            if (!file || !userId) return;
             
+            const loader = document.getElementById('profile-picture-loader');
+            loader.classList.remove('hidden');
+
+            const storageRef = ref(storage, `profile-pictures/${userId}/${file.name}`);
             try {
-                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                await updateProfile(userCredential.user, { displayName: name });
-                await setDoc(doc(db, "users", userCredential.user.uid), {
-                    name: name, email: email, role: "pending", createdAt: serverTimestamp()
-                });
-                await signOut(auth);
-                showSuccessMessage("Registo Concluído!", "A sua conta foi criada. Aguarde a aprovação de um administrador.");
+                await uploadBytes(storageRef, file);
+                const photoURL = await getDownloadURL(storageRef);
+                
+                const userDocRef = doc(db, "users", userId);
+                await updateDoc(userDocRef, { photoURL: photoURL });
+
+                document.getElementById('profile-picture').src = photoURL;
+                showSuccessMessage("Sucesso!", "A sua foto de perfil foi atualizada.");
             } catch (error) {
-                 console.error("Erro de registo:", error.code);
-                 if (errorElement) {
-                     if (error.code === 'auth/email-already-in-use') {
-                        errorElement.textContent = "Este email já está em uso.";
-                     } else if (error.code === 'auth/weak-password') {
-                        errorElement.textContent = "A palavra-passe deve ter pelo menos 6 caracteres.";
-                     } else {
-                        errorElement.textContent = "Ocorreu um erro ao criar a conta.";
-                     }
-                 }
-            }
-        }
-        async function handleLogout() {
-            try {
-                await signOut(auth);
-            } catch (error) {
-                console.error("Erro ao fazer logout:", error);
+                console.error("Error uploading profile picture: ", error);
+                showSuccessMessage("Erro", "Falha ao carregar a imagem. Verifique as permissões do Firebase Storage.");
+            } finally {
+                loader.classList.add('hidden');
             }
         }
 
         // --- CONTENT RENDERING ---
         function renderInicioSection() {
-            document.getElementById('main-title').textContent = 'Bem-vindo ao Hub de Marketing';
-            document.getElementById('main-description').textContent = 'Selecione uma opção no menu à esquerda para começar.';
-            contentArea.innerHTML = `<div id="inicio-section" class="bg-white p-8 rounded-lg shadow-sm text-center">
-                <img src="https://res.cloudinary.com/dqfi22uz0/image/upload/v1749349751/DBB440C2-684E-4DCF-9CD3-B2DDC18F1E53_3_vgocga.jpg" alt="Logo SLAP" class="w-32 h-auto mx-auto rounded-lg mb-6">
-                <h3 class="text-2xl font-bold text-stone-800">Centralize a sua Estratégia</h3>
-                <p class="mt-2 text-stone-600 max-w-2xl mx-auto">Utilize as ferramentas de gestão de campanhas, tarefas e calendário para organizar o fluxo de trabalho da sua equipa e potenciar os seus resultados.</p>
-            </div>`;
+            document.getElementById('main-title').textContent = 'Dashboard';
+            document.getElementById('main-description').textContent = 'Visão geral das suas atividades e da equipa.';
+            const incompleteTasks = tasks.filter(t => !t.completed).length;
+            const upcomingEvents = events.filter(e => new Date(e.data) >= new Date()).length;
+            const pendingBudgets = budgets.filter(b => b.status === 'Pendente').length;
+            contentArea.innerHTML = `<div id="inicio-section" class="space-y-8"><div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"><div class="base-card"><p class="text-sm text-stone-500">Tarefas Pendentes</p><p class="text-3xl font-bold text-stone-800">${incompleteTasks}</p></div><div class="base-card"><p class="text-sm text-stone-500">Próximos Eventos</p><p class="text-3xl font-bold text-stone-800">${upcomingEvents}</p></div><div class="base-card"><p class="text-sm text-stone-500">Orçamentos Abertos</p><p class="text-3xl font-bold text-stone-800">${pendingBudgets}</p></div></div><div class="base-card"><h3 class="font-bold mb-4 text-stone-700">Tarefas Pendentes por Colaborador</h3><canvas id="tasksChartCanvas"></canvas></div></div>`;
+            renderTasksChart();
         }
-
-        function renderCampanhasSection() {
-            document.getElementById('main-title').textContent = 'Gestor de Campanhas';
-            document.getElementById('main-description').textContent = 'Acompanhe o status e os resultados de todas as campanhas.';
-            contentArea.innerHTML = `
-                <div id="campaigns-section">
-                    <div class="text-right mb-6">
-                        <button class="primary-btn w-auto" onclick="openCampaignForm()">+ Adicionar Campanha</button>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        ${campaigns.map(c => `
-                        <div class="base-card cursor-pointer" onclick="openCampaignModal('${c.id}')">
-                            <div class="flex justify-between items-start mb-2">
-                                <h3 class="text-xl font-bold text-stone-800">${c.nome}</h3>
-                                <span class="status-tag status-${c.status.toLowerCase()}">${c.status}</span>
-                            </div>
-                            <p class="text-sm text-stone-500 mb-4">Responsável: ${c.responsavel}</p>
-                            <p class="text-sm text-stone-600 truncate"><strong>Objetivo:</strong> ${c.objetivo}</p>
-                        </div>`).join('') || '<p class="col-span-full text-center py-10 text-stone-500">Nenhuma campanha encontrada.</p>'}
-                    </div>
-                </div>`;
-        }
+        function renderTasksChart() { const ctx = document.getElementById('tasksChartCanvas'); if (!ctx) return; const tasksPerCollaborator = collaborators.map(c => ({ name: c.name, count: tasks.filter(t => (t.assignedTo || []).includes(c.name) && !t.completed).length })); if (tasksChart) tasksChart.destroy(); tasksChart = new Chart(ctx, { type: 'bar', data: { labels: tasksPerCollaborator.map(item => item.name), datasets: [{ label: 'Tarefas Pendentes', data: tasksPerCollaborator.map(item => item.count), backgroundColor: '#F1D24B', borderRadius: 4 }] }, options: { responsive: true, plugins: { legend: { display: false } } } }); }
         
         function renderEventosSection() {
             document.getElementById('main-title').textContent = 'Gestor de Eventos';
@@ -398,7 +360,7 @@
                         <div class="base-card cursor-pointer" onclick="openEventModal('${e.id}')">
                             <div class="flex justify-between items-start mb-2">
                                 <h3 class="text-xl font-bold text-stone-800">${e.nome}</h3>
-                                <span class="status-tag status-${e.tipo.toLowerCase()}">${e.tipo}</span>
+                                ${e.setor ? `<span class="status-tag status-${e.setor.toLowerCase()}">${e.setor}</span>` : ''}
                             </div>
                             <p class="text-sm text-stone-500 mb-4">Data: ${new Date(e.data + 'T00:00:00').toLocaleDateString('pt-BR')}</p>
                             <p class="text-sm text-stone-600 truncate"><strong>Local:</strong> ${e.local}</p>
@@ -407,211 +369,191 @@
                 </div>`;
         }
 
-        function renderOrcamentosSection() {
-            document.getElementById('main-title').textContent = 'Gestor de Orçamentos';
-            document.getElementById('main-description').textContent = 'Registre e acompanhe todas as propostas e orçamentos.';
-            contentArea.innerHTML = `
-                <div id="budgets-section">
-                    <div class="text-right mb-6">
-                        <button class="primary-btn w-auto" onclick="openBudgetForm()">+ Adicionar Orçamento</button>
-                    </div>
-                    <div class="space-y-4">
-                        ${budgets.map(b => `
-                        <div class="base-card flex flex-wrap justify-between items-center gap-4 cursor-pointer" onclick="openBudgetModal('${b.id}')">
-                            <div class="flex-1">
-                                <h3 class="text-lg font-bold text-stone-800">${b.titulo}</h3>
-                                <p class="text-sm text-stone-500">Fornecedor: ${b.fornecedor}</p>
-                            </div>
-                            <div class="text-right">
-                                <p class="text-xl font-bold text-stone-800">R$ ${parseFloat(b.valor || 0).toFixed(2)}</p>
-                                <span class="status-tag status-${b.status.toLowerCase()}">${b.status}</span>
-                            </div>
-                        </div>`).join('') || '<p class="text-center py-10 text-stone-500">Nenhum orçamento encontrado.</p>'}
-                    </div>
-                </div>`;
+        function renderOrcamentosSection() { document.getElementById('main-title').textContent = 'Gestor de Orçamentos'; document.getElementById('main-description').textContent = 'Registre e acompanhe todas as propostas e orçamentos.'; contentArea.innerHTML = `<div id="budgets-section"><div class="text-right mb-6"><button class="primary-btn w-auto" onclick="openBudgetForm()">+ Adicionar Orçamento</button></div><div class="space-y-4">${budgets.map(b => `<div class="base-card flex flex-wrap justify-between items-center gap-4 cursor-pointer" onclick="openBudgetModal('${b.id}')"><div class="flex-1"><h3 class="text-lg font-bold text-stone-800">${b.titulo}</h3><p class="text-sm text-stone-500">Fornecedor: ${b.fornecedor}</p></div><div class="text-right"><p class="text-xl font-bold text-stone-800">R$ ${parseFloat(b.valor || 0).toFixed(2)}</p><span class="status-tag status-${b.status.toLowerCase()}">${b.status}</span></div></div>`).join('') || '<p class="text-center py-10 text-stone-500">Nenhum orçamento encontrado.</p>'}</div></div>`; }
+        
+        function renderTarefasSection() { 
+            document.getElementById('main-title').textContent = 'Lista de Tarefas'; 
+            document.getElementById('main-description').textContent = 'Gerencie e acompanhe as tarefas da equipa.'; 
+            contentArea.innerHTML = `<div id="tasks-section"><div class="text-right mb-6"><button class="primary-btn w-auto" onclick="openTaskForm()">+ Adicionar Tarefa</button></div><div id="task-list-container" class="space-y-4"></div></div>`; 
+            updateTaskList(); 
         }
 
-        function renderTarefasSection() {
-            document.getElementById('main-title').textContent = 'Lista de Tarefas';
-            document.getElementById('main-description').textContent = 'Gerencie e acompanhe as tarefas da equipa de marketing.';
-            
-            const assignees = [...new Set(tasks.flatMap(task => task.assignedTo || []))];
-
-            contentArea.innerHTML = `
-                <div id="tasks-section">
-                    <div class="flex justify-between items-center mb-6 flex-wrap gap-4">
-                        <div id="task-filters" class="flex flex-col sm:flex-row flex-wrap gap-4 bg-white p-4 rounded-lg shadow-sm items-center">
-                            <div class="flex-grow">
-                                <label for="person-filter" class="text-sm font-medium text-stone-600 mr-2">Filtrar por:</label>
-                                <select id="person-filter" class="p-2 border border-stone-300 rounded-md">
-                                    <option value="all">Todos</option>
-                                    ${assignees.map(name => `<option value="${name}">${name}</option>`).join('')}
-                                </select>
-                            </div>
-                        </div>
-                        <button class="primary-btn w-auto" onclick="openTaskForm()">+ Adicionar Tarefa</button>
-                    </div>
-                    <div id="task-list-container" class="space-y-4"></div>
-                </div>
-            `;
-            document.getElementById('person-filter').addEventListener('change', updateTaskList);
-            updateTaskList();
-        }
-
-        function updateTaskList() {
-            const container = document.getElementById('task-list-container');
-            if (!container) return;
-
-            const personFilter = document.getElementById('person-filter').value;
-            let filteredTasks = [...tasks];
-
-            if (personFilter !== 'all') {
-                filteredTasks = filteredTasks.filter(task => (task.assignedTo || []).includes(personFilter));
-            }
-
-            filteredTasks.sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
-            
-            if (filteredTasks.length === 0) {
-                container.innerHTML = `<div class="text-center p-8 bg-white rounded-lg"><p class="text-stone-500">Nenhuma tarefa encontrada para o filtro selecionado.</p></div>`;
-                return;
-            }
-            
-            container.innerHTML = filteredTasks.map(task => {
-                const deadlineDate = new Date(task.deadline + 'T00:00:00');
-                const isOverdue = deadlineDate < new Date();
-                const deadlineClass = isOverdue ? 'deadline-overdue' : '';
-                const formattedDate = deadlineDate.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
-                const assignedByTag = task.assignedBy ? `<span class="user-tag tag-${normalizeName(task.assignedBy)}">${task.assignedBy}</span>` : '';
-
-                return `
-                    <div class="task-card" onclick="openTaskModal('${task.id}')">
-                        <div class="flex justify-between items-start gap-4">
-                            <p class="text-stone-800 font-medium flex-1">${task.description}</p>
-                            <button class="task-delete-btn" onclick="event.stopPropagation(); deleteItem('tasks', '${task.id}')">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                            </button>
-                        </div>
-                        <div class="mt-3 flex flex-wrap justify-between items-center gap-4">
-                            <div class="flex items-center gap-2 flex-wrap">
-                                <span class="text-xs text-stone-500">Por:</span>
-                                ${assignedByTag}
-                                <span class="text-xs text-stone-500 ml-2">Para:</span>
-                                ${(task.assignedTo || []).map(name => `<span class="user-tag tag-${normalizeName(name)}">${name}</span>`).join('')}
-                            </div>
-                            <div class="text-right">
-                                <span class="text-xs text-stone-500">Prazo</span>
-                                <p class="deadline-text ${deadlineClass}">${formattedDate}</p>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        function renderCalendarioSection() {
-            document.getElementById('main-title').textContent = 'Calendário de Conteúdo';
-            document.getElementById('main-description').textContent = 'Planeje e visualize todas as publicações.';
-            contentArea.innerHTML = `<div id="calendario-section">${generateWeekHtml(currentWeekStartDate)}</div>`;
+        function updateTaskList() { 
+            const container = document.getElementById('task-list-container'); 
+            if (!container) return; 
+            let filteredTasks = [...tasks]; 
+            filteredTasks.sort((a, b) => a.completed - b.completed || new Date(a.deadline) - new Date(b.deadline)); 
+            if (filteredTasks.length === 0) { container.innerHTML = `<div class="text-center p-8 bg-white rounded-lg"><p class="text-stone-500">Nenhuma tarefa encontrada.</p></div>`; return; } 
+            container.innerHTML = filteredTasks.map(task => { 
+                const deadlineDate = new Date(task.deadline + 'T00:00:00'); 
+                const isOverdue = !task.completed && deadlineDate < new Date(); 
+                const deadlineClass = isOverdue ? 'deadline-overdue' : ''; 
+                const formattedDate = deadlineDate.toLocaleDateString('pt-BR', { timeZone: 'UTC' }); 
+                return `<div class="task-card flex items-start gap-4 ${task.completed ? 'completed' : ''}"><input type="checkbox" class="mt-1.5 h-5 w-5 rounded border-gray-300 text-yellow-500 focus:ring-yellow-400" onchange="toggleTaskCompletion('${task.id}', ${task.completed})" ${task.completed ? 'checked' : ''}><div class="flex-1"><p class="text-stone-800 font-medium">${task.description}</p><div class="mt-3 flex flex-wrap justify-between items-center gap-4"><div class="flex items-center gap-2 flex-wrap"><span class="text-xs text-stone-500">Para:</span>${(task.assignedTo || []).map(name => `<span class="user-tag" style="background-color: #e5e7eb; color: #374151;">${name}</span>`).join('')}</div><div class="text-right"><span class="text-xs text-stone-500">Prazo</span><p class="deadline-text ${deadlineClass}">${formattedDate}</p></div></div></div><button class="task-delete-btn" onclick="event.stopPropagation(); deleteItem('tasks', '${task.id}')"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button></div>`; 
+            }).join(''); 
         }
         
-        function generateWeekHtml(startDate) {
-            const daysOfWeek = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
-            const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
-            let weekGridHtml = '';
-
-            const endDate = new Date(startDate);
-            endDate.setDate(startDate.getDate() + 6);
+        // --- GRADE/SCHEDULE FUNCTIONS ---
+        function renderGradeSection() {
+            document.getElementById('main-title').textContent = 'Grade de Horários';
+            document.getElementById('main-description').textContent = 'Visualize e gerencie a grade de aulas da equipa.';
             
-            const weekTitle = `Semana de ${startDate.getDate()} de ${monthNames[startDate.getMonth()]} a ${endDate.getDate()} de ${monthNames[endDate.getMonth()]} de ${endDate.getFullYear()}`;
+            const teacherOptions = collaborators.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+            const addProfessorButton = currentUserRole === 'admin' 
+                ? `<button class="secondary-btn" onclick="openCollaboratorForm()">+ Adicionar Professor</button>` 
+                : '';
 
-            for (let i = 0; i < 7; i++) {
-                const day = new Date(startDate);
-                day.setDate(startDate.getDate() + i);
-                
-                const dateStr = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`;
-                const posts = calendarEvents[dateStr] || [];
-
-                const postsHtml = posts.map(post => `
-                    <div class="post-item">
-                        <span class="post-type-tag post-tag-${post.type.toLowerCase()}">${post.type}</span>
-                        <p class="post-description">${post.description}</p>
-                        <button class="delete-btn" onclick="event.stopPropagation(); deleteItem('calendarEvents', '${post.id}')">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                        </button>
-                    </div>
-                `).join('');
-
-                weekGridHtml += `
-                    <div class="day-card" onclick="openCalendarEventForm('${dateStr}')">
-                        <div class="day-card-header">
-                            <span class="day-name">${daysOfWeek[i]}</span>
-                            <span class="day-number">${day.getDate()}</span>
+            contentArea.innerHTML = `
+                <section id="grade-section" class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
+                    <div class="flex justify-between items-center mb-6 flex-wrap gap-4">
+                        <div class="grade-select-container flex-grow">
+                            <label for="teacher-filter" class="block text-sm font-medium text-stone-700 mb-1">Filtrar por professor:</label>
+                            <select id="teacher-filter" class="grade-select">
+                                <option value="all">Todos</option>
+                                ${teacherOptions}
+                            </select>
                         </div>
-                        <div>${postsHtml}</div>
+                        <div class="flex gap-2">
+                           ${addProfessorButton}
+                           <button class="primary-btn w-auto" onclick="openScheduleForm()">+ Adicionar Aula</button>
+                        </div>
                     </div>
-                `;
+                    <div id="schedule-grid-container"></div>
+                </section>
+            `;
+            document.getElementById('teacher-filter').addEventListener('change', () => renderScheduleGrid(document.getElementById('teacher-filter').value));
+            renderScheduleGrid('all');
+        }
+
+        function renderScheduleGrid(teacherFilter) {
+            const gridContainer = document.getElementById('schedule-grid-container');
+            if (!gridContainer) return;
+
+            const days = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta"];
+            let filteredSchedules = [...schedules];
+
+            if (teacherFilter !== 'all') {
+                filteredSchedules = filteredSchedules.filter(s => s.teacher === teacherFilter);
             }
 
-            return `
-                <div class="week-container" id="calendar-wrapper">
-                    <div class="flex justify-between items-center mb-4 flex-wrap gap-2">
-                        <h3 class="week-header flex-grow" style="margin-bottom: 0; border: none;">${weekTitle}</h3>
-                        <div class="flex gap-2">
-                            <button class="secondary-btn" onclick="navigateWeek(-1)">‹ Semana Anterior</button>
-                            <button class="secondary-btn" onclick="navigateWeek(1)">Próxima Semana ›</button>
-                        </div>
+            let gridHtml = `<div class="schedule-grid">`;
+            days.forEach(day => {
+                gridHtml += `<div class="day-column"><h3 class="day-column-header">${day}</h3>`;
+                const dayClasses = filteredSchedules.filter(s => s.day === day).sort((a, b) => a.startTime.localeCompare(b.startTime));
+                if (dayClasses.length > 0) {
+                    dayClasses.forEach(c => {
+                        const tagClass = c.type === 'vip' ? 'tag-vip' : 'tag-turma';
+                        const tagText = c.type === 'vip' ? 'VIP' : 'TURMA';
+                        const teacherName = teacherFilter === 'all' ? `<p class="text-xs text-stone-500"><em>(${c.teacher})</em></p>` : '';
+                        gridHtml += `<div class="class-entry" onclick="openScheduleForm('${c.id}')"><span class="class-tag ${tagClass}">${tagText}</span><p class="text-xs text-stone-600">${c.startTime} - ${c.endTime}</p><p class="font-bold text-stone-800">${c.student}</p><p class="text-sm text-stone-700">${c.level}</p>${teacherName}</div>`;
+                    });
+                } else {
+                    gridHtml += `<p class="text-sm text-center text-stone-400 mt-4">Nenhuma aula</p>`;
+                }
+                gridHtml += `</div>`;
+            });
+            gridHtml += `</div>`;
+            gridContainer.innerHTML = gridHtml;
+        }
+
+        // --- PAYROLL FUNCTIONS ---
+        function renderFolhaPagamentoSection() {
+            document.getElementById('main-title').textContent = 'Folha de Pagamento';
+            document.getElementById('main-description').textContent = 'Gerencie as despesas e contas a pagar do mês.';
+            
+            const now = new Date();
+            const currentMonth = now.getMonth();
+            const currentYear = now.getFullYear();
+            const monthName = now.toLocaleString('pt-BR', { month: 'long' });
+
+            const monthlyExpenses = expenses.filter(exp => {
+                const dueDate = new Date(exp.dueDate);
+                return dueDate.getMonth() === currentMonth && dueDate.getFullYear() === currentYear;
+            });
+
+            const totalAmount = monthlyExpenses.reduce((sum, exp) => sum + Number(exp.amount), 0);
+
+            contentArea.innerHTML = `
+                <section id="folha-pagamento-section" class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
+                    <div class="flex justify-between items-center mb-6 flex-wrap gap-4">
+                         <h3 class="text-xl font-bold text-stone-800">Despesas de ${monthName.charAt(0).toUpperCase() + monthName.slice(1)}</h3>
+                         <button class="primary-btn w-auto" onclick="openExpenseForm()">+ Nova Despesa</button>
                     </div>
-                    <div class="week-grid">${weekGridHtml}</div>
-                </div>
+                    <div class="overflow-x-auto">
+                        <table class="payroll-table">
+                            <thead>
+                                <tr>
+                                    <th>Descrição</th>
+                                    <th>Vencimento</th>
+                                    <th class="text-right">Valor (R$)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="expenses-list">
+                                ${monthlyExpenses.length > 0 ? monthlyExpenses.map(exp => `
+                                    <tr onclick="openExpenseForm('${exp.id}')">
+                                        <td class="font-medium">${exp.description}</td>
+                                        <td>${new Date(exp.dueDate + 'T00:00:00').toLocaleDateString('pt-BR')}</td>
+                                        <td class="text-right font-mono">${Number(exp.amount).toFixed(2)}</td>
+                                    </tr>
+                                `).join('') : '<tr><td colspan="3" class="text-center py-8 text-stone-500">Nenhuma despesa para este mês.</td></tr>'}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="payroll-total">
+                        <p>Total a Pagar: R$ ${totalAmount.toFixed(2)}</p>
+                    </div>
+                </section>
             `;
         }
 
-        function renderManualMarcaSection() {
-            document.getElementById('main-title').textContent = 'Manual da Marca';
-            document.getElementById('main-description').textContent = 'Diretrizes de identidade visual da SLAP.';
+        function openExpenseForm(expenseId = null) {
+            const expense = expenseId ? expenses.find(e => e.id === expenseId) : null;
+            document.getElementById('form-modal-title').textContent = expense ? "Editar Despesa" : "Adicionar Nova Despesa";
             
-            const brandColors = [
-                { name: 'Amarelo SLAP', hex: '#F1D24B' },
-                { name: 'Laranja SLAP', hex: '#FF5C3D' },
-                { name: 'Azul SLAP', hex: '#84C7DF' },
-                { name: 'Roxo SLAP', hex: '#8671D1' },
-            ];
-
-            contentArea.innerHTML = `
-                <div id="manual-section" class="space-y-8">
-                    <div class="bg-white p-6 rounded-lg shadow-sm">
-                        <h3 class="text-xl font-bold text-stone-800 mb-4">Paleta de Cores</h3>
-                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            ${brandColors.map(color => `
-                                <div>
-                                    <div class="brand-color-swatch" style="background-color: ${color.hex};"><span>${color.hex}</span></div>
-                                    <p class="text-center mt-2 font-semibold text-sm text-stone-700">${color.name}</p>
-                                </div>
-                            `).join('')}
-                        </div>
+            document.getElementById('form-modal-content-area').innerHTML = `
+                <form id="form-modal-body" class="space-y-4">
+                    <input type="hidden" id="expense-id" value="${expenseId || ''}">
+                    <div><label class="font-medium text-sm">Descrição</label><input type="text" id="expense-description" class="form-input" required value="${expense?.description || ''}"></div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><label class="font-medium text-sm">Valor (R$)</label><input type="number" step="0.01" id="expense-amount" class="form-input" required value="${expense?.amount || ''}"></div>
+                        <div><label class="font-medium text-sm">Data de Vencimento</label><input type="date" id="expense-duedate" class="form-input" required value="${expense?.dueDate || ''}"></div>
                     </div>
-                </div>
-            `;
+                    <div class="pt-4 flex justify-end gap-2">
+                        ${expenseId ? `<button type="button" class="danger-btn" onclick="deleteItem('expenses', '${expenseId}')">Apagar</button>` : ''}
+                        <button type="submit" class="primary-btn w-auto">Salvar</button>
+                    </div>
+                </form>`;
+            
+            document.getElementById('form-modal-body').onsubmit = saveExpense;
+            document.getElementById('form-modal').classList.add('visible');
+        }
+
+        async function saveExpense(event) {
+            event.preventDefault();
+            const expenseId = document.getElementById('expense-id').value;
+            const data = {
+                description: document.getElementById('expense-description').value,
+                amount: parseFloat(document.getElementById('expense-amount').value),
+                dueDate: document.getElementById('expense-duedate').value,
+            };
+
+            if (!db) { console.warn("Offline mode."); closeFormModal(); return; }
+            try {
+                if (expenseId) {
+                    await updateDoc(doc(db, `artifacts/${appId}/public/data/expenses`, expenseId), data);
+                    showSuccessMessage("Sucesso!", "Despesa atualizada.");
+                } else {
+                    data.createdAt = serverTimestamp();
+                    await addDoc(collection(db, `artifacts/${appId}/public/data/expenses`), data);
+                    showSuccessMessage("Sucesso!", "Nova despesa adicionada.");
+                }
+            } catch (error) { console.error("Error saving expense:", error); }
         }
 
         // --- MODAL & FORM FUNCTIONS ---
         function closeFormModal() { document.getElementById('form-modal').classList.remove('visible'); }
-        function showSuccessMessage(title, message) {
-            const modalTitle = document.getElementById('form-modal-title');
-            const modalContentArea = document.getElementById('form-modal-content-area');
-            
-            modalTitle.textContent = title;
-            modalContentArea.innerHTML = `
-                <div class="text-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-12 w-12 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <p class="mt-4 text-stone-600">${message}</p>
-                    <button onclick="closeFormModal()" class="primary-btn mt-6 w-auto px-8">OK</button>
-                </div>
-            `;
-            document.getElementById('form-modal').classList.add('visible');
-        }
+        function showSuccessMessage(title, message) { const modalTitle = document.getElementById('form-modal-title'); const modalContentArea = document.getElementById('form-modal-content-area'); modalTitle.textContent = title; modalContentArea.innerHTML = `<div class="text-center"><svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-12 w-12 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg><p class="mt-4 text-stone-600">${message}</p><button onclick="closeFormModal()" class="primary-btn mt-6 w-auto px-8">OK</button></div>`; document.getElementById('form-modal').classList.add('visible'); }
+        
         function openSignUpModal() {
             const modalTitle = document.getElementById('form-modal-title');
             const modalContentArea = document.getElementById('form-modal-content-area');
@@ -630,77 +572,20 @@
             document.getElementById('form-modal').classList.add('visible');
         }
 
-        // --- Campaign Functions ---
-        function openCampaignForm(campaignId = null) {
-            const campaign = campaignId ? campaigns.find(c => c.id === campaignId) : null;
-            document.getElementById('form-modal-title').textContent = campaign ? "Editar Campanha" : "Adicionar Nova Campanha";
-            document.getElementById('form-modal-content-area').innerHTML = `
-                <form id="form-modal-body" class="space-y-4">
-                    <input type="hidden" id="campaign-id" value="${campaignId || ''}">
-                    <div><label class="font-medium text-sm">Nome</label><input type="text" id="campaign-name" class="form-input" required value="${campaign?.nome || ''}"></div>
-                    <div><label class="font-medium text-sm">Responsável</label><input type="text" id="campaign-owner" class="form-input" required value="${campaign?.responsavel || ''}"></div>
-                    <div><label class="font-medium text-sm">Status</label><select id="campaign-status" class="form-input" required><option>Planejada</option><option>Ativa</option><option>Concluída</option></select></div>
-                    <div><label class="font-medium text-sm">Objetivo</label><textarea id="campaign-goal" rows="3" class="form-input" required>${campaign?.objetivo || ''}</textarea></div>
-                    <div class="text-right"><button type="submit" class="primary-btn w-auto">Salvar</button></div>
-                </form>`;
-            if (campaign) document.getElementById('campaign-status').value = campaign.status;
-            document.getElementById('form-modal-body').onsubmit = saveCampaign;
-            document.getElementById('form-modal').classList.add('visible');
-        }
-
-        async function saveCampaign(event) {
-            event.preventDefault();
-            const campaignId = document.getElementById('campaign-id').value;
-            const data = {
-                nome: document.getElementById('campaign-name').value,
-                responsavel: document.getElementById('campaign-owner').value,
-                status: document.getElementById('campaign-status').value,
-                objetivo: document.getElementById('campaign-goal').value,
-            };
-
-            if (!db) { console.warn("Offline mode."); closeFormModal(); return; }
-            try {
-                if (campaignId) {
-                    await updateDoc(doc(db, `artifacts/${appId}/public/data/campaigns`, campaignId), data);
-                } else {
-                    data.createdAt = serverTimestamp();
-                    await addDoc(collection(db, `artifacts/${appId}/public/data/campaigns`), data);
-                }
-                closeFormModal();
-            } catch (error) { console.error("Error saving campaign:", error); }
-        }
-
-        function openCampaignModal(campaignId) {
-            const campaign = campaigns.find(c => c.id === campaignId);
-            if (!campaign) return;
-            document.getElementById('form-modal-title').textContent = campaign.nome;
-            document.getElementById('form-modal-content-area').innerHTML = `
-                <div class="space-y-4">
-                    <p><strong>Responsável:</strong> ${campaign.responsavel}</p>
-                    <p><strong>Status:</strong> <span class="status-tag status-${campaign.status.toLowerCase()}">${campaign.status}</span></p>
-                    <div><strong>Objetivo:</strong><p class="mt-1 p-3 bg-stone-50 rounded-md">${campaign.objetivo}</p></div>
-                    <div class="border-t pt-4 flex justify-end gap-2">
-                        <button class="secondary-btn" onclick="openCampaignForm('${campaign.id}')">Editar</button>
-                        <button class="danger-btn" onclick="deleteItem('campaigns', '${campaign.id}')">Apagar</button>
-                    </div>
-                </div>`;
-            document.getElementById('form-modal').classList.add('visible');
-        }
-
-        // --- Event Functions ---
         function openEventForm(eventId = null) {
             const event = eventId ? events.find(e => e.id === eventId) : null;
             document.getElementById('form-modal-title').textContent = event ? "Editar Evento" : "Adicionar Novo Evento";
+            const sectorOptions = ["Financeiro", "Pedagógico", "Comercial", "Marketing"].map(s => `<option value="${s}" ${event?.setor === s ? 'selected' : ''}>${s}</option>`).join('');
             document.getElementById('form-modal-content-area').innerHTML = `
                 <form id="form-modal-body" class="space-y-4">
                     <input type="hidden" id="event-id" value="${eventId || ''}">
                     <div><label class="font-medium text-sm">Nome do Evento</label><input type="text" id="event-name" class="form-input" required value="${event?.nome || ''}"></div>
+                    <div><label class="font-medium text-sm">Setor</label><select id="event-sector" class="form-input" required>${sectorOptions}</select></div>
                     <div><label class="font-medium text-sm">Data</label><input type="date" id="event-date" class="form-input" required value="${event?.data || ''}"></div>
                     <div><label class="font-medium text-sm">Local</label><input type="text" id="event-location" class="form-input" required value="${event?.local || ''}"></div>
-                    <div><label class="font-medium text-sm">Tipo</label><select id="event-type" class="form-input" required><option>Online</option><option>Presencial</option></select></div>
+                    <div><label class="font-medium text-sm">Descrição</label><textarea id="event-description" rows="4" class="form-input">${event?.descricao || ''}</textarea></div>
                     <div class="text-right"><button type="submit" class="primary-btn w-auto">Salvar</button></div>
                 </form>`;
-            if (event) document.getElementById('event-type').value = event.tipo;
             document.getElementById('form-modal-body').onsubmit = saveEvent;
             document.getElementById('form-modal').classList.add('visible');
         }
@@ -710,19 +595,21 @@
             const eventId = document.getElementById('event-id').value;
             const data = {
                 nome: document.getElementById('event-name').value,
+                setor: document.getElementById('event-sector').value,
                 data: document.getElementById('event-date').value,
                 local: document.getElementById('event-location').value,
-                tipo: document.getElementById('event-type').value,
+                descricao: document.getElementById('event-description').value,
             };
             if (!db) { console.warn("Offline mode."); closeFormModal(); return; }
             try {
                 if (eventId) {
                     await updateDoc(doc(db, `artifacts/${appId}/public/data/events`, eventId), data);
+                    showSuccessMessage("Sucesso!", "Evento atualizado.");
                 } else {
                     data.createdAt = serverTimestamp();
                     await addDoc(collection(db, `artifacts/${appId}/public/data/events`), data);
+                    showSuccessMessage("Sucesso!", "Novo evento adicionado.");
                 }
-                closeFormModal();
             } catch (error) { console.error("Error saving event:", error); }
         }
 
@@ -734,7 +621,8 @@
                 <div class="space-y-4">
                     <p><strong>Data:</strong> ${new Date(event.data + 'T00:00:00').toLocaleDateString('pt-BR')}</p>
                     <p><strong>Local:</strong> ${event.local}</p>
-                    <p><strong>Tipo:</strong> <span class="status-tag status-${event.tipo.toLowerCase()}">${event.tipo}</span></p>
+                    ${event.setor ? `<p><strong>Setor:</strong> <span class="status-tag status-${event.setor.toLowerCase()}">${event.setor}</span></p>` : ''}
+                    ${event.descricao ? `<div><strong>Descrição:</strong><p class="mt-1 p-3 bg-stone-50 rounded-md whitespace-pre-wrap">${event.descricao}</p></div>` : ''}
                     <div class="border-t pt-4 flex justify-end gap-2">
                         <button class="secondary-btn" onclick="openEventForm('${event.id}')">Editar</button>
                         <button class="danger-btn" onclick="deleteItem('events', '${event.id}')">Apagar</button>
@@ -743,7 +631,6 @@
             document.getElementById('form-modal').classList.add('visible');
         }
 
-        // --- Budget Functions ---
         function openBudgetForm(budgetId = null) {
             const budget = budgetId ? budgets.find(b => b.id === budgetId) : null;
             document.getElementById('form-modal-title').textContent = budget ? "Editar Orçamento" : "Adicionar Novo Orçamento";
@@ -776,11 +663,12 @@
             try {
                 if (budgetId) {
                     await updateDoc(doc(db, `artifacts/${appId}/public/data/budgets`, budgetId), data);
+                    showSuccessMessage("Sucesso!", "Orçamento atualizado.");
                 } else {
                     data.createdAt = serverTimestamp();
                     await addDoc(collection(db, `artifacts/${appId}/public/data/budgets`), data);
+                    showSuccessMessage("Sucesso!", "Novo orçamento adicionado.");
                 }
-                closeFormModal();
             } catch (error) { console.error("Error saving budget:", error); }
         }
 
@@ -802,14 +690,16 @@
             document.getElementById('form-modal').classList.add('visible');
         }
 
-        // --- Task Functions ---
+
         function openTaskForm() {
             document.getElementById('form-modal-title').textContent = "Adicionar Nova Tarefa";
+            const collaboratorOptions = collaborators.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+
             document.getElementById('form-modal-content-area').innerHTML = `
                 <form id="form-modal-body" class="space-y-4">
                     <div><label class="font-medium text-sm">Descrição</label><textarea id="task-description" rows="4" class="form-input" required></textarea></div>
                     <div><label class="font-medium text-sm">Prazo Final</label><input type="date" id="task-deadline" class="form-input" required></div>
-                    <div><label class="font-medium text-sm">Atribuir para</label><select id="task-assignedTo" class="form-input" multiple required><option>Everton</option><option>Maíra</option><option>Aleff</option></select></div>
+                    <div><label class="font-medium text-sm">Atribuir para</label><select id="task-assignedTo" class="form-input" multiple required>${collaboratorOptions}</select></div>
                     <div class="text-right"><button type="submit" class="primary-btn w-auto">Salvar Tarefa</button></div>
                 </form>`;
             document.getElementById('form-modal-body').onsubmit = saveTask;
@@ -822,142 +712,130 @@
                 deadline: document.getElementById('task-deadline').value,
                 assignedTo: Array.from(document.getElementById('task-assignedTo').selectedOptions).map(o => o.value),
                 assignedBy: currentUserName || 'Admin',
-                createdAt: serverTimestamp()
+                createdAt: serverTimestamp(),
+                completed: false
             };
             if (!data.description || !data.deadline || data.assignedTo.length === 0) { alert("Preencha todos os campos."); return; }
             if (!db) { console.warn("Offline mode."); closeFormModal(); return; }
             try {
                 await addDoc(collection(db, `artifacts/${appId}/public/data/tasks`), data);
-                closeFormModal();
+                showSuccessMessage("Sucesso!", "Tarefa adicionada.");
             } catch (error) { console.error("Error saving task:", error); }
         }
-        function openTaskModal(taskId) {
-            const task = tasks.find(t => t.id === taskId);
-            if (!task) return;
-            document.getElementById('form-modal-title').textContent = "Detalhes da Tarefa";
-            const deadlineDate = new Date(task.deadline + 'T00:00:00');
-            const formattedDate = deadlineDate.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
-            const assignedByTag = task.assignedBy ? `<span class="user-tag tag-${normalizeName(task.assignedBy)}">${task.assignedBy}</span>` : 'N/A';
+        
+        function openCollaboratorForm() {
+            document.getElementById('form-modal-title').textContent = "Adicionar Professor/Colaborador";
             document.getElementById('form-modal-content-area').innerHTML = `
-                <div class="space-y-4">
-                    <div><strong>Descrição:</strong><p class="mt-1 p-3 bg-stone-50 rounded-md whitespace-pre-wrap">${task.description}</p></div>
-                    <p><strong>Prazo:</strong> ${formattedDate}</p>
-                    <p class="flex items-center gap-2"><strong>Atribuída por:</strong> ${assignedByTag}</p>
-                    <div class="flex items-center gap-2 flex-wrap"><strong>Atribuída para:</strong>${(task.assignedTo || []).map(name => `<span class="user-tag tag-${normalizeName(name)}">${name}</span>`).join('')}</div>
-                    <div class="border-t pt-4 text-right"><button class="danger-btn" onclick="deleteItem('tasks', '${task.id}')">Apagar Tarefa</button></div>
-                </div>`;
+                <form id="form-modal-body" class="space-y-4">
+                    <div><label class="font-medium text-sm">Nome do Colaborador</label><input type="text" id="collaborator-name" class="form-input" required></div>
+                    <div class="text-right"><button type="submit" class="primary-btn w-auto">Salvar</button></div>
+                </form>`;
+            document.getElementById('form-modal-body').onsubmit = saveCollaborator;
+            document.getElementById('form-modal').classList.add('visible');
+        }
+        async function saveCollaborator(event) {
+            event.preventDefault();
+            const name = document.getElementById('collaborator-name').value;
+            if (!name) return;
+            if (!db) { console.warn("Offline mode."); closeFormModal(); return; }
+            try {
+                await addDoc(collection(db, `artifacts/${appId}/public/data/collaborators`), { name: name });
+                showSuccessMessage("Sucesso!", "Colaborador adicionado.");
+            } catch (error) { console.error("Error saving collaborator:", error); }
+        }
+
+        function openScheduleForm(scheduleId = null) {
+            const schedule = scheduleId ? schedules.find(s => s.id === scheduleId) : null;
+            document.getElementById('form-modal-title').textContent = schedule ? "Editar Aula" : "Adicionar Nova Aula";
+            const teacherOptions = collaborators.map(c => `<option value="${c.name}" ${schedule?.teacher === c.name ? 'selected' : ''}>${c.name}</option>`).join('');
+            const dayOptions = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta"].map(d => `<option value="${d}" ${schedule?.day === d ? 'selected' : ''}>${d}</option>`).join('');
+            const typeOptions = ["vip", "turma"].map(t => `<option value="${t}" ${schedule?.type === t ? 'selected' : ''}>${t.toUpperCase()}</option>`).join('');
+            let formHtml = `<form id="form-modal-body" class="space-y-4"><input type="hidden" id="schedule-id" value="${scheduleId || ''}"><div><label class="font-medium text-sm">Aluno/Turma</label><input type="text" id="schedule-student" class="form-input" required value="${schedule?.student || ''}"></div><div><label class="font-medium text-sm">Nível</label><input type="text" id="schedule-level" class="form-input" required value="${schedule?.level || ''}"></div><div><label class="font-medium text-sm">Professor</label><select id="schedule-teacher" class="form-input" required>${teacherOptions}</select></div><div class="grid grid-cols-2 gap-4"><div><label class="font-medium text-sm">Dia</label><select id="schedule-day" class="form-input" required>${dayOptions}</select></div><div><label class="font-medium text-sm">Tipo</label><select id="schedule-type" class="form-input" required>${typeOptions}</select></div></div><div class="grid grid-cols-2 gap-4"><div><label class="font-medium text-sm">Início</label><input type="time" id="schedule-start" class="form-input" required value="${schedule?.startTime || ''}"></div><div><label class="font-medium text-sm">Fim</label><input type="time" id="schedule-end" class="form-input" required value="${schedule?.endTime || ''}"></div></div><div class="pt-4 flex justify-end gap-2">${scheduleId ? `<button type="button" class="danger-btn" onclick="deleteItem('schedules', '${scheduleId}')">Apagar</button>` : ''}<button type="submit" class="primary-btn w-auto">Salvar</button></div></form>`;
+            document.getElementById('form-modal-content-area').innerHTML = formHtml;
+            document.getElementById('form-modal-body').onsubmit = saveScheduleEntry;
             document.getElementById('form-modal').classList.add('visible');
         }
 
-        // --- Calendar Functions ---
-        function openCalendarEventForm(date) {
-            document.getElementById('form-modal-title').textContent = `Adicionar Post para ${new Date(date + 'T00:00:00').toLocaleDateString('pt-BR')}`;
-            document.getElementById('form-modal-content-area').innerHTML = `
-                <form id="form-modal-body" class="space-y-4">
-                    <input type="hidden" name="date" value="${date}">
-                    <div><label class="font-medium text-sm">Tipo</label><select name="type" class="form-input" required><option>Stories</option><option>Reels</option><option>TikTok</option><option>YouTube</option></select></div>
-                    <div><label class="font-medium text-sm">Descrição</label><input type="text" name="description" class="form-input" required></div>
-                    <div class="text-right"><button type="submit" class="primary-btn w-auto">Salvar Post</button></div>
-                </form>`;
-            document.getElementById('form-modal-body').onsubmit = saveCalendarEvent;
-            document.getElementById('form-modal').classList.add('visible');
-        }
-        async function saveCalendarEvent(event) {
+        async function saveScheduleEntry(event) {
             event.preventDefault();
-            const form = event.target;
-            const data = {
-                date: form.date.value,
-                type: form.type.value,
-                description: form.description.value,
-                createdAt: serverTimestamp()
-            };
+            const scheduleId = document.getElementById('schedule-id').value;
+            const data = { student: document.getElementById('schedule-student').value, level: document.getElementById('schedule-level').value, teacher: document.getElementById('schedule-teacher').value, day: document.getElementById('schedule-day').value, type: document.getElementById('schedule-type').value, startTime: document.getElementById('schedule-start').value, endTime: document.getElementById('schedule-end').value };
             if (!db) { console.warn("Offline mode."); closeFormModal(); return; }
             try {
-                await addDoc(collection(db, `artifacts/${appId}/public/data/calendarEvents`), data);
-                closeFormModal();
-            } catch (error) { console.error("Error saving calendar event:", error); }
-        }
-        function navigateWeek(direction) {
-            currentWeekStartDate.setDate(currentWeekStartDate.getDate() + (7 * direction));
-            renderCalendarioSection();
+                if (scheduleId) { 
+                    await updateDoc(doc(db, `artifacts/${appId}/public/data/schedules`, scheduleId), data); 
+                    showSuccessMessage("Sucesso!", "Aula atualizada.");
+                } else { 
+                    data.createdAt = serverTimestamp(); 
+                    await addDoc(collection(db, `artifacts/${appId}/public/data/schedules`), data); 
+                    showSuccessMessage("Sucesso!", "Nova aula adicionada.");
+                }
+            } catch (error) { console.error("Error saving schedule:", error); }
         }
         
+        async function toggleTaskCompletion(taskId, currentStatus) { if (!db) return; const taskRef = doc(db, `artifacts/${appId}/public/data/tasks`, taskId); try { await updateDoc(taskRef, { completed: !currentStatus }); } catch (error) { console.error("Error updating task status:", error); } }
+
         // --- GENERIC & UTILITY FUNCTIONS ---
         async function deleteItem(collectionName, itemId) {
             if (!db) { console.warn("Offline mode."); return; }
-            if (confirm('Tem a certeza que deseja apagar este item?')) {
+            document.getElementById('form-modal-title').textContent = "Confirmar Exclusão";
+            document.getElementById('form-modal-content-area').innerHTML = `
+                <p>Tem a certeza que deseja apagar este item? Esta ação não pode ser desfeita.</p>
+                <div class="mt-6 flex justify-end gap-4">
+                    <button class="secondary-btn" onclick="closeFormModal()">Cancelar</button>
+                    <button id="confirm-delete-btn" class="danger-btn">Apagar</button>
+                </div>
+            `;
+            document.getElementById('confirm-delete-btn').onclick = async () => {
                 try {
                     await deleteDoc(doc(db, `artifacts/${appId}/public/data/${collectionName}`, itemId));
-                    closeFormModal();
+                    showSuccessMessage("Sucesso", "Item apagado com sucesso.");
                 } catch (error) { console.error(`Error deleting item from ${collectionName}:`, error); }
-            }
-        }
-        function normalizeName(name) {
-            if (!name) return 'default';
-            return name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-        }
-        function getStartOfWeek(date) {
-            const d = new Date(date);
-            const day = d.getDay();
-            const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-            d.setHours(0, 0, 0, 0);
-            return new Date(d.setDate(diff));
-        }
-
-        // --- APP INITIALIZATION ---
-        document.addEventListener('DOMContentLoaded', () => {
-            const pageRenderers = {
-                'inicio': renderInicioSection,
-                'campanhas': renderCampanhasSection,
-                'eventos': renderEventosSection,
-                'orcamentos': renderOrcamentosSection,
-                'tarefas': renderTarefasSection,
-                'calendario': renderCalendarioSection,
-                'manual': renderManualMarcaSection
             };
-            
+            document.getElementById('form-modal').classList.add('visible');
+        }
+        
+        // --- APP INITIALIZATION ---
+        function renderMenu() {
             const mainNav = document.getElementById('main-navigation');
-            mainNav.innerHTML = `
-                <button data-target="inicio" class="nav-item w-full text-left px-4 py-2.5 rounded-lg flex items-center font-semibold"><svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>Início</button>
-                <button data-target="campanhas" class="nav-item w-full text-left px-4 py-2.5 rounded-lg flex items-center font-semibold"><svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2z"></polygon></svg>Campanhas</button>
-                <button data-target="eventos" class="nav-item w-full text-left px-4 py-2.5 rounded-lg flex items-center font-semibold"><svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3z"/><path d="M12.44 8.917a4 4 0 0 0-4.88 0C4.965 10.685 3 13.982 3 17.5V22h18v-4.5c0-3.518-1.965-6.815-4.56-8.583z"/></svg>Eventos</button>
-                <button data-target="orcamentos" class="nav-item w-full text-left px-4 py-2.5 rounded-lg flex items-center font-semibold"><svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Orçamentos</button>
-                <button data-target="tarefas" class="nav-item w-full text-left px-4 py-2.5 rounded-lg flex items-center font-semibold"><svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>Tarefas</button>
-                <button data-target="calendario" class="nav-item w-full text-left px-4 py-2.5 rounded-lg flex items-center font-semibold"><svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" x2="16" y1="2" y2="6"></line><line x1="8" x2="8" y1="2" y2="6"></line><line x1="3" x2="21" y1="10" y2="10"></line></svg>Calendário</button>
-                <button data-target="manual" class="nav-item w-full text-left px-4 py-2.5 rounded-lg flex items-center font-semibold"><svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>Manual da Marca</button>
-            `;
+            let menuItemsHTML = `<button data-target="inicio" class="nav-item w-full text-left px-4 py-2.5 rounded-lg flex items-center font-semibold"><svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>Início</button><button data-target="grade" class="nav-item w-full text-left px-4 py-2.5 rounded-lg flex items-center font-semibold"><svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" x2="16" y1="2" y2="6"></line><line x1="8" x2="8" y1="2" y2="6"></line><line x1="3" x2="21" y1="10" y2="10"></line></svg>Grade</button><button data-target="eventos" class="nav-item w-full text-left px-4 py-2.5 rounded-lg flex items-center font-semibold"><svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3z"/><path d="M12.44 8.917a4 4 0 0 0-4.88 0C4.965 10.685 3 13.982 3 17.5V22h18v-4.5c0-3.518-1.965-6.815-4.56-8.583z"/></svg>Eventos</button><button data-target="orcamentos" class="nav-item w-full text-left px-4 py-2.5 rounded-lg flex items-center font-semibold"><svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Orçamentos</button><button data-target="tarefas" class="nav-item w-full text-left px-4 py-2.5 rounded-lg flex items-center font-semibold"><svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>Tarefas</button>`;
+            
+            if (currentUserRole === 'admin' || currentUserRole === 'financeiro') {
+                menuItemsHTML += `<button data-target="folha-pagamento" class="nav-item w-full text-left px-4 py-2.5 rounded-lg flex items-center font-semibold"><svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>Folha de Pgto.</button>`;
+            }
+            mainNav.innerHTML = menuItemsHTML;
+        }
 
-            mainNav.addEventListener('click', (event) => {
+        document.addEventListener('DOMContentLoaded', () => {
+            const pageRenderers = { 'inicio': renderInicioSection, 'eventos': renderEventosSection, 'orcamentos': renderOrcamentosSection, 'tarefas': renderTarefasSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection };
+            document.getElementById('main-navigation').addEventListener('click', (event) => {
                 const target = event.target.closest('.nav-item');
                 if (!target) return;
                 const pageKey = target.dataset.target;
-                if (pageKey && pageRenderers[pageKey]) {
-                    pageRenderers[pageKey]();
-                    setActiveNavItem(target);
-                }
+                if (pageKey && pageRenderers[pageKey]) { pageRenderers[pageKey](); setActiveNavItem(target); }
             });
-            
             document.getElementById('login-form').addEventListener('submit', handleLogin);
             document.getElementById('logout-button').addEventListener('click', handleLogout);
             document.getElementById('logout-pending-button').addEventListener('click', handleLogout);
-
+            document.getElementById('profile-picture-upload').addEventListener('change', handleProfilePictureUpload);
             initializeFirebase();
         });
 
         // Expose functions to global scope
         window.closeFormModal = closeFormModal;
         window.openSignUpModal = openSignUpModal;
-        window.openCampaignForm = openCampaignForm;
-        window.openCampaignModal = openCampaignModal;
         window.openEventForm = openEventForm;
         window.openEventModal = openEventModal;
         window.openBudgetForm = openBudgetForm;
         window.openBudgetModal = openBudgetModal;
         window.openTaskForm = openTaskForm;
-        window.openTaskModal = openTaskModal;
-        window.openCalendarEventForm = openCalendarEventForm;
-        window.navigateWeek = navigateWeek;
+        window.toggleTaskCompletion = toggleTaskCompletion;
+        window.openCollaboratorForm = openCollaboratorForm;
         window.deleteItem = deleteItem;
+        window.openScheduleForm = openScheduleForm;
+        window.saveScheduleEntry = saveScheduleEntry;
+        window.openExpenseForm = openExpenseForm;
+        window.saveExpense = saveExpense;
     </script>
 </body>
 </html>
