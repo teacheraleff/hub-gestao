@@ -112,7 +112,7 @@
                 </div>
             </form>
             <p class="text-sm text-center text-stone-600">
-                Não tem uma conta? <button onclick="openSignUpModal()" class="font-medium text-[#F1D24B] hover:underline">Registe-se</button>
+                Não tem uma conta? <button data-action="open-signup" class="font-medium text-[#F1D24B] hover:underline">Registe-se</button>
             </p>
         </div>
     </div>
@@ -367,11 +367,11 @@
             contentArea.innerHTML = `
                 <div id="events-section">
                     <div class="text-right mb-6">
-                        <button class="primary-btn w-auto" onclick="openEventForm()">+ Adicionar Evento</button>
+                        <button class="primary-btn w-auto" data-action="add-event">+ Adicionar Evento</button>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         ${events.map(e => `
-                        <div class="base-card cursor-pointer" onclick="openEventModal('${e.id}')">
+                        <div class="base-card cursor-pointer" data-action="view-event" data-id="${e.id}">
                             <div class="flex justify-between items-start mb-2">
                                 <h3 class="text-xl font-bold text-stone-800">${e.nome}</h3>
                                 ${e.setor ? `<span class="status-tag status-${e.setor.toLowerCase()}">${e.setor}</span>` : ''}
@@ -383,14 +383,14 @@
                 </div>`;
         }
 
-        function renderOrcamentosSection() { document.getElementById('main-title').textContent = 'Gestor de Orçamentos'; document.getElementById('main-description').textContent = 'Registre e acompanhe todas as propostas e orçamentos.'; contentArea.innerHTML = `<div id="budgets-section"><div class="text-right mb-6"><button class="primary-btn w-auto" onclick="openBudgetForm()">+ Adicionar Orçamento</button></div><div class="space-y-4">${budgets.map(b => `<div class="base-card flex flex-wrap justify-between items-center gap-4 cursor-pointer" onclick="openBudgetModal('${b.id}')"><div class="flex-1"><h3 class="text-lg font-bold text-stone-800">${b.titulo}</h3><p class="text-sm text-stone-500">Feito por: ${b.criadoPor || 'N/A'} em ${b.dataCriacao ? new Date(b.dataCriacao).toLocaleDateString('pt-BR') : 'N/A'}</p></div><div class="text-right"><p class="text-xl font-bold text-stone-800">R$ ${parseFloat(b.valor || 0).toFixed(2)}</p><span class="status-tag status-${b.status.toLowerCase()}">${b.status}</span></div></div>`).join('') || '<p class="text-center py-10 text-stone-500">Nenhum orçamento encontrado.</p>'}</div></div>`; }
+        function renderOrcamentosSection() { document.getElementById('main-title').textContent = 'Gestor de Orçamentos'; document.getElementById('main-description').textContent = 'Registre e acompanhe todas as propostas e orçamentos.'; contentArea.innerHTML = `<div id="budgets-section"><div class="text-right mb-6"><button class="primary-btn w-auto" data-action="add-budget">+ Adicionar Orçamento</button></div><div class="space-y-4">${budgets.map(b => `<div class="base-card flex flex-wrap justify-between items-center gap-4 cursor-pointer" data-action="view-budget" data-id="${b.id}"><div class="flex-1"><h3 class="text-lg font-bold text-stone-800">${b.titulo}</h3><p class="text-sm text-stone-500">Feito por: ${b.criadoPor || 'N/A'} em ${b.dataCriacao ? new Date(b.dataCriacao).toLocaleDateString('pt-BR') : 'N/A'}</p></div><div class="text-right"><p class="text-xl font-bold text-stone-800">R$ ${parseFloat(b.valor || 0).toFixed(2)}</p><span class="status-tag status-${b.status.toLowerCase()}">${b.status}</span></div></div>`).join('') || '<p class="text-center py-10 text-stone-500">Nenhum orçamento encontrado.</p>'}</div></div>`; }
         
         function renderTarefasSection() { 
             document.getElementById('main-title').textContent = 'Lista de Tarefas'; 
             document.getElementById('main-description').textContent = 'Gerencie e acompanhe as tarefas da equipa.'; 
             
             const addCollaboratorButton = currentUserRole === 'admin' 
-                ? `<button class="secondary-btn" onclick="openCollaboratorForm()">+ Adicionar Colaborador</button>` 
+                ? `<button class="secondary-btn" data-action="add-collaborator">+ Adicionar Colaborador</button>` 
                 : '';
 
             contentArea.innerHTML = `
@@ -399,7 +399,7 @@
                         <h3 class="text-xl font-bold text-stone-800">Todas as Tarefas</h3>
                         <div class="flex gap-2">
                             ${addCollaboratorButton}
-                            <button class="primary-btn w-auto" onclick="openTaskForm()">+ Adicionar Tarefa</button>
+                            <button class="primary-btn w-auto" data-action="add-task">+ Adicionar Tarefa</button>
                         </div>
                     </div>
                     <div id="task-list-container" class="space-y-4"></div>
@@ -418,7 +418,7 @@
                 const isOverdue = !task.completed && deadlineDate < new Date(); 
                 const deadlineClass = isOverdue ? 'deadline-overdue' : ''; 
                 const formattedDate = deadlineDate.toLocaleDateString('pt-BR', { timeZone: 'UTC' }); 
-                return `<div class="task-card flex items-start gap-4 ${task.completed ? 'completed' : ''}"><input type="checkbox" class="mt-1.5 h-5 w-5 rounded border-gray-300 text-yellow-500 focus:ring-yellow-400" onchange="toggleTaskCompletion('${task.id}', ${task.completed})" ${task.completed ? 'checked' : ''}><div class="flex-1"><p class="text-stone-800 font-medium">${task.description}</p><div class="mt-3 flex flex-wrap justify-between items-center gap-4"><div class="flex items-center gap-2 flex-wrap"><span class="text-xs text-stone-500">Para:</span>${(task.assignedTo || []).map(name => `<span class="user-tag" style="background-color: #e5e7eb; color: #374151;">${name}</span>`).join('')}</div><div class="text-right"><span class="text-xs text-stone-500">Prazo</span><p class="deadline-text ${deadlineClass}">${formattedDate}</p></div></div></div><button class="task-delete-btn" onclick="event.stopPropagation(); deleteItem('tasks', '${task.id}')"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button></div>`; 
+                return `<div class="task-card flex items-start gap-4 ${task.completed ? 'completed' : ''}"><input type="checkbox" data-action="toggle-task" data-id="${task.id}" class="mt-1.5 h-5 w-5 rounded border-gray-300 text-yellow-500 focus:ring-yellow-400" ${task.completed ? 'checked' : ''}><div class="flex-1"><p class="text-stone-800 font-medium">${task.description}</p><div class="mt-3 flex flex-wrap justify-between items-center gap-4"><div class="flex items-center gap-2 flex-wrap"><span class="text-xs text-stone-500">Para:</span>${(task.assignedTo || []).map(name => `<span class="user-tag" style="background-color: #e5e7eb; color: #374151;">${name}</span>`).join('')}</div><div class="text-right"><span class="text-xs text-stone-500">Prazo</span><p class="deadline-text ${deadlineClass}">${formattedDate}</p></div></div></div><button class="task-delete-btn" data-action="delete-item" data-collection="tasks" data-id="${task.id}"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button></div>`; 
             }).join(''); 
         }
         
@@ -429,7 +429,7 @@
             
             const teacherOptions = collaborators.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
             const addProfessorButton = currentUserRole === 'admin' 
-                ? `<button class="secondary-btn" onclick="openCollaboratorForm()">+ Adicionar Professor</button>` 
+                ? `<button class="secondary-btn" data-action="add-collaborator">+ Adicionar Professor</button>` 
                 : '';
 
             contentArea.innerHTML = `
@@ -444,7 +444,7 @@
                         </div>
                         <div class="flex gap-2">
                            ${addProfessorButton}
-                           <button class="primary-btn w-auto" onclick="openScheduleForm()">+ Adicionar Aula</button>
+                           <button class="primary-btn w-auto" data-action="add-schedule">+ Adicionar Aula</button>
                         </div>
                     </div>
                     <div id="schedule-grid-container"></div>
@@ -474,7 +474,7 @@
                         const tagClass = c.type === 'vip' ? 'tag-vip' : 'tag-turma';
                         const tagText = c.type === 'vip' ? 'VIP' : 'TURMA';
                         const teacherName = teacherFilter === 'all' ? `<p class="text-xs text-stone-500"><em>(${c.teacher})</em></p>` : '';
-                        gridHtml += `<div class="class-entry" onclick="openScheduleForm('${c.id}')"><span class="class-tag ${tagClass}">${tagText}</span><p class="text-xs text-stone-600">${c.startTime} - ${c.endTime}</p><p class="font-bold text-stone-800">${c.student}</p><p class="text-sm text-stone-700">${c.level}</p>${teacherName}</div>`;
+                        gridHtml += `<div class="class-entry" data-action="view-schedule" data-id="${c.id}"><span class="class-tag ${tagClass}">${tagText}</span><p class="text-xs text-stone-600">${c.startTime} - ${c.endTime}</p><p class="font-bold text-stone-800">${c.student}</p><p class="text-sm text-stone-700">${c.level}</p>${teacherName}</div>`;
                     });
                 } else {
                     gridHtml += `<p class="text-sm text-center text-stone-400 mt-4">Nenhuma aula</p>`;
@@ -506,7 +506,7 @@
                 <section id="folha-pagamento-section" class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
                     <div class="flex justify-between items-center mb-6 flex-wrap gap-4">
                          <h3 class="text-xl font-bold text-stone-800">Despesas de ${monthName.charAt(0).toUpperCase() + monthName.slice(1)}</h3>
-                         <button class="primary-btn w-auto" onclick="openExpenseForm()">+ Nova Despesa</button>
+                         <button class="primary-btn w-auto" data-action="add-expense">+ Nova Despesa</button>
                     </div>
                     <div class="overflow-x-auto">
                         <table class="data-table">
@@ -521,10 +521,10 @@
                             <tbody id="expenses-list">
                                 ${monthlyExpenses.length > 0 ? monthlyExpenses.map(exp => `
                                     <tr class="${exp.isPaid ? 'paid' : ''}">
-                                        <td class="text-center"><input type="checkbox" onchange="toggleExpensePaid('${exp.id}', this.checked)" ${exp.isPaid ? 'checked' : ''}></td>
-                                        <td class="font-medium" onclick="openExpenseForm('${exp.id}')">${exp.description} ${exp.isFixedSalary ? `<span class="text-xs text-stone-500">(${exp.employeeRole || 'Salário Fixo'})</span>` : ''}</td>
-                                        <td onclick="openExpenseForm('${exp.id}')">${new Date(exp.dueDate + 'T00:00:00').toLocaleDateString('pt-BR')}</td>
-                                        <td class="text-right font-mono" onclick="openExpenseForm('${exp.id}')">${Number(exp.amount).toFixed(2)}</td>
+                                        <td class="text-center"><input type="checkbox" data-action="toggle-expense" data-id="${exp.id}" ${exp.isPaid ? 'checked' : ''}></td>
+                                        <td class="font-medium" data-action="view-expense" data-id="${exp.id}">${exp.description} ${exp.isFixedSalary ? `<span class="text-xs text-stone-500">(${exp.employeeRole || 'Salário Fixo'})</span>` : ''}</td>
+                                        <td data-action="view-expense" data-id="${exp.id}">${new Date(exp.dueDate + 'T00:00:00').toLocaleDateString('pt-BR')}</td>
+                                        <td class="text-right font-mono" data-action="view-expense" data-id="${exp.id}">${Number(exp.amount).toFixed(2)}</td>
                                     </tr>
                                 `).join('') : '<tr><td colspan="4" class="text-center py-8 text-stone-500">Nenhuma despesa para este mês.</td></tr>'}
                             </tbody>
@@ -544,7 +544,7 @@
             contentArea.innerHTML = `
                 <section id="students-section" class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
                      <div class="text-right mb-6">
-                         <button class="primary-btn w-auto" onclick="openAlunoForm()">+ Adicionar Aluno</button>
+                         <button class="primary-btn w-auto" data-action="add-aluno">+ Adicionar Aluno</button>
                     </div>
                     <div class="overflow-x-auto">
                         <table class="data-table">
@@ -558,7 +558,7 @@
                             </thead>
                             <tbody>
                                 ${students.map(s => `
-                                <tr class="cursor-pointer" onclick="openAlunoModal('${s.id}')">
+                                <tr class="cursor-pointer" data-action="view-aluno" data-id="${s.id}">
                                     <td class="font-medium">${s.name}</td>
                                     <td><span class="status-tag status-${s.status.toLowerCase()}">${s.status}</span></td>
                                     <td>${s.startDate ? new Date(s.startDate + 'T00:00:00').toLocaleDateString('pt-BR') : 'N/A'}</td>
@@ -579,7 +579,7 @@
             contentArea.innerHTML = `
                 <section id="cancellations-section" class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
                      <div class="text-right mb-6">
-                         <button class="primary-btn w-auto" onclick="openCancelamentoForm()">+ Adicionar Cancelamento</button>
+                         <button class="primary-btn w-auto" data-action="add-cancelamento">+ Adicionar Cancelamento</button>
                     </div>
                     <div class="overflow-x-auto">
                         <table class="data-table">
@@ -593,7 +593,7 @@
                             </thead>
                             <tbody>
                                 ${cancellations.map(c => `
-                                <tr class="cursor-pointer" onclick="openCancelamentoModal('${c.id}')">
+                                <tr class="cursor-pointer" data-action="view-cancelamento" data-id="${c.id}">
                                     <td class="font-medium">${c.studentName}</td>
                                     <td>${new Date(c.cancellationDate + 'T00:00:00').toLocaleDateString('pt-BR')}</td>
                                     <td>${c.reason}</td>
@@ -681,8 +681,8 @@
                     ${event.setor ? `<p><strong>Setor:</strong> <span class="status-tag status-${event.setor.toLowerCase()}">${event.setor}</span></p>` : ''}
                     ${event.descricao ? `<div><strong>Descrição:</strong><p class="mt-1 p-3 bg-stone-50 rounded-md whitespace-pre-wrap">${event.descricao}</p></div>` : ''}
                     <div class="border-t pt-4 flex justify-end gap-2">
-                        <button class="secondary-btn" onclick="openEventForm('${event.id}')">Editar</button>
-                        <button class="danger-btn" onclick="deleteItem('events', '${event.id}')">Apagar</button>
+                        <button class="secondary-btn" data-action="edit-event" data-id="${event.id}">Editar</button>
+                        <button class="danger-btn" data-action="delete-item" data-collection="events" data-id="${event.id}">Apagar</button>
                     </div>
                 </div>`;
             document.getElementById('form-modal').classList.add('visible');
@@ -747,8 +747,8 @@
                     <p><strong>Status:</strong> <span class="status-tag status-${budget.status.toLowerCase()}">${budget.status}</span></p>
                     ${budget.descricao ? `<div><strong>Descrição:</strong><p class="mt-1 p-3 bg-stone-50 rounded-md">${budget.descricao}</p></div>` : ''}
                     <div class="border-t pt-4 flex justify-end gap-2">
-                        <button class="secondary-btn" onclick="openBudgetForm('${budget.id}')">Editar</button>
-                        <button class="danger-btn" onclick="deleteItem('budgets', '${budget.id}')">Apagar</button>
+                        <button class="secondary-btn" data-action="edit-budget" data-id="${budget.id}">Editar</button>
+                        <button class="danger-btn" data-action="delete-item" data-collection="budgets" data-id="${budget.id}">Apagar</button>
                     </div>
                 </div>`;
             document.getElementById('form-modal').classList.add('visible');
@@ -822,7 +822,7 @@
             const typeOptions = ["vip", "turma"].map(t => `<option value="${t}" ${schedule?.type === t ? 'selected' : ''}>${t.toUpperCase()}</option>`).join('');
             const studentOptions = students.filter(s => s.status === 'Ativo').map(s => `<option value="${s.name}" ${schedule?.student === s.name ? 'selected' : ''}>${s.name}</option>`).join('');
 
-            let formHtml = `<form id="form-modal-body" class="space-y-4"><input type="hidden" id="schedule-id" value="${scheduleId || ''}"><div><label class="font-medium text-sm">Aluno/Turma</label><select id="schedule-student" class="form-input" required>${studentOptions}</select></div><div><label class="font-medium text-sm">Nível</label><input type="text" id="schedule-level" class="form-input" required value="${schedule?.level || ''}"></div><div><label class="font-medium text-sm">Professor</label><select id="schedule-teacher" class="form-input" required>${teacherOptions}</select></div><div class="grid grid-cols-2 gap-4"><div><label class="font-medium text-sm">Dia</label><select id="schedule-day" class="form-input" required>${dayOptions}</select></div><div><label class="font-medium text-sm">Tipo</label><select id="schedule-type" class="form-input" required>${typeOptions}</select></div></div><div class="grid grid-cols-2 gap-4"><div><label class="font-medium text-sm">Início</label><input type="time" id="schedule-start" class="form-input" required value="${schedule?.startTime || ''}"></div><div><label class="font-medium text-sm">Fim</label><input type="time" id="schedule-end" class="form-input" required value="${schedule?.endTime || ''}"></div></div><div class="pt-4 flex justify-end gap-2">${scheduleId ? `<button type="button" class="danger-btn" onclick="deleteItem('schedules', '${scheduleId}')">Apagar</button>` : ''}<button type="submit" class="primary-btn w-auto">Salvar</button></div></form>`;
+            let formHtml = `<form id="form-modal-body" class="space-y-4"><input type="hidden" id="schedule-id" value="${scheduleId || ''}"><div><label class="font-medium text-sm">Aluno/Turma</label><select id="schedule-student" class="form-input" required>${studentOptions}</select></div><div><label class="font-medium text-sm">Nível</label><input type="text" id="schedule-level" class="form-input" required value="${schedule?.level || ''}"></div><div><label class="font-medium text-sm">Professor</label><select id="schedule-teacher" class="form-input" required>${teacherOptions}</select></div><div class="grid grid-cols-2 gap-4"><div><label class="font-medium text-sm">Dia</label><select id="schedule-day" class="form-input" required>${dayOptions}</select></div><div><label class="font-medium text-sm">Tipo</label><select id="schedule-type" class="form-input" required>${typeOptions}</select></div></div><div class="grid grid-cols-2 gap-4"><div><label class="font-medium text-sm">Início</label><input type="time" id="schedule-start" class="form-input" required value="${schedule?.startTime || ''}"></div><div><label class="font-medium text-sm">Fim</label><input type="time" id="schedule-end" class="form-input" required value="${schedule?.endTime || ''}"></div></div><div class="pt-4 flex justify-end gap-2">${scheduleId ? `<button type="button" class="danger-btn" data-action="delete-item" data-collection="schedules" data-id="${scheduleId}">Apagar</button>` : ''}<button type="submit" class="primary-btn w-auto">Salvar</button></div></form>`;
             document.getElementById('form-modal-content-area').innerHTML = formHtml;
             document.getElementById('form-modal-body').onsubmit = saveScheduleEntry;
             document.getElementById('form-modal').classList.add('visible');
@@ -931,8 +931,8 @@
                     <p><strong>Data de Início:</strong> ${student.startDate ? new Date(student.startDate + 'T00:00:00').toLocaleDateString('pt-BR') : 'N/A'}</p>
                     <p><strong>Tipo de Contrato:</strong> ${student.contractType || 'N/A'}</p>
                     <div class="border-t pt-4 flex justify-end gap-2">
-                        <button class="secondary-btn" onclick="openAlunoForm('${student.id}')">Editar</button>
-                        <button class="danger-btn" onclick="deleteItem('students', '${student.id}')">Apagar</button>
+                        <button class="secondary-btn" data-action="edit-aluno" data-id="${student.id}">Editar</button>
+                        <button class="danger-btn" data-action="delete-item" data-collection="students" data-id="${student.id}">Apagar</button>
                     </div>
                 </div>`;
             document.getElementById('form-modal').classList.add('visible');
@@ -990,41 +990,67 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             const pageRenderers = { 'inicio': renderInicioSection, 'alunos': renderAlunosSection, 'eventos': renderEventosSection, 'orcamentos': renderOrcamentosSection, 'tarefas': renderTarefasSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection, 'cancelamentos': renderCancelamentosSection };
-            document.getElementById('main-navigation').addEventListener('click', (event) => {
-                const target = event.target.closest('.nav-item');
-                if (!target || target.disabled) return;
-                const pageKey = target.dataset.target;
-                if (pageKey && pageRenderers[pageKey]) { pageRenderers[pageKey](); setActiveNavItem(target); }
+            
+            document.body.addEventListener('click', (event) => {
+                const navTarget = event.target.closest('.nav-item');
+                if (navTarget && !navTarget.disabled) {
+                    const pageKey = navTarget.dataset.target;
+                    if (pageKey && pageRenderers[pageKey]) {
+                        pageRenderers[pageKey]();
+                        setActiveNavItem(navTarget);
+                    }
+                }
+                
+                const actionTarget = event.target.closest('[data-action]');
+                if (actionTarget) {
+                    const { action, id, collection } = actionTarget.dataset;
+                    const actionHandlers = {
+                        'open-signup': openSignUpModal,
+                        'add-event': openEventForm,
+                        'view-event': () => openEventModal(id),
+                        'edit-event': () => openEventForm(id),
+                        'add-budget': openBudgetForm,
+                        'view-budget': () => openBudgetModal(id),
+                        'edit-budget': () => openBudgetForm(id),
+                        'add-task': openTaskForm,
+                        'add-collaborator': openCollaboratorForm,
+                        'add-schedule': openScheduleForm,
+                        'view-schedule': () => openScheduleForm(id),
+                        'add-expense': openExpenseForm,
+                        'view-expense': () => openExpenseForm(id),
+                        'add-aluno': openAlunoForm,
+                        'view-aluno': () => openAlunoModal(id),
+                        'edit-aluno': () => openAlunoForm(id),
+                        'add-cancelamento': openCancelamentoForm,
+                        'view-cancelamento': () => openCancelamentoModal(id),
+                        'edit-cancelamento': () => openCancelamentoForm(id),
+                        'delete-item': () => deleteItem(collection, id)
+                    };
+                    if (actionHandlers[action]) {
+                        actionHandlers[action]();
+                    }
+                }
+
+                if(event.target.matches('input[type="checkbox"][data-action="toggle-task"]')) {
+                    const taskId = event.target.dataset.id;
+                    const isCompleted = event.target.checked;
+                    const task = tasks.find(t => t.id === taskId);
+                    if(task) toggleTaskCompletion(taskId, !isCompleted);
+                }
+                 if(event.target.matches('input[type="checkbox"][data-action="toggle-expense"]')) {
+                    const expenseId = event.target.dataset.id;
+                    const isPaid = event.target.checked;
+                    toggleExpensePaid(expenseId, isPaid);
+                }
             });
+
             document.getElementById('login-form').addEventListener('submit', handleLogin);
             document.getElementById('logout-button').addEventListener('click', handleLogout);
             document.getElementById('logout-pending-button').addEventListener('click', handleLogout);
             document.getElementById('profile-picture-upload').addEventListener('change', handleProfilePictureUpload);
+            
             initializeFirebase();
         });
-
-        // Expose functions to global scope
-        window.closeFormModal = closeFormModal;
-        window.openSignUpModal = openSignUpModal;
-        window.openEventForm = openEventForm;
-        window.openEventModal = openEventModal;
-        window.openBudgetForm = openBudgetForm;
-        window.openBudgetModal = openBudgetModal;
-        window.openTaskForm = openTaskForm;
-        window.toggleTaskCompletion = toggleTaskCompletion;
-        window.openCollaboratorForm = openCollaboratorForm;
-        window.deleteItem = deleteItem;
-        window.openScheduleForm = openScheduleForm;
-        window.saveScheduleEntry = saveScheduleEntry;
-        window.openExpenseForm = openExpenseForm;
-        window.saveExpense = saveExpense;
-        window.toggleExpensePaid = toggleExpensePaid;
-        window.openAlunoForm = openAlunoForm;
-        window.saveAluno = saveAluno;
-        window.openAlunoModal = openAlunoModal;
-        window.openCancelamentoForm = openCancelamentoForm;
-        window.saveCancelamento = saveCancelamento;
-        window.openCancelamentoModal = openCancelamentoModal;
     </script>
 </body>
 </html>
