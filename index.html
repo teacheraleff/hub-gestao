@@ -90,41 +90,16 @@
 </head>
 <body class="bg-stone-100 text-stone-800">
 
-    <!-- Login, Pending, and Hub Views remain the same -->
+    <!-- Login, Pending, and Hub Views -->
     <div id="login-view" class="flex items-center justify-center min-h-screen">
-        <div class="w-full max-w-md p-8 space-y-6 bg-white rounded-xl shadow-lg">
-            <div class="text-center">
-                <img src="https://res.cloudinary.com/dqfi22uz0/image/upload/v1749349751/DBB440C2-684E-4DCF-9CD3-B2DDC18F1E53_3_vgocga.jpg" alt="Logo SLAP" class="w-24 h-auto mx-auto rounded-lg mb-4">
-                <h2 class="text-2xl font-bold text-stone-800">Aceder ao Hub Gestão</h2>
-            </div>
-            <form id="login-form" class="space-y-4">
-                <div>
-                    <label for="login-email" class="text-sm font-medium text-stone-700">Email</label>
-                    <input type="email" id="login-email" name="email" required class="form-input mt-1">
-                </div>
-                <div>
-                    <label for="login-password" class="text-sm font-medium text-stone-700">Palavra-passe</label>
-                    <input type="password" id="login-password" name="password" required class="form-input mt-1">
-                </div>
-                <p id="login-error" class="text-sm text-red-600"></p>
-                <div>
-                    <button type="submit" class="primary-btn">Entrar</button>
-                </div>
-            </form>
-            <p class="text-sm text-center text-stone-600">
-                Não tem uma conta? <button data-action="open-signup" class="font-medium text-[#F1D24B] hover:underline">Registe-se</button>
-            </p>
-        </div>
+        <!-- O conteúdo do login será gerado pelo JS -->
     </div>
 
     <div id="pending-view" class="hidden items-center justify-center min-h-screen">
-        <div class="w-full max-w-md p-8 space-y-6 bg-white rounded-xl shadow-lg text-center">
-            <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-12 w-12 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <h2 class="text-2xl font-bold text-stone-800">Aprovação Pendente</h2>
-            <p class="text-stone-600">O seu registo foi concluído com sucesso. Aguarde a aprovação de um administrador para aceder ao Hub.</p>
-            <button id="logout-pending-button" class="mt-4 text-sm font-medium text-stone-500 hover:text-stone-800">Sair</button>
+        <div class="text-center p-8 bg-white rounded-xl shadow-lg">
+            <h2 class="text-2xl font-bold text-yellow-500">Aguardando Aprovação</h2>
+            <p class="text-stone-600 mt-2">A sua conta foi criada e está a aguardar aprovação de um administrador.</p>
+            <button id="pending-logout" class="mt-6 secondary-btn w-auto">Sair</button>
         </div>
     </div>
 
@@ -178,7 +153,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, updateProfile, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+        import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
         import { getFirestore, collection, onSnapshot, addDoc, doc, deleteDoc, serverTimestamp, query, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-storage.js";
 
@@ -192,7 +167,6 @@
         let db, auth, storage, userId, currentUserName, currentUserRole;
         let tasks = [], events = [], budgets = [], collaborators = [], schedules = [], expenses = [], cancellations = [];
         let allUnsubscribers = [];
-        let tasksChart = null;
         const appId = 'hub-gestao-slap';
 
         // --- FIREBASE INITIALIZATION ---
@@ -212,7 +186,7 @@
                 db = getFirestore(app);
                 auth = getAuth(app);
                 storage = getStorage(app);
-
+                
                 onAuthStateChanged(auth, async (user) => {
                     if (user) {
                         await initializeAppWithUser(user);
@@ -222,33 +196,27 @@
                 });
             } catch (error) {
                 console.error("Error initializing Firebase:", error);
-                showLoginView();
             }
         }
 
         async function initializeAppWithUser(user) {
             userId = user.uid;
             
-            if (user.isAnonymous) {
-                currentUserName = 'Admin (Preview)';
-                currentUserRole = 'admin';
-            } else {
-                const userDocRef = doc(db, "users", userId);
-                const userDoc = await getDoc(userDocRef);
-                if (userDoc.exists()) {
-                    const userData = userDoc.data();
-                    currentUserName = userData.name || user.displayName;
-                    currentUserRole = userData.role;
-                    document.getElementById('profile-picture').src = userData.photoURL || 'https://res.cloudinary.com/dqfi22uz0/image/upload/v1749349751/DBB440C2-684E-4DCF-9CD3-B2DDC18F1E53_3_vgocga.jpg';
+            const userDocRef = doc(db, "users", userId);
+            const userDoc = await getDoc(userDocRef);
+            
+            if (userDoc.exists()) {
+                const userData = userDoc.data();
+                currentUserName = userData.name || user.displayName;
+                currentUserRole = userData.role;
+                document.getElementById('profile-picture').src = userData.photoURL || 'https://res.cloudinary.com/dqfi22uz0/image/upload/v1749349751/DBB440C2-684E-4DCF-9CD3-B2DDC18F1E53_3_vgocga.jpg';
+                
+                if (['admin', 'pedagogico', 'financeiro', 'ap'].includes(currentUserRole)) {
+                    setupFirestoreListeners();
+                    showHubView();
                 } else {
                     showPendingView();
-                    return;
                 }
-            }
-            
-            if (['admin', 'pedagogico', 'financeiro', 'ap'].includes(currentUserRole)) {
-                setupFirestoreListeners();
-                showHubView();
             } else {
                 showPendingView();
             }
@@ -269,7 +237,7 @@
                     const activePageId = contentArea.firstElementChild?.id;
                     if (renderFunc && activePageId) {
                         const pageBaseName = activePageId.replace('-section', '');
-                        if (pageBaseName.startsWith(collectionName.slice(0, -1).toLowerCase()) || pageBaseName === 'inicio') {
+                        if (pageBaseName.startsWith(collectionName.slice(0, -1).toLowerCase()) || pageBaseName === 'inicio' || (collectionName === 'collaborators' && ['grade', 'tasks', 'inicio'].includes(pageBaseName))) {
                             renderFunc();
                         }
                     }
@@ -283,7 +251,7 @@
                 const activePageId = contentArea.firstElementChild?.id;
                 if (activePageId === 'grade-section') renderGradeSection();
                 if (activePageId === 'tasks-section') renderTarefasSection();
-                 if (activePageId === 'inicio-section') renderInicioSection();
+                if (activePageId === 'inicio-section') renderInicioSection();
             });
             getCollectionListener('events', events, renderEventosSection);
             getCollectionListener('schedules', schedules, renderGradeSection);
@@ -292,20 +260,50 @@
         }
 
         // --- AUTH, VIEW, and MENU FUNCTIONS ---
-        function showLoginView() { 
+        function showLoginView() {
             hubView.classList.add('hidden');
             pendingView.classList.add('hidden');
             pendingView.classList.remove('flex');
-            loginView.classList.remove('hidden'); 
+            loginView.classList.remove('hidden');
             loginView.classList.add('flex');
+            loginView.innerHTML = `
+                <div class="w-full max-w-md p-8 space-y-8 bg-white rounded-xl shadow-lg">
+                    <div class="text-center">
+                        <img src="https://res.cloudinary.com/dqfi22uz0/image/upload/v1749349751/DBB440C2-684E-4DCF-9CD3-B2DDC18F1E53_3_vgocga.jpg" alt="Logo SLAP" class="w-24 h-auto mx-auto rounded-lg mb-4">
+                        <h2 class="text-2xl font-bold text-stone-900">Aceda à sua conta</h2>
+                        <p class="mt-2 text-sm text-stone-600">Bem-vindo de volta!</p>
+                    </div>
+                    <form id="login-form" class="mt-8 space-y-6">
+                        <div>
+                            <label for="login-email" class="sr-only">Email</label>
+                            <input id="login-email" name="email" type="email" autocomplete="email" required class="form-input" placeholder="Endereço de email">
+                        </div>
+                        <div>
+                            <label for="login-password" class="sr-only">Palavra-passe</label>
+                            <input id="login-password" name="password" type="password" autocomplete="current-password" required class="form-input" placeholder="Palavra-passe">
+                        </div>
+                        <p id="login-error" class="text-sm text-red-600 text-center"></p>
+                        <div>
+                            <button type="submit" class="primary-btn">Entrar</button>
+                        </div>
+                    </form>
+                    <p class="text-sm text-center text-stone-600">
+                        Não tem uma conta?
+                        <button data-action="open-signup" class="font-medium text-yellow-600 hover:text-yellow-500">Registe-se</button>
+                    </p>
+                </div>
+            `;
+            document.getElementById('login-form').addEventListener('submit', handleLogin);
         }
+
         function showHubView() { 
             loginView.classList.add('hidden');
             loginView.classList.remove('flex');
             pendingView.classList.add('hidden');
             pendingView.classList.remove('flex');
             hubView.classList.remove('hidden'); 
-            document.getElementById('welcome-message').textContent = `Bem-vindo, ${currentUserName || ''}`;
+            const firstName = (currentUserName || '').split(' ')[0];
+            document.getElementById('welcome-message').textContent = `Bem-vindo, ${firstName}`;
             renderMenu(); 
             renderInicioSection(); 
             setActiveNavItem(document.querySelector('[data-target="inicio"]')); 
@@ -318,8 +316,18 @@
             pendingView.classList.add('flex');
         }
         function setActiveNavItem(element) { document.querySelectorAll('#main-navigation .nav-item').forEach(item => item.classList.remove('active')); if (element) element.classList.add('active'); }
-        async function handleLogin(event) { event.preventDefault(); const email = event.target.email.value; const password = event.target.password.value; try { await signInWithEmailAndPassword(auth, email, password); } catch (error) { document.getElementById('login-error').textContent = "Email ou palavra-passe inválidos."; } }
-        async function handleSignUp(event) { event.preventDefault(); const name = event.target.name.value; const email = event.target.email.value; const password = event.target.password.value; try { const cred = await createUserWithEmailAndPassword(auth, email, password); await updateProfile(cred.user, { displayName: name }); await setDoc(doc(db, "users", cred.user.uid), { name, email, role: "pending", createdAt: serverTimestamp() }); await signOut(auth); showSuccessMessage("Registo Concluído!", "Aguarde aprovação."); } catch (error) { document.getElementById('signup-error').textContent = "Erro ao criar conta."; } }
+        async function handleLogin(event) {
+            event.preventDefault();
+            const email = event.target.email.value;
+            const password = event.target.password.value;
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+            } catch (error) {
+                const errorElement = document.getElementById('login-error');
+                if(errorElement) errorElement.textContent = "Email ou palavra-passe inválidos.";
+            }
+        }
+        async function handleSignUp(event) { event.preventDefault(); const name = event.target.name.value; const email = event.target.email.value; const password = event.target.password.value; try { const cred = await createUserWithEmailAndPassword(auth, email, password); await updateProfile(cred.user, { displayName: name }); await setDoc(doc(db, "users", cred.user.uid), { name, email, role: "pending", createdAt: serverTimestamp() }); await signOut(auth); showSuccessMessage("Registo Concluído!", "A sua conta foi criada. Aguarde aprovação de um administrador para aceder."); } catch (error) { showErrorMessage("Erro", "Erro ao criar conta. Verifique o email e a palavra-passe."); } }
         async function handleLogout() { await signOut(auth); }
         
         // --- PROFILE PICTURE UPLOAD ---
@@ -342,7 +350,7 @@
                 showSuccessMessage("Sucesso!", "A sua foto de perfil foi atualizada.");
             } catch (error) {
                 console.error("Error uploading profile picture: ", error);
-                showSuccessMessage("Erro", "Falha ao carregar a imagem. Verifique as permissões do Firebase Storage.");
+                showErrorMessage("Erro", "Falha ao carregar a imagem. Verifique as permissões do Firebase Storage.");
             } finally {
                 loader.classList.add('hidden');
             }
@@ -419,7 +427,6 @@
             }).join(''); 
         }
         
-        // --- GRADE/SCHEDULE FUNCTIONS ---
         function renderGradeSection() {
             document.getElementById('main-title').textContent = 'Grade de Horários';
             document.getElementById('main-description').textContent = 'Visualize e gerencie a grade de aulas da equipa.';
@@ -485,7 +492,6 @@
             gridContainer.innerHTML = gridHtml;
         }
 
-        // --- PAYROLL FUNCTIONS ---
         function renderFolhaPagamentoSection() {
             document.getElementById('main-title').textContent = 'Folha de Pagamento';
             document.getElementById('main-description').textContent = 'Gerencie as despesas e contas a pagar do mês.';
@@ -500,7 +506,9 @@
                 return dueDate.getMonth() === currentMonth && dueDate.getFullYear() === currentYear;
             });
 
-            const totalAmount = monthlyExpenses.reduce((sum, exp) => sum + Number(exp.amount), 0);
+            const totalToPay = monthlyExpenses
+                .filter(exp => !exp.isPaid)
+                .reduce((sum, exp) => sum + Number(exp.amount), 0);
 
             contentArea.innerHTML = `
                 <section id="folha-pagamento-section" class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
@@ -512,32 +520,37 @@
                         <table class="data-table">
                             <thead>
                                 <tr>
-                                    <th>Status</th>
+                                    <th>Pago</th>
                                     <th>Descrição</th>
                                     <th>Vencimento</th>
                                     <th class="text-right">Valor (R$)</th>
+                                    <th class="text-center">Ações</th>
                                 </tr>
                             </thead>
                             <tbody id="expenses-list">
                                 ${monthlyExpenses.length > 0 ? monthlyExpenses.map(exp => `
                                     <tr class="${exp.isPaid ? 'paid' : ''}">
-                                        <td class="text-center"><input type="checkbox" data-action="toggle-expense" data-id="${exp.id}" ${exp.isPaid ? 'checked' : ''}></td>
-                                        <td class="font-medium" data-action="view-expense" data-id="${exp.id}">${exp.description} ${exp.isFixedSalary ? `<span class="text-xs text-stone-500">(${exp.employeeRole || 'Salário Fixo'})</span>` : ''}</td>
-                                        <td data-action="view-expense" data-id="${exp.id}">${new Date(exp.dueDate + 'T00:00:00').toLocaleDateString('pt-BR')}</td>
-                                        <td class="text-right font-mono" data-action="view-expense" data-id="${exp.id}">${Number(exp.amount).toFixed(2)}</td>
+                                        <td class="text-center"><input type="checkbox" data-action="toggle-expense" data-id="${exp.id}" class="h-5 w-5 rounded border-gray-300 text-yellow-500 focus:ring-yellow-400" ${exp.isPaid ? 'checked' : ''}></td>
+                                        <td class="font-medium cursor-pointer" data-action="view-expense" data-id="${exp.id}">${exp.description} ${exp.isFixedSalary ? `<span class="text-xs text-stone-500">(${exp.employeeRole || 'Salário Fixo'})</span>` : ''}</td>
+                                        <td class="cursor-pointer" data-action="view-expense" data-id="${exp.id}">${new Date(exp.dueDate + 'T00:00:00').toLocaleDateString('pt-BR')}</td>
+                                        <td class="text-right font-mono cursor-pointer" data-action="view-expense" data-id="${exp.id}">${Number(exp.amount).toFixed(2)}</td>
+                                        <td class="text-center">
+                                            <button class="task-delete-btn" data-action="delete-item" data-collection="expenses" data-id="${exp.id}">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                            </button>
+                                        </td>
                                     </tr>
-                                `).join('') : '<tr><td colspan="4" class="text-center py-8 text-stone-500">Nenhuma despesa para este mês.</td></tr>'}
+                                `).join('') : '<tr><td colspan="5" class="text-center py-8 text-stone-500">Nenhuma despesa para este mês.</td></tr>'}
                             </tbody>
                         </table>
                     </div>
                     <div class="data-total">
-                        <p>Total a Pagar: R$ ${totalAmount.toFixed(2)}</p>
+                        <p>Total a Pagar: R$ ${totalToPay.toFixed(2)}</p>
                     </div>
                 </section>
             `;
         }
         
-        // --- CANCELLATIONS FUNCTIONS ---
         function renderCancelamentosSection() {
             document.getElementById('main-title').textContent = 'Registo de Cancelamentos';
             document.getElementById('main-description').textContent = 'Gerencie todos os cancelamentos de matrículas.';
@@ -578,7 +591,9 @@
 
         // --- MODAL & FORM FUNCTIONS ---
         function closeFormModal() { document.getElementById('form-modal').classList.remove('visible'); }
-        function showSuccessMessage(title, message) { const modalTitle = document.getElementById('form-modal-title'); const modalContentArea = document.getElementById('form-modal-content-area'); modalTitle.textContent = title; modalContentArea.innerHTML = `<div class="text-center"><svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-12 w-12 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg><p class="mt-4 text-stone-600">${message}</p><button onclick="closeFormModal()" class="primary-btn mt-6 w-auto px-8">OK</button></div>`; document.getElementById('form-modal').classList.add('visible'); }
+        function showSuccessMessage(title, message) { const modalTitle = document.getElementById('form-modal-title'); const modalContentArea = document.getElementById('form-modal-content-area'); modalTitle.textContent = title; modalContentArea.innerHTML = `<div class="text-center"><svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-12 w-12 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg><p class="mt-4 text-stone-600">${message}</p><button data-action="close-modal" class="primary-btn mt-6 w-auto px-8">OK</button></div>`; document.getElementById('form-modal').classList.add('visible'); }
+        function showErrorMessage(title, message) { const modalTitle = document.getElementById('form-modal-title'); const modalContentArea = document.getElementById('form-modal-content-area'); modalTitle.textContent = title; modalContentArea.innerHTML = `<div class="text-center"><svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-12 w-12 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg><p class="mt-4 text-stone-600">${message}</p><button data-action="close-modal" class="primary-btn mt-6 w-auto px-8">OK</button></div>`; document.getElementById('form-modal').classList.add('visible'); }
+        function showConfirmationModal(title, message, onConfirm) { const modalTitle = document.getElementById('form-modal-title'); const modalContentArea = document.getElementById('form-modal-content-area'); modalTitle.textContent = title; modalContentArea.innerHTML = `<p class="text-stone-600">${message}</p><div class="mt-6 flex justify-end gap-4"><button class="secondary-btn" data-action="close-modal">Cancelar</button><button id="confirm-action-btn" class="primary-btn w-auto">Confirmar</button></div>`; document.getElementById('form-modal').classList.add('visible'); document.getElementById('confirm-action-btn').onclick = () => { onConfirm(); closeFormModal(); }; }
         
         function openSignUpModal() {
             const modalTitle = document.getElementById('form-modal-title');
@@ -590,7 +605,6 @@
                     <div><label for="signup-name" class="font-medium text-sm">Nome Completo</label><input type="text" id="signup-name" name="name" required class="form-input mt-1"></div>
                     <div><label for="signup-email" class="font-medium text-sm">Email</label><input type="email" id="signup-email" name="email" required class="form-input mt-1"></div>
                     <div><label for="signup-password" class="font-medium text-sm">Palavra-passe (mín. 6 caracteres)</label><input type="password" id="signup-password" name="password" required class="form-input mt-1"></div>
-                    <p id="signup-error" class="text-sm text-red-600"></p>
                     <div class="text-right"><button type="submit" class="primary-btn w-auto">Registar</button></div>
                 </form>
             `;
@@ -636,7 +650,7 @@
                     await addDoc(collection(db, `artifacts/${appId}/public/data/events`), data);
                     showSuccessMessage("Sucesso!", "Novo evento adicionado.");
                 }
-            } catch (error) { console.error("Error saving event:", error); }
+            } catch (error) { console.error("Error saving event:", error); showErrorMessage("Erro", "Falha ao salvar o evento."); }
         }
 
         function openEventModal(eventId) {
@@ -700,7 +714,7 @@
                     await addDoc(collection(db, `artifacts/${appId}/public/data/budgets`), data);
                     showSuccessMessage("Sucesso!", "Novo orçamento adicionado.");
                 }
-            } catch (error) { console.error("Error saving budget:", error); }
+            } catch (error) { console.error("Error saving budget:", error); showErrorMessage("Erro", "Falha ao salvar o orçamento."); }
         }
 
         function openBudgetModal(budgetId) {
@@ -722,7 +736,6 @@
                 </div>`;
             document.getElementById('form-modal').classList.add('visible');
         }
-
 
         function openTaskForm() {
             document.getElementById('form-modal-title').textContent = "Adicionar Nova Tarefa";
@@ -748,12 +761,12 @@
                 createdAt: serverTimestamp(),
                 completed: false
             };
-            if (!data.description || !data.deadline || data.assignedTo.length === 0) { alert("Preencha todos os campos."); return; }
+            if (!data.description || !data.deadline || data.assignedTo.length === 0) { showErrorMessage("Erro de Validação", "Por favor, preencha todos os campos obrigatórios."); return; }
             if (!db) { console.warn("Offline mode."); closeFormModal(); return; }
             try {
                 await addDoc(collection(db, `artifacts/${appId}/public/data/tasks`), data);
                 showSuccessMessage("Sucesso!", "Tarefa adicionada.");
-            } catch (error) { console.error("Error saving task:", error); }
+            } catch (error) { console.error("Error saving task:", error); showErrorMessage("Erro", "Falha ao salvar a tarefa."); }
         }
         
         function openCollaboratorForm() {
@@ -780,7 +793,7 @@
             try {
                 await addDoc(collection(db, `artifacts/${appId}/public/data/collaborators`), { name, shiftStart, shiftEnd });
                 showSuccessMessage("Sucesso!", "Colaborador adicionado.");
-            } catch (error) { console.error("Error saving collaborator:", error); }
+            } catch (error) { console.error("Error saving collaborator:", error); showErrorMessage("Erro", "Falha ao salvar o colaborador."); }
         }
 
         function openScheduleForm(scheduleId = null) {
@@ -798,34 +811,37 @@
 
         async function saveScheduleEntry(event) {
             event.preventDefault();
-            const scheduleId = document.getElementById('schedule-id').value;
             const teacherName = document.getElementById('schedule-teacher').value;
             const startTime = document.getElementById('schedule-start').value;
             
             const teacher = collaborators.find(c => c.name === teacherName);
             if (teacher && teacher.shiftStart && teacher.shiftEnd) {
                 if (startTime < teacher.shiftStart || startTime > teacher.shiftEnd) {
-                    const confirmation = confirm(`Este horário (${startTime}) está fora do turno do professor (${teacher.shiftStart} - ${teacher.shiftEnd}). Tem a certeza que quer continuar?`);
-                    if (!confirmation) return;
+                    showConfirmationModal(
+                        "Aviso de Horário", 
+                        `Este horário (${startTime}) está fora do turno do professor (${teacher.shiftStart} - ${teacher.shiftEnd}). Tem a certeza que quer continuar?`,
+                        () => proceedWithSaveSchedule()
+                    );
+                    return;
                 }
             }
-            
+            proceedWithSaveSchedule();
+        }
+
+        async function proceedWithSaveSchedule() {
+            const scheduleId = document.getElementById('schedule-id').value;
             const daySelection = document.getElementById('schedule-day').value;
             const daysToCreate = [];
-            if (daySelection === 'Seg/Qua') {
-                daysToCreate.push('Segunda', 'Quarta');
-            } else if (daySelection === 'Ter/Qui') {
-                daysToCreate.push('Terça', 'Quinta');
-            } else {
-                daysToCreate.push(daySelection);
-            }
+            if (daySelection === 'Seg/Qua') daysToCreate.push('Segunda', 'Quarta');
+            else if (daySelection === 'Ter/Qui') daysToCreate.push('Terça', 'Quinta');
+            else daysToCreate.push(daySelection);
 
             const baseData = { 
                 student: document.getElementById('schedule-student').value, 
                 level: document.getElementById('schedule-level').value, 
-                teacher: teacherName, 
+                teacher: document.getElementById('schedule-teacher').value, 
                 type: document.getElementById('schedule-type').value, 
-                startTime: startTime, 
+                startTime: document.getElementById('schedule-start').value, 
                 endTime: document.getElementById('schedule-end').value 
             };
             
@@ -842,32 +858,131 @@
                     }
                     showSuccessMessage("Sucesso!", "Aula(s) adicionada(s).");
                 }
-            } catch (error) { console.error("Error saving schedule:", error); }
+            } catch (error) { console.error("Error saving schedule:", error); showErrorMessage("Erro", "Falha ao salvar a aula."); }
         }
-        
-        async function toggleTaskCompletion(taskId, currentStatus) { if (!db) return; const taskRef = doc(db, `artifacts/${appId}/public/data/tasks`, taskId); try { await updateDoc(taskRef, { completed: !currentStatus }); } catch (error) { console.error("Error updating task status:", error); } }
 
-        // --- GENERIC & UTILITY FUNCTIONS ---
-        async function deleteItem(collectionName, itemId) {
-            if (!db) { console.warn("Offline mode."); return; }
-            document.getElementById('form-modal-title').textContent = "Confirmar Exclusão";
+        function openExpenseForm(expenseId = null) {
+            const expense = expenseId ? expenses.find(e => e.id === expenseId) : null;
+            document.getElementById('form-modal-title').textContent = expense ? "Editar Despesa" : "Adicionar Nova Despesa";
             document.getElementById('form-modal-content-area').innerHTML = `
-                <p>Tem a certeza que deseja apagar este item? Esta ação não pode ser desfeita.</p>
-                <div class="mt-6 flex justify-end gap-4">
-                    <button class="secondary-btn" data-action="close-modal">Cancelar</button>
-                    <button id="confirm-delete-btn" class="danger-btn">Apagar</button>
-                </div>
-            `;
-            document.getElementById('confirm-delete-btn').onclick = async () => {
-                try {
-                    await deleteDoc(doc(db, `artifacts/${appId}/public/data/${collectionName}`, itemId));
-                    showSuccessMessage("Sucesso", "Item apagado com sucesso.");
-                } catch (error) { console.error(`Error deleting item from ${collectionName}:`, error); }
+                <form id="form-modal-body" class="space-y-4">
+                    <input type="hidden" id="expense-id" value="${expenseId || ''}">
+                    <div><label class="font-medium text-sm">Descrição</label><input type="text" id="expense-description" class="form-input" required value="${expense?.description || ''}"></div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><label class="font-medium text-sm">Vencimento</label><input type="date" id="expense-dueDate" class="form-input" required value="${expense?.dueDate || ''}"></div>
+                        <div><label class="font-medium text-sm">Valor (R$)</label><input type="number" step="0.01" id="expense-amount" class="form-input" required value="${expense?.amount || ''}"></div>
+                    </div>
+                    <div class="flex items-center gap-2"><input type="checkbox" id="expense-isFixedSalary" class="h-4 w-4 rounded" ${expense?.isFixedSalary ? 'checked' : ''}><label for="expense-isFixedSalary" class="text-sm">É salário fixo?</label></div>
+                    <div id="employee-role-container" class="${expense?.isFixedSalary ? '' : 'hidden'}"><label class="font-medium text-sm">Cargo</label><input type="text" id="expense-employeeRole" class="form-input" value="${expense?.employeeRole || ''}"></div>
+                    <div class="pt-4 flex justify-end gap-2">${expenseId ? `<button type="button" class="danger-btn" data-action="delete-item" data-collection="expenses" data-id="${expenseId}">Apagar</button>` : ''}<button type="submit" class="primary-btn w-auto">Salvar</button></div>
+                </form>`;
+            
+            const isFixedSalaryCheckbox = document.getElementById('expense-isFixedSalary');
+            isFixedSalaryCheckbox.onchange = () => document.getElementById('employee-role-container').classList.toggle('hidden', !isFixedSalaryCheckbox.checked);
+            
+            document.getElementById('form-modal-body').onsubmit = saveExpense;
+            document.getElementById('form-modal').classList.add('visible');
+        }
+        async function saveExpense(event) {
+            event.preventDefault();
+            const expenseId = document.getElementById('expense-id').value;
+            const isFixedSalary = document.getElementById('expense-isFixedSalary').checked;
+            const data = {
+                description: document.getElementById('expense-description').value,
+                dueDate: document.getElementById('expense-dueDate').value,
+                amount: document.getElementById('expense-amount').value,
+                isPaid: false,
+                isFixedSalary: isFixedSalary,
+                employeeRole: isFixedSalary ? document.getElementById('expense-employeeRole').value : '',
             };
+            if (!db) { console.warn("Offline mode."); closeFormModal(); return; }
+            try {
+                if (expenseId) {
+                    await updateDoc(doc(db, `artifacts/${appId}/public/data/expenses`, expenseId), data);
+                    showSuccessMessage("Sucesso!", "Despesa atualizada.");
+                } else {
+                    data.createdAt = serverTimestamp();
+                    await addDoc(collection(db, `artifacts/${appId}/public/data/expenses`), data);
+                    showSuccessMessage("Sucesso!", "Nova despesa adicionada.");
+                }
+            } catch (error) { console.error("Error saving expense:", error); showErrorMessage("Erro", "Falha ao salvar despesa."); }
+        }
+        async function toggleExpensePaid(expenseId, isPaid) { if (!db) return; const expenseRef = doc(db, `artifacts/${appId}/public/data/expenses`, expenseId); try { await updateDoc(expenseRef, { isPaid: isPaid }); } catch (error) { console.error("Error updating expense status:", error); } }
+
+        function openCancelamentoForm(cancelamentoId = null) {
+            const cancelamento = cancelamentoId ? cancellations.find(c => c.id === cancelamentoId) : null;
+            document.getElementById('form-modal-title').textContent = cancelamento ? "Editar Cancelamento" : "Registar Novo Cancelamento";
+            const collaboratorOptions = collaborators.map(c => `<option value="${c.name}" ${cancelamento?.processedBy === c.name ? 'selected' : ''}>${c.name}</option>`).join('');
+            document.getElementById('form-modal-content-area').innerHTML = `
+                <form id="form-modal-body" class="space-y-4">
+                    <input type="hidden" id="cancelamento-id" value="${cancelamentoId || ''}">
+                    <div><label class="font-medium text-sm">Nome do Aluno</label><input type="text" id="cancelamento-studentName" class="form-input" required value="${cancelamento?.studentName || ''}"></div>
+                    <div><label class="font-medium text-sm">Data do Cancelamento</label><input type="date" id="cancelamento-date" class="form-input" required value="${cancelamento?.cancellationDate || ''}"></div>
+                    <div><label class="font-medium text-sm">Motivo</label><textarea id="cancelamento-reason" rows="3" class="form-input" required>${cancelamento?.reason || ''}</textarea></div>
+                    <div><label class="font-medium text-sm">Processado por</label><select id="cancelamento-processedBy" class="form-input" required>${collaboratorOptions}</select></div>
+                    <div class="text-right"><button type="submit" class="primary-btn w-auto">Salvar</button></div>
+                </form>`;
+            document.getElementById('form-modal-body').onsubmit = saveCancelamento;
+            document.getElementById('form-modal').classList.add('visible');
+        }
+        async function saveCancelamento(event) {
+            event.preventDefault();
+            const cancelamentoId = document.getElementById('cancelamento-id').value;
+            const data = {
+                studentName: document.getElementById('cancelamento-studentName').value,
+                cancellationDate: document.getElementById('cancelamento-date').value,
+                reason: document.getElementById('cancelamento-reason').value,
+                processedBy: document.getElementById('cancelamento-processedBy').value,
+            };
+            if (!db) { console.warn("Offline mode."); closeFormModal(); return; }
+            try {
+                if (cancelamentoId) {
+                    await updateDoc(doc(db, `artifacts/${appId}/public/data/cancellations`, cancelamentoId), data);
+                    showSuccessMessage("Sucesso!", "Registo de cancelamento atualizado.");
+                } else {
+                    data.createdAt = serverTimestamp();
+                    await addDoc(collection(db, `artifacts/${appId}/public/data/cancellations`), data);
+                    showSuccessMessage("Sucesso!", "Novo cancelamento registado.");
+                }
+            } catch (error) { console.error("Error saving cancellation:", error); showErrorMessage("Erro", "Falha ao salvar o cancelamento."); }
+        }
+        function openCancelamentoModal(cancelamentoId) {
+            const cancelamento = cancellations.find(c => c.id === cancelamentoId);
+            if (!cancelamento) return;
+            document.getElementById('form-modal-title').textContent = `Cancelamento de ${cancelamento.studentName}`;
+            document.getElementById('form-modal-content-area').innerHTML = `
+                <div class="space-y-4">
+                    <p><strong>Aluno:</strong> ${cancelamento.studentName}</p>
+                    <p><strong>Data:</strong> ${new Date(cancelamento.cancellationDate + 'T00:00:00').toLocaleDateString('pt-BR')}</p>
+                    <p><strong>Processado por:</strong> ${cancelamento.processedBy}</p>
+                    <div><strong>Motivo:</strong><p class="mt-1 p-3 bg-stone-50 rounded-md">${cancelamento.reason}</p></div>
+                    <div class="border-t pt-4 flex justify-end gap-2">
+                        <button class="secondary-btn" data-action="edit-cancelamento" data-id="${cancelamento.id}">Editar</button>
+                        <button class="danger-btn" data-action="delete-item" data-collection="cancellations" data-id="${cancelamento.id}">Apagar</button>
+                    </div>
+                </div>`;
             document.getElementById('form-modal').classList.add('visible');
         }
         
-        // --- APP INITIALIZATION ---
+        async function toggleTaskCompletion(taskId, isCompleted) { if (!db) return; const taskRef = doc(db, `artifacts/${appId}/public/data/tasks`, taskId); try { await updateDoc(taskRef, { completed: isCompleted }); } catch (error) { console.error("Error updating task status:", error); } }
+
+        async function deleteItem(collectionName, itemId) {
+            if (!db) { console.warn("Offline mode."); return; }
+            showConfirmationModal(
+                "Confirmar Exclusão",
+                "Tem a certeza que deseja apagar este item? Esta ação não pode ser desfeita.",
+                async () => {
+                    try {
+                        await deleteDoc(doc(db, `artifacts/${appId}/public/data/${collectionName}`, itemId));
+                        showSuccessMessage("Sucesso", "Item apagado com sucesso.");
+                    } catch (error) { 
+                        console.error(`Error deleting item from ${collectionName}:`, error); 
+                        showErrorMessage("Erro", "Falha ao apagar o item.");
+                    }
+                }
+            );
+        }
+        
         function renderMenu() {
             const mainNav = document.getElementById('main-navigation');
             const menuItems = [
@@ -938,8 +1053,7 @@
                 if(event.target.matches('input[type="checkbox"][data-action="toggle-task"]')) {
                     const taskId = event.target.dataset.id;
                     const isCompleted = event.target.checked;
-                    const task = tasks.find(t => t.id === taskId);
-                    if(task) toggleTaskCompletion(taskId, !isCompleted);
+                    toggleTaskCompletion(taskId, isCompleted);
                 }
                  if(event.target.matches('input[type="checkbox"][data-action="toggle-expense"]')) {
                     const expenseId = event.target.dataset.id;
@@ -948,9 +1062,8 @@
                 }
             });
 
-            document.getElementById('login-form').addEventListener('submit', handleLogin);
             document.getElementById('logout-button').addEventListener('click', handleLogout);
-            document.getElementById('logout-pending-button').addEventListener('click', handleLogout);
+            document.getElementById('pending-logout').addEventListener('click', handleLogout);
             document.getElementById('profile-picture-upload').addEventListener('change', handleProfilePictureUpload);
             initializeFirebase();
         });
