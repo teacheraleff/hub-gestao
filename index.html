@@ -34,7 +34,7 @@
         
         .status-tag { padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; }
         .status-aprovado, .status-presencial, .status-ativo { background-color: #D1FAE5; color: #065F46; }
-        .status-online, .status-em-andamento { background-color: #DBEAFE; color: #1E40AF; }
+        .status-online, .status-em-andamento, .status-inativo { background-color: #DBEAFE; color: #1E40AF; }
         .status-concluída { background-color: #F3F4F6; color: #4B5563; }
         .status-pendente, .status-em-espera { background-color: #FEF3C7; color: #92400E; }
         .status-rejeitado, .status-cancelado { background-color: #FEE2E2; color: #991B1B; }
@@ -92,6 +92,7 @@
         .primary-btn:hover { background-color: #eab308; }
         .secondary-btn { background-color: #f3f4f6; color: #4b5563; border: 1px solid #d1d5db; padding: 0.5rem 1rem; border-radius: 0.375rem; font-weight: 600; transition: all 0.2s; }
         .secondary-btn:hover { background-color: #e5e7eb; }
+        .secondary-btn.active { background-color: #F1D24B; color: #44403c; border-color: #F1D24B;}
         .danger-btn { background-color: #ef4444; color: white; padding: 0.5rem 1rem; border-radius: 0.375rem; font-weight: 600; transition: background-color 0.2s; border: none; cursor: pointer; }
         .danger-btn:hover { background-color: #dc2626; }
 
@@ -217,7 +218,7 @@
         const pendingView = document.getElementById('pending-view');
         
         let db, auth, storage, userId, currentUserName, currentUserRole;
-        let usersData = [], tasks = [], events = [], budgets = [], collaborators = [], schedules = [], expenses = [], cancellations = [], notifications = [], photos = [], photoFolders = [], cps = [], dojoRanking = [];
+        let usersData = [], students = [], tasks = [], events = [], budgets = [], collaborators = [], schedules = [], expenses = [], cancellations = [], notifications = [], photos = [], photoFolders = [], cps = [], dojoRanking = [];
         let allUnsubscribers = [];
         const appId = 'hub-gestao-slap';
 
@@ -304,6 +305,7 @@
             };
             
             getCollectionListener('users', usersData, null);
+            getCollectionListener('students', students, renderAlunosSection);
             getCollectionListener('tasks', tasks, renderTarefasSection);
             getCollectionListener('budgets', budgets, renderOrcamentosSection);
             getCollectionListener('collaborators', collaborators, () => {
@@ -434,6 +436,69 @@
                 <p class="mt-2 text-stone-600 max-w-2xl mx-auto">Selecione uma opção no menu à esquerda para começar a gerir as suas operações.</p>
             </div>`;
         }
+
+        function renderAlunosSection() {
+            document.getElementById('main-title').textContent = 'Gestão de Alunos';
+            document.getElementById('main-description').textContent = 'Cadastre e gerencie todos os alunos da escola.';
+
+            contentArea.innerHTML = `
+                <section id="alunos-section" class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
+                    <div class="flex justify-between items-center mb-6 flex-wrap gap-4">
+                        <div class="flex gap-2" id="alunos-filter-buttons">
+                            <button class="secondary-btn filter-btn active" data-filter="todos">Todos</button>
+                            <button class="secondary-btn filter-btn" data-filter="ativo">Ativos</button>
+                            <button class="secondary-btn filter-btn" data-filter="cancelado">Cancelados</button>
+                        </div>
+                        <button class="primary-btn w-auto" data-action="add-aluno">+ Adicionar Aluno</button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Nome do Aluno</th>
+                                    <th>Status</th>
+                                    <th>Curso/Nível</th>
+                                    <th>Responsável</th>
+                                    <th class="text-center">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="alunos-list">
+                                <!-- Student rows will be rendered here by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            `;
+            updateAlunosList('todos');
+        }
+
+        function updateAlunosList(filter) {
+            const listBody = document.getElementById('alunos-list');
+            if (!listBody) return;
+
+            let filteredStudents = students;
+            if (filter !== 'todos') {
+                filteredStudents = students.filter(s => s.status && s.status.toLowerCase() === filter);
+            }
+
+            if (filteredStudents.length === 0) {
+                listBody.innerHTML = '<tr><td colspan="5" class="text-center py-10 text-stone-500">Nenhum aluno encontrado.</td></tr>';
+                return;
+            }
+
+            listBody.innerHTML = filteredStudents.map(student => `
+                <tr data-action="view-aluno" data-id="${student.id}" class="cursor-pointer">
+                    <td class="font-medium">${student.name}</td>
+                    <td><span class="status-tag status-${(student.status || 'pendente').toLowerCase()}">${student.status || 'Pendente'}</span></td>
+                    <td>${student.course || 'N/A'}</td>
+                    <td>${student.responsibleName || 'N/A'}</td>
+                    <td class="text-center">
+                         <button class="secondary-btn" data-action="edit-aluno" data-id="${student.id}" onclick="event.stopPropagation()">Editar</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
         function renderEventosSection() {
             document.getElementById('main-title').textContent = 'Gestor de Eventos';
             document.getElementById('main-description').textContent = 'Planeje e gerencie todos os eventos da marca.';
@@ -923,6 +988,88 @@
                 </form>
             `;
             document.getElementById('signup-form').addEventListener('submit', handleSignUp);
+            document.getElementById('form-modal').classList.add('visible');
+        }
+
+        function openAlunoForm(alunoId = null) {
+            const aluno = alunoId ? students.find(s => s.id === alunoId) : null;
+            document.getElementById('form-modal-title').textContent = aluno ? "Editar Aluno" : "Adicionar Novo Aluno";
+            
+            const statusOptions = ['Ativo', 'Inativo', 'Cancelado', 'Pendente'].map(s => `<option value="${s}" ${aluno?.status === s ? 'selected' : ''}>${s}</option>`).join('');
+
+            document.getElementById('form-modal-content-area').innerHTML = `
+                <form id="form-modal-body" class="space-y-4">
+                    <input type="hidden" id="aluno-id" value="${alunoId || ''}">
+                    <div><label class="font-medium text-sm">Nome Completo do Aluno</label><input type="text" id="aluno-name" class="form-input" required value="${aluno?.name || ''}"></div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><label class="font-medium text-sm">Status</label><select id="aluno-status" class="form-input">${statusOptions}</select></div>
+                        <div><label class="font-medium text-sm">Data de Início</label><input type="date" id="aluno-startDate" class="form-input" value="${aluno?.startDate || ''}"></div>
+                    </div>
+                    <div><label class="font-medium text-sm">Curso / Nível</label><input type="text" id="aluno-course" class="form-input" value="${aluno?.course || ''}"></div>
+                    <hr/>
+                    <div><label class="font-medium text-sm">Nome do Responsável</label><input type="text" id="aluno-responsibleName" class="form-input" value="${aluno?.responsibleName || ''}"></div>
+                    <div><label class="font-medium text-sm">Telefone do Responsável</label><input type="tel" id="aluno-responsiblePhone" class="form-input" value="${aluno?.responsiblePhone || ''}"></div>
+                    <hr/>
+                    <div><label class="font-medium text-sm">Observações</label><textarea id="aluno-notes" rows="3" class="form-input">${aluno?.notes || ''}</textarea></div>
+                    <div class="text-right"><button type="submit" class="primary-btn w-auto">Salvar Aluno</button></div>
+                </form>
+            `;
+            document.getElementById('form-modal-body').onsubmit = saveAluno;
+            document.getElementById('form-modal').classList.add('visible');
+        }
+
+        async function saveAluno(event) {
+            event.preventDefault();
+            const alunoId = document.getElementById('aluno-id').value;
+            const data = {
+                name: document.getElementById('aluno-name').value,
+                status: document.getElementById('aluno-status').value,
+                startDate: document.getElementById('aluno-startDate').value,
+                course: document.getElementById('aluno-course').value,
+                responsibleName: document.getElementById('aluno-responsibleName').value,
+                responsiblePhone: document.getElementById('aluno-responsiblePhone').value,
+                notes: document.getElementById('aluno-notes').value,
+            };
+            if (!data.name) { showErrorMessage("Erro", "O nome do aluno é obrigatório."); return; }
+
+            try {
+                if (alunoId) {
+                    await updateDoc(doc(db, `artifacts/${appId}/public/data/students`, alunoId), data);
+                    showSuccessMessage("Sucesso!", "Dados do aluno atualizados.");
+                } else {
+                    data.createdAt = serverTimestamp();
+                    await addDoc(collection(db, `artifacts/${appId}/public/data/students`), data);
+                    await createNotification(`Novo aluno cadastrado: ${data.name}`);
+                    showSuccessMessage("Sucesso!", "Novo aluno cadastrado.");
+                }
+            } catch (error) {
+                console.error("Error saving student:", error);
+                showErrorMessage("Erro", "Falha ao salvar os dados do aluno.");
+            }
+        }
+
+        function openAlunoModal(alunoId) {
+            const aluno = students.find(s => s.id === alunoId);
+            if (!aluno) return;
+            document.getElementById('form-modal-title').textContent = `Perfil de ${aluno.name}`;
+            document.getElementById('form-modal-content-area').innerHTML = `
+                <div class="space-y-4">
+                    <div class="flex justify-between items-start">
+                        <h3 class="text-xl font-bold text-stone-800">${aluno.name}</h3>
+                        <span class="status-tag status-${(aluno.status || 'pendente').toLowerCase()}">${aluno.status || 'Pendente'}</span>
+                    </div>
+                    <p><strong>Curso/Nível:</strong> ${aluno.course || 'N/A'}</p>
+                    <p><strong>Data de Início:</strong> ${aluno.startDate ? new Date(aluno.startDate + 'T00:00:00').toLocaleDateString('pt-BR') : 'N/A'}</p>
+                    <hr/>
+                    <h4 class="font-semibold">Dados do Responsável</h4>
+                    <p><strong>Nome:</strong> ${aluno.responsibleName || 'N/A'}</p>
+                    <p><strong>Telefone:</strong> ${aluno.responsiblePhone || 'N/A'}</p>
+                    ${aluno.notes ? `<div><strong>Observações:</strong><p class="mt-1 p-3 bg-stone-50 rounded-md whitespace-pre-wrap">${aluno.notes}</p></div>` : ''}
+                    <div class="border-t pt-4 flex justify-end gap-2">
+                        <button class="secondary-btn" data-action="edit-aluno" data-id="${aluno.id}">Editar</button>
+                        <button class="danger-btn" data-action="delete-item" data-collection="students" data-id="${aluno.id}">Apagar</button>
+                    </div>
+                </div>`;
             document.getElementById('form-modal').classList.add('visible');
         }
 
@@ -1735,6 +1882,7 @@
             const menuItems = [
                 { key: 'inicio', label: 'Início', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>', roles: null },
                 { key: 'dojo', label: 'Dojo', icon: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-3"><path d="M6.5 12.5h11"/><path d="M12 6.5v11"/><path d="M17.5 17.5 19 19"/><path d="M6.5 6.5 5 5"/><path d="M17.5 6.5 19 5"/><path d="M6.5 17.5 5 19"/><path d="M2 12C2 6.5 6.5 2 12 2s10 4.5 10 10-4.5 10-10 10S2 17.5 2 12Z"/><path d="M16 8h2"/><path d="M6 16H4"/></svg>', roles: null },
+                { key: 'alunos', label: 'Alunos', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>', roles: ['admin', 'pedagogico', 'financeiro', 'ap'] },
                 { key: 'grade', label: 'Grade', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" x2="16" y1="2" y2="6"></line><line x1="8" x2="8" y1="2" y2="6"></line><line x1="3" x2="21" y1="10" y2="10"></line></svg>', roles: ['admin', 'ap', 'pedagogico', 'financeiro', 'teacher'] },
                 { key: 'tarefas', label: 'Tarefas', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>', roles: ['admin', 'am', 'ap', 'pedagogico', 'financeiro', 'teacher'] },
                 { key: 'cps', label: 'CPs', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>', roles: ['admin', 'pedagogico', 'ap'] },
@@ -1761,7 +1909,7 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            const pageRenderers = { 'inicio': renderInicioSection, 'eventos': renderEventosSection, 'orcamentos': renderOrcamentosSection, 'tarefas': renderTarefasSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection, 'cancelamentos': renderCancelamentosSection, 'colaboradores': renderColaboradoresSection, 'banco-de-fotos': renderBancoDeFotosSection, 'cps': renderCPsSection, 'dojo': renderDojoSection };
+            const pageRenderers = { 'inicio': renderInicioSection, 'alunos': renderAlunosSection, 'eventos': renderEventosSection, 'orcamentos': renderOrcamentosSection, 'tarefas': renderTarefasSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection, 'cancelamentos': renderCancelamentosSection, 'colaboradores': renderColaboradoresSection, 'banco-de-fotos': renderBancoDeFotosSection, 'cps': renderCPsSection, 'dojo': renderDojoSection };
             
             document.body.addEventListener('click', (event) => {
                 const navTarget = event.target.closest('.nav-item');
@@ -1772,14 +1920,27 @@
                         setActiveNavItem(navTarget);
                     }
                 }
+
+                if (event.target.closest('#alunos-filter-buttons')) {
+                    const filterBtn = event.target.closest('.filter-btn');
+                    if(filterBtn) {
+                        document.querySelectorAll('#alunos-filter-buttons .filter-btn').forEach(b => b.classList.remove('active'));
+                        filterBtn.classList.add('active');
+                        updateAlunosList(filterBtn.dataset.filter);
+                    }
+                }
                 
                 const actionTarget = event.target.closest('[data-action]');
                 if (actionTarget) {
                     // Prevent modal from closing if the action is inside the modal content
-                    event.stopPropagation();
+                    if(actionTarget.closest('.modal-content')) event.stopPropagation();
+                    
                     const { action, id, collection, folderName, nivelId, aulaIndex } = actionTarget.dataset;
                     const actionHandlers = {
                         'open-signup': openSignUpModal,
+                        'add-aluno': () => openAlunoForm(),
+                        'view-aluno': () => openAlunoModal(id),
+                        'edit-aluno': () => openAlunoForm(id),
                         'add-event': openEventForm,
                         'view-event': () => openEventModal(id),
                         'edit-event': () => openEventForm(id),
