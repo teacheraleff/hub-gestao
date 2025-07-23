@@ -206,7 +206,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, updateProfile, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
-        import { getFirestore, collection, onSnapshot, addDoc, doc, deleteDoc, serverTimestamp, query, setDoc, getDoc, updateDoc, orderBy, limit, where, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, addDoc, doc, deleteDoc, serverTimestamp, query, setDoc, getDoc, updateDoc, orderBy, limit, where, arrayUnion, arrayRemove, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-storage.js";
 
         // --- GLOBAL VARIABLES ---
@@ -239,7 +239,6 @@
                 auth = getAuth(app);
                 storage = getStorage(app);
                 
-                // --- Re-enabled Auth Logic ---
                 onAuthStateChanged(auth, async (user) => {
                     if (user && !user.isAnonymous) {
                         await initializeAppWithUser(user);
@@ -296,7 +295,7 @@
                     const activePageId = contentArea.firstElementChild?.id;
                     if (renderFunc && activePageId) {
                         const pageBaseName = activePageId.replace('-section', '');
-                        if (pageBaseName.startsWith(collectionName.slice(0, -1).toLowerCase()) || pageBaseName === 'inicio' || (collectionName === 'users' && pageBaseName === 'sala-de-reuniao')) {
+                         if (pageBaseName.startsWith(collectionName.slice(0, -1).replace('_', '-').toLowerCase()) || pageBaseName === 'inicio' || (collectionName === 'users' && pageBaseName === 'sala-de-reuniao')) {
                             renderFunc();
                         }
                     }
@@ -319,8 +318,8 @@
             getCollectionListener('schedules', schedules, renderGradeSection);
             getCollectionListener('expenses', expenses, renderFolhaPagamentoSection);
             getCollectionListener('cancellations', cancellations, renderCancelamentosSection);
-            getCollectionListener('photo_bank', photos, renderBancoDeFotosSection);
-            getCollectionListener('photo_folders', photoFolders, renderBancoDeFotosSection);
+            getCollectionListener('photo_bank', photos, () => renderBancoDeFotosSection(document.getElementById('banco-de-fotos-section')?.dataset.currentFolder));
+            getCollectionListener('photo_folders', photoFolders, () => renderBancoDeFotosSection());
             getCollectionListener('cps', cps, renderCPsSection);
             getCollectionListener('dojo_ranking', dojoRanking, renderDojoSection);
             getCollectionListener('notifications', notifications, null, (ref) => query(ref, orderBy('createdAt', 'desc'), limit(30)));
@@ -450,7 +449,7 @@
                                 <h3 class="text-xl font-bold text-stone-800">${e.nome}</h3>
                                 ${e.setor ? `<span class="status-tag status-${e.setor.toLowerCase()}">${e.setor}</span>` : ''}
                             </div>
-                            <p class="text-sm text-stone-500 mb-4">Data: ${new Date(e.data + 'T00:00:00').toLocaleDateString('pt-BR')}</p>
+                            <p class="text-sm text-stone-500 mb-4">Data: ${new Date(e.data + 'T00:00:00').toLocaleDateString('pt-BR')} ${e.time ? `às ${e.time}`: ''}</p>
                             <p class="text-sm text-stone-600 truncate"><strong>Local:</strong> ${e.local}</p>
                         </div>`).join('') || '<p class="col-span-full text-center py-10 text-stone-500">Nenhum evento encontrado.</p>'}
                     </div>
@@ -591,10 +590,24 @@
             const currentYear = now.getFullYear();
             const monthName = now.toLocaleString('pt-BR', { month: 'long' });
 
-            const monthlyExpenses = expenses.filter(exp => {
-                const dueDate = new Date(exp.dueDate);
-                return dueDate.getMonth() === currentMonth && dueDate.getFullYear() === currentYear;
-            });
+            const monthlyExpenses = expenses.map(exp => {
+                let dueDate;
+                if (exp.isFixedSalary && exp.dueDay) {
+                    const day = parseInt(exp.dueDay, 10);
+                    if (day > 0 && day < 32) {
+                       dueDate = new Date(currentYear, currentMonth, day);
+                    }
+                } else if (exp.dueDate) {
+                    // Create date as UTC to avoid timezone issues with date-only strings
+                    const parts = exp.dueDate.split('-');
+                    dueDate = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2]));
+                }
+
+                if (dueDate && dueDate.getUTCMonth() === currentMonth && dueDate.getUTCFullYear() === currentYear) {
+                    return { ...exp, effectiveDueDate: dueDate };
+                }
+                return null;
+            }).filter(Boolean).sort((a, b) => a.effectiveDueDate - b.effectiveDueDate);
 
             const totalToPay = monthlyExpenses
                 .filter(exp => !exp.isPaid)
@@ -622,7 +635,7 @@
                                     <tr class="${exp.isPaid ? 'paid' : ''}">
                                         <td class="text-center"><input type="checkbox" data-action="toggle-expense" data-id="${exp.id}" class="h-5 w-5 rounded border-gray-300 text-yellow-500 focus:ring-yellow-400" ${exp.isPaid ? 'checked' : ''}></td>
                                         <td class="font-medium cursor-pointer" data-action="view-expense" data-id="${exp.id}">${exp.description} ${exp.isFixedSalary ? `<span class="text-xs text-stone-500">(${exp.employeeRole || 'Salário Fixo'})</span>` : ''}</td>
-                                        <td class="cursor-pointer" data-action="view-expense" data-id="${exp.id}">${new Date(exp.dueDate + 'T00:00:00').toLocaleDateString('pt-BR')}</td>
+                                        <td class="cursor-pointer" data-action="view-expense" data-id="${exp.id}">${exp.effectiveDueDate.toLocaleDateString('pt-BR', {timeZone: 'UTC'})}</td>
                                         <td class="text-right font-mono cursor-pointer" data-action="view-expense" data-id="${exp.id}">${Number(exp.amount).toFixed(2)}</td>
                                         <td class="text-center">
                                             <button class="task-delete-btn" data-action="delete-item" data-collection="expenses" data-id="${exp.id}">
@@ -714,29 +727,32 @@
             `;
         }
 
-        function renderBancoDeFotosSection(folderName = null) {
+        function renderBancoDeFotosSection(folderNameToOpen = null) {
             document.getElementById('main-title').textContent = 'Banco de Fotos';
             document.getElementById('main-description').textContent = 'Gerencie os recursos visuais para marketing e divulgação.';
             
-            if (folderName) {
-                renderPhotoGallery(folderName);
+            if (folderNameToOpen) {
+                renderPhotoGallery(folderNameToOpen);
                 return;
             }
-
-            const professorFolders = collaborators.filter(c => c.sectors && c.sectors.includes('professor')).map(c => c.name);
-            const allFolders = ['Geral', ...professorFolders];
 
             contentArea.innerHTML = `
                 <section id="banco-de-fotos-section">
                     <div class="flex justify-between items-center mb-6">
                         <h3 class="text-xl font-bold text-stone-800">Pastas</h3>
-                        <button class="primary-btn w-auto" data-action="add-photo">+ Adicionar Foto</button>
+                        <div class="flex gap-2">
+                           <button class="secondary-btn w-auto" data-action="add-folder">+ Nova Pasta</button>
+                           <button class="primary-btn w-auto" data-action="add-photo">+ Adicionar Foto</button>
+                        </div>
                     </div>
                     <div class="folder-grid">
-                        ${allFolders.map(folder => `
-                            <div class="folder-card" data-action="open-folder" data-folder-name="${folder}">
+                        ${photoFolders.map(folder => `
+                            <div class="folder-card" data-action="open-folder" data-folder-name="${folder.name}">
+                                <button class="folder-delete-btn" data-action="delete-folder" data-id="${folder.id}" data-folder-name="${folder.name}">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                </button>
                                 <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mx-auto mb-3 text-yellow-400"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"></path></svg>
-                                <p class="font-semibold text-stone-700">${folder}</p>
+                                <p class="font-semibold text-stone-700">${folder.name}</p>
                             </div>
                         `).join('')}
                     </div>
@@ -776,7 +792,7 @@
         function renderCPsSection() {
             document.getElementById('main-title').textContent = 'Cronogramas Pedagógicos (CPs)';
             document.getElementById('main-description').textContent = 'Gerencie os níveis e aulas dos cursos.';
-            const canEdit = ['pedagogico', 'ap'].includes(currentUserRole);
+            const canEdit = ['pedagogico', 'ap', 'admin'].includes(currentUserRole);
             const addNivelBtn = canEdit ? `<button class="primary-btn w-auto" data-action="add-nivel">+ Adicionar Nível</button>` : '';
 
             contentArea.innerHTML = `
@@ -891,7 +907,7 @@
         function closeFormModal() { document.getElementById('form-modal').classList.remove('visible'); }
         function showSuccessMessage(title, message) { const modalTitle = document.getElementById('form-modal-title'); const modalContentArea = document.getElementById('form-modal-content-area'); modalTitle.textContent = title; modalContentArea.innerHTML = `<div class="text-center"><svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-12 w-12 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg><p class="mt-4 text-stone-600">${message}</p><button data-action="close-modal" class="primary-btn mt-6 w-auto px-8">OK</button></div>`; document.getElementById('form-modal').classList.add('visible'); }
         function showErrorMessage(title, message) { const modalTitle = document.getElementById('form-modal-title'); const modalContentArea = document.getElementById('form-modal-content-area'); modalTitle.textContent = title; modalContentArea.innerHTML = `<div class="text-center"><svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-12 w-12 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg><p class="mt-4 text-stone-600">${message}</p><button data-action="close-modal" class="primary-btn mt-6 w-auto px-8">OK</button></div>`; document.getElementById('form-modal').classList.add('visible'); }
-        function showConfirmationModal(title, message, onConfirm) { const modalTitle = document.getElementById('form-modal-title'); const modalContentArea = document.getElementById('form-modal-content-area'); modalTitle.textContent = title; modalContentArea.innerHTML = `<p class="text-stone-600">${message}</p><div class="mt-6 flex justify-end gap-4"><button class="secondary-btn" data-action="close-modal">Cancelar</button><button id="confirm-action-btn" class="primary-btn w-auto">Confirmar</button></div>`; document.getElementById('form-modal').classList.add('visible'); document.getElementById('confirm-action-btn').onclick = () => { onConfirm(); closeFormModal(); }; }
+        function showConfirmationModal(title, message, onConfirm) { const modalTitle = document.getElementById('form-modal-title'); const modalContentArea = document.getElementById('form-modal-content-area'); modalTitle.textContent = title; modalContentArea.innerHTML = `<p class="text-stone-600">${message}</p><div class="mt-6 flex justify-end gap-4"><button class="secondary-btn" data-action="close-modal">Cancelar</button><button id="confirm-action-btn" class="danger-btn w-auto">Confirmar</button></div>`; document.getElementById('form-modal').classList.add('visible'); document.getElementById('confirm-action-btn').onclick = () => { onConfirm(); closeFormModal(); }; }
         
         function openSignUpModal() {
             const modalTitle = document.getElementById('form-modal-title');
@@ -919,7 +935,10 @@
                     <input type="hidden" id="event-id" value="${eventId || ''}">
                     <div><label class="font-medium text-sm">Nome do Evento</label><input type="text" id="event-name" class="form-input" required value="${event?.nome || ''}"></div>
                     <div><label class="font-medium text-sm">Setor</label><select id="event-sector" class="form-input" required>${sectorOptions}</select></div>
-                    <div><label class="font-medium text-sm">Data</label><input type="date" id="event-date" class="form-input" required value="${event?.data || ''}"></div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><label class="font-medium text-sm">Data</label><input type="date" id="event-date" class="form-input" required value="${event?.data || ''}"></div>
+                        <div><label class="font-medium text-sm">Horário</label><input type="time" id="event-time" class="form-input" value="${event?.time || ''}"></div>
+                    </div>
                     <div><label class="font-medium text-sm">Local</label><input type="text" id="event-location" class="form-input" required value="${event?.local || ''}"></div>
                     <div><label class="font-medium text-sm">Descrição</label><textarea id="event-description" rows="4" class="form-input">${event?.descricao || ''}</textarea></div>
                     <div class="text-right"><button type="submit" class="primary-btn w-auto">Salvar</button></div>
@@ -935,6 +954,7 @@
                 nome: document.getElementById('event-name').value,
                 setor: document.getElementById('event-sector').value,
                 data: document.getElementById('event-date').value,
+                time: document.getElementById('event-time').value,
                 local: document.getElementById('event-location').value,
                 descricao: document.getElementById('event-description').value,
             };
@@ -958,7 +978,7 @@
             document.getElementById('form-modal-title').textContent = event.nome;
             document.getElementById('form-modal-content-area').innerHTML = `
                 <div class="space-y-4">
-                    <p><strong>Data:</strong> ${new Date(event.data + 'T00:00:00').toLocaleDateString('pt-BR')}</p>
+                    <p><strong>Data:</strong> ${new Date(event.data + 'T00:00:00').toLocaleDateString('pt-BR')} ${event.time ? `às ${event.time}`: ''}</p>
                     <p><strong>Local:</strong> ${event.local}</p>
                     ${event.setor ? `<p><strong>Setor:</strong> <span class="status-tag status-${event.setor.toLowerCase()}">${event.setor}</span></p>` : ''}
                     ${event.descricao ? `<div><strong>Descrição:</strong><p class="mt-1 p-3 bg-stone-50 rounded-md whitespace-pre-wrap">${event.descricao}</p></div>` : ''}
@@ -1045,7 +1065,7 @@
                 <form id="form-modal-body" class="space-y-4">
                     <div><label class="font-medium text-sm">Descrição</label><textarea id="task-description" rows="4" class="form-input" required></textarea></div>
                     <div><label class="font-medium text-sm">Prazo Final</label><input type="date" id="task-deadline" class="form-input" required></div>
-                    <div><label class="font-medium text-sm">Atribuir para</label><select id="task-assignedTo" class="form-input" multiple required>${collaboratorOptions}</select></div>
+                    <div><label class="font-medium text-sm">Atribuir para (selecione um ou mais)</label><select id="task-assignedTo" class="form-input" multiple required>${collaboratorOptions}</select></div>
                     <div class="text-right"><button type="submit" class="primary-btn w-auto">Salvar Tarefa</button></div>
                 </form>`;
             document.getElementById('form-modal-body').onsubmit = saveTask;
@@ -1074,15 +1094,15 @@
             const collaborator = collaboratorId ? collaborators.find(c => c.id === collaboratorId) : null;
             document.getElementById('form-modal-title').textContent = collaborator ? "Editar Colaborador" : "Adicionar Novo Colaborador";
             
-            const sectors = ['professor', 'tarefas', 'cancelamentos', 'orcamentos'];
-            const sectorLabels = { professor: 'Professor (Grade)', tarefas: 'Tarefas', cancelamentos: 'Cancelamentos', orcamentos: 'Orçamentos' };
+            const sectors = ['professor', 'tarefas', 'cancelamentos', 'orcamentos', 'banco de fotos'];
+            const sectorLabels = { professor: 'Professor (Grade)', tarefas: 'Tarefas', cancelamentos: 'Cancelamentos', orcamentos: 'Orçamentos', 'banco de fotos': 'Banco de Fotos' };
             
             const sectorCheckboxes = sectors.map(sector => {
                 const isChecked = collaborator?.sectors?.includes(sector) ? 'checked' : '';
                 return `
                     <div class="flex items-center">
-                        <input type="checkbox" id="sector-${sector}" name="sectors" value="${sector}" class="h-4 w-4 rounded" ${isChecked}>
-                        <label for="sector-${sector}" class="ml-2 text-sm">${sectorLabels[sector]}</label>
+                        <input type="checkbox" id="sector-${sector.replace(' ', '-')}" name="sectors" value="${sector}" class="h-4 w-4 rounded" ${isChecked}>
+                        <label for="sector-${sector.replace(' ', '-')}" class="ml-2 text-sm">${sectorLabels[sector]}</label>
                     </div>
                 `;
             }).join('');
@@ -1119,6 +1139,11 @@
 
             if (!data.name) { showErrorMessage("Erro", "O nome do colaborador é obrigatório."); return; }
             if (!db) { console.warn("Offline mode."); closeFormModal(); return; }
+            
+            const oldCollaborator = collaboratorId ? collaborators.find(c => c.id === collaboratorId) : null;
+            const hadFolderSector = oldCollaborator?.sectors?.includes('banco de fotos');
+            const hasFolderSector = data.sectors.includes('banco de fotos');
+
             try {
                  if (collaboratorId) {
                     await updateDoc(doc(db, `artifacts/${appId}/public/data/collaborators`, collaboratorId), data);
@@ -1128,6 +1153,14 @@
                     await createNotification(`Novo colaborador adicionado: ${data.name}`);
                     showSuccessMessage("Sucesso!", "Colaborador adicionado.");
                 }
+                
+                if(hasFolderSector && !hadFolderSector) {
+                    const folderExists = photoFolders.some(f => f.name === data.name);
+                    if (!folderExists) {
+                        await addDoc(collection(db, `artifacts/${appId}/public/data/photo_folders`), { name: data.name, createdAt: serverTimestamp() });
+                    }
+                }
+
             } catch (error) { console.error("Error saving collaborator:", error); showErrorMessage("Erro", "Falha ao salvar o colaborador."); }
         }
 
@@ -1203,17 +1236,31 @@
                 <form id="form-modal-body" class="space-y-4">
                     <input type="hidden" id="expense-id" value="${expenseId || ''}">
                     <div><label class="font-medium text-sm">Descrição</label><input type="text" id="expense-description" class="form-input" required value="${expense?.description || ''}"></div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div><label class="font-medium text-sm">Vencimento</label><input type="date" id="expense-dueDate" class="form-input" required value="${expense?.dueDate || ''}"></div>
-                        <div><label class="font-medium text-sm">Valor (R$)</label><input type="number" step="0.01" id="expense-amount" class="form-input" required value="${expense?.amount || ''}"></div>
+                    
+                    <div id="due-date-container" class="${expense?.isFixedSalary ? 'hidden' : ''}">
+                        <label class="font-medium text-sm">Vencimento</label>
+                        <input type="date" id="expense-dueDate" class="form-input" value="${expense?.dueDate || ''}">
                     </div>
+                    
+                    <div id="due-day-container" class="${expense?.isFixedSalary ? '' : 'hidden'}">
+                        <label class="font-medium text-sm">Dia do Vencimento</label>
+                        <input type="number" min="1" max="31" id="expense-dueDay" class="form-input" value="${expense?.dueDay || ''}">
+                    </div>
+
+                    <div><label class="font-medium text-sm">Valor (R$)</label><input type="number" step="0.01" id="expense-amount" class="form-input" required value="${expense?.amount || ''}"></div>
+                    
                     <div class="flex items-center gap-2"><input type="checkbox" id="expense-isFixedSalary" class="h-4 w-4 rounded" ${expense?.isFixedSalary ? 'checked' : ''}><label for="expense-isFixedSalary" class="text-sm">É salário fixo?</label></div>
                     <div id="employee-role-container" class="${expense?.isFixedSalary ? '' : 'hidden'}"><label class="font-medium text-sm">Cargo</label><input type="text" id="expense-employeeRole" class="form-input" value="${expense?.employeeRole || ''}"></div>
                     <div class="pt-4 flex justify-end gap-2">${expenseId ? `<button type="button" class="danger-btn" data-action="delete-item" data-collection="expenses" data-id="${expenseId}">Apagar</button>` : ''}<button type="submit" class="primary-btn w-auto">Salvar</button></div>
                 </form>`;
             
             const isFixedSalaryCheckbox = document.getElementById('expense-isFixedSalary');
-            isFixedSalaryCheckbox.onchange = () => document.getElementById('employee-role-container').classList.toggle('hidden', !isFixedSalaryCheckbox.checked);
+            isFixedSalaryCheckbox.onchange = () => {
+                const isChecked = isFixedSalaryCheckbox.checked;
+                document.getElementById('employee-role-container').classList.toggle('hidden', !isChecked);
+                document.getElementById('due-date-container').classList.toggle('hidden', isChecked);
+                document.getElementById('due-day-container').classList.toggle('hidden', !isChecked);
+            };
             
             document.getElementById('form-modal-body').onsubmit = saveExpense;
             document.getElementById('form-modal').classList.add('visible');
@@ -1224,16 +1271,25 @@
             const isFixedSalary = document.getElementById('expense-isFixedSalary').checked;
             const data = {
                 description: document.getElementById('expense-description').value,
-                dueDate: document.getElementById('expense-dueDate').value,
                 amount: document.getElementById('expense-amount').value,
                 isPaid: false,
                 isFixedSalary: isFixedSalary,
                 employeeRole: isFixedSalary ? document.getElementById('expense-employeeRole').value : '',
             };
+
+            if (isFixedSalary) {
+                data.dueDay = document.getElementById('expense-dueDay').value;
+                data.dueDate = null;
+            } else {
+                data.dueDate = document.getElementById('expense-dueDate').value;
+                data.dueDay = null;
+            }
+
             if (!db) { console.warn("Offline mode."); closeFormModal(); return; }
             try {
                 if (expenseId) {
-                    await updateDoc(doc(db, `artifacts/${appId}/public/data/expenses`, expenseId), data);
+                    const existingExpense = expenses.find(e => e.id === expenseId);
+                    await updateDoc(doc(db, `artifacts/${appId}/public/data/expenses`, expenseId), {...existingExpense, ...data});
                     showSuccessMessage("Sucesso!", "Despesa atualizada.");
                 } else {
                     data.createdAt = serverTimestamp();
@@ -1303,9 +1359,7 @@
             const currentFolder = document.getElementById('banco-de-fotos-section')?.dataset.currentFolder || 'Geral';
             document.getElementById('form-modal-title').textContent = "Adicionar Nova Foto";
             
-            const professorFolders = collaborators.filter(c => c.sectors && c.sectors.includes('professor')).map(c => c.name);
-            const allFolders = ['Geral', ...professorFolders];
-            const folderOptions = allFolders.map(f => `<option value="${f}" ${f === currentFolder ? 'selected' : ''}>${f}</option>`).join('');
+            const folderOptions = photoFolders.map(f => `<option value="${f.name}" ${f.name === currentFolder ? 'selected' : ''}>${f.name}</option>`).join('');
 
             document.getElementById('form-modal-content-area').innerHTML = `
                 <form id="form-modal-body" class="space-y-4">
@@ -1344,6 +1398,62 @@
             }
         }
         
+        function openFolderFormModal() {
+            document.getElementById('form-modal-title').textContent = "Adicionar Nova Pasta";
+            document.getElementById('form-modal-content-area').innerHTML = `
+                <form id="form-modal-body" class="space-y-4">
+                    <div><label class="font-medium text-sm">Nome da Pasta</label><input type="text" id="folder-name" class="form-input" required></div>
+                    <div class="text-right"><button type="submit" class="primary-btn w-auto">Salvar Pasta</button></div>
+                </form>
+            `;
+            document.getElementById('form-modal-body').onsubmit = saveFolder;
+            document.getElementById('form-modal').classList.add('visible');
+        }
+
+        async function saveFolder(event) {
+            event.preventDefault();
+            const name = document.getElementById('folder-name').value;
+            if (!name) { showErrorMessage("Erro", "O nome da pasta é obrigatório."); return; }
+            const folderExists = photoFolders.some(f => f.name.toLowerCase() === name.toLowerCase());
+            if (folderExists) { showErrorMessage("Erro", "Uma pasta com este nome já existe."); return; }
+
+            try {
+                await addDoc(collection(db, `artifacts/${appId}/public/data/photo_folders`), { name, createdAt: serverTimestamp() });
+                showSuccessMessage("Sucesso!", "Pasta criada.");
+            } catch (error) {
+                console.error("Error saving folder:", error);
+                showErrorMessage("Erro", "Não foi possível criar a pasta.");
+            }
+        }
+
+        async function deleteFolder(folderId, folderName) {
+            if (!db) return;
+            showConfirmationModal(
+                "Excluir Pasta?",
+                `Tem certeza que deseja excluir a pasta "${folderName}"? TODAS as fotos dentro dela serão apagadas permanentemente.`,
+                async () => {
+                    try {
+                        // Batch delete photos in the folder
+                        const photosQuery = query(collection(db, `artifacts/${appId}/public/data/photo_bank`), where("folder", "==", folderName));
+                        const photosSnapshot = await getDocs(photosQuery);
+                        const batch = writeBatch(db);
+                        photosSnapshot.forEach(doc => {
+                            batch.delete(doc.ref);
+                        });
+                        await batch.commit();
+
+                        // Delete the folder document itself
+                        await deleteDoc(doc(db, `artifacts/${appId}/public/data/photo_folders`, folderId));
+                        
+                        showSuccessMessage("Sucesso", `Pasta "${folderName}" e todas as suas fotos foram excluídas.`);
+                    } catch (error) {
+                        console.error("Error deleting folder and its contents:", error);
+                        showErrorMessage("Erro", "Falha ao excluir a pasta.");
+                    }
+                }
+            );
+        }
+
         function openNivelForm(nivelId = null) {
             const nivel = nivelId ? cps.find(n => n.id === nivelId) : null;
             document.getElementById('form-modal-title').textContent = nivel ? 'Editar Nível' : 'Adicionar Novo Nível';
@@ -1550,6 +1660,7 @@
                     try {
                         await deleteDoc(doc(db, `artifacts/${appId}/public/data/${collectionName}`, itemId));
                         showSuccessMessage("Sucesso", "Item apagado com sucesso.");
+                        closeFormModal();
                     } catch (error) { 
                         console.error(`Error deleting item from ${collectionName}:`, error); 
                         showErrorMessage("Erro", "Falha ao apagar o item.");
@@ -1664,6 +1775,8 @@
                 
                 const actionTarget = event.target.closest('[data-action]');
                 if (actionTarget) {
+                    // Prevent modal from closing if the action is inside the modal content
+                    event.stopPropagation();
                     const { action, id, collection, folderName, nivelId, aulaIndex } = actionTarget.dataset;
                     const actionHandlers = {
                         'open-signup': openSignUpModal,
@@ -1686,6 +1799,8 @@
                         'delete-item': () => deleteItem(collection, id),
                         'close-modal': closeFormModal,
                         'add-photo': openPhotoFormModal,
+                        'add-folder': openFolderFormModal,
+                        'delete-folder': () => deleteFolder(id, folderName),
                         'open-folder': () => renderPhotoGallery(folderName),
                         'back-to-folders': renderBancoDeFotosSection,
                         'toggle-cp-level': () => { const card = document.getElementById(`nivel-${id}`); if(card) { card.classList.toggle('open'); const icon = card.querySelector('svg'); icon.style.transform = card.classList.contains('open') ? 'rotate(180deg)' : 'rotate(0deg)'; } },
@@ -1730,7 +1845,7 @@
             });
 
             document.addEventListener('click', (event) => {
-                if (!notificationPanel.classList.contains('hidden') && !notificationButton.contains(event.target)) {
+                if (!notificationPanel.classList.contains('hidden') && !notificationButton.contains(event.target) && !notificationPanel.contains(event.target)) {
                     notificationPanel.classList.add('hidden');
                 }
             });
