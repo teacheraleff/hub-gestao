@@ -235,14 +235,6 @@
         let allUnsubscribers = [];
         const appId = 'hub-gestao-slap';
 
-        const courseLevels = [
-            "Beginner 1 (Basic 1)", "Beginner 2 (Basic 2)", 
-            "Freshman 1 (Pre-inter 1)", "Freshman 2 (Pre-inter 2)",
-            "Sophomore 1 (Inter 1)", "Sophomore 2 (Inter 2)",
-            "Junior 1 (Pre-advanced 1)", "Junior 2 (Pre-advanced 2)",
-            "Senior 1 (Advanced 1)", "Senior 2 (Advanced 2)"
-        ];
-
         // --- FIREBASE INITIALIZATION ---
         async function initializeFirebase() {
             try {
@@ -357,7 +349,14 @@
             getCollectionListener('cancellations', cancellations, renderCancelamentosSection);
             getCollectionListener('photo_bank', photos, () => renderBancoDeFotosSection(document.getElementById('banco-de-fotos-section')?.dataset.currentFolder));
             getCollectionListener('photo_folders', photoFolders, () => renderBancoDeFotosSection());
-            getCollectionListener('cps', cps, renderCPsSection);
+            getCollectionListener('cps', cps, () => {
+                const activePageId = contentArea.firstElementChild?.id;
+                if (activePageId === 'cps-section') renderCPsSection();
+                // Re-render other sections if CPs change, as level dropdowns depend on it
+                if (['alunos-section', 'turmas-section', 'grade-section'].includes(activePageId)) {
+                    document.querySelector(`#main-navigation [data-target="${activePageId.replace('-section', '')}"]`)?.click();
+                }
+            });
             getCollectionListener('dojo_ranking', dojoRanking, renderDojoSection);
             getCollectionListener('notifications', notifications, null, (ref) => query(ref, orderBy('createdAt', 'desc'), limit(30)));
         }
@@ -475,6 +474,7 @@
         function renderAlunosSection() {
             document.getElementById('main-title').textContent = 'Gestão de Alunos';
             document.getElementById('main-description').textContent = 'Cadastre e gerencie todos os alunos da escola.';
+            const canAdd = ['admin', 'financeiro'].includes(currentUserRole);
 
             contentArea.innerHTML = `
                 <section id="alunos-section" class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
@@ -484,7 +484,7 @@
                             <button class="secondary-btn filter-btn" data-filter="ativo">Ativos</button>
                             <button class="secondary-btn filter-btn" data-filter="cancelado">Cancelados</button>
                         </div>
-                        <button class="primary-btn w-auto" data-action="add-aluno">+ Adicionar Aluno</button>
+                        ${canAdd ? `<button class="primary-btn w-auto" data-action="add-aluno">+ Adicionar Aluno</button>` : ''}
                     </div>
                     <div class="overflow-x-auto">
                         <table class="data-table">
@@ -497,9 +497,7 @@
                                     <th class="text-center">Ações</th>
                                 </tr>
                             </thead>
-                            <tbody id="alunos-list">
-                                <!-- Student rows will be rendered here by JS -->
-                            </tbody>
+                            <tbody id="alunos-list"></tbody>
                         </table>
                     </div>
                 </section>
@@ -510,6 +508,7 @@
         function updateAlunosList(filter) {
             const listBody = document.getElementById('alunos-list');
             if (!listBody) return;
+            const canEdit = ['admin', 'financeiro'].includes(currentUserRole);
 
             let filteredStudents = students;
             if (filter !== 'todos') {
@@ -528,7 +527,7 @@
                     <td>${student.course || 'N/A'}</td>
                     <td>${student.responsibleName || 'N/A'}</td>
                     <td class="text-center">
-                         <button class="secondary-btn" data-action="edit-aluno" data-id="${student.id}" onclick="event.stopPropagation()">Editar</button>
+                         ${canEdit ? `<button class="secondary-btn" data-action="edit-aluno" data-id="${student.id}" onclick="event.stopPropagation()">Editar</button>` : `<button class="secondary-btn" data-action="view-aluno" data-id="${student.id}" onclick="event.stopPropagation()">Ver</button>`}
                     </td>
                 </tr>
             `).join('');
@@ -639,11 +638,13 @@
 
                 let lessonsHtml = '';
                 for (let i = 1; i <= 40; i++) {
+                    const notesInputHtml = !isTurma ? '<input type="text" class="form-input p-2 text-sm w-full" placeholder="Observações da aula">' : '';
                     lessonsHtml += `
                         <div class="pef-lesson-row">
                             <span class="font-bold text-stone-700">Aula ${i}</span>
                             <input type="date" class="form-input p-2 text-sm" placeholder="Data">
                             <div class="space-y-2">
+                                ${notesInputHtml}
                                 ${studentsToList.map(student => `
                                     <div class="pef-student-attendance-row">
                                         <span class="text-sm">${student.name}</span>
@@ -896,14 +897,12 @@
         function renderCancelamentosSection() {
             document.getElementById('main-title').textContent = 'Registo de Cancelamentos';
             document.getElementById('main-description').textContent = 'Gerencie todos os cancelamentos de matrículas.';
-            const addCancelamentoButton = ['admin', 'financeiro', 'pedagogico'].includes(currentUserRole)
-                ? `<button class="primary-btn w-auto" data-action="add-cancelamento">+ Adicionar Cancelamento</button>`
-                : '';
-
+            const canAdd = ['admin', 'financeiro'].includes(currentUserRole);
+            
             contentArea.innerHTML = `
                 <section id="cancellations-section" class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
                      <div class="text-right mb-6">
-                         ${addCancelamentoButton}
+                         ${canAdd ? `<button class="primary-btn w-auto" data-action="add-cancelamento">+ Adicionar Cancelamento</button>` : ''}
                     </div>
                     <div class="overflow-x-auto">
                         <table class="data-table">
@@ -1170,7 +1169,7 @@
             document.getElementById('form-modal-title').textContent = aluno ? "Editar Aluno" : "Adicionar Novo Aluno";
             
             const statusOptions = ['Ativo', 'Inativo', 'Cancelado', 'Pendente'].map(s => `<option value="${s}" ${aluno?.status === s ? 'selected' : ''}>${s}</option>`).join('');
-            const levelOptions = courseLevels.map(level => `<option value="${level}" ${aluno?.course === level ? 'selected' : ''}>${level}</option>`).join('');
+            const levelOptions = cps.map(cp => `<option value="${cp.title}" ${aluno?.course === cp.title ? 'selected' : ''}>${cp.title}</option>`).join('') + `<option value="outro">Outro (especificar)</option>`;
 
             document.getElementById('form-modal-content-area').innerHTML = `
                 <form id="form-modal-body" class="space-y-4">
@@ -1180,7 +1179,11 @@
                         <div><label class="font-medium text-sm">Status</label><select id="aluno-status" class="form-input">${statusOptions}</select></div>
                         <div><label class="font-medium text-sm">Data de Início</label><input type="date" id="aluno-startDate" class="form-input" value="${aluno?.startDate || ''}"></div>
                     </div>
-                    <div><label class="font-medium text-sm">Curso / Nível</label><select id="aluno-course" class="form-input">${levelOptions}</select></div>
+                    <div>
+                        <label class="font-medium text-sm">Curso / Nível</label>
+                        <select id="aluno-course" class="form-input">${levelOptions}</select>
+                        <input type="text" id="aluno-course-custom" class="form-input mt-2 hidden" placeholder="Digite o nível personalizado">
+                    </div>
                     <hr/>
                     <div class="flex items-center gap-2">
                         <input type="checkbox" id="aluno-isMinor" class="h-4 w-4 rounded" ${aluno?.isMinor ? 'checked' : ''}>
@@ -1196,6 +1199,12 @@
                 </form>
             `;
 
+            const courseSelect = document.getElementById('aluno-course');
+            const courseCustomInput = document.getElementById('aluno-course-custom');
+            courseSelect.addEventListener('change', (e) => {
+                courseCustomInput.classList.toggle('hidden', e.target.value !== 'outro');
+            });
+
             document.getElementById('aluno-isMinor').addEventListener('change', (e) => {
                 document.getElementById('responsible-fields').classList.toggle('hidden', !e.target.checked);
             });
@@ -1208,11 +1217,17 @@
             event.preventDefault();
             const alunoId = document.getElementById('aluno-id').value;
             const isMinor = document.getElementById('aluno-isMinor').checked;
+            
+            const courseSelect = document.getElementById('aluno-course');
+            const courseValue = courseSelect.value === 'outro'
+                ? document.getElementById('aluno-course-custom').value
+                : courseSelect.value;
+
             const data = {
                 name: document.getElementById('aluno-name').value,
                 status: document.getElementById('aluno-status').value,
                 startDate: document.getElementById('aluno-startDate').value,
-                course: document.getElementById('aluno-course').value,
+                course: courseValue,
                 notes: document.getElementById('aluno-notes').value,
                 isMinor: isMinor,
                 responsibleName: isMinor ? document.getElementById('aluno-responsibleName').value : '',
@@ -1240,6 +1255,7 @@
             const aluno = students.find(s => s.id === alunoId);
             if (!aluno) return;
             document.getElementById('form-modal-title').textContent = `Perfil de ${aluno.name}`;
+            const canEdit = ['admin', 'financeiro'].includes(currentUserRole);
             
             let responsibleHtml = '';
             if (aluno.isMinor && aluno.responsibleName) {
@@ -1262,8 +1278,8 @@
                     ${responsibleHtml}
                     ${aluno.notes ? `<div><strong>Observações:</strong><p class="mt-1 p-3 bg-stone-50 rounded-md whitespace-pre-wrap">${aluno.notes}</p></div>` : ''}
                     <div class="border-t pt-4 flex justify-end gap-2">
-                        <button class="secondary-btn" data-action="edit-aluno" data-id="${aluno.id}">Editar</button>
-                        <button class="danger-btn" data-action="delete-item" data-collection="students" data-id="${aluno.id}">Apagar</button>
+                        ${canEdit ? `<button class="secondary-btn" data-action="edit-aluno" data-id="${aluno.id}">Editar</button>
+                        <button class="danger-btn" data-action="delete-item" data-collection="students" data-id="${aluno.id}">Apagar</button>` : ''}
                     </div>
                 </div>`;
             document.getElementById('form-modal').classList.add('visible');
@@ -1274,7 +1290,7 @@
             document.getElementById('form-modal-title').textContent = turma ? "Editar Turma" : "Adicionar Nova Turma";
 
             const teacherOptions = collaborators.filter(c => c.sectors?.includes('professor')).map(c => `<option value="${c.id}" data-name="${c.name}" ${turma?.teacherId === c.id ? 'selected' : ''}>${c.name}</option>`).join('');
-            const levelOptions = courseLevels.map(level => `<option value="${level}" ${turma?.level === level ? 'selected' : ''}>${level}</option>`).join('');
+            const levelOptions = cps.map(cp => `<option value="${cp.title}" ${turma?.level === cp.title ? 'selected' : ''}>${cp.title}</option>`).join('') + `<option value="outro">Outro (especificar)</option>`;
             const studentOptions = students.filter(s => s.status === 'Ativo').map(s => `<option value="${s.id}" ${(turma?.studentIds || []).includes(s.id) ? 'selected' : ''}>${s.name}</option>`).join('');
 
             document.getElementById('form-modal-content-area').innerHTML = `
@@ -1282,11 +1298,20 @@
                     <input type="hidden" id="turma-id" value="${turmaId || ''}">
                     <div><label class="font-medium text-sm">Nome da Turma</label><input type="text" id="turma-name" class="form-input" required value="${turma?.name || ''}"></div>
                     <div><label class="font-medium text-sm">Professor</label><select id="turma-teacher" class="form-input" required>${teacherOptions}</select></div>
-                    <div><label class="font-medium text-sm">Nível</label><select id="turma-level" class="form-input" required>${levelOptions}</select></div>
+                    <div>
+                        <label class="font-medium text-sm">Nível</label>
+                        <select id="turma-level" class="form-input" required>${levelOptions}</select>
+                        <input type="text" id="turma-level-custom" class="form-input mt-2 hidden" placeholder="Digite o nível personalizado">
+                    </div>
                     <div><label class="font-medium text-sm">Alunos (selecione um ou mais)</label><select id="turma-students" class="form-input" multiple required style="height: 150px;">${studentOptions}</select></div>
                     <div class="text-right"><button type="submit" class="primary-btn w-auto">Salvar Turma</button></div>
                 </form>
             `;
+            const levelSelect = document.getElementById('turma-level');
+            const levelCustomInput = document.getElementById('turma-level-custom');
+            levelSelect.addEventListener('change', (e) => {
+                levelCustomInput.classList.toggle('hidden', e.target.value !== 'outro');
+            });
             document.getElementById('form-modal-body').onsubmit = saveTurma;
             document.getElementById('form-modal').classList.add('visible');
         }
@@ -1297,11 +1322,16 @@
             const teacherSelect = document.getElementById('turma-teacher');
             const selectedTeacherOption = teacherSelect.options[teacherSelect.selectedIndex];
 
+            const levelSelect = document.getElementById('turma-level');
+            const levelValue = levelSelect.value === 'outro'
+                ? document.getElementById('turma-level-custom').value
+                : levelSelect.value;
+
             const data = {
                 name: document.getElementById('turma-name').value,
                 teacherId: selectedTeacherOption.value,
                 teacherName: selectedTeacherOption.getAttribute('data-name'),
-                level: document.getElementById('turma-level').value,
+                level: levelValue,
                 studentIds: Array.from(document.getElementById('turma-students').selectedOptions).map(o => o.value),
             };
 
@@ -1586,14 +1616,41 @@
 
         function openScheduleForm(scheduleId = null) {
             const schedule = scheduleId ? schedules.find(s => s.id === scheduleId) : null;
-            document.getElementById('form-modal-title').textContent = schedule ? "Editar Aula" : "Adicionar Nova Aula";
+            document.getElementById('form-modal-title').textContent = schedule ? "Detalhes da Aula" : "Adicionar Nova Aula";
+            const isFinanceiro = currentUserRole === 'financeiro';
+
             const teacherOptions = collaborators.filter(c => c.sectors && c.sectors.includes('professor')).map(c => `<option value="${c.name}" ${schedule?.teacher === c.name ? 'selected' : ''}>${c.name}</option>`).join('');
             const dayOptions = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Seg/Qua", "Ter/Qui"].map(d => `<option value="${d}" ${schedule?.day === d ? 'selected' : ''}>${d}</option>`).join('');
             const typeOptions = ["vip", "turma"].map(t => `<option value="${t}" ${schedule?.type === t ? 'selected' : ''}>${t.toUpperCase()}</option>`).join('');
-            const levelOptions = courseLevels.map(level => `<option value="${level}" ${schedule?.level === level ? 'selected' : ''}>${level}</option>`).join('');
-
-            let formHtml = `<form id="form-modal-body" class="space-y-4"><input type="hidden" id="schedule-id" value="${scheduleId || ''}"><div><label class="font-medium text-sm">Aluno/Turma</label><input type="text" id="schedule-student" class="form-input" required value="${schedule?.student || ''}"></div><div><label class="font-medium text-sm">Nível</label><select id="schedule-level" class="form-input" required>${levelOptions}</select></div><div><label class="font-medium text-sm">Professor</label><select id="schedule-teacher" class="form-input" required>${teacherOptions}</select></div><div class="grid grid-cols-2 gap-4"><div><label class="font-medium text-sm">Dia</label><select id="schedule-day" class="form-input" required>${dayOptions}</select></div><div><label class="font-medium text-sm">Tipo</label><select id="schedule-type" class="form-input" required>${typeOptions}</select></div></div><div class="grid grid-cols-2 gap-4"><div><label class="font-medium text-sm">Início</label><input type="time" id="schedule-start" class="form-input" required value="${schedule?.startTime || ''}"></div><div><label class="font-medium text-sm">Fim</label><input type="time" id="schedule-end" class="form-input" required value="${schedule?.endTime || ''}"></div></div><div class="pt-4 flex justify-end gap-2">${scheduleId ? `<button type="button" class="danger-btn" data-action="delete-item" data-collection="schedules" data-id="${scheduleId}">Apagar</button>` : ''}<button type="submit" class="primary-btn w-auto">Salvar</button></div></form>`;
+            const levelOptions = cps.map(cp => `<option value="${cp.title}" ${schedule?.level === cp.title ? 'selected' : ''}>${cp.title}</option>`).join('') + `<option value="outro">Outro (especificar)</option>`;
+            
+            let formHtml = `<form id="form-modal-body" class="space-y-4">
+                <input type="hidden" id="schedule-id" value="${scheduleId || ''}">
+                <div><label class="font-medium text-sm">Aluno/Turma</label><input type="text" id="schedule-student" class="form-input" required value="${schedule?.student || ''}" ${isFinanceiro ? 'disabled' : ''}></div>
+                <div>
+                    <label class="font-medium text-sm">Nível</label>
+                    <select id="schedule-level" class="form-input" required ${isFinanceiro ? 'disabled' : ''}>${levelOptions}</select>
+                    <input type="text" id="schedule-level-custom" class="form-input mt-2 hidden" placeholder="Digite o nível personalizado" ${isFinanceiro ? 'disabled' : ''}>
+                </div>
+                <div><label class="font-medium text-sm">Professor</label><select id="schedule-teacher" class="form-input" required ${isFinanceiro ? 'disabled' : ''}>${teacherOptions}</select></div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div><label class="font-medium text-sm">Dia</label><select id="schedule-day" class="form-input" required ${isFinanceiro ? 'disabled' : ''}>${dayOptions}</select></div>
+                    <div><label class="font-medium text-sm">Tipo</label><select id="schedule-type" class="form-input" required ${isFinanceiro ? 'disabled' : ''}>${typeOptions}</select></div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div><label class="font-medium text-sm">Início</label><input type="time" id="schedule-start" class="form-input" required value="${schedule?.startTime || ''}" ${isFinanceiro ? 'disabled' : ''}></div>
+                    <div><label class="font-medium text-sm">Fim</label><input type="time" id="schedule-end" class="form-input" required value="${schedule?.endTime || ''}" ${isFinanceiro ? 'disabled' : ''}></div>
+                </div>
+                ${!isFinanceiro ? `<div class="pt-4 flex justify-end gap-2">${scheduleId ? `<button type="button" class="danger-btn" data-action="delete-item" data-collection="schedules" data-id="${scheduleId}">Apagar</button>` : ''}<button type="submit" class="primary-btn w-auto">Salvar</button></div>` : ''}
+            </form>`;
             document.getElementById('form-modal-content-area').innerHTML = formHtml;
+
+            const levelSelect = document.getElementById('schedule-level');
+            const levelCustomInput = document.getElementById('schedule-level-custom');
+            levelSelect.addEventListener('change', (e) => {
+                levelCustomInput.classList.toggle('hidden', e.target.value !== 'outro');
+            });
+
             document.getElementById('form-modal-body').onsubmit = saveScheduleEntry;
             document.getElementById('form-modal').classList.add('visible');
         }
@@ -1625,9 +1682,14 @@
             else if (daySelection === 'Ter/Qui') daysToCreate.push('Terça', 'Quinta');
             else daysToCreate.push(daySelection);
 
+            const levelSelect = document.getElementById('schedule-level');
+            const levelValue = levelSelect.value === 'outro'
+                ? document.getElementById('schedule-level-custom').value
+                : levelSelect.value;
+
             const baseData = { 
                 student: document.getElementById('schedule-student').value, 
-                level: document.getElementById('schedule-level').value, 
+                level: levelValue, 
                 teacher: document.getElementById('schedule-teacher').value, 
                 type: document.getElementById('schedule-type').value, 
                 startTime: document.getElementById('schedule-start').value, 
@@ -1799,6 +1861,7 @@
         function openCancelamentoModal(cancelamentoId) {
             const cancelamento = cancellations.find(c => c.id === cancelamentoId);
             if (!cancelamento) return;
+            const canEdit = ['admin', 'financeiro'].includes(currentUserRole);
             document.getElementById('form-modal-title').textContent = `Cancelamento de ${cancelamento.studentName}`;
             document.getElementById('form-modal-content-area').innerHTML = `
                 <div class="space-y-4">
@@ -1807,8 +1870,8 @@
                     <p><strong>Processado por:</strong> ${cancelamento.processedBy}</p>
                     <div><strong>Motivo:</strong><p class="mt-1 p-3 bg-stone-50 rounded-md">${cancelamento.reason}</p></div>
                     <div class="border-t pt-4 flex justify-end gap-2">
-                        <button class="secondary-btn" data-action="edit-cancelamento" data-id="${cancelamento.id}">Editar</button>
-                        <button class="danger-btn" data-action="delete-item" data-collection="cancellations" data-id="${cancelamento.id}">Apagar</button>
+                        ${canEdit ? `<button class="secondary-btn" data-action="edit-cancelamento" data-id="${cancelamento.id}">Editar</button>
+                        <button class="danger-btn" data-action="delete-item" data-collection="cancellations" data-id="${cancelamento.id}">Apagar</button>` : ''}
                     </div>
                 </div>`;
             document.getElementById('form-modal').classList.add('visible');
@@ -2194,8 +2257,8 @@
             const menuItems = [
                 { key: 'inicio', label: 'Início', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>', roles: null },
                 { key: 'dojo', label: 'Dojo', icon: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-3"><path d="M6.5 12.5h11"/><path d="M12 6.5v11"/><path d="M17.5 17.5 19 19"/><path d="M6.5 6.5 5 5"/><path d="M17.5 6.5 19 5"/><path d="M6.5 17.5 5 19"/><path d="M2 12C2 6.5 6.5 2 12 2s10 4.5 10 10-4.5 10-10 10S2 17.5 2 12Z"/><path d="M16 8h2"/><path d="M6 16H4"/></svg>', roles: null },
-                { key: 'alunos', label: 'Alunos', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>', roles: ['admin', 'pedagogico', 'financeiro', 'ap'] },
-                { key: 'turmas', label: 'Turmas', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>', roles: ['admin', 'pedagogico', 'ap'] },
+                { key: 'alunos', label: 'Alunos', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>', roles: ['admin', 'pedagogico', 'financeiro'] },
+                { key: 'turmas', label: 'Turmas', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>', roles: ['admin', 'pedagogico'] },
                 { key: 'pef', label: 'PEF', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="m9 16 2 2 4-4"/></svg>', roles: ['admin', 'pedagogico', 'ap', 'teacher'] },
                 { key: 'grade', label: 'Grade', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" x2="16" y1="2" y2="6"></line><line x1="8" x2="8" y1="2" y2="6"></line><line x1="3" x2="21" y1="10" y2="10"></line></svg>', roles: ['admin', 'ap', 'pedagogico', 'financeiro', 'teacher'] },
                 { key: 'tarefas', label: 'Tarefas', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>', roles: ['admin', 'am', 'ap', 'pedagogico', 'financeiro', 'teacher'] },
