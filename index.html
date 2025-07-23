@@ -44,7 +44,7 @@
         .status-comercial { background-color: #FEF3C7; color: #92400E; }
         .status-marketing { background-color: #FEE2E2; color: #991B1B; }
         
-        .sector-tag {
+        .sector-tag, .keyword-tag {
             display: inline-block;
             padding: 0.25rem 0.75rem;
             margin: 0.25rem;
@@ -1055,6 +1055,7 @@
                                             <div>
                                                 <p class="font-semibold">${index + 1}. ${aula.title}</p>
                                                 <p class="text-sm text-stone-600">${aula.topic}</p>
+                                                <div class="mt-2">${(aula.keywords || []).map(k => `<span class="keyword-tag">${k}</span>`).join('')}</div>
                                             </div>
                                             ${canEdit ? `
                                             <div>
@@ -2017,6 +2018,7 @@
                     <input type="hidden" id="aula-index" value="${aulaIndex !== null ? aulaIndex : ''}">
                     <div><label class="font-medium text-sm">Título da Aula</label><input type="text" id="aula-title" class="form-input" required value="${aula?.title || ''}"></div>
                     <div><label class="font-medium text-sm">Tema/Descrição</label><textarea id="aula-topic" class="form-input" rows="3" required>${aula?.topic || ''}</textarea></div>
+                    <div><label class="font-medium text-sm">Palavras-chave (separadas por vírgula)</label><input type="text" id="aula-keywords" class="form-input" value="${(aula?.keywords || []).join(', ')}"></div>
                     <div class="text-right"><button type="submit" class="primary-btn w-auto">Salvar</button></div>
                 </form>
             `;
@@ -2029,9 +2031,14 @@
             const nivelId = document.getElementById('aula-nivel-id').value;
             const aulaIndex = document.getElementById('aula-index').value;
             const nivelRef = doc(db, `artifacts/${appId}/public/data/cps`, nivelId);
+            
+            const keywordsString = document.getElementById('aula-keywords').value;
+            const keywords = keywordsString.split(',').map(k => k.trim()).filter(Boolean);
+
             const novaAula = {
                 title: document.getElementById('aula-title').value,
-                topic: document.getElementById('aula-topic').value
+                topic: document.getElementById('aula-topic').value,
+                keywords: keywords
             };
 
             try {
