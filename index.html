@@ -88,6 +88,22 @@
         .danger-btn { background-color: #ef4444; color: white; padding: 0.5rem 1rem; border-radius: 0.375rem; font-weight: 600; transition: background-color 0.2s; border: none; cursor: pointer; }
         .danger-btn:hover { background-color: #dc2626; }
 
+        /* --- CPs Styles --- */
+        .cp-level-card { background-color: #fff; border-radius: 0.75rem; margin-bottom: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid #e7e5e4; }
+        .cp-level-header { padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+        .cp-level-content { padding: 0 1.5rem 1.5rem; max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
+        .cp-level-card.open .cp-level-content { max-height: 1000px; }
+        .cp-lesson-item { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; border-radius: 0.5rem; }
+        .cp-lesson-item:nth-child(odd) { background-color: #f9fafb; }
+
+        /* --- Sala de Reunião Styles --- */
+        .reuniao-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1.5rem; }
+        .reuniao-card { background-color: #fff; border-radius: 0.75rem; padding: 1.5rem; text-align: center; cursor: pointer; transition: all 0.2s; border: 1px solid #e7e5e4; }
+        .reuniao-card:hover { transform: translateY(-4px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-color: #F1D24B; }
+        .reuniao-card img { width: 80px; height: 80px; border-radius: 9999px; object-fit: cover; margin: 0 auto 1rem; border: 3px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+        .profile-modal-item { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem; }
+        .profile-modal-item svg { color: #F1D24B; }
+
         /* --- Banco de Fotos Styles --- */
         .folder-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 1.5rem; }
         .folder-card { background-color: #fff; border-radius: 0.75rem; padding: 1.5rem; text-align: center; cursor: pointer; transition: all 0.2s; border: 1px solid #e7e5e4; position: relative; }
@@ -183,7 +199,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, updateProfile, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
-        import { getFirestore, collection, onSnapshot, addDoc, doc, deleteDoc, serverTimestamp, query, setDoc, getDoc, updateDoc, orderBy, limit, where } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, addDoc, doc, deleteDoc, serverTimestamp, query, setDoc, getDoc, updateDoc, orderBy, limit, where, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-storage.js";
 
         // --- GLOBAL VARIABLES ---
@@ -194,7 +210,7 @@
         const pendingView = document.getElementById('pending-view');
         
         let db, auth, storage, userId, currentUserName, currentUserRole;
-        let tasks = [], events = [], budgets = [], collaborators = [], schedules = [], expenses = [], cancellations = [], notifications = [], photos = [], photoFolders = [];
+        let usersData = [], tasks = [], events = [], budgets = [], collaborators = [], schedules = [], expenses = [], cancellations = [], notifications = [], photos = [], photoFolders = [], cps = [], dojoRanking = [];
         let allUnsubscribers = [];
         const appId = 'hub-gestao-slap';
 
@@ -216,6 +232,7 @@
                 auth = getAuth(app);
                 storage = getStorage(app);
                 
+                // --- Re-enabled Auth Logic ---
                 onAuthStateChanged(auth, async (user) => {
                     if (user && !user.isAnonymous) {
                         await initializeAppWithUser(user);
@@ -223,6 +240,7 @@
                         showLoginView();
                     }
                 });
+
             } catch (error) {
                 console.error("Error initializing Firebase:", error);
             }
@@ -239,7 +257,7 @@
                 currentUserRole = userData.role;
                 document.getElementById('profile-picture').src = userData.photoURL || 'https://res.cloudinary.com/dqfi22uz0/image/upload/v1749349751/DBB440C2-684E-4DCF-9CD3-B2DDC18F1E53_3_vgocga.jpg';
                 
-                if (['admin', 'am', 'ap', 'pedagogico', 'financeiro'].includes(currentUserRole)) {
+                if (['admin', 'am', 'ap', 'pedagogico', 'financeiro', 'teacher'].includes(currentUserRole)) {
                     setupFirestoreListeners();
                     showHubView();
                 } else {
@@ -271,7 +289,7 @@
                     const activePageId = contentArea.firstElementChild?.id;
                     if (renderFunc && activePageId) {
                         const pageBaseName = activePageId.replace('-section', '');
-                        if (pageBaseName.startsWith(collectionName.slice(0, -1).toLowerCase()) || pageBaseName === 'inicio' || (collectionName === 'collaborators' && ['grade', 'tasks', 'inicio', 'colaboradores', 'banco-de-fotos'].includes(pageBaseName))) {
+                        if (pageBaseName.startsWith(collectionName.slice(0, -1).toLowerCase()) || pageBaseName === 'inicio' || (collectionName === 'users' && pageBaseName === 'sala-de-reuniao')) {
                             renderFunc();
                         }
                     }
@@ -279,6 +297,7 @@
                 allUnsubscribers.push(unsubscribe);
             };
             
+            getCollectionListener('users', usersData, renderSalaDeReuniaoSection);
             getCollectionListener('tasks', tasks, renderTarefasSection);
             getCollectionListener('budgets', budgets, renderOrcamentosSection);
             getCollectionListener('collaborators', collaborators, () => {
@@ -295,6 +314,8 @@
             getCollectionListener('cancellations', cancellations, renderCancelamentosSection);
             getCollectionListener('photo_bank', photos, renderBancoDeFotosSection);
             getCollectionListener('photo_folders', photoFolders, renderBancoDeFotosSection);
+            getCollectionListener('cps', cps, renderCPsSection);
+            getCollectionListener('dojo_ranking', dojoRanking, renderDojoSection);
             getCollectionListener('notifications', notifications, null, (ref) => query(ref, orderBy('createdAt', 'desc'), limit(30)));
         }
 
@@ -435,25 +456,41 @@
             document.getElementById('main-title').textContent = 'Lista de Tarefas'; 
             document.getElementById('main-description').textContent = 'Gerencie e acompanhe as tarefas da equipa.'; 
             
+            const collaboratorOptions = collaborators.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+
             contentArea.innerHTML = `
                 <div id="tasks-section">
                     <div class="flex justify-between items-center mb-6 flex-wrap gap-4">
-                        <h3 class="text-xl font-bold text-stone-800">Todas as Tarefas</h3>
+                        <div class="grade-select-container flex-grow">
+                             <label for="task-filter" class="block text-sm font-medium text-stone-700 mb-1">Filtrar por colaborador:</label>
+                             <select id="task-filter" class="grade-select">
+                                <option value="all">Todos</option>
+                                ${collaboratorOptions}
+                            </select>
+                        </div>
                         <div class="flex gap-2">
                             <button class="primary-btn w-auto" data-action="add-task">+ Adicionar Tarefa</button>
                         </div>
                     </div>
                     <div id="task-list-container" class="space-y-4"></div>
                 </div>`; 
+            document.getElementById('task-filter').addEventListener('change', () => updateTaskList());
             updateTaskList(); 
         }
 
         function updateTaskList() { 
             const container = document.getElementById('task-list-container'); 
             if (!container) return; 
+            
+            const filterValue = document.getElementById('task-filter')?.value || 'all';
             let filteredTasks = [...tasks]; 
+
+            if (filterValue !== 'all') {
+                filteredTasks = tasks.filter(task => task.assignedTo && task.assignedTo.includes(filterValue));
+            }
+
             filteredTasks.sort((a, b) => a.completed - b.completed || new Date(a.deadline) - new Date(b.deadline)); 
-            if (filteredTasks.length === 0) { container.innerHTML = `<div class="text-center p-8 bg-white rounded-lg"><p class="text-stone-500">Nenhuma tarefa encontrada.</p></div>`; return; } 
+            if (filteredTasks.length === 0) { container.innerHTML = `<div class="text-center p-8 bg-white rounded-lg"><p class="text-stone-500">Nenhuma tarefa encontrada para este filtro.</p></div>`; return; } 
             container.innerHTML = filteredTasks.map(task => { 
                 const deadlineDate = new Date(task.deadline + 'T00:00:00'); 
                 const isOverdue = !task.completed && deadlineDate < new Date(); 
@@ -467,11 +504,22 @@
             document.getElementById('main-title').textContent = 'Grade de Horários';
             document.getElementById('main-description').textContent = 'Visualize e gerencie a grade de aulas da equipa.';
             
-            const teacherOptions = collaborators.filter(c => c.sectors && c.sectors.includes('professor')).map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+            const isTeacher = currentUserRole === 'teacher';
+            let filterHtml = '';
             
-            const addProfessorButton = ['admin', 'ap', 'pedagogico'].includes(currentUserRole) 
-                ? `<button class="secondary-btn" onclick="document.querySelector('[data-target=colaboradores]').click()">+ Adicionar Professor</button>` 
-                : '';
+            if (!isTeacher) {
+                const teacherOptions = collaborators.filter(c => c.sectors && c.sectors.includes('professor')).map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+                filterHtml = `
+                    <div class="grade-select-container flex-grow">
+                        <label for="teacher-filter" class="block text-sm font-medium text-stone-700 mb-1">Filtrar por professor:</label>
+                        <select id="teacher-filter" class="grade-select">
+                            <option value="all">Todos</option>
+                            ${teacherOptions}
+                        </select>
+                    </div>
+                `;
+            }
+
             const addAulaButton = ['admin', 'ap', 'pedagogico'].includes(currentUserRole)
                 ? `<button class="primary-btn w-auto" data-action="add-schedule">+ Adicionar Aula</button>`
                 : '';
@@ -479,23 +527,21 @@
             contentArea.innerHTML = `
                 <section id="grade-section" class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
                     <div class="flex justify-between items-center mb-6 flex-wrap gap-4">
-                        <div class="grade-select-container flex-grow">
-                            <label for="teacher-filter" class="block text-sm font-medium text-stone-700 mb-1">Filtrar por professor:</label>
-                            <select id="teacher-filter" class="grade-select">
-                                <option value="all">Todos</option>
-                                ${teacherOptions}
-                            </select>
-                        </div>
-                        <div class="flex gap-2">
-                           ${addProfessorButton}
+                        ${filterHtml}
+                        <div class="flex gap-2 ml-auto">
                            ${addAulaButton}
                         </div>
                     </div>
                     <div id="schedule-grid-container"></div>
                 </section>
             `;
-            document.getElementById('teacher-filter').addEventListener('change', () => renderScheduleGrid(document.getElementById('teacher-filter').value));
-            renderScheduleGrid('all');
+
+            if (isTeacher) {
+                renderScheduleGrid(currentUserName);
+            } else {
+                document.getElementById('teacher-filter').addEventListener('change', () => renderScheduleGrid(document.getElementById('teacher-filter').value));
+                renderScheduleGrid('all');
+            }
         }
 
         function renderScheduleGrid(teacherFilter) {
@@ -720,6 +766,119 @@
              `;
         }
 
+        function renderCPsSection() {
+            document.getElementById('main-title').textContent = 'Cronogramas Pedagógicos (CPs)';
+            document.getElementById('main-description').textContent = 'Gerencie os níveis e aulas dos cursos.';
+            const canEdit = ['admin', 'pedagogico'].includes(currentUserRole);
+            const addNivelBtn = canEdit ? `<button class="primary-btn w-auto" data-action="add-nivel">+ Adicionar Nível</button>` : '';
+
+            contentArea.innerHTML = `
+                <section id="cps-section">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-xl font-bold text-stone-800">Níveis do Curso</h3>
+                        ${addNivelBtn}
+                    </div>
+                    <div id="cp-list-container">
+                        ${cps.length > 0 ? cps.map(nivel => `
+                            <div class="cp-level-card" id="nivel-${nivel.id}">
+                                <div class="cp-level-header" data-action="toggle-cp-level" data-id="${nivel.id}">
+                                    <h4 class="text-lg font-bold text-stone-800">${nivel.title}</h4>
+                                    <div class="flex items-center gap-2">
+                                        ${canEdit ? `<button class="secondary-btn text-xs" data-action="add-aula" data-nivel-id="${nivel.id}">+ Aula</button><button class="secondary-btn text-xs" data-action="edit-nivel" data-id="${nivel.id}">Editar</button><button class="danger-btn text-xs" data-action="delete-item" data-collection="cps" data-id="${nivel.id}">X</button>` : ''}
+                                        <svg class="h-6 w-6 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                                    </div>
+                                </div>
+                                <div class="cp-level-content">
+                                    ${(nivel.lessons && nivel.lessons.length > 0) ? nivel.lessons.map((aula, index) => `
+                                        <div class="cp-lesson-item">
+                                            <div>
+                                                <p class="font-semibold">${index + 1}. ${aula.title}</p>
+                                                <p class="text-sm text-stone-600">${aula.topic}</p>
+                                            </div>
+                                            ${canEdit ? `
+                                            <div>
+                                                <button class="secondary-btn text-xs" data-action="edit-aula" data-nivel-id="${nivel.id}" data-aula-index="${index}">Editar</button>
+                                                <button class="danger-btn text-xs" data-action="delete-aula" data-nivel-id="${nivel.id}" data-aula-index="${index}">X</button>
+                                            </div>
+                                            ` : ''}
+                                        </div>
+                                    `).join('') : '<p class="text-center text-stone-500 py-4">Nenhuma aula adicionada.</p>'}
+                                </div>
+                            </div>
+                        `).join('') : '<p class="text-center py-10 text-stone-500">Nenhum nível cadastrado.</p>'}
+                    </div>
+                </section>
+            `;
+        }
+        
+        function renderSalaDeReuniaoSection() {
+            document.getElementById('main-title').textContent = 'Sala de Reunião';
+            document.getElementById('main-description').textContent = 'Conheça a equipa!';
+            
+            contentArea.innerHTML = `
+                <section id="sala-de-reuniao-section">
+                    <div class="reuniao-grid">
+                        ${usersData.filter(u => u.role !== 'pending').map(user => `
+                            <div class="reuniao-card" data-action="view-profile" data-id="${user.id}">
+                                <img src="${user.photoURL || 'https://res.cloudinary.com/dqfi22uz0/image/upload/v1749349751/DBB440C2-684E-4DCF-9CD3-B2DDC18F1E53_3_vgocga.jpg'}" alt="Foto de ${user.name}">
+                                <h4 class="font-bold text-stone-800">${user.name}</h4>
+                                <p class="text-sm text-stone-500">${user.role || 'Colaborador'}</p>
+                            </div>
+                        `).join('')}
+                    </div>
+                </section>
+            `;
+        }
+        
+        function renderDojoSection() {
+            document.getElementById('main-title').textContent = 'SLAP Dojo';
+            document.getElementById('main-description').textContent = 'Gerencie a pontuação dos competidores.';
+            const canEdit = currentUserRole === 'admin';
+            const addCompetitorBtn = canEdit ? `<button class="primary-btn w-auto" data-action="add-dojo-competitor">+ Adicionar Competidor</button>` : '';
+
+            const sortedRanking = [...dojoRanking].sort((a, b) => b.points - a.points);
+
+            contentArea.innerHTML = `
+                <section id="dojo-section" class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-xl font-bold text-stone-800">Ranking de Competidores</h3>
+                        ${addCompetitorBtn}
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Pos.</th>
+                                    <th>Competidor</th>
+                                    <th class="text-right">Pontos</th>
+                                    ${canEdit ? '<th class="text-center">Ações</th>' : ''}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${sortedRanking.map((c, index) => `
+                                    <tr>
+                                        <td class="font-bold text-stone-500">#${index + 1}</td>
+                                        <td class="flex items-center gap-3">
+                                            <img src="${c.photo}" alt="${c.name}" class="w-10 h-10 rounded-full object-cover">
+                                            <span class="font-medium">${c.name}</span>
+                                        </td>
+                                        <td class="text-right font-mono font-semibold">${c.points || 0}</td>
+                                        ${canEdit ? `
+                                        <td class="text-center">
+                                            <button class="secondary-btn" data-action="edit-dojo-points" data-id="${c.id}">Editar</button>
+                                            <button class="danger-btn ml-2" data-action="delete-item" data-collection="dojo_ranking" data-id="${c.id}">X</button>
+                                        </td>
+                                        ` : ''}
+                                    </tr>
+                                `).join('') || '<tr><td colspan="4" class="text-center py-10 text-stone-500">Nenhum competidor no Dojo.</td></tr>'}
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            `;
+        }
+
+
         // --- MODAL & FORM FUNCTIONS ---
         function closeFormModal() { document.getElementById('form-modal').classList.remove('visible'); }
         function showSuccessMessage(title, message) { const modalTitle = document.getElementById('form-modal-title'); const modalContentArea = document.getElementById('form-modal-content-area'); modalTitle.textContent = title; modalContentArea.innerHTML = `<div class="text-center"><svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-12 w-12 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg><p class="mt-4 text-stone-600">${message}</p><button data-action="close-modal" class="primary-btn mt-6 w-auto px-8">OK</button></div>`; document.getElementById('form-modal').classList.add('visible'); }
@@ -872,7 +1031,7 @@
 
         function openTaskForm() {
             document.getElementById('form-modal-title').textContent = "Adicionar Nova Tarefa";
-            const collaboratorOptions = collaborators.filter(c => c.sectors && c.sectors.includes('tarefas')).map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+            const collaboratorOptions = collaborators.filter(c => c.sectors && (c.sectors.includes('tarefas') || c.sectors.includes('professor'))).map(c => `<option value="${c.name}">${c.name}</option>`).join('');
 
             document.getElementById('form-modal-content-area').innerHTML = `
                 <form id="form-modal-body" class="space-y-4">
@@ -1176,6 +1335,201 @@
                 showErrorMessage("Erro", "Não foi possível salvar a foto.");
             }
         }
+        
+        function openNivelForm(nivelId = null) {
+            const nivel = nivelId ? cps.find(n => n.id === nivelId) : null;
+            document.getElementById('form-modal-title').textContent = nivel ? 'Editar Nível' : 'Adicionar Novo Nível';
+            document.getElementById('form-modal-content-area').innerHTML = `
+                <form id="form-modal-body" class="space-y-4">
+                    <input type="hidden" id="nivel-id" value="${nivelId || ''}">
+                    <div><label class="font-medium text-sm">Título do Nível</label><input type="text" id="nivel-title" class="form-input" required value="${nivel?.title || ''}"></div>
+                    <div class="text-right"><button type="submit" class="primary-btn w-auto">Salvar</button></div>
+                </form>
+            `;
+            document.getElementById('form-modal-body').onsubmit = saveNivel;
+            document.getElementById('form-modal').classList.add('visible');
+        }
+        
+        async function saveNivel(event) {
+            event.preventDefault();
+            const nivelId = document.getElementById('nivel-id').value;
+            const title = document.getElementById('nivel-title').value;
+            if (!title) { showErrorMessage("Erro", "O título é obrigatório."); return; }
+            
+            try {
+                if (nivelId) {
+                    await updateDoc(doc(db, `artifacts/${appId}/public/data/cps`, nivelId), { title });
+                    showSuccessMessage("Sucesso", "Nível atualizado.");
+                } else {
+                    await addDoc(collection(db, `artifacts/${appId}/public/data/cps`), { title, lessons: [] });
+                    showSuccessMessage("Sucesso", "Nível adicionado.");
+                }
+            } catch(e) { console.error(e); showErrorMessage("Erro", "Não foi possível salvar o nível."); }
+        }
+        
+        function openAulaForm(nivelId, aulaIndex = null) {
+            const nivel = cps.find(n => n.id === nivelId);
+            const aula = (aulaIndex !== null && nivel && nivel.lessons) ? nivel.lessons[aulaIndex] : null;
+            document.getElementById('form-modal-title').textContent = aula ? 'Editar Aula' : 'Adicionar Nova Aula';
+            document.getElementById('form-modal-content-area').innerHTML = `
+                <form id="form-modal-body" class="space-y-4">
+                    <input type="hidden" id="aula-nivel-id" value="${nivelId}">
+                    <input type="hidden" id="aula-index" value="${aulaIndex !== null ? aulaIndex : ''}">
+                    <div><label class="font-medium text-sm">Título da Aula</label><input type="text" id="aula-title" class="form-input" required value="${aula?.title || ''}"></div>
+                    <div><label class="font-medium text-sm">Tema/Descrição</label><textarea id="aula-topic" class="form-input" rows="3" required>${aula?.topic || ''}</textarea></div>
+                    <div class="text-right"><button type="submit" class="primary-btn w-auto">Salvar</button></div>
+                </form>
+            `;
+            document.getElementById('form-modal-body').onsubmit = saveAula;
+            document.getElementById('form-modal').classList.add('visible');
+        }
+
+        async function saveAula(event) {
+            event.preventDefault();
+            const nivelId = document.getElementById('aula-nivel-id').value;
+            const aulaIndex = document.getElementById('aula-index').value;
+            const nivelRef = doc(db, `artifacts/${appId}/public/data/cps`, nivelId);
+            const novaAula = {
+                title: document.getElementById('aula-title').value,
+                topic: document.getElementById('aula-topic').value
+            };
+
+            try {
+                if (aulaIndex) { // Edit existing lesson
+                    const nivelDoc = await getDoc(nivelRef);
+                    const lessons = nivelDoc.data().lessons;
+                    lessons[aulaIndex] = novaAula;
+                    await updateDoc(nivelRef, { lessons });
+                } else { // Add new lesson
+                    await updateDoc(nivelRef, { lessons: arrayUnion(novaAula) });
+                }
+                showSuccessMessage("Sucesso", "Aula salva.");
+            } catch (e) { console.error(e); showErrorMessage("Erro", "Não foi possível salvar a aula."); }
+        }
+
+        async function deleteAula(nivelId, aulaIndex) {
+            const nivelRef = doc(db, `artifacts/${appId}/public/data/cps`, nivelId);
+            const nivel = cps.find(n => n.id === nivelId);
+            const aulaParaRemover = nivel.lessons[aulaIndex];
+            try {
+                await updateDoc(nivelRef, { lessons: arrayRemove(aulaParaRemover) });
+                showSuccessMessage("Sucesso", "Aula removida.");
+            } catch (e) { console.error(e); showErrorMessage("Erro", "Não foi possível remover a aula."); }
+        }
+        
+        function openProfileModal(profileUserId) {
+            const user = usersData.find(u => u.id === profileUserId);
+            if(!user) return;
+            
+            const canEdit = currentUserRole === 'admin' || userId === profileUserId;
+            const editButton = canEdit ? `<button class="secondary-btn" data-action="edit-profile" data-id="${user.id}">Editar Perfil</button>` : '';
+
+            document.getElementById('form-modal-title').textContent = user.name;
+            document.getElementById('form-modal-content-area').innerHTML = `
+                <div class="space-y-3">
+                    <img src="${user.photoURL || 'https://res.cloudinary.com/dqfi22uz0/image/upload/v1749349751/DBB440C2-684E-4DCF-9CD3-B2DDC18F1E53_3_vgocga.jpg'}" alt="Foto de ${user.name}" class="w-32 h-32 mx-auto rounded-full object-cover border-4 border-yellow-200">
+                    <div class="profile-modal-item"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg> <span class="font-semibold">${user.role || 'Colaborador'}</span></div>
+                    <div class="profile-modal-item"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg> <span>${user.city || 'Não informado'}</span></div>
+                    <div class="profile-modal-item"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg> <span>${user.favoriteSong || 'Não informado'}</span></div>
+                    <div class="profile-modal-item"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg> <span>${user.favoriteFood || 'Não informado'}</span></div>
+                    <div class="border-t pt-4 flex justify-end gap-2">${editButton}</div>
+                </div>
+            `;
+            document.getElementById('form-modal').classList.add('visible');
+        }
+        
+        function openProfileForm(profileUserId) {
+            const user = usersData.find(u => u.id === profileUserId);
+            if(!user) return;
+            
+            document.getElementById('form-modal-title').textContent = 'Editar Perfil';
+            document.getElementById('form-modal-content-area').innerHTML = `
+                <form id="form-modal-body" class="space-y-4">
+                    <input type="hidden" id="profile-id" value="${user.id}">
+                    <div><label class="font-medium text-sm">Onde mora?</label><input type="text" id="profile-city" class="form-input" value="${user.city || ''}"></div>
+                    <div><label class="font-medium text-sm">Música favorita</label><input type="text" id="profile-song" class="form-input" value="${user.favoriteSong || ''}"></div>
+                    <div><label class="font-medium text-sm">Comida favorita</label><input type="text" id="profile-food" class="form-input" value="${user.favoriteFood || ''}"></div>
+                    <div class="text-right"><button type="submit" class="primary-btn w-auto">Salvar Alterações</button></div>
+                </form>
+            `;
+            document.getElementById('form-modal-body').onsubmit = saveProfile;
+            document.getElementById('form-modal').classList.add('visible');
+        }
+
+        async function saveProfile(event) {
+            event.preventDefault();
+            const profileId = document.getElementById('profile-id').value;
+            const data = {
+                city: document.getElementById('profile-city').value,
+                favoriteSong: document.getElementById('profile-song').value,
+                favoriteFood: document.getElementById('profile-food').value,
+            };
+            try {
+                await updateDoc(doc(db, "users", profileId), data);
+                showSuccessMessage("Sucesso!", "Perfil atualizado.");
+            } catch (e) { console.error(e); showErrorMessage("Erro", "Não foi possível atualizar o perfil."); }
+        }
+        
+        function openDojoCompetitorForm(competitorId = null) {
+            const competitor = competitorId ? dojoRanking.find(c => c.id === competitorId) : null;
+            document.getElementById('form-modal-title').textContent = competitor ? 'Editar Competidor' : 'Adicionar Competidor';
+            document.getElementById('form-modal-content-area').innerHTML = `
+                <form id="form-modal-body" class="space-y-4">
+                    <input type="hidden" id="dojo-id" value="${competitorId || ''}">
+                    <div><label class="font-medium text-sm">Nome do Competidor</label><input type="text" id="dojo-name" class="form-input" required value="${competitor?.name || ''}"></div>
+                    <div><label class="font-medium text-sm">URL da Foto</label><input type="url" id="dojo-photo" class="form-input" required value="${competitor?.photo || ''}"></div>
+                    <div><label class="font-medium text-sm">Pontos</label><input type="number" id="dojo-points" class="form-input" required value="${competitor?.points || 0}"></div>
+                    <div class="text-right"><button type="submit" class="primary-btn w-auto">Salvar</button></div>
+                </form>
+            `;
+            document.getElementById('form-modal-body').onsubmit = saveDojoCompetitor;
+            document.getElementById('form-modal').classList.add('visible');
+        }
+
+        async function saveDojoCompetitor(event) {
+            event.preventDefault();
+            const competitorId = document.getElementById('dojo-id').value;
+            const data = {
+                name: document.getElementById('dojo-name').value,
+                photo: document.getElementById('dojo-photo').value,
+                points: Number(document.getElementById('dojo-points').value)
+            };
+            if (!data.name || !data.photo) { showErrorMessage("Erro", "Nome e foto são obrigatórios."); return; }
+            try {
+                if (competitorId) {
+                    await updateDoc(doc(db, `artifacts/${appId}/public/data/dojo_ranking`, competitorId), data);
+                } else {
+                    await addDoc(collection(db, `artifacts/${appId}/public/data/dojo_ranking`), data);
+                }
+                showSuccessMessage("Sucesso", "Competidor do Dojo salvo.");
+            } catch (e) { console.error(e); showErrorMessage("Erro", "Não foi possível salvar o competidor."); }
+        }
+
+        function openDojoPointsForm(competitorId) {
+            const competitor = dojoRanking.find(c => c.id === competitorId);
+            if (!competitor) return;
+            document.getElementById('form-modal-title').textContent = `Editar Pontos de ${competitor.name}`;
+            document.getElementById('form-modal-content-area').innerHTML = `
+                <form id="form-modal-body" class="space-y-4">
+                    <input type="hidden" id="dojo-id" value="${competitorId}">
+                    <div><label class="font-medium text-sm">Pontos</label><input type="number" id="dojo-points" class="form-input" required value="${competitor.points || 0}"></div>
+                    <div class="text-right"><button type="submit" class="primary-btn w-auto">Salvar Pontos</button></div>
+                </form>
+            `;
+            document.getElementById('form-modal-body').onsubmit = saveDojoPoints;
+            document.getElementById('form-modal').classList.add('visible');
+        }
+
+        async function saveDojoPoints(event) {
+            event.preventDefault();
+            const competitorId = document.getElementById('dojo-id').value;
+            const points = Number(document.getElementById('dojo-points').value);
+            try {
+                await updateDoc(doc(db, `artifacts/${appId}/public/data/dojo_ranking`, competitorId), { points });
+                showSuccessMessage("Sucesso", "Pontuação atualizada.");
+            } catch (e) { console.error(e); showErrorMessage("Erro", "Não foi possível atualizar a pontuação."); }
+        }
+
 
         async function toggleTaskCompletion(taskId, isCompleted) { if (!db) return; const taskRef = doc(db, `artifacts/${appId}/public/data/tasks`, taskId); try { await updateDoc(taskRef, { completed: isCompleted }); } catch (error) { console.error("Error updating task status:", error); } }
 
@@ -1261,10 +1615,13 @@
             const mainNav = document.getElementById('main-navigation');
             const menuItems = [
                 { key: 'inicio', label: 'Início', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>', roles: null },
-                { key: 'grade', label: 'Grade', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" x2="16" y1="2" y2="6"></line><line x1="8" x2="8" y1="2" y2="6"></line><line x1="3" x2="21" y1="10" y2="10"></line></svg>', roles: ['admin', 'ap', 'pedagogico', 'financeiro'] },
+                { key: 'dojo', label: 'Dojo', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 L15.09 8.26 L22 9.27 L17 14.14 L18.18 21.02 L12 17.77 L5.82 21.02 L7 14.14 L2 9.27 L8.91 8.26 L12 2 Z M12 2 L12 17.77"></path><path d="M12 2 L15.09 8.26 L22 9.27 L17 14.14 L18.18 21.02 L12 17.77 L5.82 21.02 L7 14.14 L2 9.27 L8.91 8.26 L12 2 Z M12 2 L12 17.77 M12 22 L12 17.77"></path><path d="M4 12.01 L20 12.01"></path></svg>', roles: null },
+                { key: 'grade', label: 'Grade', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" x2="16" y1="2" y2="6"></line><line x1="8" x2="8" y1="2" y2="6"></line><line x1="3" x2="21" y1="10" y2="10"></line></svg>', roles: ['admin', 'ap', 'pedagogico', 'financeiro', 'teacher'] },
+                { key: 'tarefas', label: 'Tarefas', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>', roles: ['admin', 'am', 'ap', 'pedagogico', 'financeiro', 'teacher'] },
+                { key: 'cps', label: 'CPs', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>', roles: ['admin', 'pedagogico'] },
+                { key: 'sala-de-reuniao', label: 'Sala de Reunião', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>', roles: null },
                 { key: 'eventos', label: 'Eventos', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3z"/><path d="M12.44 8.917a4 4 0 0 0-4.88 0C4.965 10.685 3 13.982 3 17.5V22h18v-4.5c0-3.518-1.965-6.815-4.56-8.583z"/></svg>', roles: ['admin', 'am', 'ap', 'pedagogico'] },
                 { key: 'orcamentos', label: 'Orçamentos', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>', roles: ['admin', 'am', 'financeiro'] },
-                { key: 'tarefas', label: 'Tarefas', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>', roles: ['admin', 'am', 'ap', 'pedagogico', 'financeiro'] },
                 { key: 'banco-de-fotos', label: 'Banco de Fotos', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>', roles: ['admin', 'am'] },
                 { key: 'colaboradores', label: 'Colaboradores', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>', roles: ['admin', 'pedagogico', 'financeiro'] },
                 { key: 'cancelamentos', label: 'Cancelamentos', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="23" y1="18" x2="17" y2="12"/><line x1="17" y1="18" x2="23" y2="12"/></svg>', roles: ['admin', 'pedagogico', 'financeiro'] },
@@ -1286,7 +1643,7 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            const pageRenderers = { 'inicio': renderInicioSection, 'eventos': renderEventosSection, 'orcamentos': renderOrcamentosSection, 'tarefas': renderTarefasSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection, 'cancelamentos': renderCancelamentosSection, 'colaboradores': renderColaboradoresSection, 'banco-de-fotos': renderBancoDeFotosSection };
+            const pageRenderers = { 'inicio': renderInicioSection, 'eventos': renderEventosSection, 'orcamentos': renderOrcamentosSection, 'tarefas': renderTarefasSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection, 'cancelamentos': renderCancelamentosSection, 'colaboradores': renderColaboradoresSection, 'banco-de-fotos': renderBancoDeFotosSection, 'cps': renderCPsSection, 'sala-de-reuniao': renderSalaDeReuniaoSection, 'dojo': renderDojoSection };
             
             document.body.addEventListener('click', (event) => {
                 const navTarget = event.target.closest('.nav-item');
@@ -1300,7 +1657,7 @@
                 
                 const actionTarget = event.target.closest('[data-action]');
                 if (actionTarget) {
-                    const { action, id, collection, folderName } = actionTarget.dataset;
+                    const { action, id, collection, folderName, nivelId, aulaIndex } = actionTarget.dataset;
                     const actionHandlers = {
                         'open-signup': openSignUpModal,
                         'add-event': openEventForm,
@@ -1324,6 +1681,16 @@
                         'add-photo': openPhotoFormModal,
                         'open-folder': () => renderPhotoGallery(folderName),
                         'back-to-folders': renderBancoDeFotosSection,
+                        'toggle-cp-level': () => { const card = document.getElementById(`nivel-${id}`); if(card) { card.classList.toggle('open'); const icon = card.querySelector('svg'); icon.style.transform = card.classList.contains('open') ? 'rotate(180deg)' : 'rotate(0deg)'; } },
+                        'add-nivel': () => openNivelForm(),
+                        'edit-nivel': () => openNivelForm(id),
+                        'add-aula': () => openAulaForm(nivelId),
+                        'edit-aula': () => openAulaForm(nivelId, aulaIndex),
+                        'delete-aula': () => deleteAula(nivelId, aulaIndex),
+                        'view-profile': () => openProfileModal(id),
+                        'edit-profile': () => openProfileForm(id),
+                        'add-dojo-competitor': () => openDojoCompetitorForm(),
+                        'edit-dojo-points': () => openDojoPointsForm(id),
                     };
                     if (actionHandlers[action]) {
                         actionHandlers[action]();
