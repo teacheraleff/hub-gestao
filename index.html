@@ -33,18 +33,21 @@
         .base-card:hover { border-color: #F1D24B; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
         
         .status-tag { padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; }
-        /* Generic Statuses */
         .status-aprovado, .status-presencial, .status-ativo { background-color: #D1FAE5; color: #065F46; }
         .status-online, .status-em-andamento { background-color: #DBEAFE; color: #1E40AF; }
         .status-concluída { background-color: #F3F4F6; color: #4B5563; }
         .status-pendente, .status-em-espera { background-color: #FEF3C7; color: #92400E; }
         .status-rejeitado, .status-cancelado { background-color: #FEE2E2; color: #991B1B; }
 
-        /* Event Sector Statuses */
-        .status-financeiro { background-color: #D1FAE5; color: #065F46; } /* Green */
-        .status-pedagógico { background-color: #DBEAFE; color: #1E40AF; } /* Blue */
-        .status-comercial { background-color: #FEF3C7; color: #92400E; } /* Yellow */
-        .status-marketing { background-color: #FEE2E2; color: #991B1B; } /* Red */
+        .status-financeiro { background-color: #D1FAE5; color: #065F46; }
+        .status-pedagógico { background-color: #DBEAFE; color: #1E40AF; }
+        .status-comercial { background-color: #FEF3C7; color: #92400E; }
+        .status-marketing { background-color: #FEE2E2; color: #991B1B; }
+        .sector-tag { display: inline-block; padding: 0.25rem 0.75rem; margin: 0.25rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; }
+        .sector-professor { background-color: #84C7DF; color: white; }
+        .sector-tarefas { background-color: #FF5C3D; color: white; }
+        .sector-cancelamentos { background-color: #8671D1; color: white; }
+        .sector-orcamentos { background-color: #F1D24B; color: #44403c; }
 
         .task-card { background-color: #ffffff; border-radius: 0.75rem; padding: 1.25rem; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid #e7e5e4; transition: all 0.2s ease; }
         .task-card.completed { background-color: #f9fafb; border-color: #e5e7eb; }
@@ -57,7 +60,6 @@
         .task-delete-btn { background: none; border: none; cursor: pointer; color: #9ca3af; transition: color 0.2s; }
         .task-delete-btn:hover { color: #ef4444; }
 
-        /* --- Grade/Schedule Styles --- */
         .grade-select-container { margin-bottom: 1.5rem; max-width: 400px; }
         .grade-select { width: 100%; padding: 0.75rem 1rem; border-radius: 0.5rem; border: 1px solid #d6d3d1; background-color: #ffffff; font-weight: 600; color: #44403c; -webkit-appearance: none; appearance: none; background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); background-position: right 0.5rem center; background-repeat: no-repeat; background-size: 1.5em 1.5em; padding-right: 2.5rem; cursor: pointer; }
         .schedule-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; }
@@ -69,7 +71,6 @@
         .tag-turma { background-color: #FF5C3D; }
         .tag-vip { background-color: #8671D1; }
         
-        /* --- Payroll & Students Styles --- */
         .data-table { width: 100%; border-collapse: collapse; }
         .data-table th, .data-table td { padding: 0.75rem 1rem; text-align: left; border-bottom: 1px solid #e5e7eb; }
         .data-table th { font-weight: 600; font-size: 0.875rem; color: #6b7280; }
@@ -86,6 +87,18 @@
         .secondary-btn:hover { background-color: #e5e7eb; }
         .danger-btn { background-color: #ef4444; color: white; padding: 0.5rem 1rem; border-radius: 0.375rem; font-weight: 600; transition: background-color 0.2s; border: none; cursor: pointer; }
         .danger-btn:hover { background-color: #dc2626; }
+
+        /* --- Banco de Fotos Styles --- */
+        .folder-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 1.5rem; }
+        .folder-card { background-color: #fff; border-radius: 0.75rem; padding: 1.5rem; text-align: center; cursor: pointer; transition: all 0.2s; border: 1px solid #e7e5e4; position: relative; }
+        .folder-card:hover { transform: translateY(-4px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-color: #F1D24B; }
+        .folder-delete-btn { position: absolute; top: 0.5rem; right: 0.5rem; background: none; border: none; cursor: pointer; color: #d1d5db; padding: 0.25rem; border-radius: 9999px; }
+        .folder-card:hover .folder-delete-btn { color: #9ca3af; }
+        .folder-delete-btn:hover { color: #ef4444; background-color: #fef2f2; }
+        .photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1.5rem; }
+        .photo-card { background-color: #fff; border-radius: 0.75rem; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid #e7e5e4; }
+        .photo-card img { width: 100%; height: 200px; object-fit: cover; }
+        .photo-card-info { padding: 1rem; }
     </style>
 </head>
 <body class="bg-stone-100 text-stone-800">
@@ -129,10 +142,26 @@
             </aside>
         
             <main class="flex-1 p-4 sm:p-6 md:p-8">
-                <header id="main-header" class="mb-8">
-                    <h2 id="main-title" class="text-3xl font-bold text-[#F1D24B]"></h2>
-                    <p id="main-description" class="mt-2 text-stone-600"></p>
-                </header>
+                <div class="flex justify-between items-start mb-8">
+                    <header id="main-header">
+                        <h2 id="main-title" class="text-3xl font-bold text-[#F1D24B]"></h2>
+                        <p id="main-description" class="mt-2 text-stone-600"></p>
+                    </header>
+                    <div class="relative ml-auto">
+                        <button id="notification-button" class="relative p-2 text-stone-500 hover:text-stone-700 focus:outline-none">
+                            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                            </svg>
+                            <span id="notification-badge" class="absolute top-1 right-1 block h-2 w-2 rounded-full bg-red-500 ring-2 ring-white hidden"></span>
+                        </button>
+                        <div id="notification-panel" class="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-xl overflow-hidden z-20 hidden">
+                            <div class="py-2 px-4 text-sm font-semibold text-stone-700 border-b">Notificações</div>
+                            <div id="notification-list" class="divide-y max-h-96 overflow-y-auto">
+                                <!-- Notifications will be rendered here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <div id="content-area"></div>
             </main>
         </div>
@@ -153,8 +182,8 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
-        import { getFirestore, collection, onSnapshot, addDoc, doc, deleteDoc, serverTimestamp, query, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, updateProfile, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+        import { getFirestore, collection, onSnapshot, addDoc, doc, deleteDoc, serverTimestamp, query, setDoc, getDoc, updateDoc, orderBy, limit, where } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-storage.js";
 
         // --- GLOBAL VARIABLES ---
@@ -165,7 +194,7 @@
         const pendingView = document.getElementById('pending-view');
         
         let db, auth, storage, userId, currentUserName, currentUserRole;
-        let tasks = [], events = [], budgets = [], collaborators = [], schedules = [], expenses = [], cancellations = [];
+        let tasks = [], events = [], budgets = [], collaborators = [], schedules = [], expenses = [], cancellations = [], notifications = [], photos = [], photoFolders = [];
         let allUnsubscribers = [];
         const appId = 'hub-gestao-slap';
 
@@ -188,7 +217,7 @@
                 storage = getStorage(app);
                 
                 onAuthStateChanged(auth, async (user) => {
-                    if (user) {
+                    if (user && !user.isAnonymous) {
                         await initializeAppWithUser(user);
                     } else {
                         showLoginView();
@@ -201,7 +230,6 @@
 
         async function initializeAppWithUser(user) {
             userId = user.uid;
-            
             const userDocRef = doc(db, "users", userId);
             const userDoc = await getDoc(userDocRef);
             
@@ -228,16 +256,22 @@
             allUnsubscribers.forEach(unsub => unsub && unsub());
             allUnsubscribers = [];
 
-            const getCollectionListener = (collectionName, targetArray, renderFunc) => {
+            const getCollectionListener = (collectionName, targetArray, renderFunc, q) => {
                 const collRef = collection(db, `artifacts/${appId}/public/data/${collectionName}`);
-                const unsubscribe = onSnapshot(query(collRef), (snapshot) => {
+                const finalQuery = q ? q(collRef) : query(collRef);
+                const unsubscribe = onSnapshot(finalQuery, (snapshot) => {
                     targetArray.length = 0;
                     snapshot.docs.forEach(doc => targetArray.push({ id: doc.id, ...doc.data() }));
                     
+                    if (collectionName === 'notifications') {
+                        updateNotificationBadge();
+                        return;
+                    }
+
                     const activePageId = contentArea.firstElementChild?.id;
                     if (renderFunc && activePageId) {
                         const pageBaseName = activePageId.replace('-section', '');
-                        if (pageBaseName.startsWith(collectionName.slice(0, -1).toLowerCase()) || pageBaseName === 'inicio' || (collectionName === 'collaborators' && ['grade', 'tasks', 'inicio'].includes(pageBaseName))) {
+                        if (pageBaseName.startsWith(collectionName.slice(0, -1).toLowerCase()) || pageBaseName === 'inicio' || (collectionName === 'collaborators' && ['grade', 'tasks', 'inicio', 'colaboradores', 'banco-de-fotos'].includes(pageBaseName))) {
                             renderFunc();
                         }
                     }
@@ -251,12 +285,17 @@
                 const activePageId = contentArea.firstElementChild?.id;
                 if (activePageId === 'grade-section') renderGradeSection();
                 if (activePageId === 'tasks-section') renderTarefasSection();
+                if (activePageId === 'colaboradores-section') renderColaboradoresSection();
+                if (activePageId === 'banco-de-fotos-section') renderBancoDeFotosSection();
                 if (activePageId === 'inicio-section') renderInicioSection();
             });
             getCollectionListener('events', events, renderEventosSection);
             getCollectionListener('schedules', schedules, renderGradeSection);
             getCollectionListener('expenses', expenses, renderFolhaPagamentoSection);
             getCollectionListener('cancellations', cancellations, renderCancelamentosSection);
+            getCollectionListener('photo_bank', photos, renderBancoDeFotosSection);
+            getCollectionListener('photo_folders', photoFolders, renderBancoDeFotosSection);
+            getCollectionListener('notifications', notifications, null, (ref) => query(ref, orderBy('createdAt', 'desc'), limit(30)));
         }
 
         // --- AUTH, VIEW, and MENU FUNCTIONS ---
@@ -328,7 +367,9 @@
             }
         }
         async function handleSignUp(event) { event.preventDefault(); const name = event.target.name.value; const email = event.target.email.value; const password = event.target.password.value; try { const cred = await createUserWithEmailAndPassword(auth, email, password); await updateProfile(cred.user, { displayName: name }); await setDoc(doc(db, "users", cred.user.uid), { name, email, role: "pending", createdAt: serverTimestamp() }); await signOut(auth); showSuccessMessage("Registo Concluído!", "A sua conta foi criada. Aguarde aprovação de um administrador para aceder."); } catch (error) { showErrorMessage("Erro", "Erro ao criar conta. Verifique o email e a palavra-passe."); } }
-        async function handleLogout() { await signOut(auth); }
+        async function handleLogout() { 
+            await signOut(auth);
+        }
         
         // --- PROFILE PICTURE UPLOAD ---
         async function handleProfilePictureUpload(event) {
@@ -394,16 +435,11 @@
             document.getElementById('main-title').textContent = 'Lista de Tarefas'; 
             document.getElementById('main-description').textContent = 'Gerencie e acompanhe as tarefas da equipa.'; 
             
-            const addCollaboratorButton = currentUserRole === 'admin' 
-                ? `<button class="secondary-btn" data-action="add-collaborator">+ Adicionar Colaborador</button>` 
-                : '';
-
             contentArea.innerHTML = `
                 <div id="tasks-section">
                     <div class="flex justify-between items-center mb-6 flex-wrap gap-4">
                         <h3 class="text-xl font-bold text-stone-800">Todas as Tarefas</h3>
                         <div class="flex gap-2">
-                            ${addCollaboratorButton}
                             <button class="primary-btn w-auto" data-action="add-task">+ Adicionar Tarefa</button>
                         </div>
                     </div>
@@ -431,9 +467,10 @@
             document.getElementById('main-title').textContent = 'Grade de Horários';
             document.getElementById('main-description').textContent = 'Visualize e gerencie a grade de aulas da equipa.';
             
-            const teacherOptions = collaborators.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+            const teacherOptions = collaborators.filter(c => c.sectors && c.sectors.includes('professor')).map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+            
             const addProfessorButton = ['admin', 'ap', 'pedagogico'].includes(currentUserRole) 
-                ? `<button class="secondary-btn" data-action="add-collaborator">+ Adicionar Professor</button>` 
+                ? `<button class="secondary-btn" onclick="document.querySelector('[data-target=colaboradores]').click()">+ Adicionar Professor</button>` 
                 : '';
             const addAulaButton = ['admin', 'ap', 'pedagogico'].includes(currentUserRole)
                 ? `<button class="primary-btn w-auto" data-action="add-schedule">+ Adicionar Aula</button>`
@@ -588,6 +625,100 @@
                 </section>
             `;
         }
+        
+        function renderColaboradoresSection() {
+            document.getElementById('main-title').textContent = 'Gestão de Colaboradores';
+            document.getElementById('main-description').textContent = 'Adicione, edite e defina os setores de cada colaborador.';
+            contentArea.innerHTML = `
+                <section id="colaboradores-section" class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
+                    <div class="text-right mb-6">
+                        <button class="primary-btn w-auto" data-action="add-collaborator">+ Adicionar Colaborador</button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>Setores</th>
+                                    <th class="text-center">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${collaborators.map(c => `
+                                    <tr>
+                                        <td class="font-medium">${c.name}</td>
+                                        <td>${(c.sectors || []).map(s => `<span class="sector-tag sector-${s}">${s}</span>`).join('')}</td>
+                                        <td class="text-center">
+                                            <button class="secondary-btn" data-action="edit-collaborator" data-id="${c.id}">Editar</button>
+                                            <button class="danger-btn ml-2" data-action="delete-item" data-collection="collaborators" data-id="${c.id}">Excluir</button>
+                                        </td>
+                                    </tr>
+                                `).join('') || '<tr><td colspan="3" class="text-center py-10 text-stone-500">Nenhum colaborador encontrado.</td></tr>'}
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            `;
+        }
+
+        function renderBancoDeFotosSection(folderName = null) {
+            document.getElementById('main-title').textContent = 'Banco de Fotos';
+            document.getElementById('main-description').textContent = 'Gerencie os recursos visuais para marketing e divulgação.';
+            
+            if (folderName) {
+                renderPhotoGallery(folderName);
+                return;
+            }
+
+            const professorFolders = collaborators.filter(c => c.sectors && c.sectors.includes('professor')).map(c => c.name);
+            const allFolders = ['Geral', ...professorFolders];
+
+            contentArea.innerHTML = `
+                <section id="banco-de-fotos-section">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-xl font-bold text-stone-800">Pastas</h3>
+                        <button class="primary-btn w-auto" data-action="add-photo">+ Adicionar Foto</button>
+                    </div>
+                    <div class="folder-grid">
+                        ${allFolders.map(folder => `
+                            <div class="folder-card" data-action="open-folder" data-folder-name="${folder}">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mx-auto mb-3 text-yellow-400"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"></path></svg>
+                                <p class="font-semibold text-stone-700">${folder}</p>
+                            </div>
+                        `).join('')}
+                    </div>
+                </section>
+            `;
+        }
+
+        function renderPhotoGallery(folderName) {
+             const photosInFolder = photos.filter(p => p.folder === folderName);
+             contentArea.innerHTML = `
+                <section id="banco-de-fotos-section" data-current-folder="${folderName}">
+                    <div class="flex justify-between items-center mb-6">
+                        <div>
+                            <button class="secondary-btn mb-2" data-action="back-to-folders">← Voltar para Pastas</button>
+                            <h3 class="text-2xl font-bold text-stone-800">Pasta: ${folderName}</h3>
+                        </div>
+                        <button class="primary-btn w-auto" data-action="add-photo">+ Adicionar Foto</button>
+                    </div>
+                    <div class="photo-grid">
+                        ${photosInFolder.length > 0 ? photosInFolder.map(photo => `
+                            <div class="photo-card">
+                                <img src="${photo.url}" alt="${photo.title}" class="bg-stone-100">
+                                <div class="photo-card-info">
+                                    <p class="font-semibold text-stone-800 truncate">${photo.title}</p>
+                                    <div class="mt-4 flex gap-2">
+                                        <a href="${photo.url}" download="${photo.title.replace(/\s+/g, '_')}.jpg" class="primary-btn text-center text-sm py-2">Download</a>
+                                        <button class="danger-btn text-sm py-2" data-action="delete-item" data-collection="photo_bank" data-id="${photo.id}">Excluir</button>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('') : '<p class="text-stone-500 col-span-full text-center py-10">Nenhuma foto nesta pasta.</p>'}
+                    </div>
+                </section>
+             `;
+        }
 
         // --- MODAL & FORM FUNCTIONS ---
         function closeFormModal() { document.getElementById('form-modal').classList.remove('visible'); }
@@ -648,6 +779,7 @@
                 } else {
                     data.createdAt = serverTimestamp();
                     await addDoc(collection(db, `artifacts/${appId}/public/data/events`), data);
+                    await createNotification(`Novo evento adicionado: ${data.nome}`);
                     showSuccessMessage("Sucesso!", "Novo evento adicionado.");
                 }
             } catch (error) { console.error("Error saving event:", error); showErrorMessage("Erro", "Falha ao salvar o evento."); }
@@ -673,7 +805,7 @@
 
         function openBudgetForm(budgetId = null) {
             const budget = budgetId ? budgets.find(b => b.id === budgetId) : null;
-            const collaboratorOptions = collaborators.map(c => `<option value="${c.name}" ${budget?.criadoPor === c.name ? 'selected' : ''}>${c.name}</option>`).join('');
+            const collaboratorOptions = collaborators.filter(c => c.sectors && c.sectors.includes('orcamentos')).map(c => `<option value="${c.name}" ${budget?.criadoPor === c.name ? 'selected' : ''}>${c.name}</option>`).join('');
             document.getElementById('form-modal-title').textContent = budget ? "Editar Orçamento" : "Adicionar Novo Orçamento";
             document.getElementById('form-modal-content-area').innerHTML = `
                 <form id="form-modal-body" class="space-y-4">
@@ -712,6 +844,7 @@
                 } else {
                     data.createdAt = serverTimestamp();
                     await addDoc(collection(db, `artifacts/${appId}/public/data/budgets`), data);
+                    await createNotification(`Novo orçamento criado: ${data.titulo}`);
                     showSuccessMessage("Sucesso!", "Novo orçamento adicionado.");
                 }
             } catch (error) { console.error("Error saving budget:", error); showErrorMessage("Erro", "Falha ao salvar o orçamento."); }
@@ -739,7 +872,7 @@
 
         function openTaskForm() {
             document.getElementById('form-modal-title').textContent = "Adicionar Nova Tarefa";
-            const collaboratorOptions = collaborators.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+            const collaboratorOptions = collaborators.filter(c => c.sectors && c.sectors.includes('tarefas')).map(c => `<option value="${c.name}">${c.name}</option>`).join('');
 
             document.getElementById('form-modal-content-area').innerHTML = `
                 <form id="form-modal-body" class="space-y-4">
@@ -765,41 +898,76 @@
             if (!db) { console.warn("Offline mode."); closeFormModal(); return; }
             try {
                 await addDoc(collection(db, `artifacts/${appId}/public/data/tasks`), data);
+                await createNotification(`Nova tarefa para ${data.assignedTo.join(', ')}: ${data.description}`);
                 showSuccessMessage("Sucesso!", "Tarefa adicionada.");
             } catch (error) { console.error("Error saving task:", error); showErrorMessage("Erro", "Falha ao salvar a tarefa."); }
         }
         
-        function openCollaboratorForm() {
-            document.getElementById('form-modal-title').textContent = "Adicionar Professor/Colaborador";
+        function openCollaboratorForm(collaboratorId = null) {
+            const collaborator = collaboratorId ? collaborators.find(c => c.id === collaboratorId) : null;
+            document.getElementById('form-modal-title').textContent = collaborator ? "Editar Colaborador" : "Adicionar Novo Colaborador";
+            
+            const sectors = ['professor', 'tarefas', 'cancelamentos', 'orcamentos'];
+            const sectorLabels = { professor: 'Professor (Grade)', tarefas: 'Tarefas', cancelamentos: 'Cancelamentos', orcamentos: 'Orçamentos' };
+            
+            const sectorCheckboxes = sectors.map(sector => {
+                const isChecked = collaborator?.sectors?.includes(sector) ? 'checked' : '';
+                return `
+                    <div class="flex items-center">
+                        <input type="checkbox" id="sector-${sector}" name="sectors" value="${sector}" class="h-4 w-4 rounded" ${isChecked}>
+                        <label for="sector-${sector}" class="ml-2 text-sm">${sectorLabels[sector]}</label>
+                    </div>
+                `;
+            }).join('');
+
             document.getElementById('form-modal-content-area').innerHTML = `
                 <form id="form-modal-body" class="space-y-4">
-                    <div><label class="font-medium text-sm">Nome do Colaborador</label><input type="text" id="collaborator-name" class="form-input" required></div>
+                    <input type="hidden" id="collaborator-id" value="${collaboratorId || ''}">
+                    <div><label class="font-medium text-sm">Nome do Colaborador</label><input type="text" id="collaborator-name" class="form-input" required value="${collaborator?.name || ''}"></div>
+                    <div>
+                        <label class="font-medium text-sm">Setores de Atuação</label>
+                        <div class="mt-2 grid grid-cols-2 gap-2">${sectorCheckboxes}</div>
+                    </div>
                     <div class="grid grid-cols-2 gap-4">
-                         <div><label class="font-medium text-sm">Início do Turno</label><input type="time" id="collaborator-shift-start" class="form-input"></div>
-                         <div><label class="font-medium text-sm">Fim do Turno</label><input type="time" id="collaborator-shift-end" class="form-input"></div>
+                         <div><label class="font-medium text-sm">Início do Turno</label><input type="time" id="collaborator-shift-start" class="form-input" value="${collaborator?.shiftStart || ''}"></div>
+                         <div><label class="font-medium text-sm">Fim do Turno</label><input type="time" id="collaborator-shift-end" class="form-input" value="${collaborator?.shiftEnd || ''}"></div>
                     </div>
                     <div class="text-right"><button type="submit" class="primary-btn w-auto">Salvar</button></div>
                 </form>`;
             document.getElementById('form-modal-body').onsubmit = saveCollaborator;
             document.getElementById('form-modal').classList.add('visible');
         }
+
         async function saveCollaborator(event) {
             event.preventDefault();
-            const name = document.getElementById('collaborator-name').value;
-            const shiftStart = document.getElementById('collaborator-shift-start').value;
-            const shiftEnd = document.getElementById('collaborator-shift-end').value;
-            if (!name) return;
+            const collaboratorId = document.getElementById('collaborator-id').value;
+            const selectedSectors = Array.from(document.querySelectorAll('input[name="sectors"]:checked')).map(cb => cb.value);
+            
+            const data = {
+                name: document.getElementById('collaborator-name').value,
+                shiftStart: document.getElementById('collaborator-shift-start').value,
+                shiftEnd: document.getElementById('collaborator-shift-end').value,
+                sectors: selectedSectors
+            };
+
+            if (!data.name) { showErrorMessage("Erro", "O nome do colaborador é obrigatório."); return; }
             if (!db) { console.warn("Offline mode."); closeFormModal(); return; }
             try {
-                await addDoc(collection(db, `artifacts/${appId}/public/data/collaborators`), { name, shiftStart, shiftEnd });
-                showSuccessMessage("Sucesso!", "Colaborador adicionado.");
+                 if (collaboratorId) {
+                    await updateDoc(doc(db, `artifacts/${appId}/public/data/collaborators`, collaboratorId), data);
+                    showSuccessMessage("Sucesso!", "Colaborador atualizado.");
+                } else {
+                    await addDoc(collection(db, `artifacts/${appId}/public/data/collaborators`), data);
+                    await createNotification(`Novo colaborador adicionado: ${data.name}`);
+                    showSuccessMessage("Sucesso!", "Colaborador adicionado.");
+                }
             } catch (error) { console.error("Error saving collaborator:", error); showErrorMessage("Erro", "Falha ao salvar o colaborador."); }
         }
 
         function openScheduleForm(scheduleId = null) {
             const schedule = scheduleId ? schedules.find(s => s.id === scheduleId) : null;
             document.getElementById('form-modal-title').textContent = schedule ? "Editar Aula" : "Adicionar Nova Aula";
-            const teacherOptions = collaborators.map(c => `<option value="${c.name}" ${schedule?.teacher === c.name ? 'selected' : ''}>${c.name}</option>`).join('');
+            const teacherOptions = collaborators.filter(c => c.sectors && c.sectors.includes('professor')).map(c => `<option value="${c.name}" ${schedule?.teacher === c.name ? 'selected' : ''}>${c.name}</option>`).join('');
             const dayOptions = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Seg/Qua", "Ter/Qui"].map(d => `<option value="${d}" ${schedule?.day === d ? 'selected' : ''}>${d}</option>`).join('');
             const typeOptions = ["vip", "turma"].map(t => `<option value="${t}" ${schedule?.type === t ? 'selected' : ''}>${t.toUpperCase()}</option>`).join('');
 
@@ -911,8 +1079,8 @@
 
         function openCancelamentoForm(cancelamentoId = null) {
             const cancelamento = cancelamentoId ? cancellations.find(c => c.id === cancelamentoId) : null;
+            const collaboratorOptions = collaborators.filter(c => c.sectors && c.sectors.includes('cancelamentos')).map(c => `<option value="${c.name}" ${cancelamento?.processedBy === c.name ? 'selected' : ''}>${c.name}</option>`).join('');
             document.getElementById('form-modal-title').textContent = cancelamento ? "Editar Cancelamento" : "Registar Novo Cancelamento";
-            const collaboratorOptions = collaborators.map(c => `<option value="${c.name}" ${cancelamento?.processedBy === c.name ? 'selected' : ''}>${c.name}</option>`).join('');
             document.getElementById('form-modal-content-area').innerHTML = `
                 <form id="form-modal-body" class="space-y-4">
                     <input type="hidden" id="cancelamento-id" value="${cancelamentoId || ''}">
@@ -964,6 +1132,51 @@
             document.getElementById('form-modal').classList.add('visible');
         }
         
+        function openPhotoFormModal() {
+            const currentFolder = document.getElementById('banco-de-fotos-section')?.dataset.currentFolder || 'Geral';
+            document.getElementById('form-modal-title').textContent = "Adicionar Nova Foto";
+            
+            const professorFolders = collaborators.filter(c => c.sectors && c.sectors.includes('professor')).map(c => c.name);
+            const allFolders = ['Geral', ...professorFolders];
+            const folderOptions = allFolders.map(f => `<option value="${f}" ${f === currentFolder ? 'selected' : ''}>${f}</option>`).join('');
+
+            document.getElementById('form-modal-content-area').innerHTML = `
+                <form id="form-modal-body" class="space-y-4">
+                    <div><label class="font-medium text-sm">Título da Foto</label><input type="text" id="photo-title" class="form-input" required></div>
+                    <div><label class="font-medium text-sm">URL da Imagem (Cloudinary)</label><input type="url" id="photo-url" class="form-input" required placeholder="https://res.cloudinary.com/..."></div>
+                    <div><label class="font-medium text-sm">Pasta</label><select id="photo-folder" class="form-input" required>${folderOptions}</select></div>
+                    <div class="text-right"><button type="submit" class="primary-btn w-auto">Salvar Foto</button></div>
+                </form>
+            `;
+            document.getElementById('form-modal-body').onsubmit = savePhoto;
+            document.getElementById('form-modal').classList.add('visible');
+        }
+
+        async function savePhoto(event) {
+            event.preventDefault();
+            const data = {
+                title: document.getElementById('photo-title').value,
+                url: document.getElementById('photo-url').value,
+                folder: document.getElementById('photo-folder').value,
+                uploadedBy: currentUserName,
+                createdAt: serverTimestamp()
+            };
+
+            if (!data.title || !data.url || !data.folder) {
+                showErrorMessage("Erro", "Todos os campos são obrigatórios.");
+                return;
+            }
+
+            try {
+                await addDoc(collection(db, `artifacts/${appId}/public/data/photo_bank`), data);
+                await createNotification(`Nova foto adicionada em ${data.folder}: ${data.title}`);
+                showSuccessMessage("Sucesso!", "Foto adicionada ao banco.");
+            } catch (error) {
+                console.error("Error saving photo:", error);
+                showErrorMessage("Erro", "Não foi possível salvar a foto.");
+            }
+        }
+
         async function toggleTaskCompletion(taskId, isCompleted) { if (!db) return; const taskRef = doc(db, `artifacts/${appId}/public/data/tasks`, taskId); try { await updateDoc(taskRef, { completed: isCompleted }); } catch (error) { console.error("Error updating task status:", error); } }
 
         async function deleteItem(collectionName, itemId) {
@@ -983,6 +1196,67 @@
             );
         }
         
+        // --- NOTIFICATION FUNCTIONS ---
+        async function createNotification(message) {
+            if (!db) return;
+            try {
+                await addDoc(collection(db, `artifacts/${appId}/public/data/notifications`), {
+                    message: message,
+                    createdAt: serverTimestamp(),
+                    createdBy: currentUserName || 'Sistema'
+                });
+            } catch (error) {
+                console.error("Error creating notification:", error);
+            }
+        }
+
+        function updateNotificationBadge() {
+            const badge = document.getElementById('notification-badge');
+            if (!badge) return;
+            const lastCheck = localStorage.getItem('lastNotificationCheck');
+            if (!lastCheck || notifications.length === 0) {
+                badge.classList.toggle('hidden', notifications.length === 0);
+                return;
+            }
+            const lastCheckDate = new Date(lastCheck);
+            const unreadCount = notifications.filter(n => n.createdAt && n.createdAt.toDate() > lastCheckDate).length;
+            badge.classList.toggle('hidden', unreadCount === 0);
+        }
+
+        function renderNotificationList() {
+            const listEl = document.getElementById('notification-list');
+            if (!listEl) return;
+            if (notifications.length === 0) {
+                listEl.innerHTML = `<p class="p-4 text-sm text-stone-500 text-center">Nenhuma notificação.</p>`;
+                return;
+            }
+            listEl.innerHTML = notifications.map(n => {
+                const time = n.createdAt ? timeAgo(n.createdAt.toDate()) : '';
+                return `
+                    <div class="p-3 hover:bg-stone-50">
+                        <p class="text-sm text-stone-700">${n.message}</p>
+                        <p class="text-xs text-stone-400 mt-1">${time}</p>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function timeAgo(date) {
+            const seconds = Math.floor((new Date() - date) / 1000);
+            let interval = seconds / 31536000;
+            if (interval > 1) return Math.floor(interval) + " anos atrás";
+            interval = seconds / 2592000;
+            if (interval > 1) return Math.floor(interval) + " meses atrás";
+            interval = seconds / 86400;
+            if (interval > 1) return Math.floor(interval) + " dias atrás";
+            interval = seconds / 3600;
+            if (interval > 1) return Math.floor(interval) + " horas atrás";
+            interval = seconds / 60;
+            if (interval > 1) return Math.floor(interval) + " minutos atrás";
+            return "agora mesmo";
+        }
+
+
         function renderMenu() {
             const mainNav = document.getElementById('main-navigation');
             const menuItems = [
@@ -991,6 +1265,8 @@
                 { key: 'eventos', label: 'Eventos', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3z"/><path d="M12.44 8.917a4 4 0 0 0-4.88 0C4.965 10.685 3 13.982 3 17.5V22h18v-4.5c0-3.518-1.965-6.815-4.56-8.583z"/></svg>', roles: ['admin', 'am', 'ap', 'pedagogico'] },
                 { key: 'orcamentos', label: 'Orçamentos', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>', roles: ['admin', 'am', 'financeiro'] },
                 { key: 'tarefas', label: 'Tarefas', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>', roles: ['admin', 'am', 'ap', 'pedagogico', 'financeiro'] },
+                { key: 'banco-de-fotos', label: 'Banco de Fotos', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>', roles: ['admin', 'am'] },
+                { key: 'colaboradores', label: 'Colaboradores', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>', roles: ['admin', 'pedagogico', 'financeiro'] },
                 { key: 'cancelamentos', label: 'Cancelamentos', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="23" y1="18" x2="17" y2="12"/><line x1="17" y1="18" x2="23" y2="12"/></svg>', roles: ['admin', 'pedagogico', 'financeiro'] },
                 { key: 'folha-pagamento', label: 'Folha de Pgto.', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>', roles: ['admin', 'financeiro'] }
             ];
@@ -1010,7 +1286,7 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            const pageRenderers = { 'inicio': renderInicioSection, 'eventos': renderEventosSection, 'orcamentos': renderOrcamentosSection, 'tarefas': renderTarefasSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection, 'cancelamentos': renderCancelamentosSection };
+            const pageRenderers = { 'inicio': renderInicioSection, 'eventos': renderEventosSection, 'orcamentos': renderOrcamentosSection, 'tarefas': renderTarefasSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection, 'cancelamentos': renderCancelamentosSection, 'colaboradores': renderColaboradoresSection, 'banco-de-fotos': renderBancoDeFotosSection };
             
             document.body.addEventListener('click', (event) => {
                 const navTarget = event.target.closest('.nav-item');
@@ -1024,7 +1300,7 @@
                 
                 const actionTarget = event.target.closest('[data-action]');
                 if (actionTarget) {
-                    const { action, id, collection } = actionTarget.dataset;
+                    const { action, id, collection, folderName } = actionTarget.dataset;
                     const actionHandlers = {
                         'open-signup': openSignUpModal,
                         'add-event': openEventForm,
@@ -1034,7 +1310,8 @@
                         'view-budget': () => openBudgetModal(id),
                         'edit-budget': () => openBudgetForm(id),
                         'add-task': openTaskForm,
-                        'add-collaborator': openCollaboratorForm,
+                        'add-collaborator': () => openCollaboratorForm(),
+                        'edit-collaborator': () => openCollaboratorForm(id),
                         'add-schedule': openScheduleForm,
                         'view-schedule': () => openScheduleForm(id),
                         'add-expense': openExpenseForm,
@@ -1044,6 +1321,9 @@
                         'edit-cancelamento': () => openCancelamentoForm(id),
                         'delete-item': () => deleteItem(collection, id),
                         'close-modal': closeFormModal,
+                        'add-photo': openPhotoFormModal,
+                        'open-folder': () => renderPhotoGallery(folderName),
+                        'back-to-folders': renderBancoDeFotosSection,
                     };
                     if (actionHandlers[action]) {
                         actionHandlers[action]();
@@ -1059,6 +1339,25 @@
                     const expenseId = event.target.dataset.id;
                     const isPaid = event.target.checked;
                     toggleExpensePaid(expenseId, isPaid);
+                }
+            });
+
+            const notificationButton = document.getElementById('notification-button');
+            const notificationPanel = document.getElementById('notification-panel');
+
+            notificationButton.addEventListener('click', (event) => {
+                event.stopPropagation();
+                const isHidden = notificationPanel.classList.toggle('hidden');
+                if (!isHidden) {
+                    renderNotificationList();
+                    localStorage.setItem('lastNotificationCheck', new Date().toISOString());
+                    updateNotificationBadge();
+                }
+            });
+
+            document.addEventListener('click', (event) => {
+                if (!notificationPanel.classList.contains('hidden') && !notificationButton.contains(event.target)) {
+                    notificationPanel.classList.add('hidden');
                 }
             });
 
