@@ -128,7 +128,7 @@
         .pef-class-card { background-color: #fff; border-radius: 0.75rem; margin-bottom: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid #e7e5e4; }
         .pef-class-header { padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
         .pef-class-content { padding: 0 1.5rem; max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out, padding-bottom 0.3s ease-out; }
-        .pef-class-card.open .pef-class-content { max-height: 2000px; /* Adjust as needed */ padding-bottom: 1.5rem; }
+        .pef-class-card.open .pef-class-content { max-height: 6000px; padding-bottom: 1.5rem; }
         .pef-lesson-row { display: grid; grid-template-columns: 60px 140px 1fr; align-items: center; gap: 1rem; padding: 0.75rem; border-radius: 0.5rem; }
         .pef-lesson-row:nth-child(odd) { background-color: #f9fafb; }
         .pef-student-attendance-row { display: flex; align-items: center; justify-content: space-between; margin-left: 1rem; padding: 0.5rem 0; }
@@ -612,11 +612,38 @@
                 return;
             }
 
-            const teacherSchedules = schedules.filter(s => s.teacher === teacher.name);
-            const teacherTurmas = turmas.filter(t => t.teacherId === teacher.id);
-            const teacherVips = teacherSchedules.filter(s => s.type === 'vip');
+            const classUnits = {}; // Use an object to store unique units
 
-            const allClassUnits = [...teacherTurmas, ...teacherVips];
+            // Process turmas
+            const teacherTurmas = turmas.filter(t => t.teacherId === teacher.id);
+            teacherTurmas.forEach(turma => {
+                if (!classUnits[turma.name]) {
+                    classUnits[turma.name] = {
+                        id: turma.id,
+                        name: turma.name,
+                        type: 'turma',
+                        students: (turma.studentIds || []).map(id => students.find(s => s.id === id)).filter(Boolean)
+                    };
+                }
+            });
+
+            // Process VIPs
+            const teacherVips = schedules.filter(s => s.teacher === teacher.name && s.type === 'vip');
+            teacherVips.forEach(vipSchedule => {
+                if (!classUnits[vipSchedule.student]) {
+                    const studentData = students.find(s => s.name === vipSchedule.student);
+                    if (studentData) {
+                        classUnits[vipSchedule.student] = {
+                            id: vipSchedule.id,
+                            name: vipSchedule.student,
+                            type: 'vip',
+                            students: [studentData]
+                        };
+                    }
+                }
+            });
+
+            const allClassUnits = Object.values(classUnits);
 
             if (allClassUnits.length === 0) {
                 container.innerHTML = `<p class="text-center py-10 text-stone-500">Este professor não tem turmas ou alunos VIP na grade.</p>`;
@@ -624,18 +651,10 @@
             }
 
             container.innerHTML = allClassUnits.map(unit => {
-                const isTurma = !!unit.studentIds;
+                const isTurma = unit.type === 'turma';
                 const unitId = unit.id;
-                const unitName = isTurma ? unit.name : unit.student;
+                const unitName = unit.name;
                 
-                let studentsToList = [];
-                if (isTurma) {
-                    studentsToList = (unit.studentIds || []).map(id => students.find(s => s.id === id)).filter(Boolean);
-                } else {
-                    const studentData = students.find(s => s.name === unit.student);
-                    if (studentData) studentsToList.push(studentData);
-                }
-
                 let lessonsHtml = '';
                 for (let i = 1; i <= 40; i++) {
                     const notesInputHtml = !isTurma ? '<input type="text" class="form-input p-2 text-sm w-full" placeholder="Observações da aula">' : '';
@@ -645,7 +664,7 @@
                             <input type="date" class="form-input p-2 text-sm" placeholder="Data">
                             <div class="space-y-2">
                                 ${notesInputHtml}
-                                ${studentsToList.map(student => `
+                                ${unit.students.map(student => `
                                     <div class="pef-student-attendance-row">
                                         <span class="text-sm">${student.name}</span>
                                         <div class="pef-status-btn-group flex gap-1">
