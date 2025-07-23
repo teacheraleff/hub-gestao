@@ -222,6 +222,14 @@
         let allUnsubscribers = [];
         const appId = 'hub-gestao-slap';
 
+        const courseLevels = [
+            "Beginner 1 (Basic 1)", "Beginner 2 (Basic 2)", 
+            "Freshman 1 (Pre-inter 1)", "Freshman 2 (Pre-inter 2)",
+            "Sophomore 1 (Inter 1)", "Sophomore 2 (Inter 2)",
+            "Junior 1 (Pre-advanced 1)", "Junior 2 (Pre-advanced 2)",
+            "Senior 1 (Advanced 1)", "Senior 2 (Advanced 2)"
+        ];
+
         // --- FIREBASE INITIALIZATION ---
         async function initializeFirebase() {
             try {
@@ -996,6 +1004,7 @@
             document.getElementById('form-modal-title').textContent = aluno ? "Editar Aluno" : "Adicionar Novo Aluno";
             
             const statusOptions = ['Ativo', 'Inativo', 'Cancelado', 'Pendente'].map(s => `<option value="${s}" ${aluno?.status === s ? 'selected' : ''}>${s}</option>`).join('');
+            const levelOptions = courseLevels.map(level => `<option value="${level}" ${aluno?.course === level ? 'selected' : ''}>${level}</option>`).join('');
 
             document.getElementById('form-modal-content-area').innerHTML = `
                 <form id="form-modal-body" class="space-y-4">
@@ -1005,15 +1014,26 @@
                         <div><label class="font-medium text-sm">Status</label><select id="aluno-status" class="form-input">${statusOptions}</select></div>
                         <div><label class="font-medium text-sm">Data de Início</label><input type="date" id="aluno-startDate" class="form-input" value="${aluno?.startDate || ''}"></div>
                     </div>
-                    <div><label class="font-medium text-sm">Curso / Nível</label><input type="text" id="aluno-course" class="form-input" value="${aluno?.course || ''}"></div>
+                    <div><label class="font-medium text-sm">Curso / Nível</label><select id="aluno-course" class="form-input">${levelOptions}</select></div>
                     <hr/>
-                    <div><label class="font-medium text-sm">Nome do Responsável</label><input type="text" id="aluno-responsibleName" class="form-input" value="${aluno?.responsibleName || ''}"></div>
-                    <div><label class="font-medium text-sm">Telefone do Responsável</label><input type="tel" id="aluno-responsiblePhone" class="form-input" value="${aluno?.responsiblePhone || ''}"></div>
+                    <div class="flex items-center gap-2">
+                        <input type="checkbox" id="aluno-isMinor" class="h-4 w-4 rounded" ${aluno?.isMinor ? 'checked' : ''}>
+                        <label for="aluno-isMinor" class="text-sm font-medium">Menor de idade?</label>
+                    </div>
+                    <div id="responsible-fields" class="${aluno?.isMinor ? '' : 'hidden'} space-y-4">
+                        <div><label class="font-medium text-sm">Nome do Responsável</label><input type="text" id="aluno-responsibleName" class="form-input" value="${aluno?.responsibleName || ''}"></div>
+                        <div><label class="font-medium text-sm">Telefone do Responsável</label><input type="tel" id="aluno-responsiblePhone" class="form-input" value="${aluno?.responsiblePhone || ''}"></div>
+                    </div>
                     <hr/>
                     <div><label class="font-medium text-sm">Observações</label><textarea id="aluno-notes" rows="3" class="form-input">${aluno?.notes || ''}</textarea></div>
                     <div class="text-right"><button type="submit" class="primary-btn w-auto">Salvar Aluno</button></div>
                 </form>
             `;
+
+            document.getElementById('aluno-isMinor').addEventListener('change', (e) => {
+                document.getElementById('responsible-fields').classList.toggle('hidden', !e.target.checked);
+            });
+
             document.getElementById('form-modal-body').onsubmit = saveAluno;
             document.getElementById('form-modal').classList.add('visible');
         }
@@ -1021,14 +1041,16 @@
         async function saveAluno(event) {
             event.preventDefault();
             const alunoId = document.getElementById('aluno-id').value;
+            const isMinor = document.getElementById('aluno-isMinor').checked;
             const data = {
                 name: document.getElementById('aluno-name').value,
                 status: document.getElementById('aluno-status').value,
                 startDate: document.getElementById('aluno-startDate').value,
                 course: document.getElementById('aluno-course').value,
-                responsibleName: document.getElementById('aluno-responsibleName').value,
-                responsiblePhone: document.getElementById('aluno-responsiblePhone').value,
                 notes: document.getElementById('aluno-notes').value,
+                isMinor: isMinor,
+                responsibleName: isMinor ? document.getElementById('aluno-responsibleName').value : '',
+                responsiblePhone: isMinor ? document.getElementById('aluno-responsiblePhone').value : '',
             };
             if (!data.name) { showErrorMessage("Erro", "O nome do aluno é obrigatório."); return; }
 
@@ -1052,6 +1074,17 @@
             const aluno = students.find(s => s.id === alunoId);
             if (!aluno) return;
             document.getElementById('form-modal-title').textContent = `Perfil de ${aluno.name}`;
+            
+            let responsibleHtml = '';
+            if (aluno.isMinor && aluno.responsibleName) {
+                responsibleHtml = `
+                    <hr/>
+                    <h4 class="font-semibold">Dados do Responsável</h4>
+                    <p><strong>Nome:</strong> ${aluno.responsibleName || 'N/A'}</p>
+                    <p><strong>Telefone:</strong> ${aluno.responsiblePhone || 'N/A'}</p>
+                `;
+            }
+
             document.getElementById('form-modal-content-area').innerHTML = `
                 <div class="space-y-4">
                     <div class="flex justify-between items-start">
@@ -1060,10 +1093,7 @@
                     </div>
                     <p><strong>Curso/Nível:</strong> ${aluno.course || 'N/A'}</p>
                     <p><strong>Data de Início:</strong> ${aluno.startDate ? new Date(aluno.startDate + 'T00:00:00').toLocaleDateString('pt-BR') : 'N/A'}</p>
-                    <hr/>
-                    <h4 class="font-semibold">Dados do Responsável</h4>
-                    <p><strong>Nome:</strong> ${aluno.responsibleName || 'N/A'}</p>
-                    <p><strong>Telefone:</strong> ${aluno.responsiblePhone || 'N/A'}</p>
+                    ${responsibleHtml}
                     ${aluno.notes ? `<div><strong>Observações:</strong><p class="mt-1 p-3 bg-stone-50 rounded-md whitespace-pre-wrap">${aluno.notes}</p></div>` : ''}
                     <div class="border-t pt-4 flex justify-end gap-2">
                         <button class="secondary-btn" data-action="edit-aluno" data-id="${aluno.id}">Editar</button>
@@ -1317,8 +1347,9 @@
             const teacherOptions = collaborators.filter(c => c.sectors && c.sectors.includes('professor')).map(c => `<option value="${c.name}" ${schedule?.teacher === c.name ? 'selected' : ''}>${c.name}</option>`).join('');
             const dayOptions = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Seg/Qua", "Ter/Qui"].map(d => `<option value="${d}" ${schedule?.day === d ? 'selected' : ''}>${d}</option>`).join('');
             const typeOptions = ["vip", "turma"].map(t => `<option value="${t}" ${schedule?.type === t ? 'selected' : ''}>${t.toUpperCase()}</option>`).join('');
+            const levelOptions = courseLevels.map(level => `<option value="${level}" ${schedule?.level === level ? 'selected' : ''}>${level}</option>`).join('');
 
-            let formHtml = `<form id="form-modal-body" class="space-y-4"><input type="hidden" id="schedule-id" value="${scheduleId || ''}"><div><label class="font-medium text-sm">Aluno/Turma</label><input type="text" id="schedule-student" class="form-input" required value="${schedule?.student || ''}"></div><div><label class="font-medium text-sm">Nível</label><input type="text" id="schedule-level" class="form-input" required value="${schedule?.level || ''}"></div><div><label class="font-medium text-sm">Professor</label><select id="schedule-teacher" class="form-input" required>${teacherOptions}</select></div><div class="grid grid-cols-2 gap-4"><div><label class="font-medium text-sm">Dia</label><select id="schedule-day" class="form-input" required>${dayOptions}</select></div><div><label class="font-medium text-sm">Tipo</label><select id="schedule-type" class="form-input" required>${typeOptions}</select></div></div><div class="grid grid-cols-2 gap-4"><div><label class="font-medium text-sm">Início</label><input type="time" id="schedule-start" class="form-input" required value="${schedule?.startTime || ''}"></div><div><label class="font-medium text-sm">Fim</label><input type="time" id="schedule-end" class="form-input" required value="${schedule?.endTime || ''}"></div></div><div class="pt-4 flex justify-end gap-2">${scheduleId ? `<button type="button" class="danger-btn" data-action="delete-item" data-collection="schedules" data-id="${scheduleId}">Apagar</button>` : ''}<button type="submit" class="primary-btn w-auto">Salvar</button></div></form>`;
+            let formHtml = `<form id="form-modal-body" class="space-y-4"><input type="hidden" id="schedule-id" value="${scheduleId || ''}"><div><label class="font-medium text-sm">Aluno/Turma</label><input type="text" id="schedule-student" class="form-input" required value="${schedule?.student || ''}"></div><div><label class="font-medium text-sm">Nível</label><select id="schedule-level" class="form-input" required>${levelOptions}</select></div><div><label class="font-medium text-sm">Professor</label><select id="schedule-teacher" class="form-input" required>${teacherOptions}</select></div><div class="grid grid-cols-2 gap-4"><div><label class="font-medium text-sm">Dia</label><select id="schedule-day" class="form-input" required>${dayOptions}</select></div><div><label class="font-medium text-sm">Tipo</label><select id="schedule-type" class="form-input" required>${typeOptions}</select></div></div><div class="grid grid-cols-2 gap-4"><div><label class="font-medium text-sm">Início</label><input type="time" id="schedule-start" class="form-input" required value="${schedule?.startTime || ''}"></div><div><label class="font-medium text-sm">Fim</label><input type="time" id="schedule-end" class="form-input" required value="${schedule?.endTime || ''}"></div></div><div class="pt-4 flex justify-end gap-2">${scheduleId ? `<button type="button" class="danger-btn" data-action="delete-item" data-collection="schedules" data-id="${scheduleId}">Apagar</button>` : ''}<button type="submit" class="primary-btn w-auto">Salvar</button></div></form>`;
             document.getElementById('form-modal-content-area').innerHTML = formHtml;
             document.getElementById('form-modal-body').onsubmit = saveScheduleEntry;
             document.getElementById('form-modal').classList.add('visible');
@@ -1450,11 +1481,21 @@
         function openCancelamentoForm(cancelamentoId = null) {
             const cancelamento = cancelamentoId ? cancellations.find(c => c.id === cancelamentoId) : null;
             const collaboratorOptions = collaborators.filter(c => c.sectors && c.sectors.includes('cancelamentos')).map(c => `<option value="${c.name}" ${cancelamento?.processedBy === c.name ? 'selected' : ''}>${c.name}</option>`).join('');
+            
+            let studentFieldHtml = '';
+            if (cancelamentoId) {
+                studentFieldHtml = `<div><label class="font-medium text-sm">Aluno</label><p class="form-input bg-stone-100">${cancelamento.studentName}</p></div>`;
+            } else {
+                const activeStudents = students.filter(s => s.status === 'Ativo');
+                const studentOptions = activeStudents.map(s => `<option value="${s.id}" data-name="${s.name}">${s.name}</option>`).join('');
+                studentFieldHtml = `<div><label class="font-medium text-sm">Aluno a Cancelar</label><select id="cancelamento-studentId" class="form-input" required><option value="">Selecione um aluno...</option>${studentOptions}</select></div>`;
+            }
+
             document.getElementById('form-modal-title').textContent = cancelamento ? "Editar Cancelamento" : "Registar Novo Cancelamento";
             document.getElementById('form-modal-content-area').innerHTML = `
                 <form id="form-modal-body" class="space-y-4">
                     <input type="hidden" id="cancelamento-id" value="${cancelamentoId || ''}">
-                    <div><label class="font-medium text-sm">Nome do Aluno</label><input type="text" id="cancelamento-studentName" class="form-input" required value="${cancelamento?.studentName || ''}"></div>
+                    ${studentFieldHtml}
                     <div><label class="font-medium text-sm">Data do Cancelamento</label><input type="date" id="cancelamento-date" class="form-input" required value="${cancelamento?.cancellationDate || ''}"></div>
                     <div><label class="font-medium text-sm">Motivo</label><textarea id="cancelamento-reason" rows="3" class="form-input" required>${cancelamento?.reason || ''}</textarea></div>
                     <div><label class="font-medium text-sm">Processado por</label><select id="cancelamento-processedBy" class="form-input" required>${collaboratorOptions}</select></div>
@@ -1466,23 +1507,51 @@
         async function saveCancelamento(event) {
             event.preventDefault();
             const cancelamentoId = document.getElementById('cancelamento-id').value;
-            const data = {
-                studentName: document.getElementById('cancelamento-studentName').value,
-                cancellationDate: document.getElementById('cancelamento-date').value,
-                reason: document.getElementById('cancelamento-reason').value,
-                processedBy: document.getElementById('cancelamento-processedBy').value,
-            };
-            if (!db) { console.warn("Offline mode."); closeFormModal(); return; }
+            if (!db) { console.warn("Offline mode."); return; }
+
             try {
                 if (cancelamentoId) {
+                    // Logic to update an existing cancellation record
+                    const data = {
+                        cancellationDate: document.getElementById('cancelamento-date').value,
+                        reason: document.getElementById('cancelamento-reason').value,
+                        processedBy: document.getElementById('cancelamento-processedBy').value,
+                    };
                     await updateDoc(doc(db, `artifacts/${appId}/public/data/cancellations`, cancelamentoId), data);
                     showSuccessMessage("Sucesso!", "Registo de cancelamento atualizado.");
                 } else {
-                    data.createdAt = serverTimestamp();
+                    // Logic to create a new cancellation and update student status
+                    const studentSelect = document.getElementById('cancelamento-studentId');
+                    if (!studentSelect.value) {
+                        showErrorMessage("Erro", "Por favor, selecione um aluno.");
+                        return;
+                    }
+                    const selectedOption = studentSelect.options[studentSelect.selectedIndex];
+                    const studentId = selectedOption.value;
+                    const studentName = selectedOption.getAttribute('data-name');
+
+                    const data = {
+                        studentId: studentId,
+                        studentName: studentName,
+                        cancellationDate: document.getElementById('cancelamento-date').value,
+                        reason: document.getElementById('cancelamento-reason').value,
+                        processedBy: document.getElementById('cancelamento-processedBy').value,
+                        createdAt: serverTimestamp()
+                    };
+
+                    // 1. Add cancellation record
                     await addDoc(collection(db, `artifacts/${appId}/public/data/cancellations`), data);
-                    showSuccessMessage("Sucesso!", "Novo cancelamento registado.");
+                    
+                    // 2. Update student status
+                    const studentRef = doc(db, `artifacts/${appId}/public/data/students`, studentId);
+                    await updateDoc(studentRef, { status: 'Cancelado' });
+
+                    showSuccessMessage("Sucesso!", `Cancelamento registado e status do aluno ${studentName} atualizado.`);
                 }
-            } catch (error) { console.error("Error saving cancellation:", error); showErrorMessage("Erro", "Falha ao salvar o cancelamento."); }
+            } catch (error) {
+                console.error("Error saving cancellation:", error);
+                showErrorMessage("Erro", "Falha ao salvar o cancelamento.");
+            }
         }
         function openCancelamentoModal(cancelamentoId) {
             const cancelamento = cancellations.find(c => c.id === cancelamentoId);
