@@ -123,6 +123,16 @@
         .photo-card { background-color: #fff; border-radius: 0.75rem; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid #e7e5e4; }
         .photo-card img { width: 100%; height: 200px; object-fit: cover; }
         .photo-card-info { padding: 1rem; }
+
+        /* --- PEF Styles --- */
+        .pef-grid { display: grid; grid-template-columns: 150px repeat(31, 1fr); gap: 0.5rem; }
+        .pef-header { font-weight: 600; text-align: center; padding: 0.5rem; background-color: #f9fafb; border-radius: 0.25rem; }
+        .pef-student-name { font-weight: 600; padding: 0.5rem; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .pef-day-cell { display: flex; justify-content: center; align-items: center; }
+        .pef-status-btn { width: 2rem; height: 2rem; border-radius: 9999px; border: 1px solid #d1d5db; font-size: 0.75rem; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+        .pef-status-btn.P { background-color: #D1FAE5; color: #065F46; border-color: #6EE7B7; }
+        .pef-status-btn.F { background-color: #FEE2E2; color: #991B1B; border-color: #FCA5A5; }
+        .pef-status-btn.PP { background-color: #FEF3C7; color: #92400E; border-color: #FCD34D; }
     </style>
 </head>
 <body class="bg-stone-100 text-stone-800">
@@ -218,7 +228,7 @@
         const pendingView = document.getElementById('pending-view');
         
         let db, auth, storage, userId, currentUserName, currentUserRole;
-        let usersData = [], students = [], tasks = [], events = [], budgets = [], collaborators = [], schedules = [], expenses = [], cancellations = [], notifications = [], photos = [], photoFolders = [], cps = [], dojoRanking = [];
+        let usersData = [], students = [], turmas = [], attendance = [], tasks = [], events = [], budgets = [], collaborators = [], schedules = [], expenses = [], cancellations = [], notifications = [], photos = [], photoFolders = [], cps = [], dojoRanking = [];
         let allUnsubscribers = [];
         const appId = 'hub-gestao-slap';
 
@@ -313,7 +323,17 @@
             };
             
             getCollectionListener('users', usersData, null);
-            getCollectionListener('students', students, renderAlunosSection);
+            getCollectionListener('students', students, () => {
+                if (contentArea.firstElementChild?.id === 'alunos-section') renderAlunosSection();
+                if (contentArea.firstElementChild?.id === 'turmas-section') renderTurmasSection();
+            });
+            getCollectionListener('turmas', turmas, renderTurmasSection);
+            getCollectionListener('attendance', attendance, () => {
+                if (contentArea.firstElementChild?.id === 'pef-section') {
+                    const pefSection = document.getElementById('pef-section');
+                    if(pefSection) renderPEFGrid(pefSection.dataset.teacher, pefSection.dataset.month, pefSection.dataset.year);
+                }
+            });
             getCollectionListener('tasks', tasks, renderTarefasSection);
             getCollectionListener('budgets', budgets, renderOrcamentosSection);
             getCollectionListener('collaborators', collaborators, () => {
@@ -323,9 +343,13 @@
                 if (activePageId === 'colaboradores-section') renderColaboradoresSection();
                 if (activePageId === 'banco-de-fotos-section') renderBancoDeFotosSection();
                 if (activePageId === 'inicio-section') renderInicioSection();
+                if (activePageId === 'pef-section') renderPEFSection();
             });
             getCollectionListener('events', events, renderEventosSection);
-            getCollectionListener('schedules', schedules, renderGradeSection);
+            getCollectionListener('schedules', schedules, () => {
+                 if (contentArea.firstElementChild?.id === 'grade-section') renderGradeSection();
+                 if (contentArea.firstElementChild?.id === 'pef-section') renderPEFSection();
+            });
             getCollectionListener('expenses', expenses, renderFolhaPagamentoSection);
             getCollectionListener('cancellations', cancellations, renderCancelamentosSection);
             getCollectionListener('photo_bank', photos, () => renderBancoDeFotosSection(document.getElementById('banco-de-fotos-section')?.dataset.currentFolder));
@@ -505,6 +529,152 @@
                     </td>
                 </tr>
             `).join('');
+        }
+
+        function renderTurmasSection() {
+            document.getElementById('main-title').textContent = 'Gestão de Turmas';
+            document.getElementById('main-description').textContent = 'Crie turmas e adicione alunos.';
+            contentArea.innerHTML = `
+                <div id="turmas-section">
+                    <div class="text-right mb-6">
+                        <button class="primary-btn w-auto" data-action="add-turma">+ Adicionar Turma</button>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        ${turmas.map(t => `
+                        <div class="base-card cursor-pointer" data-action="view-turma" data-id="${t.id}">
+                            <div class="flex justify-between items-start mb-2">
+                                <h3 class="text-xl font-bold text-stone-800">${t.name}</h3>
+                                <span class="text-sm font-semibold text-stone-600">${(t.studentIds || []).length} aluno(s)</span>
+                            </div>
+                            <p class="text-sm text-stone-500 mb-4">Professor: ${t.teacherName}</p>
+                            <p class="text-sm text-stone-600"><strong>Nível:</strong> ${t.level}</p>
+                        </div>`).join('') || '<p class="col-span-full text-center py-10 text-stone-500">Nenhuma turma encontrada.</p>'}
+                    </div>
+                </div>`;
+        }
+
+        function renderPEFSection() {
+            document.getElementById('main-title').textContent = 'Presença e Faltas (PEF)';
+            document.getElementById('main-description').textContent = 'Registe a frequência dos alunos nas aulas.';
+            
+            const today = new Date();
+            const currentMonth = today.getMonth();
+            const currentYear = today.getFullYear();
+
+            let teacherFilterHtml = '';
+            let teacherToDisplay = userId;
+
+            if (['admin', 'ap', 'pedagogico'].includes(currentUserRole)) {
+                 const teacherOptions = collaborators.filter(c => c.sectors && c.sectors.includes('professor')).map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+                 teacherFilterHtml = `
+                    <div class="grade-select-container">
+                         <label for="pef-teacher-filter" class="block text-sm font-medium text-stone-700 mb-1">Ver presenças de:</label>
+                         <select id="pef-teacher-filter" class="grade-select">
+                            <option value="">Selecione um professor</option>
+                            ${teacherOptions}
+                        </select>
+                    </div>
+                 `;
+                 teacherToDisplay = ''; // Don't show anything until a teacher is selected
+            }
+            
+            contentArea.innerHTML = `
+                <section id="pef-section" data-teacher="${teacherToDisplay}" data-month="${currentMonth}" data-year="${currentYear}">
+                    <div class="flex justify-between items-center mb-6 flex-wrap gap-4 bg-white p-4 rounded-xl shadow-sm">
+                        ${teacherFilterHtml}
+                        <div class="flex items-center gap-2 ml-auto">
+                            <button id="pef-prev-month" class="secondary-btn">‹</button>
+                            <span id="pef-month-year" class="font-bold text-lg w-48 text-center">${new Date(currentYear, currentMonth).toLocaleString('pt-BR', { month: 'long', year: 'numeric' })}</span>
+                            <button id="pef-next-month" class="secondary-btn">›</button>
+                        </div>
+                    </div>
+                    <div id="pef-grid-container" class="overflow-x-auto"></div>
+                </section>
+            `;
+
+            if (teacherToDisplay) {
+                renderPEFGrid(teacherToDisplay, currentMonth, currentYear);
+            }
+
+            document.getElementById('pef-prev-month').addEventListener('click', navigatePEFMonth);
+            document.getElementById('pef-next-month').addEventListener('click', navigatePEFMonth);
+            if(document.getElementById('pef-teacher-filter')) {
+                document.getElementById('pef-teacher-filter').addEventListener('change', (e) => {
+                    const section = document.getElementById('pef-section');
+                    section.dataset.teacher = e.target.value;
+                    renderPEFGrid(e.target.value, section.dataset.month, section.dataset.year);
+                });
+            }
+        }
+
+        function navigatePEFMonth(event) {
+            const section = document.getElementById('pef-section');
+            let month = parseInt(section.dataset.month);
+            let year = parseInt(section.dataset.year);
+
+            if (event.target.id === 'pef-prev-month') {
+                month--;
+                if (month < 0) {
+                    month = 11;
+                    year--;
+                }
+            } else {
+                month++;
+                if (month > 11) {
+                    month = 0;
+                    year++;
+                }
+            }
+            
+            section.dataset.month = month;
+            section.dataset.year = year;
+            document.getElementById('pef-month-year').textContent = new Date(year, month).toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
+            renderPEFGrid(section.dataset.teacher, month, year);
+        }
+
+        async function renderPEFGrid(teacherId, month, year) {
+            const container = document.getElementById('pef-grid-container');
+            if (!container) return;
+            if (!teacherId) {
+                container.innerHTML = `<div class="text-center p-8 bg-white rounded-lg"><p class="text-stone-500">Selecione um professor para ver os registos de presença.</p></div>`;
+                return;
+            }
+
+            const teacher = collaborators.find(c => c.id === teacherId);
+            if (!teacher) {
+                container.innerHTML = `<div class="text-center p-8 bg-white rounded-lg"><p class="text-stone-500">Professor não encontrado.</p></div>`;
+                return;
+            }
+
+            // Get all classes and VIPs for this teacher from the schedule
+            const teacherSchedules = schedules.filter(s => s.teacher === teacher.name);
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            
+            // Fetch attendance data for this month
+            const attendanceRecords = {}; // Process the flat array into a usable map
+
+            let gridHtml = `<div class="pef-grid">`;
+            // Header
+            gridHtml += `<div class="pef-header">Aluno/Turma</div>`;
+            for (let day = 1; day <= daysInMonth; day++) {
+                gridHtml += `<div class="pef-header">${day}</div>`;
+            }
+
+            // Rows for each class/student
+            teacherSchedules.forEach(schedule => {
+                gridHtml += `<div class="pef-student-name">${schedule.student}</div>`;
+                for (let day = 1; day <= daysInMonth; day++) {
+                    // This logic is simplified. A real implementation would check if the day is a class day.
+                    gridHtml += `<div class="pef-day-cell">
+                        <button class="pef-status-btn" data-status="P">P</button>
+                        <button class="pef-status-btn" data-status="F">F</button>
+                        <button class="pef-status-btn" data-status="PP">PP</button>
+                    </div>`;
+                }
+            });
+            
+            gridHtml += `</div>`;
+            container.innerHTML = gridHtml;
         }
 
         function renderEventosSection() {
@@ -1100,6 +1270,83 @@
                         <button class="danger-btn" data-action="delete-item" data-collection="students" data-id="${aluno.id}">Apagar</button>
                     </div>
                 </div>`;
+            document.getElementById('form-modal').classList.add('visible');
+        }
+
+        function openTurmaForm(turmaId = null) {
+            const turma = turmaId ? turmas.find(t => t.id === turmaId) : null;
+            document.getElementById('form-modal-title').textContent = turma ? "Editar Turma" : "Adicionar Nova Turma";
+
+            const teacherOptions = collaborators.filter(c => c.sectors?.includes('professor')).map(c => `<option value="${c.id}" data-name="${c.name}" ${turma?.teacherId === c.id ? 'selected' : ''}>${c.name}</option>`).join('');
+            const levelOptions = courseLevels.map(level => `<option value="${level}" ${turma?.level === level ? 'selected' : ''}>${level}</option>`).join('');
+            const studentOptions = students.filter(s => s.status === 'Ativo').map(s => `<option value="${s.id}" ${(turma?.studentIds || []).includes(s.id) ? 'selected' : ''}>${s.name}</option>`).join('');
+
+            document.getElementById('form-modal-content-area').innerHTML = `
+                <form id="form-modal-body" class="space-y-4">
+                    <input type="hidden" id="turma-id" value="${turmaId || ''}">
+                    <div><label class="font-medium text-sm">Nome da Turma</label><input type="text" id="turma-name" class="form-input" required value="${turma?.name || ''}"></div>
+                    <div><label class="font-medium text-sm">Professor</label><select id="turma-teacher" class="form-input" required>${teacherOptions}</select></div>
+                    <div><label class="font-medium text-sm">Nível</label><select id="turma-level" class="form-input" required>${levelOptions}</select></div>
+                    <div><label class="font-medium text-sm">Alunos (selecione um ou mais)</label><select id="turma-students" class="form-input" multiple required style="height: 150px;">${studentOptions}</select></div>
+                    <div class="text-right"><button type="submit" class="primary-btn w-auto">Salvar Turma</button></div>
+                </form>
+            `;
+            document.getElementById('form-modal-body').onsubmit = saveTurma;
+            document.getElementById('form-modal').classList.add('visible');
+        }
+
+        async function saveTurma(event) {
+            event.preventDefault();
+            const turmaId = document.getElementById('turma-id').value;
+            const teacherSelect = document.getElementById('turma-teacher');
+            const selectedTeacherOption = teacherSelect.options[teacherSelect.selectedIndex];
+
+            const data = {
+                name: document.getElementById('turma-name').value,
+                teacherId: selectedTeacherOption.value,
+                teacherName: selectedTeacherOption.getAttribute('data-name'),
+                level: document.getElementById('turma-level').value,
+                studentIds: Array.from(document.getElementById('turma-students').selectedOptions).map(o => o.value),
+            };
+
+            if (!data.name || !data.teacherId) {
+                showErrorMessage("Erro", "Nome da turma e professor são obrigatórios.");
+                return;
+            }
+
+            try {
+                if (turmaId) {
+                    await updateDoc(doc(db, `artifacts/${appId}/public/data/turmas`, turmaId), data);
+                    showSuccessMessage("Sucesso", "Turma atualizada.");
+                } else {
+                    data.createdAt = serverTimestamp();
+                    await addDoc(collection(db, `artifacts/${appId}/public/data/turmas`), data);
+                    showSuccessMessage("Sucesso", "Nova turma criada.");
+                }
+            } catch (error) {
+                console.error("Error saving turma:", error);
+                showErrorMessage("Erro", "Não foi possível salvar a turma.");
+            }
+        }
+
+        function openTurmaModal(turmaId) {
+            const turma = turmas.find(t => t.id === turmaId);
+            if (!turma) return;
+
+            const studentNames = (turma.studentIds || []).map(id => students.find(s => s.id === id)?.name || 'Aluno não encontrado').join(', ');
+
+            document.getElementById('form-modal-title').textContent = turma.name;
+            document.getElementById('form-modal-content-area').innerHTML = `
+                <div class="space-y-4">
+                    <p><strong>Professor:</strong> ${turma.teacherName}</p>
+                    <p><strong>Nível:</strong> ${turma.level}</p>
+                    <div><strong>Alunos:</strong><p class="mt-1 p-3 bg-stone-50 rounded-md">${studentNames || 'Nenhum aluno na turma.'}</p></div>
+                    <div class="border-t pt-4 flex justify-end gap-2">
+                        <button class="secondary-btn" data-action="edit-turma" data-id="${turma.id}">Editar</button>
+                        <button class="danger-btn" data-action="delete-item" data-collection="turmas" data-id="${turma.id}">Apagar</button>
+                    </div>
+                </div>
+            `;
             document.getElementById('form-modal').classList.add('visible');
         }
 
@@ -1952,6 +2199,8 @@
                 { key: 'inicio', label: 'Início', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>', roles: null },
                 { key: 'dojo', label: 'Dojo', icon: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-3"><path d="M6.5 12.5h11"/><path d="M12 6.5v11"/><path d="M17.5 17.5 19 19"/><path d="M6.5 6.5 5 5"/><path d="M17.5 6.5 19 5"/><path d="M6.5 17.5 5 19"/><path d="M2 12C2 6.5 6.5 2 12 2s10 4.5 10 10-4.5 10-10 10S2 17.5 2 12Z"/><path d="M16 8h2"/><path d="M6 16H4"/></svg>', roles: null },
                 { key: 'alunos', label: 'Alunos', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>', roles: ['admin', 'pedagogico', 'financeiro', 'ap'] },
+                { key: 'turmas', label: 'Turmas', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>', roles: ['admin', 'pedagogico', 'ap'] },
+                { key: 'pef', label: 'PEF', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="m9 16 2 2 4-4"/></svg>', roles: ['admin', 'pedagogico', 'ap', 'teacher'] },
                 { key: 'grade', label: 'Grade', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" x2="16" y1="2" y2="6"></line><line x1="8" x2="8" y1="2" y2="6"></line><line x1="3" x2="21" y1="10" y2="10"></line></svg>', roles: ['admin', 'ap', 'pedagogico', 'financeiro', 'teacher'] },
                 { key: 'tarefas', label: 'Tarefas', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>', roles: ['admin', 'am', 'ap', 'pedagogico', 'financeiro', 'teacher'] },
                 { key: 'cps', label: 'CPs', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>', roles: ['admin', 'pedagogico', 'ap'] },
@@ -1978,7 +2227,7 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            const pageRenderers = { 'inicio': renderInicioSection, 'alunos': renderAlunosSection, 'eventos': renderEventosSection, 'orcamentos': renderOrcamentosSection, 'tarefas': renderTarefasSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection, 'cancelamentos': renderCancelamentosSection, 'colaboradores': renderColaboradoresSection, 'banco-de-fotos': renderBancoDeFotosSection, 'cps': renderCPsSection, 'dojo': renderDojoSection };
+            const pageRenderers = { 'inicio': renderInicioSection, 'alunos': renderAlunosSection, 'turmas': renderTurmasSection, 'pef': renderPEFSection, 'eventos': renderEventosSection, 'orcamentos': renderOrcamentosSection, 'tarefas': renderTarefasSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection, 'cancelamentos': renderCancelamentosSection, 'colaboradores': renderColaboradoresSection, 'banco-de-fotos': renderBancoDeFotosSection, 'cps': renderCPsSection, 'dojo': renderDojoSection };
             
             document.body.addEventListener('click', (event) => {
                 const navTarget = event.target.closest('.nav-item');
@@ -2010,6 +2259,9 @@
                         'add-aluno': () => openAlunoForm(),
                         'view-aluno': () => openAlunoModal(id),
                         'edit-aluno': () => openAlunoForm(id),
+                        'add-turma': () => openTurmaForm(),
+                        'view-turma': () => openTurmaModal(id),
+                        'edit-turma': () => openTurmaForm(id),
                         'add-event': openEventForm,
                         'view-event': () => openEventModal(id),
                         'edit-event': () => openEventForm(id),
