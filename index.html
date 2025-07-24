@@ -231,7 +231,7 @@
         const pendingView = document.getElementById('pending-view');
         
         let db, auth, storage, userId, currentUserName, currentUserRole;
-        let usersData = [], students = [], turmas = [], attendance = [], tasks = [], events = [], budgets = [], collaborators = [], schedules = [], expenses = [], cancellations = [], notifications = [], photos = [], photoFolders = [], cps = [], dojoRanking = [];
+        let usersData = [], students = [], turmas = [], attendance = [], tasks = [], events = [], budgets = [], collaborators = [], schedules = [], expenses = [], cancellations = [], notifications = [], photos = [], photoFolders = [], cps = [], dojoRanking = [], dojoMissions = [];
         let allUnsubscribers = [];
         const appId = 'hub-gestao-slap';
 
@@ -358,6 +358,7 @@
                 }
             }, (ref) => query(ref, orderBy("order")));
             getCollectionListener('dojo_ranking', dojoRanking, renderDojoSection);
+            getCollectionListener('dojo_missions', dojoMissions, renderDojoSection, (ref) => query(ref, orderBy("points", "desc")));
             getCollectionListener('notifications', notifications, null, (ref) => query(ref, orderBy('createdAt', 'desc'), limit(30)));
         }
 
@@ -1099,9 +1100,10 @@
         
         function renderDojoSection() {
             document.getElementById('main-title').textContent = 'SLAP Dojo';
-            document.getElementById('main-description').textContent = 'Gerencie a pontuação dos competidores.';
+            document.getElementById('main-description').textContent = 'Gerencie a pontuação dos competidores e as missões ativas.';
             const canEdit = ['admin', 'ap'].includes(currentUserRole);
             const addCompetitorBtn = canEdit ? `<button class="primary-btn w-auto" data-action="add-dojo-competitor">+ Adicionar Competidor</button>` : '';
+            const addMissionBtn = canEdit ? `<button class="primary-btn w-auto" data-action="add-dojo-mission">+ Adicionar Missão</button>` : '';
 
             const sortedRanking = [...dojoRanking].sort((a, b) => b.points - a.points);
 
@@ -1160,6 +1162,25 @@
                                 `}).join('') || '<tr><td colspan="4" class="text-center py-10 text-stone-500">Nenhum competidor no Dojo.</td></tr>'}
                             </tbody>
                         </table>
+                    </div>
+
+                    <!-- Missões Ativas Section -->
+                    <div class="mt-12 pt-8 border-t border-stone-200">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-xl font-bold text-stone-800">Missões Ativas</h3>
+                            ${addMissionBtn}
+                        </div>
+                        <div id="dojo-missions-list" class="space-y-3">
+                            ${dojoMissions.length > 0 ? dojoMissions.map(mission => `
+                                <div class="base-card !p-4 flex justify-between items-center">
+                                    <p class="font-medium text-stone-700 flex-1 pr-4">${mission.description}</p>
+                                    <div class="flex items-center gap-4">
+                                        <span class="font-bold text-lg text-yellow-500 whitespace-nowrap">${mission.points} pts</span>
+                                        ${canEdit ? `<button class="danger-btn !text-xs !py-1 !px-2" data-action="delete-item" data-collection="dojo_missions" data-id="${mission.id}">Excluir</button>` : ''}
+                                    </div>
+                                </div>
+                            `).join('') : '<div class="text-center p-8 bg-stone-50 rounded-lg"><p class="text-stone-500">Nenhuma missão ativa no momento.</p></div>'}
+                        </div>
                     </div>
                 </section>
             `;
@@ -2222,6 +2243,32 @@
             } catch (e) { console.error(e); showErrorMessage("Erro", "Não foi possível atualizar a pontuação."); }
         }
 
+        function openDojoMissionForm() {
+            document.getElementById('form-modal-title').textContent = 'Adicionar Nova Missão';
+            document.getElementById('form-modal-content-area').innerHTML = `
+                <form id="form-modal-body" class="space-y-4">
+                    <div><label class="font-medium text-sm">Descrição da Missão</label><input type="text" id="mission-description" class="form-input" required></div>
+                    <div><label class="font-medium text-sm">Pontos</label><input type="number" id="mission-points" class="form-input" required value="0"></div>
+                    <div class="text-right"><button type="submit" class="primary-btn w-auto">Salvar Missão</button></div>
+                </form>
+            `;
+            document.getElementById('form-modal-body').onsubmit = saveDojoMission;
+            document.getElementById('form-modal').classList.add('visible');
+        }
+
+        async function saveDojoMission(event) {
+            event.preventDefault();
+            const data = {
+                description: document.getElementById('mission-description').value,
+                points: Number(document.getElementById('mission-points').value)
+            };
+            if (!data.description) { showErrorMessage("Erro", "A descrição é obrigatória."); return; }
+            try {
+                await addDoc(collection(db, `artifacts/${appId}/public/data/dojo_missions`), data);
+                showSuccessMessage("Sucesso", "Nova missão do Dojo adicionada.");
+            } catch (e) { console.error(e); showErrorMessage("Erro", "Não foi possível salvar a missão."); }
+        }
+
 
         async function toggleTaskCompletion(taskId, isCompleted) { if (!db) return; const taskRef = doc(db, `artifacts/${appId}/public/data/tasks`, taskId); try { await updateDoc(taskRef, { completed: isCompleted }); } catch (error) { console.error("Error updating task status:", error); } }
 
@@ -2402,6 +2449,7 @@
                         'edit-profile': () => openProfileForm(id),
                         'add-dojo-competitor': () => openDojoCompetitorForm(),
                         'edit-dojo-points': () => openDojoPointsForm(id),
+                        'add-dojo-mission': openDojoMissionForm,
                     };
                     if (actionHandlers[action]) {
                         actionHandlers[action]();
