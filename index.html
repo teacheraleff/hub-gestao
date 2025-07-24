@@ -100,7 +100,7 @@
         .cp-level-card { background-color: #fff; border-radius: 0.75rem; margin-bottom: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid #e7e5e4; }
         .cp-level-header { padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
         .cp-level-content { padding: 0 1.5rem; max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out, padding-bottom 0.3s ease-out; }
-        .cp-level-card.open .cp-level-content { max-height: 1000px; padding-bottom: 1.5rem; }
+        .cp-level-card.open .cp-level-content { max-height: 6000px; padding-bottom: 1.5rem; }
         .cp-lesson-item { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; border-radius: 0.5rem; }
         .cp-lesson-item:nth-child(odd) { background-color: #f9fafb; }
 
@@ -356,7 +356,7 @@
                 if (['alunos-section', 'turmas-section', 'grade-section'].includes(activePageId)) {
                     document.querySelector(`#main-navigation [data-target="${activePageId.replace('-section', '')}"]`)?.click();
                 }
-            });
+            }, (ref) => query(ref, orderBy("order")));
             getCollectionListener('dojo_ranking', dojoRanking, renderDojoSection);
             getCollectionListener('notifications', notifications, null, (ref) => query(ref, orderBy('createdAt', 'desc'), limit(30)));
         }
@@ -492,7 +492,7 @@
                                 <tr>
                                     <th>Nome do Aluno</th>
                                     <th>Status</th>
-                                    <th>Curso/Nível</th>
+                                    <th>Níveis Cursados</th>
                                     <th>Responsável</th>
                                     <th class="text-center">Ações</th>
                                 </tr>
@@ -524,7 +524,7 @@
                 <tr data-action="view-aluno" data-id="${student.id}" class="cursor-pointer">
                     <td class="font-medium">${student.name}</td>
                     <td><span class="status-tag status-${(student.status || 'pendente').toLowerCase()}">${student.status || 'Pendente'}</span></td>
-                    <td>${student.course || 'N/A'}</td>
+                    <td>${(student.completedLevels || []).map(level => `<span class="keyword-tag !m-1">${level}</span>`).join('') || 'N/A'}</td>
                     <td>${student.responsibleName || 'N/A'}</td>
                     <td class="text-center">
                          ${canEdit ? `<button class="secondary-btn" data-action="edit-aluno" data-id="${student.id}" onclick="event.stopPropagation()">Editar</button>` : `<button class="secondary-btn" data-action="view-aluno" data-id="${student.id}" onclick="event.stopPropagation()">Ver</button>`}
@@ -627,7 +627,7 @@
                 }
             });
 
-            // Process VIPs
+            // Process VIPs from schedule
             const teacherVips = schedules.filter(s => s.teacher === teacher.name && s.type === 'vip');
             teacherVips.forEach(vipSchedule => {
                 if (!classUnits[vipSchedule.student]) {
@@ -893,7 +893,7 @@
                                 ${monthlyExpenses.length > 0 ? monthlyExpenses.map(exp => `
                                     <tr class="${exp.isPaid ? 'paid' : ''}">
                                         <td class="text-center"><input type="checkbox" data-action="toggle-expense" data-id="${exp.id}" class="h-5 w-5 rounded border-gray-300 text-yellow-500 focus:ring-yellow-400" ${exp.isPaid ? 'checked' : ''}></td>
-                                        <td class="font-medium cursor-pointer" data-action="view-expense" data-id="${exp.id}">${exp.description} ${exp.isFixedSalary ? `<span class="text-xs text-stone-500">(${exp.employeeRole || 'Salário Fixo'})</span>` : ''}</td>
+                                        <td class="font-medium cursor-pointer" data-action="view-expense" data-id="${exp.id}">${exp.description} ${exp.isFixedSalary && exp.employeeRole ? `<span class="sector-tag">${exp.employeeRole}</span>` : ''}</td>
                                         <td class="cursor-pointer" data-action="view-expense" data-id="${exp.id}">${exp.effectiveDueDate.toLocaleDateString('pt-BR', {timeZone: 'UTC'})}</td>
                                         <td class="text-right font-mono cursor-pointer" data-action="view-expense" data-id="${exp.id}">${Number(exp.amount).toFixed(2)}</td>
                                         <td class="text-center">
@@ -1059,12 +1059,17 @@
                         ${addNivelBtn}
                     </div>
                     <div id="cp-list-container">
-                        ${cps.length > 0 ? cps.map(nivel => `
+                        ${cps.map((nivel, index) => `
                             <div class="cp-level-card" id="nivel-${nivel.id}">
                                 <div class="cp-level-header" data-action="toggle-cp-level" data-id="${nivel.id}">
                                     <h4 class="text-lg font-bold text-stone-800">${nivel.title}</h4>
                                     <div class="flex items-center gap-2">
-                                        ${canEdit ? `<button class="secondary-btn text-xs" data-action="add-aula" data-nivel-id="${nivel.id}">+ Aula</button><button class="secondary-btn text-xs" data-action="edit-nivel" data-id="${nivel.id}">Editar</button><button class="danger-btn text-xs" data-action="delete-item" data-collection="cps" data-id="${nivel.id}">X</button>` : ''}
+                                        ${canEdit ? `
+                                        <button class="secondary-btn text-xs p-1" data-action="reorder-cp" data-id="${nivel.id}" data-direction="up" ${index === 0 ? 'disabled' : ''}>↑</button>
+                                        <button class="secondary-btn text-xs p-1" data-action="reorder-cp" data-id="${nivel.id}" data-direction="down" ${index === cps.length - 1 ? 'disabled' : ''}>↓</button>
+                                        <button class="secondary-btn text-xs" data-action="add-aula" data-nivel-id="${nivel.id}">+ Aula</button>
+                                        <button class="secondary-btn text-xs" data-action="edit-nivel" data-id="${nivel.id}">Editar</button>
+                                        <button class="danger-btn text-xs" data-action="delete-item" data-collection="cps" data-id="${nivel.id}">X</button>` : ''}
                                         <svg class="h-6 w-6 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
                                     </div>
                                 </div>
@@ -1074,7 +1079,7 @@
                                             <div>
                                                 <p class="font-semibold">${index + 1}. ${aula.title}</p>
                                                 <p class="text-sm text-stone-600">${aula.topic}</p>
-                                                <div class="mt-2">${(aula.keywords || []).map(k => `<span class="keyword-tag">${k}</span>`).join('')}</div>
+                                                <div class="mt-2 flex flex-wrap">${(aula.keywords || []).map(k => `<span class="keyword-tag">${k}</span>`).join('')}</div>
                                             </div>
                                             ${canEdit ? `
                                             <div>
@@ -1086,7 +1091,7 @@
                                     `).join('') : '<p class="text-center text-stone-500 py-4">Nenhuma aula adicionada.</p>'}
                                 </div>
                             </div>
-                        `).join('') : '<p class="text-center py-10 text-stone-500">Nenhum nível cadastrado.</p>'}
+                        `).join('') || '<p class="text-center py-10 text-stone-500">Nenhum nível cadastrado.</p>'}
                     </div>
                 </section>
             `;
@@ -1189,8 +1194,7 @@
             document.getElementById('form-modal-title').textContent = aluno ? "Editar Aluno" : "Adicionar Novo Aluno";
             
             const statusOptions = ['Ativo', 'Inativo', 'Cancelado', 'Pendente'].map(s => `<option value="${s}" ${aluno?.status === s ? 'selected' : ''}>${s}</option>`).join('');
-            const levelOptions = cps.map(cp => `<option value="${cp.title}" ${aluno?.course === cp.title ? 'selected' : ''}>${cp.title}</option>`).join('') + `<option value="outro">Outro (especificar)</option>`;
-
+            
             document.getElementById('form-modal-content-area').innerHTML = `
                 <form id="form-modal-body" class="space-y-4">
                     <input type="hidden" id="aluno-id" value="${alunoId || ''}">
@@ -1200,9 +1204,15 @@
                         <div><label class="font-medium text-sm">Data de Início</label><input type="date" id="aluno-startDate" class="form-input" value="${aluno?.startDate || ''}"></div>
                     </div>
                     <div>
-                        <label class="font-medium text-sm">Curso / Nível</label>
-                        <select id="aluno-course" class="form-input">${levelOptions}</select>
-                        <input type="text" id="aluno-course-custom" class="form-input mt-2 hidden" placeholder="Digite o nível personalizado">
+                        <label class="font-medium text-sm">Níveis Cursados</label>
+                        <div id="aluno-levels-checkboxes" class="mt-2 grid grid-cols-2 gap-y-2 gap-x-4 max-h-40 overflow-y-auto p-2 border rounded-md">
+                            ${cps.map(cp => `
+                                <div class="flex items-center">
+                                    <input type="checkbox" id="level-${cp.id}" name="completedLevels" value="${cp.title}" class="h-4 w-4 rounded text-yellow-500 focus:ring-yellow-400" ${aluno?.completedLevels?.includes(cp.title) ? 'checked' : ''}>
+                                    <label for="level-${cp.id}" class="ml-2 text-sm">${cp.title}</label>
+                                </div>
+                            `).join('')}
+                        </div>
                     </div>
                     <hr/>
                     <div class="flex items-center gap-2">
@@ -1219,12 +1229,6 @@
                 </form>
             `;
 
-            const courseSelect = document.getElementById('aluno-course');
-            const courseCustomInput = document.getElementById('aluno-course-custom');
-            courseSelect.addEventListener('change', (e) => {
-                courseCustomInput.classList.toggle('hidden', e.target.value !== 'outro');
-            });
-
             document.getElementById('aluno-isMinor').addEventListener('change', (e) => {
                 document.getElementById('responsible-fields').classList.toggle('hidden', !e.target.checked);
             });
@@ -1238,16 +1242,13 @@
             const alunoId = document.getElementById('aluno-id').value;
             const isMinor = document.getElementById('aluno-isMinor').checked;
             
-            const courseSelect = document.getElementById('aluno-course');
-            const courseValue = courseSelect.value === 'outro'
-                ? document.getElementById('aluno-course-custom').value
-                : courseSelect.value;
+            const completedLevels = Array.from(document.querySelectorAll('input[name="completedLevels"]:checked')).map(cb => cb.value);
 
             const data = {
                 name: document.getElementById('aluno-name').value,
                 status: document.getElementById('aluno-status').value,
                 startDate: document.getElementById('aluno-startDate').value,
-                course: courseValue,
+                completedLevels: completedLevels,
                 notes: document.getElementById('aluno-notes').value,
                 isMinor: isMinor,
                 responsibleName: isMinor ? document.getElementById('aluno-responsibleName').value : '',
@@ -1293,7 +1294,7 @@
                         <h3 class="text-xl font-bold text-stone-800">${aluno.name}</h3>
                         <span class="status-tag status-${(aluno.status || 'pendente').toLowerCase()}">${aluno.status || 'Pendente'}</span>
                     </div>
-                    <p><strong>Curso/Nível:</strong> ${aluno.course || 'N/A'}</p>
+                    <p><strong>Níveis Cursados:</strong> ${(aluno.completedLevels || []).map(level => `<span class="keyword-tag !m-1">${level}</span>`).join('') || 'N/A'}</p>
                     <p><strong>Data de Início:</strong> ${aluno.startDate ? new Date(aluno.startDate + 'T00:00:00').toLocaleDateString('pt-BR') : 'N/A'}</p>
                     ${responsibleHtml}
                     ${aluno.notes ? `<div><strong>Observações:</strong><p class="mt-1 p-3 bg-stone-50 rounded-md whitespace-pre-wrap">${aluno.notes}</p></div>` : ''}
@@ -2021,7 +2022,7 @@
                     await updateDoc(doc(db, `artifacts/${appId}/public/data/cps`, nivelId), { title });
                     showSuccessMessage("Sucesso", "Nível atualizado.");
                 } else {
-                    await addDoc(collection(db, `artifacts/${appId}/public/data/cps`), { title, lessons: [] });
+                    await addDoc(collection(db, `artifacts/${appId}/public/data/cps`), { title, lessons: [], order: cps.length });
                     showSuccessMessage("Sucesso", "Nível adicionado.");
                 }
             } catch(e) { console.error(e); showErrorMessage("Erro", "Não foi possível salvar o nível."); }
@@ -2081,6 +2082,31 @@
                 await updateDoc(nivelRef, { lessons: arrayRemove(aulaParaRemover) });
                 showSuccessMessage("Sucesso", "Aula removida.");
             } catch (e) { console.error(e); showErrorMessage("Erro", "Não foi possível remover a aula."); }
+        }
+        
+        async function reorderCPLevel(levelId, direction) {
+            const currentIndex = cps.findIndex(c => c.id === levelId);
+            if (currentIndex === -1) return;
+
+            const otherIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+            if (otherIndex < 0 || otherIndex >= cps.length) return;
+
+            const currentLevel = cps[currentIndex];
+            const otherLevel = cps[otherIndex];
+
+            const batch = writeBatch(db);
+            const currentRef = doc(db, `artifacts/${appId}/public/data/cps`, currentLevel.id);
+            const otherRef = doc(db, `artifacts/${appId}/public/data/cps`, otherLevel.id);
+
+            batch.update(currentRef, { order: otherLevel.order });
+            batch.update(otherRef, { order: currentLevel.order });
+
+            try {
+                await batch.commit();
+            } catch (error) {
+                console.error("Error reordering levels:", error);
+                showErrorMessage("Erro", "Falha ao reordenar os níveis.");
+            }
         }
         
         function openProfileModal(profileUserId) {
@@ -2332,7 +2358,7 @@
                     // Prevent modal from closing if the action is inside the modal content
                     if(actionTarget.closest('.modal-content')) event.stopPropagation();
                     
-                    const { action, id, collection, folderName, nivelId, aulaIndex } = actionTarget.dataset;
+                    const { action, id, collection, folderName, nivelId, aulaIndex, direction } = actionTarget.dataset;
                     const actionHandlers = {
                         'open-signup': openSignUpModal,
                         'add-aluno': () => openAlunoForm(),
@@ -2368,6 +2394,7 @@
                         'toggle-cp-level': () => { const card = document.getElementById(`nivel-${id}`); if(card) { card.classList.toggle('open'); const icon = card.querySelector('svg'); icon.style.transform = card.classList.contains('open') ? 'rotate(180deg)' : 'rotate(0deg)'; } },
                         'add-nivel': () => openNivelForm(),
                         'edit-nivel': () => openNivelForm(id),
+                        'reorder-cp': () => reorderCPLevel(id, direction),
                         'add-aula': () => openAulaForm(nivelId),
                         'edit-aula': () => openAulaForm(nivelId, aulaIndex),
                         'delete-aula': () => deleteAula(nivelId, aulaIndex),
