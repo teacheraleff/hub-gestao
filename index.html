@@ -128,24 +128,15 @@
         .pef-class-card { background-color: #fff; border-radius: 0.75rem; margin-bottom: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid #e7e5e4; }
         .pef-class-header { padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
         .pef-class-content { padding: 0 1.5rem; max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out, padding-bottom 0.3s ease-out; }
-        .pef-class-card.open .pef-class-content { max-height: 6000px; padding-bottom: 1.5rem; }
-        .pef-lesson-row { display: grid; grid-template-columns: 60px 140px 1fr; align-items: center; gap: 1rem; padding: 0.75rem; border-radius: 0.5rem; }
-        .pef-lesson-row:nth-child(odd) { background-color: #f9fafb; }
+        .pef-class-card.open .pef-class-content { max-height: 10000px; /* Increased max-height */ padding-bottom: 1.5rem; }
+        .pef-lesson-row { display: grid; grid-template-columns: 80px 150px 1fr; align-items: start; gap: 1rem; padding: 1rem 0.75rem; border-bottom: 1px solid #e5e7eb; }
+        .pef-lesson-row:last-child { border-bottom: none; }
         .pef-student-attendance-row { display: flex; align-items: center; justify-content: space-between; margin-left: 1rem; padding: 0.5rem 0; }
-        .pef-status-btn-group button { width: 2.5rem; height: 2.5rem; border-radius: 0.375rem; border: 1px solid #d1d5db; font-size: 0.875rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .pef-status-btn-group button { width: 2.5rem; height: 2.5rem; border-radius: 0.375rem; border: 1px solid #d1d5db; font-size: 0.875rem; font-weight: 600; cursor: pointer; transition: all 0.2s; background-color: #f9fafb; }
+        .pef-status-btn-group button:hover { border-color: #a8a29e; }
         .pef-status-btn-group button.active.P { background-color: #10B981; color: white; border-color: #10B981; }
         .pef-status-btn-group button.active.F { background-color: #EF4444; color: white; border-color: #EF4444; }
         .pef-status-btn-group button.active.PP { background-color: #F59E0B; color: white; border-color: #F59E0B; }
-        
-        /* --- RI Teachers Styles --- */
-        .ri-section { background-color: #fff; border-radius: 0.75rem; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
-        .ri-item { display: flex; align-items: flex-start; gap: 0.75rem; padding: 1rem; border-radius: 0.5rem; margin-bottom: 0.75rem; position: relative;}
-        .ri-item p { flex: 1; color: #374151; }
-        .ri-item-good { background-color: #f0fdf4; border-left: 4px solid #22c55e; }
-        .ri-item-bad { background-color: #fef2f2; border-left: 4px solid #ef4444; }
-        .ri-item-icon { flex-shrink: 0; }
-        .ri-delete-btn { position: absolute; top: 0.5rem; right: 0.5rem; background: none; border: none; cursor: pointer; color: #9ca3af; transition: color 0.2s; }
-        .ri-delete-btn:hover { color: #ef4444; }
     </style>
 </head>
 <body class="bg-stone-100 text-stone-800">
@@ -241,7 +232,7 @@
         const pendingView = document.getElementById('pending-view');
         
         let db, auth, storage, userId, currentUserName, currentUserRole;
-        let usersData = [], students = [], turmas = [], attendance = [], tasks = [], events = [], budgets = [], collaborators = [], schedules = [], expenses = [], cancellations = [], notifications = [], photos = [], photoFolders = [], cps = [], dojoRanking = [], dojoMissions = [], riBoasPraticas = [], riProibido = [];
+        let usersData = [], students = [], turmas = [], attendance = [], tasks = [], events = [], budgets = [], collaborators = [], schedules = [], expenses = [], cancellations = [], notifications = [], photos = [], photoFolders = [], cps = [], dojoRanking = [], dojoMissions = [];
         let allUnsubscribers = [];
         const appId = 'hub-gestao-slap';
 
@@ -319,7 +310,7 @@
                     const activePageId = contentArea.firstElementChild?.id;
                     if (renderFunc && activePageId) {
                         const pageBaseName = activePageId.replace('-section', '');
-                         if (pageBaseName.startsWith(collectionName.slice(0, -1).replace(/_/g, '-').toLowerCase()) || pageBaseName === 'inicio' || (collectionName === 'users' && pageBaseName === 'sala-de-reuniao')) {
+                         if (pageBaseName.startsWith(collectionName.slice(0, -1).replace('_', '-').toLowerCase()) || pageBaseName === 'inicio' || (collectionName === 'users' && pageBaseName === 'sala-de-reuniao')) {
                             renderFunc();
                         }
                     }
@@ -331,7 +322,6 @@
             getCollectionListener('students', students, () => {
                 if (contentArea.firstElementChild?.id === 'alunos-section') renderAlunosSection();
                 if (contentArea.firstElementChild?.id === 'turmas-section') renderTurmasSection();
-                if (contentArea.firstElementChild?.id === 'aniversariantes-section') renderAniversariantesSection();
             });
             getCollectionListener('turmas', turmas, renderTurmasSection);
             getCollectionListener('attendance', attendance, () => {
@@ -350,7 +340,6 @@
                 if (activePageId === 'banco-de-fotos-section') renderBancoDeFotosSection();
                 if (activePageId === 'inicio-section') renderInicioSection();
                 if (activePageId === 'pef-section') renderPEFSection();
-                if (activePageId === 'aniversariantes-section') renderAniversariantesSection();
             });
             getCollectionListener('events', events, renderEventosSection);
             getCollectionListener('schedules', schedules, () => {
@@ -364,14 +353,13 @@
             getCollectionListener('cps', cps, () => {
                 const activePageId = contentArea.firstElementChild?.id;
                 if (activePageId === 'cps-section') renderCPsSection();
+                // Re-render other sections if CPs change, as level dropdowns depend on it
                 if (['alunos-section', 'turmas-section', 'grade-section'].includes(activePageId)) {
                     document.querySelector(`#main-navigation [data-target="${activePageId.replace('-section', '')}"]`)?.click();
                 }
             }, (ref) => query(ref, orderBy("order")));
             getCollectionListener('dojo_ranking', dojoRanking, renderDojoSection);
             getCollectionListener('dojo_missions', dojoMissions, renderDojoSection, (ref) => query(ref, orderBy("points", "desc")));
-            getCollectionListener('ri_boas_praticas', riBoasPraticas, renderRITeachersSection);
-            getCollectionListener('ri_proibido', riProibido, renderRITeachersSection);
             getCollectionListener('notifications', notifications, null, (ref) => query(ref, orderBy('createdAt', 'desc'), limit(30)));
         }
 
@@ -489,39 +477,14 @@
             document.getElementById('main-title').textContent = 'Gestão de Alunos';
             document.getElementById('main-description').textContent = 'Cadastre e gerencie todos os alunos da escola.';
             const canAdd = ['admin', 'financeiro'].includes(currentUserRole);
-            const levelOptions = cps.map(cp => `<option value="${cp.title}">${cp.title}</option>`).join('');
 
             contentArea.innerHTML = `
                 <section id="alunos-section" class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                        <div class="p-4 bg-stone-50 rounded-lg text-center">
-                            <p class="text-sm text-stone-500">Alunos Totais</p>
-                            <p id="total-students-count" class="text-2xl font-bold text-stone-800">0</p>
-                        </div>
-                        <div class="p-4 bg-green-50 rounded-lg text-center">
-                            <p class="text-sm text-green-700">Ativos</p>
-                            <p id="active-students-count" class="text-2xl font-bold text-green-800">0</p>
-                        </div>
-                        <div class="p-4 bg-red-50 rounded-lg text-center">
-                            <p class="text-sm text-red-700">Cancelados</p>
-                            <p id="cancelled-students-count" class="text-2xl font-bold text-red-800">0</p>
-                        </div>
-                    </div>
-
                     <div class="flex justify-between items-center mb-6 flex-wrap gap-4">
-                        <div class="flex-grow max-w-xs">
-                            <input type="text" id="aluno-search-input" class="form-input" placeholder="Pesquisar por nome...">
-                        </div>
-                        <div class="flex gap-4">
-                            <select id="aluno-level-filter" class="form-input">
-                                <option value="">Filtrar por Nível</option>
-                                ${levelOptions}
-                            </select>
-                            <div class="flex gap-2" id="alunos-status-filter-buttons">
-                                <button class="secondary-btn filter-btn active" data-filter="todos">Todos</button>
-                                <button class="secondary-btn filter-btn" data-filter="ativo">Ativos</button>
-                                <button class="secondary-btn filter-btn" data-filter="cancelado">Cancelados</button>
-                            </div>
+                        <div class="flex gap-2" id="alunos-filter-buttons">
+                            <button class="secondary-btn filter-btn active" data-filter="todos">Todos</button>
+                            <button class="secondary-btn filter-btn" data-filter="ativo">Ativos</button>
+                            <button class="secondary-btn filter-btn" data-filter="cancelado">Cancelados</button>
                         </div>
                         ${canAdd ? `<button class="primary-btn w-auto" data-action="add-aluno">+ Adicionar Aluno</button>` : ''}
                     </div>
@@ -541,39 +504,21 @@
                     </div>
                 </section>
             `;
-            updateAlunosList();
-            document.getElementById('aluno-search-input').addEventListener('input', updateAlunosList);
-            document.getElementById('aluno-level-filter').addEventListener('change', updateAlunosList);
+            updateAlunosList('todos');
         }
 
-        function updateAlunosList() {
+        function updateAlunosList(filter) {
             const listBody = document.getElementById('alunos-list');
             if (!listBody) return;
             const canEdit = ['admin', 'financeiro'].includes(currentUserRole);
 
-            const statusFilter = document.querySelector('#alunos-status-filter-buttons .filter-btn.active')?.dataset.filter || 'todos';
-            const searchFilter = document.getElementById('aluno-search-input').value.toLowerCase();
-            const levelFilter = document.getElementById('aluno-level-filter').value;
-
             let filteredStudents = students;
-
-            if (statusFilter !== 'todos') {
-                filteredStudents = filteredStudents.filter(s => s.status && s.status.toLowerCase() === statusFilter);
+            if (filter !== 'todos') {
+                filteredStudents = students.filter(s => s.status && s.status.toLowerCase() === filter);
             }
-            if (searchFilter) {
-                filteredStudents = filteredStudents.filter(s => s.name.toLowerCase().includes(searchFilter));
-            }
-            if (levelFilter) {
-                filteredStudents = filteredStudents.filter(s => s.completedLevels && s.completedLevels.includes(levelFilter));
-            }
-
-            // Update counts
-            document.getElementById('total-students-count').textContent = students.length;
-            document.getElementById('active-students-count').textContent = students.filter(s => s.status === 'Ativo').length;
-            document.getElementById('cancelled-students-count').textContent = students.filter(s => s.status === 'Cancelado').length;
 
             if (filteredStudents.length === 0) {
-                listBody.innerHTML = '<tr><td colspan="5" class="text-center py-10 text-stone-500">Nenhum aluno encontrado com os filtros aplicados.</td></tr>';
+                listBody.innerHTML = '<tr><td colspan="5" class="text-center py-10 text-stone-500">Nenhum aluno encontrado.</td></tr>';
                 return;
             }
 
@@ -711,26 +656,41 @@
                 const isTurma = unit.type === 'turma';
                 const unitId = unit.id;
                 const unitName = unit.name;
+                const unitAttendance = attendance.find(a => a.id === unitId);
                 
                 let lessonsHtml = '';
                 for (let i = 1; i <= 40; i++) {
-                    const notesInputHtml = !isTurma ? '<input type="text" class="form-input p-2 text-sm w-full" placeholder="Observações da aula">' : '';
+                    const lessonData = unitAttendance?.lessons?.[i];
+                    const lessonDate = lessonData?.date || '';
+                    const lessonNotes = lessonData?.notes || '';
+
+                    const studentsHtml = unit.students.map(student => {
+                        if (!student) return ''; // Skip if student is not found
+                        const studentStatus = lessonData?.students?.[student.id] || '';
+                        return `
+                            <div class="pef-student-attendance-row" data-student-id="${student.id}">
+                                <span class="text-sm">${student.name}</span>
+                                <div class="pef-status-btn-group flex gap-1">
+                                    <button data-action="mark-attendance" data-status="P" class="${studentStatus === 'P' ? 'active P' : ''}">P</button>
+                                    <button data-action="mark-attendance" data-status="F" class="${studentStatus === 'F' ? 'active F' : ''}">F</button>
+                                    <button data-action="mark-attendance" data-status="PP" class="${studentStatus === 'PP' ? 'active PP' : ''}">PP</button>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+
+                    const notesInputHtml = !isTurma ? `<textarea class="form-input p-2 text-sm w-full lesson-notes" placeholder="Observações da aula">${lessonNotes}</textarea>` : '';
+                    
                     lessonsHtml += `
-                        <div class="pef-lesson-row">
-                            <span class="font-bold text-stone-700">Aula ${i}</span>
-                            <input type="date" class="form-input p-2 text-sm" placeholder="Data">
+                        <div class="pef-lesson-row" id="lesson-row-${unitId}-${i}">
+                            <div class="flex flex-col justify-center items-center gap-2">
+                                 <span class="font-bold text-stone-700">Aula ${i}</span>
+                                 <button class="secondary-btn !text-xs !py-1 !px-3" data-action="save-pef-lesson" data-unit-id="${unitId}" data-lesson-number="${i}">Salvar</button>
+                            </div>
+                            <input type="date" class="form-input p-2 text-sm lesson-date self-center" value="${lessonDate}">
                             <div class="space-y-2">
                                 ${notesInputHtml}
-                                ${unit.students.map(student => `
-                                    <div class="pef-student-attendance-row">
-                                        <span class="text-sm">${student.name}</span>
-                                        <div class="pef-status-btn-group flex gap-1">
-                                            <button data-action="mark-attendance" data-status="P">P</button>
-                                            <button data-action="mark-attendance" data-status="F">F</button>
-                                            <button data-action="mark-attendance" data-status="PP">PP</button>
-                                        </div>
-                                    </div>
-                                `).join('')}
+                                ${studentsHtml}
                             </div>
                         </div>
                     `;
@@ -748,6 +708,60 @@
                     </div>
                 `;
             }).join('');
+        }
+
+        async function savePefLesson(unitId, lessonNumber) {
+            const lessonRow = document.getElementById(`lesson-row-${unitId}-${lessonNumber}`);
+            if (!lessonRow) {
+                console.error("Lesson row not found");
+                return;
+            }
+
+            const date = lessonRow.querySelector('.lesson-date').value;
+            const notesElement = lessonRow.querySelector('.lesson-notes');
+            const notes = notesElement ? notesElement.value : '';
+
+            const studentAttendance = {};
+            const studentRows = lessonRow.querySelectorAll('.pef-student-attendance-row');
+            studentRows.forEach(row => {
+                const studentId = row.dataset.studentId;
+                const activeButton = row.querySelector('.pef-status-btn-group button.active');
+                const status = activeButton ? activeButton.dataset.status : '';
+                if (studentId) { // Save even if no status is selected (empty string)
+                    studentAttendance[studentId] = status;
+                }
+            });
+
+            if (!date) {
+                showErrorMessage("Data Obrigatória", "Por favor, selecione a data da aula antes de salvar.");
+                return;
+            }
+
+            const attendanceRef = doc(db, `artifacts/${appId}/public/data/attendance`, unitId);
+            
+            const lessonData = {
+                date: date,
+                students: studentAttendance,
+            };
+            if (notes) {
+                lessonData.notes = notes;
+            }
+
+            try {
+                // Use setDoc with merge: true to create or update the document
+                // and update only the specific lesson field using dot notation.
+                await setDoc(attendanceRef, {
+                    id: unitId, // Ensure the ID is part of the doc data for easier querying
+                    lessons: {
+                        [lessonNumber]: lessonData
+                    }
+                }, { merge: true });
+                
+                showSuccessMessage("Sucesso!", `Presença da Aula ${lessonNumber} foi salva.`);
+            } catch (error) {
+                console.error("Error saving attendance: ", error);
+                showErrorMessage("Erro", "Falha ao salvar a presença. Tente novamente.");
+            }
         }
 
         function renderEventosSection() {
@@ -1020,7 +1034,6 @@
                                 <tr>
                                     <th>Nome</th>
                                     <th>Setores</th>
-                                    <th>Aniversário</th>
                                     <th class="text-center">Ações</th>
                                 </tr>
                             </thead>
@@ -1029,13 +1042,12 @@
                                     <tr>
                                         <td class="font-medium">${c.name}</td>
                                         <td>${(c.sectors || []).map(s => `<span class="sector-tag">${s}</span>`).join('')}</td>
-                                        <td>${c.birthDate ? new Date(c.birthDate + 'T00:00:00').toLocaleDateString('pt-BR') : 'N/A'}</td>
                                         <td class="text-center">
                                             <button class="secondary-btn" data-action="edit-collaborator" data-id="${c.id}">Editar</button>
                                             <button class="danger-btn ml-2" data-action="delete-item" data-collection="collaborators" data-id="${c.id}">Excluir</button>
                                         </td>
                                     </tr>
-                                `).join('') || '<tr><td colspan="4" class="text-center py-10 text-stone-500">Nenhum colaborador encontrado.</td></tr>'}
+                                `).join('') || '<tr><td colspan="3" class="text-center py-10 text-stone-500">Nenhum colaborador encontrado.</td></tr>'}
                             </tbody>
                         </table>
                     </div>
@@ -1234,12 +1246,7 @@
                                     <p class="font-medium text-stone-700 flex-1 pr-4">${mission.description}</p>
                                     <div class="flex items-center gap-4">
                                         <span class="font-bold text-lg text-yellow-500 whitespace-nowrap">${mission.points} pts</span>
-                                        ${canEdit ? `
-                                        <div class="flex gap-2">
-                                            <button class="secondary-btn !text-xs !py-1 !px-2" data-action="edit-dojo-mission" data-id="${mission.id}">Editar</button>
-                                            <button class="danger-btn !text-xs !py-1 !px-2" data-action="delete-item" data-collection="dojo_missions" data-id="${mission.id}">Excluir</button>
-                                        </div>
-                                        ` : ''}
+                                        ${canEdit ? `<button class="danger-btn !text-xs !py-1 !px-2" data-action="delete-item" data-collection="dojo_missions" data-id="${mission.id}">Excluir</button>` : ''}
                                     </div>
                                 </div>
                             `).join('') : '<div class="text-center p-8 bg-stone-50 rounded-lg"><p class="text-stone-500">Nenhuma missão ativa no momento.</p></div>'}
@@ -1248,92 +1255,7 @@
                 </section>
             `;
         }
-        
-        function renderAniversariantesSection() {
-            document.getElementById('main-title').textContent = 'Aniversariantes do Mês';
-            document.getElementById('main-description').textContent = 'Veja quem está a comemorar este mês!';
-            
-            const currentMonth = new Date().getMonth();
-            
-            const birthdayStudents = students.filter(s => s.birthDate && new Date(s.birthDate).getMonth() === currentMonth);
-            const birthdayCollaborators = collaborators.filter(c => c.birthDate && new Date(c.birthDate).getMonth() === currentMonth);
 
-            const allBirthdays = [
-                ...birthdayStudents.map(s => ({...s, type: 'Aluno'})),
-                ...birthdayCollaborators.map(c => ({...c, type: 'Colaborador'}))
-            ].sort((a, b) => new Date(a.birthDate).getDate() - new Date(b.birthDate).getDate());
-
-            contentArea.innerHTML = `
-                <section id="aniversariantes-section" class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
-                    <div class="overflow-x-auto">
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th>Dia</th>
-                                    <th>Nome</th>
-                                    <th>Função</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${allBirthdays.length > 0 ? allBirthdays.map(person => `
-                                    <tr>
-                                        <td class="font-bold text-lg text-yellow-500">${new Date(person.birthDate + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit' })}</td>
-                                        <td class="font-medium">${person.name}</td>
-                                        <td><span class="status-tag ${person.type === 'Aluno' ? 'status-online' : 'status-aprovado'}">${person.type}</span></td>
-                                    </tr>
-                                `).join('') : '<tr><td colspan="3" class="text-center py-10 text-stone-500">Nenhum aniversariante este mês.</td></tr>'}
-                            </tbody>
-                        </table>
-                    </div>
-                </section>
-            `;
-        }
-
-        function renderRITeachersSection() {
-            document.getElementById('main-title').textContent = 'RI Teachers';
-            document.getElementById('main-description').textContent = 'Regimento Interno para os professores da SLAP.';
-            const canEdit = ['admin', 'pedagogico', 'ap'].includes(currentUserRole);
-
-            contentArea.innerHTML = `
-                <section id="ri-teachers-section">
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                        <!-- Boas Práticas -->
-                        <div class="ri-section">
-                            <div class="flex justify-between items-center mb-4">
-                                <h3 class="text-xl font-bold text-green-600">Boas Práticas</h3>
-                                ${canEdit ? `<button class="primary-btn w-auto" data-action="add-ri-item" data-type="boas-praticas">+ Adicionar</button>` : ''}
-                            </div>
-                            <div id="ri-boas-praticas-list" class="space-y-3">
-                                ${riBoasPraticas.map(item => `
-                                    <div class="ri-item ri-item-good">
-                                        <svg class="ri-item-icon h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
-                                        <p>${item.text}</p>
-                                        ${canEdit ? `<button class="ri-delete-btn" data-action="delete-item" data-collection="ri_boas_praticas" data-id="${item.id}"><svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button>` : ''}
-                                    </div>
-                                `).join('') || '<p class="text-center text-stone-500 py-4">Nenhuma boa prática adicionada.</p>'}
-                            </div>
-                        </div>
-
-                        <!-- Proibido -->
-                        <div class="ri-section">
-                            <div class="flex justify-between items-center mb-4">
-                                <h3 class="text-xl font-bold text-red-600">Proibido</h3>
-                                ${canEdit ? `<button class="primary-btn w-auto" data-action="add-ri-item" data-type="proibido">+ Adicionar</button>` : ''}
-                            </div>
-                            <div id="ri-proibido-list" class="space-y-3">
-                                ${riProibido.map(item => `
-                                    <div class="ri-item ri-item-bad">
-                                        <svg class="ri-item-icon h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
-                                        <p>${item.text}</p>
-                                        ${canEdit ? `<button class="ri-delete-btn" data-action="delete-item" data-collection="ri_proibido" data-id="${item.id}"><svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button>` : ''}
-                                    </div>
-                                `).join('') || '<p class="text-center text-stone-500 py-4">Nenhum item proibido adicionado.</p>'}
-                            </div>
-                        </div>
-                    </div>
-                </section>
-            `;
-        }
 
         // --- MODAL & FORM FUNCTIONS ---
         function closeFormModal() { document.getElementById('form-modal').classList.remove('visible'); }
@@ -1369,10 +1291,9 @@
                     <input type="hidden" id="aluno-id" value="${alunoId || ''}">
                     <div><label class="font-medium text-sm">Nome Completo do Aluno</label><input type="text" id="aluno-name" class="form-input" required value="${aluno?.name || ''}"></div>
                     <div class="grid grid-cols-2 gap-4">
-                        <div><label class="font-medium text-sm">Data de Nascimento</label><input type="date" id="aluno-birthDate" class="form-input" value="${aluno?.birthDate || ''}"></div>
+                        <div><label class="font-medium text-sm">Status</label><select id="aluno-status" class="form-input">${statusOptions}</select></div>
                         <div><label class="font-medium text-sm">Data de Início</label><input type="date" id="aluno-startDate" class="form-input" value="${aluno?.startDate || ''}"></div>
                     </div>
-                    <div><label class="font-medium text-sm">Status</label><select id="aluno-status" class="form-input">${statusOptions}</select></div>
                     <div>
                         <label class="font-medium text-sm">Níveis Cursados</label>
                         <div id="aluno-levels-checkboxes" class="mt-2 grid grid-cols-2 gap-y-2 gap-x-4 max-h-40 overflow-y-auto p-2 border rounded-md">
@@ -1418,7 +1339,6 @@
                 name: document.getElementById('aluno-name').value,
                 status: document.getElementById('aluno-status').value,
                 startDate: document.getElementById('aluno-startDate').value,
-                birthDate: document.getElementById('aluno-birthDate').value,
                 completedLevels: completedLevels,
                 notes: document.getElementById('aluno-notes').value,
                 isMinor: isMinor,
@@ -1467,7 +1387,6 @@
                     </div>
                     <p><strong>Níveis Cursados:</strong> ${(aluno.completedLevels || []).map(level => `<span class="keyword-tag !m-1">${level}</span>`).join('') || 'N/A'}</p>
                     <p><strong>Data de Início:</strong> ${aluno.startDate ? new Date(aluno.startDate + 'T00:00:00').toLocaleDateString('pt-BR') : 'N/A'}</p>
-                    <p><strong>Data de Nascimento:</strong> ${aluno.birthDate ? new Date(aluno.birthDate + 'T00:00:00').toLocaleDateString('pt-BR') : 'N/A'}</p>
                     ${responsibleHtml}
                     ${aluno.notes ? `<div><strong>Observações:</strong><p class="mt-1 p-3 bg-stone-50 rounded-md whitespace-pre-wrap">${aluno.notes}</p></div>` : ''}
                     <div class="border-t pt-4 flex justify-end gap-2">
@@ -1754,7 +1673,6 @@
                 <form id="form-modal-body" class="space-y-4">
                     <input type="hidden" id="collaborator-id" value="${collaboratorId || ''}">
                     <div><label class="font-medium text-sm">Nome do Colaborador</label><input type="text" id="collaborator-name" class="form-input" required value="${collaborator?.name || ''}"></div>
-                    <div><label class="font-medium text-sm">Data de Aniversário</label><input type="date" id="collaborator-birthDate" class="form-input" value="${collaborator?.birthDate || ''}"></div>
                     <div>
                         <label class="font-medium text-sm">Setores de Atuação</label>
                         <div class="mt-2 grid grid-cols-2 gap-2">${sectorCheckboxes}</div>
@@ -1776,7 +1694,6 @@
             
             const data = {
                 name: document.getElementById('collaborator-name').value,
-                birthDate: document.getElementById('collaborator-birthDate').value,
                 shiftStart: document.getElementById('collaborator-shift-start').value,
                 shiftEnd: document.getElementById('collaborator-shift-end').value,
                 sectors: selectedSectors
@@ -2396,14 +2313,12 @@
             } catch (e) { console.error(e); showErrorMessage("Erro", "Não foi possível atualizar a pontuação."); }
         }
 
-        function openDojoMissionForm(missionId = null) {
-            const mission = missionId ? dojoMissions.find(m => m.id === missionId) : null;
-            document.getElementById('form-modal-title').textContent = mission ? 'Editar Missão' : 'Adicionar Nova Missão';
+        function openDojoMissionForm() {
+            document.getElementById('form-modal-title').textContent = 'Adicionar Nova Missão';
             document.getElementById('form-modal-content-area').innerHTML = `
                 <form id="form-modal-body" class="space-y-4">
-                    <input type="hidden" id="mission-id" value="${missionId || ''}">
-                    <div><label class="font-medium text-sm">Descrição da Missão</label><input type="text" id="mission-description" class="form-input" required value="${mission?.description || ''}"></div>
-                    <div><label class="font-medium text-sm">Pontos</label><input type="number" id="mission-points" class="form-input" required value="${mission?.points || 0}"></div>
+                    <div><label class="font-medium text-sm">Descrição da Missão</label><input type="text" id="mission-description" class="form-input" required></div>
+                    <div><label class="font-medium text-sm">Pontos</label><input type="number" id="mission-points" class="form-input" required value="0"></div>
                     <div class="text-right"><button type="submit" class="primary-btn w-auto">Salvar Missão</button></div>
                 </form>
             `;
@@ -2413,51 +2328,15 @@
 
         async function saveDojoMission(event) {
             event.preventDefault();
-            const missionId = document.getElementById('mission-id').value;
             const data = {
                 description: document.getElementById('mission-description').value,
                 points: Number(document.getElementById('mission-points').value)
             };
             if (!data.description) { showErrorMessage("Erro", "A descrição é obrigatória."); return; }
             try {
-                if (missionId) {
-                    await updateDoc(doc(db, `artifacts/${appId}/public/data/dojo_missions`, missionId), data);
-                    showSuccessMessage("Sucesso", "Missão atualizada.");
-                } else {
-                    await addDoc(collection(db, `artifacts/${appId}/public/data/dojo_missions`), data);
-                    showSuccessMessage("Sucesso", "Nova missão do Dojo adicionada.");
-                }
+                await addDoc(collection(db, `artifacts/${appId}/public/data/dojo_missions`), data);
+                showSuccessMessage("Sucesso", "Nova missão do Dojo adicionada.");
             } catch (e) { console.error(e); showErrorMessage("Erro", "Não foi possível salvar a missão."); }
-        }
-        
-        function openRIItemForm(type) {
-            const title = type === 'boas-praticas' ? 'Adicionar Boa Prática' : 'Adicionar Item Proibido';
-            document.getElementById('form-modal-title').textContent = title;
-            document.getElementById('form-modal-content-area').innerHTML = `
-                <form id="form-modal-body" class="space-y-4">
-                    <input type="hidden" id="ri-item-type" value="${type}">
-                    <div><label class="font-medium text-sm">Descrição</label><textarea id="ri-item-text" class="form-input" rows="4" required></textarea></div>
-                    <div class="text-right"><button type="submit" class="primary-btn w-auto">Salvar</button></div>
-                </form>
-            `;
-            document.getElementById('form-modal-body').onsubmit = saveRIItem;
-            document.getElementById('form-modal').classList.add('visible');
-        }
-
-        async function saveRIItem(event) {
-            event.preventDefault();
-            const type = document.getElementById('ri-item-type').value;
-            const text = document.getElementById('ri-item-text').value;
-            if (!text) { showErrorMessage("Erro", "A descrição é obrigatória."); return; }
-            const collectionName = type === 'boas-praticas' ? 'ri_boas_praticas' : 'ri_proibido';
-
-            try {
-                await addDoc(collection(db, `artifacts/${appId}/public/data/${collectionName}`), { text, createdAt: serverTimestamp() });
-                showSuccessMessage("Sucesso", "Item adicionado ao regimento.");
-            } catch (e) {
-                console.error("Error saving RI item:", e);
-                showErrorMessage("Erro", "Não foi possível salvar o item.");
-            }
         }
 
 
@@ -2547,8 +2426,6 @@
             const menuItems = [
                 { key: 'inicio', label: 'Início', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>', roles: null },
                 { key: 'dojo', label: 'Dojo', icon: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-3"><path d="M6.5 12.5h11"/><path d="M12 6.5v11"/><path d="M17.5 17.5 19 19"/><path d="M6.5 6.5 5 5"/><path d="M17.5 6.5 19 5"/><path d="M6.5 17.5 5 19"/><path d="M2 12C2 6.5 6.5 2 12 2s10 4.5 10 10-4.5 10-10 10S2 17.5 2 12Z"/><path d="M16 8h2"/><path d="M6 16H4"/></svg>', roles: null },
-                { key: 'aniversariantes', label: 'Aniversariantes', icon: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-3"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>', roles: null },
-                { key: 'ri-teachers', label: 'RI Teachers', icon: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-3"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>', roles: ['admin', 'pedagogico', 'ap', 'teacher'] },
                 { key: 'alunos', label: 'Alunos', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>', roles: ['admin', 'pedagogico', 'financeiro'] },
                 { key: 'turmas', label: 'Turmas', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>', roles: ['admin', 'pedagogico'] },
                 { key: 'pef', label: 'PEF', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="m9 16 2 2 4-4"/></svg>', roles: ['admin', 'pedagogico', 'ap', 'teacher'] },
@@ -2572,7 +2449,7 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            const pageRenderers = { 'inicio': renderInicioSection, 'alunos': renderAlunosSection, 'turmas': renderTurmasSection, 'pef': renderPEFSection, 'eventos': renderEventosSection, 'orcamentos': renderOrcamentosSection, 'tarefas': renderTarefasSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection, 'cancelamentos': renderCancelamentosSection, 'colaboradores': renderColaboradoresSection, 'banco-de-fotos': renderBancoDeFotosSection, 'cps': renderCPsSection, 'dojo': renderDojoSection, 'aniversariantes': renderAniversariantesSection, 'ri-teachers': renderRITeachersSection };
+            const pageRenderers = { 'inicio': renderInicioSection, 'alunos': renderAlunosSection, 'turmas': renderTurmasSection, 'pef': renderPEFSection, 'eventos': renderEventosSection, 'orcamentos': renderOrcamentosSection, 'tarefas': renderTarefasSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection, 'cancelamentos': renderCancelamentosSection, 'colaboradores': renderColaboradoresSection, 'banco-de-fotos': renderBancoDeFotosSection, 'cps': renderCPsSection, 'dojo': renderDojoSection };
             
             document.body.addEventListener('click', (event) => {
                 const navTarget = event.target.closest('.nav-item');
@@ -2584,12 +2461,12 @@
                     }
                 }
 
-                if (event.target.closest('#alunos-status-filter-buttons')) {
+                if (event.target.closest('#alunos-filter-buttons')) {
                     const filterBtn = event.target.closest('.filter-btn');
                     if(filterBtn) {
-                        document.querySelectorAll('#alunos-status-filter-buttons .filter-btn').forEach(b => b.classList.remove('active'));
+                        document.querySelectorAll('#alunos-filter-buttons .filter-btn').forEach(b => b.classList.remove('active'));
                         filterBtn.classList.add('active');
-                        updateAlunosList();
+                        updateAlunosList(filterBtn.dataset.filter);
                     }
                 }
                 
@@ -2598,7 +2475,7 @@
                     // Prevent modal from closing if the action is inside the modal content
                     if(actionTarget.closest('.modal-content')) event.stopPropagation();
                     
-                    const { action, id, collection, folderName, nivelId, aulaIndex, direction, type } = actionTarget.dataset;
+                    const { action, id, collection, folderName, nivelId, aulaIndex, direction, unitId, lessonNumber, status } = actionTarget.dataset;
                     const actionHandlers = {
                         'open-signup': openSignUpModal,
                         'add-aluno': () => openAlunoForm(),
@@ -2608,6 +2485,14 @@
                         'view-turma': () => openTurmaModal(id),
                         'edit-turma': () => openTurmaForm(id),
                         'toggle-pef-card': () => { const card = document.getElementById(`pef-card-${id}`); if(card) { card.classList.toggle('open'); const icon = card.querySelector('svg'); icon.style.transform = card.classList.contains('open') ? 'rotate(180deg)' : 'rotate(0deg)'; } },
+                        'mark-attendance': () => {
+                            const button = actionTarget;
+                            const group = button.closest('.pef-status-btn-group');
+                            if (!group) return;
+                            group.querySelectorAll('button').forEach(btn => btn.classList.remove('active', 'P', 'F', 'PP'));
+                            button.classList.add('active', status);
+                        },
+                        'save-pef-lesson': () => savePefLesson(unitId, lessonNumber),
                         'add-event': openEventForm,
                         'view-event': () => openEventModal(id),
                         'edit-event': () => openEventForm(id),
@@ -2642,9 +2527,7 @@
                         'edit-profile': () => openProfileForm(id),
                         'add-dojo-competitor': () => openDojoCompetitorForm(),
                         'edit-dojo-points': () => openDojoPointsForm(id),
-                        'add-dojo-mission': () => openDojoMissionForm(),
-                        'edit-dojo-mission': () => openDojoMissionForm(id),
-                        'add-ri-item': () => openRIItemForm(type),
+                        'add-dojo-mission': openDojoMissionForm,
                     };
                     if (actionHandlers[action]) {
                         actionHandlers[action]();
