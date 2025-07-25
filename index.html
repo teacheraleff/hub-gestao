@@ -467,10 +467,33 @@
         function renderAlunosSection() {
             document.getElementById('main-title').textContent = 'Gestão de Alunos';
             document.getElementById('main-description').textContent = 'Cadastre e gerencie todos os alunos da escola.';
-            const canAdd = ['admin', 'financeiro'].includes(currentUserRole);
+            const canAdd = ['admin', 'financeiro', 'pedagogico', 'ap'].includes(currentUserRole);
+
+            const totalCount = students.length;
+            const activeCount = students.filter(s => s.status === 'Ativo').length;
+            const cancelledCount = students.filter(s => s.status === 'Cancelado').length;
 
             contentArea.innerHTML = `
                 <section id="alunos-section" class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                        <div class="bg-stone-100 p-4 rounded-lg text-center">
+                            <p class="text-2xl font-bold text-stone-800">${totalCount}</p>
+                            <p class="text-sm text-stone-600">Total de Alunos</p>
+                        </div>
+                        <div class="bg-green-100 p-4 rounded-lg text-center">
+                            <p class="text-2xl font-bold text-green-700">${activeCount}</p>
+                            <p class="text-sm text-green-600">Alunos Ativos</p>
+                        </div>
+                        <div class="bg-red-100 p-4 rounded-lg text-center">
+                            <p class="text-2xl font-bold text-red-700">${cancelledCount}</p>
+                            <p class="text-sm text-red-600">Alunos Cancelados</p>
+                        </div>
+                    </div>
+
+                    <div class="mb-6">
+                        <input type="search" id="aluno-search" placeholder="Pesquisar por nome..." class="form-input w-full sm:w-1/2">
+                    </div>
+
                     <div class="flex justify-between items-center mb-6 flex-wrap gap-4">
                         <div class="flex gap-2" id="alunos-filter-buttons">
                             <button class="secondary-btn filter-btn active" data-filter="todos">Todos</button>
@@ -495,17 +518,40 @@
                     </div>
                 </section>
             `;
+            
+            const searchInput = document.getElementById('aluno-search');
+            const filterButtons = document.querySelectorAll('#alunos-filter-buttons .filter-btn');
+
+            const performUpdate = () => {
+                const currentFilter = document.querySelector('#alunos-filter-buttons .filter-btn.active').dataset.filter;
+                updateAlunosList(currentFilter);
+            };
+
+            searchInput.addEventListener('input', performUpdate);
+            filterButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    filterButtons.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    performUpdate();
+                });
+            });
+
             updateAlunosList('todos');
         }
 
         function updateAlunosList(filter) {
             const listBody = document.getElementById('alunos-list');
             if (!listBody) return;
-            const canEdit = ['admin', 'financeiro'].includes(currentUserRole);
+            const canEdit = ['admin', 'financeiro', 'pedagogico', 'ap'].includes(currentUserRole);
+            const searchTerm = document.getElementById('aluno-search')?.value.toLowerCase() || '';
 
             let filteredStudents = students;
             if (filter !== 'todos') {
                 filteredStudents = students.filter(s => s.status && s.status.toLowerCase() === filter);
+            }
+
+            if (searchTerm) {
+                filteredStudents = filteredStudents.filter(s => s.name.toLowerCase().includes(searchTerm));
             }
 
             if (filteredStudents.length === 0) {
@@ -530,6 +576,7 @@
             document.getElementById('main-title').textContent = 'Gestão de Turmas';
             document.getElementById('main-description').textContent = 'Crie turmas, adicione alunos e registe as presenças.';
             
+            const canManage = ['admin', 'pedagogico', 'ap'].includes(currentUserRole);
             let itemsToDisplay = turmas;
             if (currentUserRole === 'teacher') {
                 itemsToDisplay = turmas.filter(t => t.teacherId === userId);
@@ -538,7 +585,7 @@
             contentArea.innerHTML = `
                 <div id="turmas-section">
                     <div class="text-right mb-6">
-                        <button class="primary-btn w-auto" data-action="add-turma">+ Adicionar Turma</button>
+                        ${canManage ? `<button class="primary-btn w-auto" data-action="add-turma">+ Adicionar Turma</button>` : ''}
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         ${itemsToDisplay.map(t => `
@@ -553,8 +600,8 @@
                                 <p class="text-sm text-stone-600"><strong>Semestre:</strong> ${t.semestre || 'N/A'}</p>
                             </div>
                             <div class="mt-auto pt-4 border-t border-stone-100 flex gap-2">
-                                <button class="secondary-btn !text-sm flex-1" data-action="edit-turma" data-id="${t.id}">Editar</button>
-                                <button class="primary-btn !text-sm flex-1 !w-auto" data-action="open-turma-pef" data-id="${t.id}">PEF</button>
+                                ${canManage ? `<button class="secondary-btn !text-sm flex-1" data-action="edit-turma" data-id="${t.id}">Editar</button>` : ''}
+                                <button class="primary-btn !text-sm flex-1" data-action="open-turma-pef" data-id="${t.id}">PEF</button>
                             </div>
                         </div>`).join('') || '<p class="col-span-full text-center py-10 text-stone-500">Nenhuma turma encontrada.</p>'}
                     </div>
@@ -565,6 +612,7 @@
             document.getElementById('main-title').textContent = 'Gestão de VIPs';
             document.getElementById('main-description').textContent = 'Gerencie alunos VIP e registe as suas presenças.';
             
+            const canManage = ['admin', 'pedagogico', 'ap'].includes(currentUserRole);
             let itemsToDisplay = vips;
             if (currentUserRole === 'teacher') {
                 itemsToDisplay = vips.filter(v => v.teacherId === userId);
@@ -573,7 +621,7 @@
             contentArea.innerHTML = `
                 <div id="vips-section">
                     <div class="text-right mb-6">
-                        <button class="primary-btn w-auto" data-action="add-vip">+ Adicionar VIP</button>
+                        ${canManage ? `<button class="primary-btn w-auto" data-action="add-vip">+ Adicionar VIP</button>` : ''}
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         ${itemsToDisplay.map(v => `
@@ -588,8 +636,8 @@
                                 <p class="text-sm text-stone-600"><strong>Semestre:</strong> ${v.semestre || 'N/A'}</p>
                             </div>
                             <div class="mt-auto pt-4 border-t border-stone-100 flex gap-2">
-                                <button class="secondary-btn !text-sm flex-1" data-action="edit-vip" data-id="${v.id}">Editar</button>
-                                <button class="primary-btn !text-sm flex-1 !w-auto" data-action="open-vip-pef" data-id="${v.id}">PEF</button>
+                                ${canManage ? `<button class="secondary-btn !text-sm flex-1" data-action="edit-vip" data-id="${v.id}">Editar</button>` : ''}
+                                <button class="primary-btn !text-sm flex-1" data-action="open-vip-pef" data-id="${v.id}">PEF</button>
                             </div>
                         </div>`).join('') || '<p class="col-span-full text-center py-10 text-stone-500">Nenhum aluno VIP encontrado.</p>'}
                     </div>
@@ -1269,7 +1317,10 @@
                         <div><label class="font-medium text-sm">Data de Finalização</label><input type="date" id="turma-endDate" class="form-input" value="${turma?.endDate || ''}"></div>
                     </div>
                     <div><label class="font-medium text-sm">Alunos (selecione um ou mais)</label><select id="turma-students" class="form-input" multiple required style="height: 150px;">${studentOptions}</select></div>
-                    <div class="text-right"><button type="submit" class="primary-btn w-auto">Salvar Turma</button></div>
+                    <div class="flex justify-end gap-2">
+                        ${turmaId ? `<button type="button" class="danger-btn" data-action="delete-item" data-collection="turmas" data-id="${turmaId}">Excluir</button>` : ''}
+                        <button type="submit" class="primary-btn w-auto">Salvar Turma</button>
+                    </div>
                 </form>
             `;
             const levelSelect = document.getElementById('turma-level');
@@ -1346,7 +1397,10 @@
                         <div><label class="font-medium text-sm">Data de Início</label><input type="date" id="vip-startDate" class="form-input" value="${vip?.startDate || ''}"></div>
                         <div><label class="font-medium text-sm">Data de Finalização</label><input type="date" id="vip-endDate" class="form-input" value="${vip?.endDate || ''}"></div>
                     </div>
-                    <div class="text-right"><button type="submit" class="primary-btn w-auto">Salvar VIP</button></div>
+                    <div class="flex justify-end gap-2">
+                        ${vipId ? `<button type="button" class="danger-btn" data-action="delete-item" data-collection="vips" data-id="${vipId}">Excluir</button>` : ''}
+                        <button type="submit" class="primary-btn w-auto">Salvar VIP</button>
+                    </div>
                 </form>
             `;
             const levelSelect = document.getElementById('vip-level');
@@ -2535,15 +2589,6 @@
                     if (pageKey && pageRenderers[pageKey]) {
                         pageRenderers[pageKey]();
                         setActiveNavItem(navTarget);
-                    }
-                }
-
-                if (event.target.closest('#alunos-filter-buttons')) {
-                    const filterBtn = event.target.closest('.filter-btn');
-                    if(filterBtn) {
-                        document.querySelectorAll('#alunos-filter-buttons .filter-btn').forEach(b => b.classList.remove('active'));
-                        filterBtn.classList.add('active');
-                        updateAlunosList(filterBtn.dataset.filter);
                     }
                 }
                 
