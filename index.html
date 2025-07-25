@@ -23,7 +23,7 @@
         }
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s; }
         .modal-overlay.visible { opacity: 1; visibility: visible; }
-        .modal-content { background-color: white; padding: 2rem; border-radius: 0.75rem; width: 90%; max-width: 500px; max-height: 90vh; overflow-y: auto; transform: scale(0.95); transition: transform 0.3s; }
+        .modal-content { background-color: white; padding: 2rem; border-radius: 0.75rem; width: 90%; max-width: 800px; max-height: 90vh; overflow-y: auto; transform: scale(0.95); transition: transform 0.3s; }
         .modal-overlay.visible .modal-content { transform: scale(1); }
         .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e7e5e4; padding-bottom: 1rem; margin-bottom: 1rem; }
         .modal-header h4 { font-size: 1.25rem; font-weight: 700; color: #44403c; }
@@ -72,7 +72,7 @@
         .schedule-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; }
         .day-column { background-color: #f9fafb; border-radius: 0.75rem; padding: 1rem; border: 1px solid #f3f4f6; }
         .day-column-header { font-weight: 700; color: #44403c; font-size: 1.25rem; padding-bottom: 0.75rem; margin-bottom: 0.75rem; border-bottom: 2px solid #F1D24B; }
-        .class-entry { background-color: #ffffff; border-radius: 0.5rem; padding: 0.75rem; margin-bottom: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
+        .class-entry { background-color: #ffffff; border-radius: 0.5rem; padding: 0.75rem; margin-bottom: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); transition: transform 0.2s, box-shadow 0.2s; }
         .class-entry:hover { transform: translateY(-2px); box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
         .class-tag { font-size: 0.625rem; font-weight: 700; padding: 2px 8px; border-radius: 9999px; color: white; margin-bottom: 4px; display: inline-block; text-transform: uppercase; }
         .tag-turma { background-color: #FF5C3D; }
@@ -88,6 +88,7 @@
         .data-total p { font-size: 1.25rem; font-weight: 700; color: #1f2937; }
 
         .form-input { width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 0.375rem; }
+        .form-input:disabled { background-color: #f3f4f6; cursor: not-allowed; }
         .primary-btn { background-color: #F1D24B; color: #44403c; padding: 0.75rem 1.5rem; border-radius: 0.375rem; font-weight: 600; transition: background-color 0.2s; width: 100%; border: none; cursor: pointer; }
         .primary-btn:hover { background-color: #eab308; }
         .secondary-btn { background-color: #f3f4f6; color: #4b5563; border: 1px solid #d1d5db; padding: 0.5rem 1rem; border-radius: 0.375rem; font-weight: 600; transition: all 0.2s; }
@@ -124,11 +125,7 @@
         .photo-card img { width: 100%; height: 200px; object-fit: cover; }
         .photo-card-info { padding: 1rem; }
 
-        /* --- PEF Styles --- */
-        .pef-class-card { background-color: #fff; border-radius: 0.75rem; margin-bottom: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid #e7e5e4; }
-        .pef-class-header { padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
-        .pef-class-content { padding: 0 1.5rem; max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out, padding-bottom 0.3s ease-out; }
-        .pef-class-card.open .pef-class-content { max-height: 10000px; /* Increased max-height */ padding-bottom: 1.5rem; }
+        /* --- PEF Styles (Integrated) --- */
         .pef-lesson-row { display: grid; grid-template-columns: 80px 150px 1fr; align-items: start; gap: 1rem; padding: 1rem 0.75rem; border-bottom: 1px solid #e5e7eb; }
         .pef-lesson-row:last-child { border-bottom: none; }
         .pef-student-attendance-row { display: flex; align-items: center; justify-content: space-between; margin-left: 1rem; padding: 0.5rem 0; }
@@ -325,9 +322,16 @@
             });
             getCollectionListener('turmas', turmas, renderTurmasSection);
             getCollectionListener('attendance', attendance, () => {
-                if (contentArea.firstElementChild?.id === 'pef-section') {
-                    const pefSection = document.getElementById('pef-section');
-                    if(pefSection) renderPEFAttendanceList(pefSection.dataset.teacher);
+                const activeModal = document.querySelector('.modal-overlay.visible');
+                if (activeModal && activeModal.querySelector('[data-pef-modal="true"]')) {
+                    const pefType = activeModal.dataset.pefType;
+                    const unitId = activeModal.dataset.unitId;
+                    if (pefType === 'turma') {
+                        openTurmaPefModal(unitId);
+                    } else if (pefType === 'vip') {
+                        const studentName = activeModal.dataset.studentName;
+                        openVipPefModal(unitId, studentName);
+                    }
                 }
             });
             getCollectionListener('tasks', tasks, renderTarefasSection);
@@ -339,12 +343,10 @@
                 if (activePageId === 'colaboradores-section') renderColaboradoresSection();
                 if (activePageId === 'banco-de-fotos-section') renderBancoDeFotosSection();
                 if (activePageId === 'inicio-section') renderInicioSection();
-                if (activePageId === 'pef-section') renderPEFSection();
             });
             getCollectionListener('events', events, renderEventosSection);
             getCollectionListener('schedules', schedules, () => {
                  if (contentArea.firstElementChild?.id === 'grade-section') renderGradeSection();
-                 if (contentArea.firstElementChild?.id === 'pef-section') renderPEFSection();
             });
             getCollectionListener('expenses', expenses, renderFolhaPagamentoSection);
             getCollectionListener('cancellations', cancellations, renderCancelamentosSection);
@@ -353,7 +355,6 @@
             getCollectionListener('cps', cps, () => {
                 const activePageId = contentArea.firstElementChild?.id;
                 if (activePageId === 'cps-section') renderCPsSection();
-                // Re-render other sections if CPs change, as level dropdowns depend on it
                 if (['alunos-section', 'turmas-section', 'grade-section'].includes(activePageId)) {
                     document.querySelector(`#main-navigation [data-target="${activePageId.replace('-section', '')}"]`)?.click();
                 }
@@ -537,7 +538,7 @@
 
         function renderTurmasSection() {
             document.getElementById('main-title').textContent = 'Gestão de Turmas';
-            document.getElementById('main-description').textContent = 'Crie turmas e adicione alunos.';
+            document.getElementById('main-description').textContent = 'Crie turmas, adicione alunos e registe as presenças.';
             contentArea.innerHTML = `
                 <div id="turmas-section">
                     <div class="text-right mb-6">
@@ -545,7 +546,7 @@
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         ${turmas.map(t => `
-                        <div class="base-card cursor-pointer" data-action="view-turma" data-id="${t.id}">
+                        <div class="base-card cursor-pointer" data-action="open-turma-pef" data-id="${t.id}">
                             <div class="flex justify-between items-start mb-2">
                                 <h3 class="text-xl font-bold text-stone-800">${t.name}</h3>
                                 <span class="text-sm font-semibold text-stone-600">${(t.studentIds || []).length} aluno(s)</span>
@@ -555,213 +556,6 @@
                         </div>`).join('') || '<p class="col-span-full text-center py-10 text-stone-500">Nenhuma turma encontrada.</p>'}
                     </div>
                 </div>`;
-        }
-
-        function renderPEFSection() {
-            document.getElementById('main-title').textContent = 'Presença e Faltas (PEF)';
-            document.getElementById('main-description').textContent = 'Registe a frequência dos alunos nas aulas.';
-            
-            let teacherFilterHtml = '';
-            let teacherToDisplay = userId;
-
-            if (['admin', 'ap', 'pedagogico'].includes(currentUserRole)) {
-                 const teacherOptions = collaborators.filter(c => c.sectors && c.sectors.includes('professor')).map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-                 teacherFilterHtml = `
-                    <div class="grade-select-container">
-                         <label for="pef-teacher-filter" class="block text-sm font-medium text-stone-700 mb-1">Ver presenças de:</label>
-                         <select id="pef-teacher-filter" class="grade-select">
-                            <option value="">Selecione um professor</option>
-                            ${teacherOptions}
-                        </select>
-                    </div>
-                 `;
-                 teacherToDisplay = ''; 
-            }
-            
-            contentArea.innerHTML = `
-                <section id="pef-section" data-teacher="${teacherToDisplay}">
-                    <div class="flex justify-between items-center mb-6 flex-wrap gap-4 bg-white p-4 rounded-xl shadow-sm">
-                        ${teacherFilterHtml}
-                    </div>
-                    <div id="pef-list-container" class="space-y-4"></div>
-                </section>
-            `;
-
-            if (teacherToDisplay) {
-                renderPEFAttendanceList(teacherToDisplay);
-            }
-
-            if(document.getElementById('pef-teacher-filter')) {
-                document.getElementById('pef-teacher-filter').addEventListener('change', (e) => {
-                    const section = document.getElementById('pef-section');
-                    section.dataset.teacher = e.target.value;
-                    renderPEFAttendanceList(e.target.value);
-                });
-            }
-        }
-
-        function renderPEFAttendanceList(teacherId) {
-            const container = document.getElementById('pef-list-container');
-            if (!container) return;
-            if (!teacherId) {
-                container.innerHTML = `<div class="text-center p-8 bg-white rounded-lg"><p class="text-stone-500">Selecione um professor para ver as turmas.</p></div>`;
-                return;
-            }
-
-            const teacher = collaborators.find(c => c.id === teacherId);
-            if (!teacher) {
-                container.innerHTML = `<p class="text-center py-10 text-stone-500">Professor não encontrado.</p>`;
-                return;
-            }
-
-            const classUnits = {}; // Use an object to store unique units
-
-            // Process turmas
-            const teacherTurmas = turmas.filter(t => t.teacherId === teacher.id);
-            teacherTurmas.forEach(turma => {
-                if (!classUnits[turma.name]) {
-                    classUnits[turma.name] = {
-                        id: turma.id,
-                        name: turma.name,
-                        type: 'turma',
-                        students: (turma.studentIds || []).map(id => students.find(s => s.id === id)).filter(Boolean)
-                    };
-                }
-            });
-
-            // Process VIPs from schedule
-            const teacherVips = schedules.filter(s => s.teacher === teacher.name && s.type === 'vip');
-            teacherVips.forEach(vipSchedule => {
-                if (!classUnits[vipSchedule.student]) {
-                    const studentData = students.find(s => s.name === vipSchedule.student);
-                    if (studentData) {
-                        classUnits[vipSchedule.student] = {
-                            id: vipSchedule.id,
-                            name: vipSchedule.student,
-                            type: 'vip',
-                            students: [studentData]
-                        };
-                    }
-                }
-            });
-
-            const allClassUnits = Object.values(classUnits);
-
-            if (allClassUnits.length === 0) {
-                container.innerHTML = `<p class="text-center py-10 text-stone-500">Este professor não tem turmas ou alunos VIP na grade.</p>`;
-                return;
-            }
-
-            container.innerHTML = allClassUnits.map(unit => {
-                const isTurma = unit.type === 'turma';
-                const unitId = unit.id;
-                const unitName = unit.name;
-                const unitAttendance = attendance.find(a => a.id === unitId);
-                
-                let lessonsHtml = '';
-                for (let i = 1; i <= 40; i++) {
-                    const lessonData = unitAttendance?.lessons?.[i];
-                    const lessonDate = lessonData?.date || '';
-                    const lessonNotes = lessonData?.notes || '';
-
-                    const studentsHtml = unit.students.map(student => {
-                        if (!student) return ''; // Skip if student is not found
-                        const studentStatus = lessonData?.students?.[student.id] || '';
-                        return `
-                            <div class="pef-student-attendance-row" data-student-id="${student.id}">
-                                <span class="text-sm">${student.name}</span>
-                                <div class="pef-status-btn-group flex gap-1">
-                                    <button data-action="mark-attendance" data-status="P" class="${studentStatus === 'P' ? 'active P' : ''}">P</button>
-                                    <button data-action="mark-attendance" data-status="F" class="${studentStatus === 'F' ? 'active F' : ''}">F</button>
-                                    <button data-action="mark-attendance" data-status="PP" class="${studentStatus === 'PP' ? 'active PP' : ''}">PP</button>
-                                </div>
-                            </div>
-                        `;
-                    }).join('');
-
-                    const notesInputHtml = !isTurma ? `<textarea class="form-input p-2 text-sm w-full lesson-notes" placeholder="Observações da aula">${lessonNotes}</textarea>` : '';
-                    
-                    lessonsHtml += `
-                        <div class="pef-lesson-row" id="lesson-row-${unitId}-${i}">
-                            <div class="flex flex-col justify-center items-center gap-2">
-                                 <span class="font-bold text-stone-700">Aula ${i}</span>
-                                 <button class="secondary-btn !text-xs !py-1 !px-3" data-action="save-pef-lesson" data-unit-id="${unitId}" data-lesson-number="${i}">Salvar</button>
-                            </div>
-                            <input type="date" class="form-input p-2 text-sm lesson-date self-center" value="${lessonDate}">
-                            <div class="space-y-2">
-                                ${notesInputHtml}
-                                ${studentsHtml}
-                            </div>
-                        </div>
-                    `;
-                }
-
-                return `
-                    <div class="pef-class-card" id="pef-card-${unitId}">
-                        <div class="pef-class-header" data-action="toggle-pef-card" data-id="${unitId}">
-                            <h4 class="text-lg font-bold text-stone-800">${unitName} <span class="text-sm font-normal text-stone-500">(${isTurma ? 'Turma' : 'VIP'})</span></h4>
-                            <svg class="h-6 w-6 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
-                        </div>
-                        <div class="pef-class-content">
-                            ${lessonsHtml}
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        async function savePefLesson(unitId, lessonNumber) {
-            const lessonRow = document.getElementById(`lesson-row-${unitId}-${lessonNumber}`);
-            if (!lessonRow) {
-                console.error("Lesson row not found");
-                return;
-            }
-
-            const date = lessonRow.querySelector('.lesson-date').value;
-            const notesElement = lessonRow.querySelector('.lesson-notes');
-            const notes = notesElement ? notesElement.value : '';
-
-            const studentAttendance = {};
-            const studentRows = lessonRow.querySelectorAll('.pef-student-attendance-row');
-            studentRows.forEach(row => {
-                const studentId = row.dataset.studentId;
-                const activeButton = row.querySelector('.pef-status-btn-group button.active');
-                const status = activeButton ? activeButton.dataset.status : '';
-                if (studentId) { // Save even if no status is selected (empty string)
-                    studentAttendance[studentId] = status;
-                }
-            });
-
-            if (!date) {
-                showErrorMessage("Data Obrigatória", "Por favor, selecione a data da aula antes de salvar.");
-                return;
-            }
-
-            const attendanceRef = doc(db, `artifacts/${appId}/public/data/attendance`, unitId);
-            
-            const lessonData = {
-                date: date,
-                students: studentAttendance,
-            };
-            if (notes) {
-                lessonData.notes = notes;
-            }
-
-            try {
-                // Use setDoc with merge: true to create or update the document
-                // and update only the specific lesson field using dot notation.
-                await setDoc(attendanceRef, {
-                    id: unitId, // Ensure the ID is part of the doc data for easier querying
-                    lessons: {
-                        [lessonNumber]: lessonData
-                    }
-                }, { merge: true });
-                
-                showSuccessMessage("Sucesso!", `Presença da Aula ${lessonNumber} foi salva.`);
-            } catch (error) {
-                console.error("Error saving attendance: ", error);
-                showErrorMessage("Erro", "Falha ao salvar a presença. Tente novamente.");
-            }
         }
 
         function renderEventosSection() {
@@ -838,7 +632,7 @@
         
         function renderGradeSection() {
             document.getElementById('main-title').textContent = 'Grade de Horários';
-            document.getElementById('main-description').textContent = 'Visualize e gerencie a grade de aulas da equipa.';
+            document.getElementById('main-description').textContent = 'Visualize a grade de aulas e registe as presenças VIP.';
             
             const isTeacher = currentUserRole === 'teacher';
             let filterHtml = '';
@@ -900,7 +694,20 @@
                         const tagClass = c.type === 'vip' ? 'tag-vip' : 'tag-turma';
                         const tagText = c.type === 'vip' ? 'VIP' : 'TURMA';
                         const teacherName = teacherFilter === 'all' ? `<p class="text-xs text-stone-500"><em>(${c.teacher})</em></p>` : '';
-                        gridHtml += `<div class="class-entry" data-action="view-schedule" data-id="${c.id}"><span class="class-tag ${tagClass}">${tagText}</span><p class="text-xs text-stone-600">${c.startTime} - ${c.endTime}</p><p class="font-bold text-stone-800">${c.student}</p><p class="text-sm text-stone-700">${c.level}</p>${teacherName}</div>`;
+                        
+                        const pefButton = c.type === 'vip' ? `<button class="secondary-btn !text-xs !py-1 !px-3 mt-2" data-action="open-vip-pef" data-schedule-id="${c.id}" data-student-name="${c.student}">PEF</button>` : '';
+
+                        gridHtml += `
+                            <div class="class-entry">
+                                <div data-action="view-schedule" data-id="${c.id}">
+                                    <span class="class-tag ${tagClass}">${tagText}</span>
+                                    <p class="text-xs text-stone-600">${c.startTime} - ${c.endTime}</p>
+                                    <p class="font-bold text-stone-800">${c.student}</p>
+                                    <p class="text-sm text-stone-700">${c.level}</p>
+                                    ${teacherName}
+                                </div>
+                                ${pefButton}
+                            </div>`;
                     });
                 } else {
                     gridHtml += `<p class="text-sm text-center text-stone-400 mt-4">Nenhuma aula</p>`;
@@ -1258,7 +1065,15 @@
 
 
         // --- MODAL & FORM FUNCTIONS ---
-        function closeFormModal() { document.getElementById('form-modal').classList.remove('visible'); }
+        function closeFormModal() { 
+            const modal = document.getElementById('form-modal');
+            modal.classList.remove('visible'); 
+            // Clear attributes to prevent listener conflicts
+            modal.removeAttribute('data-pef-modal');
+            modal.removeAttribute('data-unit-id');
+            modal.removeAttribute('data-pef-type');
+            modal.removeAttribute('data-student-name');
+        }
         function showSuccessMessage(title, message) { const modalTitle = document.getElementById('form-modal-title'); const modalContentArea = document.getElementById('form-modal-content-area'); modalTitle.textContent = title; modalContentArea.innerHTML = `<div class="text-center"><svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-12 w-12 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg><p class="mt-4 text-stone-600">${message}</p><button data-action="close-modal" class="primary-btn mt-6 w-auto px-8">OK</button></div>`; document.getElementById('form-modal').classList.add('visible'); }
         function showErrorMessage(title, message) { const modalTitle = document.getElementById('form-modal-title'); const modalContentArea = document.getElementById('form-modal-content-area'); modalTitle.textContent = title; modalContentArea.innerHTML = `<div class="text-center"><svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-12 w-12 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg><p class="mt-4 text-stone-600">${message}</p><button data-action="close-modal" class="primary-btn mt-6 w-auto px-8">OK</button></div>`; document.getElementById('form-modal').classList.add('visible'); }
         function showConfirmationModal(title, message, onConfirm) { const modalTitle = document.getElementById('form-modal-title'); const modalContentArea = document.getElementById('form-modal-content-area'); modalTitle.textContent = title; modalContentArea.innerHTML = `<p class="text-stone-600">${message}</p><div class="mt-6 flex justify-end gap-4"><button class="secondary-btn" data-action="close-modal">Cancelar</button><button id="confirm-action-btn" class="danger-btn w-auto">Confirmar</button></div>`; document.getElementById('form-modal').classList.add('visible'); document.getElementById('confirm-action-btn').onclick = () => { onConfirm(); closeFormModal(); }; }
@@ -1467,25 +1282,162 @@
             }
         }
 
-        function openTurmaModal(turmaId) {
+        function openTurmaPefModal(turmaId) {
             const turma = turmas.find(t => t.id === turmaId);
-            if (!turma) return;
+            if (!turma) { showErrorMessage("Erro", "Turma não encontrada."); return; }
 
-            const studentNames = (turma.studentIds || []).map(id => students.find(s => s.id === id)?.name || 'Aluno não encontrado').join(', ');
+            const modal = document.getElementById('form-modal');
+            modal.dataset.pefModal = "true";
+            modal.dataset.unitId = turmaId;
+            modal.dataset.pefType = "turma";
 
-            document.getElementById('form-modal-title').textContent = turma.name;
-            document.getElementById('form-modal-content-area').innerHTML = `
-                <div class="space-y-4">
-                    <p><strong>Professor:</strong> ${turma.teacherName}</p>
-                    <p><strong>Nível:</strong> ${turma.level}</p>
-                    <div><strong>Alunos:</strong><p class="mt-1 p-3 bg-stone-50 rounded-md">${studentNames || 'Nenhum aluno na turma.'}</p></div>
-                    <div class="border-t pt-4 flex justify-end gap-2">
-                        <button class="secondary-btn" data-action="edit-turma" data-id="${turma.id}">Editar</button>
-                        <button class="danger-btn" data-action="delete-item" data-collection="turmas" data-id="${turma.id}">Apagar</button>
+            const modalTitle = document.getElementById('form-modal-title');
+            const modalContentArea = document.getElementById('form-modal-content-area');
+            modalTitle.textContent = `PEF: ${turma.name}`;
+
+            const turmaStudents = (turma.studentIds || []).map(id => students.find(s => s.id === id)).filter(Boolean);
+            const unitAttendance = attendance.find(a => a.id === turmaId);
+
+            let lessonsHtml = '';
+            for (let i = 1; i <= 40; i++) {
+                const lessonData = unitAttendance?.lessons?.[i];
+                const lessonDate = lessonData?.date || '';
+                
+                const studentsHtml = turmaStudents.map(student => {
+                    const studentStatus = lessonData?.students?.[student.id] || '';
+                    return `
+                        <div class="pef-student-attendance-row" data-student-id="${student.id}">
+                            <span class="text-sm">${student.name}</span>
+                            <div class="pef-status-btn-group flex gap-1">
+                                <button data-action="mark-attendance" data-status="P" class="${studentStatus === 'P' ? 'active P' : ''}">P</button>
+                                <button data-action="mark-attendance" data-status="F" class="${studentStatus === 'F' ? 'active F' : ''}">F</button>
+                                <button data-action="mark-attendance" data-status="PP" class="${studentStatus === 'PP' ? 'active PP' : ''}">PP</button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                lessonsHtml += `
+                    <div class="pef-lesson-row" id="lesson-row-${turmaId}-${i}">
+                        <div class="flex flex-col justify-center items-center gap-2">
+                             <span class="font-bold text-stone-700">Aula ${i}</span>
+                             <button class="secondary-btn !text-xs !py-1 !px-3" data-action="save-pef-lesson" data-unit-id="${turmaId}" data-lesson-number="${i}">Salvar</button>
+                        </div>
+                        <input type="date" class="form-input p-2 text-sm lesson-date self-center" value="${lessonDate}">
+                        <div class="space-y-2">
+                            ${studentsHtml}
+                        </div>
                     </div>
-                </div>
-            `;
-            document.getElementById('form-modal').classList.add('visible');
+                `;
+            }
+            
+            modalContentArea.innerHTML = `<div>${lessonsHtml}</div>`;
+            modal.classList.add('visible');
+        }
+
+        function openVipPefModal(scheduleId, studentName) {
+            const student = students.find(s => s.name === studentName);
+            if (!student) { showErrorMessage("Erro", "Aluno não encontrado."); return; }
+
+            const modal = document.getElementById('form-modal');
+            modal.dataset.pefModal = "true";
+            modal.dataset.unitId = scheduleId;
+            modal.dataset.pefType = "vip";
+            modal.dataset.studentName = studentName;
+
+            const modalTitle = document.getElementById('form-modal-title');
+            const modalContentArea = document.getElementById('form-modal-content-area');
+            modalTitle.textContent = `PEF (VIP): ${studentName}`;
+
+            const unitAttendance = attendance.find(a => a.id === scheduleId);
+
+            let lessonsHtml = '';
+            for (let i = 1; i <= 40; i++) {
+                const lessonData = unitAttendance?.lessons?.[i];
+                const lessonDate = lessonData?.date || '';
+                const lessonNotes = lessonData?.notes || '';
+                const studentStatus = lessonData?.students?.[student.id] || '';
+
+                const studentHtml = `
+                    <div class="pef-student-attendance-row" data-student-id="${student.id}">
+                        <span class="text-sm font-semibold">${student.name}</span>
+                        <div class="pef-status-btn-group flex gap-1">
+                            <button data-action="mark-attendance" data-status="P" class="${studentStatus === 'P' ? 'active P' : ''}">P</button>
+                            <button data-action="mark-attendance" data-status="F" class="${studentStatus === 'F' ? 'active F' : ''}">F</button>
+                            <button data-action="mark-attendance" data-status="PP" class="${studentStatus === 'PP' ? 'active PP' : ''}">PP</button>
+                        </div>
+                    </div>
+                `;
+
+                lessonsHtml += `
+                    <div class="pef-lesson-row" id="lesson-row-${scheduleId}-${i}">
+                        <div class="flex flex-col justify-center items-center gap-2">
+                             <span class="font-bold text-stone-700">Aula ${i}</span>
+                             <button class="secondary-btn !text-xs !py-1 !px-3" data-action="save-pef-lesson" data-unit-id="${scheduleId}" data-lesson-number="${i}">Salvar</button>
+                        </div>
+                        <input type="date" class="form-input p-2 text-sm lesson-date self-center" value="${lessonDate}">
+                        <div class="space-y-2">
+                            <textarea class="form-input p-2 text-sm w-full lesson-notes" placeholder="Observações da aula">${lessonNotes}</textarea>
+                            ${studentHtml}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            modalContentArea.innerHTML = `<div>${lessonsHtml}</div>`;
+            modal.classList.add('visible');
+        }
+
+        async function savePefLesson(unitId, lessonNumber) {
+            const lessonRow = document.getElementById(`lesson-row-${unitId}-${lessonNumber}`);
+            if (!lessonRow) {
+                console.error("Lesson row not found");
+                return;
+            }
+
+            const date = lessonRow.querySelector('.lesson-date').value;
+            const notesElement = lessonRow.querySelector('.lesson-notes');
+            const notes = notesElement ? notesElement.value : '';
+
+            const studentAttendance = {};
+            const studentRows = lessonRow.querySelectorAll('.pef-student-attendance-row');
+            studentRows.forEach(row => {
+                const studentId = row.dataset.studentId;
+                const activeButton = row.querySelector('.pef-status-btn-group button.active');
+                const status = activeButton ? activeButton.dataset.status : '';
+                if (studentId) {
+                    studentAttendance[studentId] = status;
+                }
+            });
+
+            if (!date) {
+                showErrorMessage("Data Obrigatória", "Por favor, selecione a data da aula antes de salvar.");
+                return;
+            }
+
+            const attendanceRef = doc(db, `artifacts/${appId}/public/data/attendance`, unitId);
+            
+            const lessonData = {
+                date: date,
+                students: studentAttendance,
+            };
+            if (notes) {
+                lessonData.notes = notes;
+            }
+
+            try {
+                await setDoc(attendanceRef, {
+                    id: unitId,
+                    lessons: {
+                        [lessonNumber]: lessonData
+                    }
+                }, { merge: true });
+                
+                showSuccessMessage("Sucesso!", `Presença da Aula ${lessonNumber} foi salva.`);
+            } catch (error) {
+                console.error("Error saving attendance: ", error);
+                showErrorMessage("Erro", "Falha ao salvar a presença. Tente novamente.");
+            }
         }
 
         function openEventForm(eventId = null) {
@@ -1729,7 +1681,7 @@
         function openScheduleForm(scheduleId = null) {
             const schedule = scheduleId ? schedules.find(s => s.id === scheduleId) : null;
             document.getElementById('form-modal-title').textContent = schedule ? "Detalhes da Aula" : "Adicionar Nova Aula";
-            const isFinanceiro = currentUserRole === 'financeiro';
+            const isTeacher = currentUserRole === 'teacher';
 
             const teacherOptions = collaborators.filter(c => c.sectors && c.sectors.includes('professor')).map(c => `<option value="${c.name}" ${schedule?.teacher === c.name ? 'selected' : ''}>${c.name}</option>`).join('');
             const dayOptions = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Seg/Qua", "Ter/Qui"].map(d => `<option value="${d}" ${schedule?.day === d ? 'selected' : ''}>${d}</option>`).join('');
@@ -1738,22 +1690,22 @@
             
             let formHtml = `<form id="form-modal-body" class="space-y-4">
                 <input type="hidden" id="schedule-id" value="${scheduleId || ''}">
-                <div><label class="font-medium text-sm">Aluno/Turma</label><input type="text" id="schedule-student" class="form-input" required value="${schedule?.student || ''}" ${isFinanceiro ? 'disabled' : ''}></div>
+                <div><label class="font-medium text-sm">Aluno/Turma</label><input type="text" id="schedule-student" class="form-input" required value="${schedule?.student || ''}" ${isTeacher ? 'disabled' : ''}></div>
                 <div>
                     <label class="font-medium text-sm">Nível</label>
-                    <select id="schedule-level" class="form-input" required ${isFinanceiro ? 'disabled' : ''}>${levelOptions}</select>
-                    <input type="text" id="schedule-level-custom" class="form-input mt-2 hidden" placeholder="Digite o nível personalizado" ${isFinanceiro ? 'disabled' : ''}>
+                    <select id="schedule-level" class="form-input" required ${isTeacher ? 'disabled' : ''}>${levelOptions}</select>
+                    <input type="text" id="schedule-level-custom" class="form-input mt-2 hidden" placeholder="Digite o nível personalizado" ${isTeacher ? 'disabled' : ''}>
                 </div>
-                <div><label class="font-medium text-sm">Professor</label><select id="schedule-teacher" class="form-input" required ${isFinanceiro ? 'disabled' : ''}>${teacherOptions}</select></div>
+                <div><label class="font-medium text-sm">Professor</label><select id="schedule-teacher" class="form-input" required ${isTeacher ? 'disabled' : ''}>${teacherOptions}</select></div>
                 <div class="grid grid-cols-2 gap-4">
-                    <div><label class="font-medium text-sm">Dia</label><select id="schedule-day" class="form-input" required ${isFinanceiro ? 'disabled' : ''}>${dayOptions}</select></div>
-                    <div><label class="font-medium text-sm">Tipo</label><select id="schedule-type" class="form-input" required ${isFinanceiro ? 'disabled' : ''}>${typeOptions}</select></div>
+                    <div><label class="font-medium text-sm">Dia</label><select id="schedule-day" class="form-input" required ${isTeacher ? 'disabled' : ''}>${dayOptions}</select></div>
+                    <div><label class="font-medium text-sm">Tipo</label><select id="schedule-type" class="form-input" required ${isTeacher ? 'disabled' : ''}>${typeOptions}</select></div>
                 </div>
                 <div class="grid grid-cols-2 gap-4">
-                    <div><label class="font-medium text-sm">Início</label><input type="time" id="schedule-start" class="form-input" required value="${schedule?.startTime || ''}" ${isFinanceiro ? 'disabled' : ''}></div>
-                    <div><label class="font-medium text-sm">Fim</label><input type="time" id="schedule-end" class="form-input" required value="${schedule?.endTime || ''}" ${isFinanceiro ? 'disabled' : ''}></div>
+                    <div><label class="font-medium text-sm">Início</label><input type="time" id="schedule-start" class="form-input" required value="${schedule?.startTime || ''}" ${isTeacher ? 'disabled' : ''}></div>
+                    <div><label class="font-medium text-sm">Fim</label><input type="time" id="schedule-end" class="form-input" required value="${schedule?.endTime || ''}" ${isTeacher ? 'disabled' : ''}></div>
                 </div>
-                ${!isFinanceiro ? `<div class="pt-4 flex justify-end gap-2">${scheduleId ? `<button type="button" class="danger-btn" data-action="delete-item" data-collection="schedules" data-id="${scheduleId}">Apagar</button>` : ''}<button type="submit" class="primary-btn w-auto">Salvar</button></div>` : ''}
+                ${!isTeacher ? `<div class="pt-4 flex justify-end gap-2">${scheduleId ? `<button type="button" class="danger-btn" data-action="delete-item" data-collection="schedules" data-id="${scheduleId}">Apagar</button>` : ''}<button type="submit" class="primary-btn w-auto">Salvar</button></div>` : ''}
             </form>`;
             document.getElementById('form-modal-content-area').innerHTML = formHtml;
 
@@ -2427,8 +2379,7 @@
                 { key: 'inicio', label: 'Início', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>', roles: null },
                 { key: 'dojo', label: 'Dojo', icon: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-3"><path d="M6.5 12.5h11"/><path d="M12 6.5v11"/><path d="M17.5 17.5 19 19"/><path d="M6.5 6.5 5 5"/><path d="M17.5 6.5 19 5"/><path d="M6.5 17.5 5 19"/><path d="M2 12C2 6.5 6.5 2 12 2s10 4.5 10 10-4.5 10-10 10S2 17.5 2 12Z"/><path d="M16 8h2"/><path d="M6 16H4"/></svg>', roles: null },
                 { key: 'alunos', label: 'Alunos', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>', roles: ['admin', 'pedagogico', 'financeiro'] },
-                { key: 'turmas', label: 'Turmas', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>', roles: ['admin', 'pedagogico'] },
-                { key: 'pef', label: 'PEF', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="m9 16 2 2 4-4"/></svg>', roles: ['admin', 'pedagogico', 'ap', 'teacher'] },
+                { key: 'turmas', label: 'Turmas', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>', roles: ['admin', 'pedagogico', 'teacher'] },
                 { key: 'grade', label: 'Grade', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" x2="16" y1="2" y2="6"></line><line x1="8" x2="8" y1="2" y2="6"></line><line x1="3" x2="21" y1="10" y2="10"></line></svg>', roles: ['admin', 'ap', 'pedagogico', 'financeiro', 'teacher'] },
                 { key: 'tarefas', label: 'Tarefas', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>', roles: ['admin', 'am', 'ap', 'pedagogico', 'financeiro', 'teacher'] },
                 { key: 'cps', label: 'CPs', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>', roles: ['admin', 'pedagogico', 'ap'] },
@@ -2449,7 +2400,7 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            const pageRenderers = { 'inicio': renderInicioSection, 'alunos': renderAlunosSection, 'turmas': renderTurmasSection, 'pef': renderPEFSection, 'eventos': renderEventosSection, 'orcamentos': renderOrcamentosSection, 'tarefas': renderTarefasSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection, 'cancelamentos': renderCancelamentosSection, 'colaboradores': renderColaboradoresSection, 'banco-de-fotos': renderBancoDeFotosSection, 'cps': renderCPsSection, 'dojo': renderDojoSection };
+            const pageRenderers = { 'inicio': renderInicioSection, 'alunos': renderAlunosSection, 'turmas': renderTurmasSection, 'eventos': renderEventosSection, 'orcamentos': renderOrcamentosSection, 'tarefas': renderTarefasSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection, 'cancelamentos': renderCancelamentosSection, 'colaboradores': renderColaboradoresSection, 'banco-de-fotos': renderBancoDeFotosSection, 'cps': renderCPsSection, 'dojo': renderDojoSection };
             
             document.body.addEventListener('click', (event) => {
                 const navTarget = event.target.closest('.nav-item');
@@ -2472,19 +2423,18 @@
                 
                 const actionTarget = event.target.closest('[data-action]');
                 if (actionTarget) {
-                    // Prevent modal from closing if the action is inside the modal content
-                    if(actionTarget.closest('.modal-content')) event.stopPropagation();
+                    if(actionTarget.closest('.modal-content') && actionTarget.dataset.action !== 'close-modal') event.stopPropagation();
                     
-                    const { action, id, collection, folderName, nivelId, aulaIndex, direction, unitId, lessonNumber, status } = actionTarget.dataset;
+                    const { action, id, collection, folderName, nivelId, aulaIndex, direction, unitId, lessonNumber, status, scheduleId, studentName } = actionTarget.dataset;
                     const actionHandlers = {
                         'open-signup': openSignUpModal,
                         'add-aluno': () => openAlunoForm(),
                         'view-aluno': () => openAlunoModal(id),
                         'edit-aluno': () => openAlunoForm(id),
                         'add-turma': () => openTurmaForm(),
-                        'view-turma': () => openTurmaModal(id),
+                        'open-turma-pef': () => openTurmaPefModal(id),
                         'edit-turma': () => openTurmaForm(id),
-                        'toggle-pef-card': () => { const card = document.getElementById(`pef-card-${id}`); if(card) { card.classList.toggle('open'); const icon = card.querySelector('svg'); icon.style.transform = card.classList.contains('open') ? 'rotate(180deg)' : 'rotate(0deg)'; } },
+                        'open-vip-pef': () => openVipPefModal(scheduleId, studentName),
                         'mark-attendance': () => {
                             const button = actionTarget;
                             const group = button.closest('.pef-status-btn-group');
