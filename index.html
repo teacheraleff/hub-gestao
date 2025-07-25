@@ -309,7 +309,7 @@
                 allUnsubscribers.push(unsubscribe);
             };
             
-            getCollectionListener('users', usersData, null);
+            getCollectionListener('users', usersData, renderSalaDeReuniaoSection);
             getCollectionListener('students', students, () => {
                 if (contentArea.firstElementChild?.id === 'alunos-section') renderAlunosSection();
                 if (contentArea.firstElementChild?.id === 'turmas-section') renderTurmasSection();
@@ -441,6 +441,27 @@
                 <h3 class="text-2xl font-bold text-stone-800">Bem-vindo ao Hub SLAP</h3>
                 <p class="mt-2 text-stone-600 max-w-2xl mx-auto">Selecione uma opção no menu à esquerda para começar a gerir as suas operações.</p>
             </div>`;
+        }
+
+        function renderSalaDeReuniaoSection() {
+            document.getElementById('main-title').textContent = 'Sala de Reunião';
+            document.getElementById('main-description').textContent = 'Conheça a equipa e veja os perfis dos colaboradores.';
+            
+            const usersToDisplay = usersData.filter(u => u.role !== 'pending');
+
+            contentArea.innerHTML = `
+                <section id="sala-de-reuniao-section" class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
+                    <div class="reuniao-grid">
+                        ${usersToDisplay.map(user => `
+                            <div class="reuniao-card" data-action="view-profile" data-id="${user.id}">
+                                <img src="${user.photoURL || 'https://res.cloudinary.com/dqfi22uz0/image/upload/v1749349751/DBB440C2-684E-4DCF-9CD3-B2DDC18F1E53_3_vgocga.jpg'}" alt="Foto de ${user.name}">
+                                <h4 class="font-bold text-stone-800">${user.name}</h4>
+                                <p class="text-sm text-stone-500">${user.role || 'Colaborador'}</p>
+                            </div>
+                        `).join('') || '<p class="col-span-full text-center py-10 text-stone-500">Nenhum utilizador encontrado.</p>'}
+                    </div>
+                </section>
+            `;
         }
 
         function renderAlunosSection() {
@@ -2481,6 +2502,7 @@
             const menuItems = [
                 { key: 'inicio', label: 'Início', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>', roles: null },
                 { key: 'dojo', label: 'Dojo', icon: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-3"><path d="M6.5 12.5h11"/><path d="M12 6.5v11"/><path d="M17.5 17.5 19 19"/><path d="M6.5 6.5 5 5"/><path d="M17.5 6.5 19 5"/><path d="M6.5 17.5 5 19"/><path d="M2 12C2 6.5 6.5 2 12 2s10 4.5 10 10-4.5 10-10 10S2 17.5 2 12Z"/><path d="M16 8h2"/><path d="M6 16H4"/></svg>', roles: null },
+                { key: 'sala-de-reuniao', label: 'Sala de Reunião', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>', roles: null },
                 { key: 'alunos', label: 'Alunos', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>', roles: ['admin', 'pedagogico', 'financeiro'] },
                 { key: 'turmas', label: 'Turmas', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>', roles: ['admin', 'pedagogico', 'teacher'] },
                 { key: 'vips', label: 'VIPs', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20a6 6 0 0 0-12 0"/><circle cx="12" cy="10" r="4"/><circle cx="12" cy="12" r="10"/></svg>', roles: ['admin', 'pedagogico', 'teacher'] },
@@ -2504,7 +2526,7 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            const pageRenderers = { 'inicio': renderInicioSection, 'alunos': renderAlunosSection, 'turmas': renderTurmasSection, 'vips': renderVipsSection, 'eventos': renderEventosSection, 'orcamentos': renderOrcamentosSection, 'tarefas': renderTarefasSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection, 'cancelamentos': renderCancelamentosSection, 'colaboradores': renderColaboradoresSection, 'banco-de-fotos': renderBancoDeFotosSection, 'cps': renderCPsSection, 'dojo': renderDojoSection };
+            const pageRenderers = { 'inicio': renderInicioSection, 'sala-de-reuniao': renderSalaDeReuniaoSection, 'alunos': renderAlunosSection, 'turmas': renderTurmasSection, 'vips': renderVipsSection, 'eventos': renderEventosSection, 'orcamentos': renderOrcamentosSection, 'tarefas': renderTarefasSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection, 'cancelamentos': renderCancelamentosSection, 'colaboradores': renderColaboradoresSection, 'banco-de-fotos': renderBancoDeFotosSection, 'cps': renderCPsSection, 'dojo': renderDojoSection };
             
             document.body.addEventListener('click', (event) => {
                 const navTarget = event.target.closest('.nav-item');
