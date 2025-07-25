@@ -550,7 +550,7 @@
             const canManage = ['admin', 'pedagogico', 'ap'].includes(currentUserRole);
             let itemsToDisplay = turmas;
             if (currentUserRole === 'teacher') {
-                itemsToDisplay = turmas.filter(t => t.teacherId === userId);
+                itemsToDisplay = turmas.filter(t => t.teacherName === currentUserName);
             }
 
             contentArea.innerHTML = `
@@ -586,7 +586,7 @@
             const canManage = ['admin', 'pedagogico', 'ap'].includes(currentUserRole);
             let itemsToDisplay = vips;
             if (currentUserRole === 'teacher') {
-                itemsToDisplay = vips.filter(v => v.teacherId === userId);
+                itemsToDisplay = vips.filter(v => v.teacherName === currentUserName);
             }
 
             contentArea.innerHTML = `
