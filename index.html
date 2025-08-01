@@ -67,6 +67,10 @@
         .deadline-overdue { color: #b91c1c; }
         .task-delete-btn { background: none; border: none; cursor: pointer; color: #9ca3af; transition: color 0.2s; }
         .task-delete-btn:hover { color: #ef4444; }
+        
+        .page-number-btn { padding: 0.25rem 0.75rem; border: 1px solid #d6d3d1; background-color: #ffffff; color: #44403c; border-radius: 0.375rem; font-size: 0.875rem; cursor: pointer; transition: all 0.2s; }
+        .page-number-btn:hover { background-color: #f5f5f4; border-color: #F1D24B; }
+        .page-number-btn.active { background-color: #F1D24B; border-color: #F1D24B; color: #44403c; font-weight: 600; }
 
         .grade-select-container { margin-bottom: 1.5rem; max-width: 400px; }
         .grade-select { width: 100%; padding: 0.75rem 1rem; border-radius: 0.5rem; border: 1px solid #d6d3d1; background-color: #ffffff; font-weight: 600; color: #44403c; -webkit-appearance: none; appearance: none; background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); background-position: right 0.5rem center; background-repeat: no-repeat; background-size: 1.5em 1.5em; padding-right: 2.5rem; cursor: pointer; }
@@ -396,6 +400,10 @@
         let usersData = [], students = [], turmas = [], vips = [], attendance = [], tasks = [], events = [], budgets = [], collaborators = [], schedules = [], expenses = [], cancellations = [], photos = [], photoFolders = [], cps = [], dojoRanking = [], dojoMissions = [];
         let allUnsubscribers = [];
         const appId = 'hub-gestao-slap';
+        
+        // Pagination state
+        let currentPage = 1;
+        let itemsPerPage = 20;
 
         // --- DEVELOPMENT MODE FUNCTIONS ---
         function startAppInDevelopmentMode() {
@@ -521,7 +529,10 @@
             
             getCollectionListener('users', usersData, null);
             getCollectionListener('students', students, () => {
-                if (contentArea.firstElementChild?.id === 'alunos-section') renderAlunosSection();
+                if (contentArea.firstElementChild?.id === 'alunos-section') {
+                    resetPagination();
+                    renderAlunosSection();
+                }
                 if (contentArea.firstElementChild?.id === 'turmas-section') renderTurmasSection();
                 if (contentArea.firstElementChild?.id === 'vips-section') renderVipsSection();
             });
@@ -813,7 +824,8 @@
         }
 
         function getTeacherDaySchedule(day, teacherName) {
-            return schedules.filter(s => s.day === day && s.teacher === teacherName && s.type !== 'break')
+            const actualTeacherName = findTeacherByName(teacherName) || teacherName;
+            return schedules.filter(s => s.day === day && s.teacher === actualTeacherName && s.type !== 'break')
                            .sort((a, b) => a.startTime.localeCompare(b.startTime));
         }
 
@@ -959,6 +971,35 @@
                             <tbody id="alunos-list"></tbody>
                         </table>
                     </div>
+                    
+                    <!-- Controles de Paginação -->
+                    <div id="pagination-controls" class="flex justify-between items-center mt-6 pt-4 border-t border-stone-200">
+                        <div class="flex items-center gap-2">
+                            <label class="text-sm text-stone-600">Itens por página:</label>
+                            <select id="items-per-page" class="form-input !py-1 !px-2 w-20">
+                                <option value="10">10</option>
+                                <option value="20" selected>20</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                            </select>
+                        </div>
+                        
+                        <div id="pagination-info" class="text-sm text-stone-600"></div>
+                        
+                        <div class="flex gap-1">
+                            <button id="prev-page" class="secondary-btn !py-1 !px-3 disabled:opacity-50 disabled:cursor-not-allowed">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                                </svg>
+                            </button>
+                            <div id="page-numbers" class="flex gap-1"></div>
+                            <button id="next-page" class="secondary-btn !py-1 !px-3 disabled:opacity-50 disabled:cursor-not-allowed">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
                 </section>
             `;
             
@@ -979,7 +1020,50 @@
                 });
             });
 
+            // Configurar paginação
+            const itemsPerPageSelect = document.getElementById('items-per-page');
+            const prevPageBtn = document.getElementById('prev-page');
+            const nextPageBtn = document.getElementById('next-page');
+            
+            itemsPerPageSelect.addEventListener('change', () => {
+                itemsPerPage = parseInt(itemsPerPageSelect.value);
+                currentPage = 1;
+                performUpdate();
+            });
+            
+            prevPageBtn.addEventListener('click', () => {
+                if (currentPage > 1) {
+                    currentPage--;
+                    performUpdate();
+                }
+            });
+            
+            nextPageBtn.addEventListener('click', () => {
+                const totalItems = getFilteredStudents().length;
+                const totalPages = Math.ceil(totalItems / itemsPerPage);
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    performUpdate();
+                }
+            });
+
             updateAlunosList('todos');
+        }
+        
+        function getFilteredStudents() {
+            const filter = document.querySelector('#alunos-filter-buttons .filter-btn.active')?.dataset.filter || 'todos';
+            const searchTerm = document.getElementById('aluno-search')?.value.toLowerCase() || '';
+            
+            let filteredStudents = students;
+            if (filter !== 'todos') {
+                filteredStudents = students.filter(s => s.status && s.status.toLowerCase() === filter);
+            }
+            
+            if (searchTerm) {
+                filteredStudents = filteredStudents.filter(s => s.name.toLowerCase().includes(searchTerm));
+            }
+            
+            return filteredStudents.sort((a, b) => a.name.localeCompare(b.name));
         }
 
         function updateAlunosList(filter) {
@@ -987,27 +1071,29 @@
             if (!listBody) return;
             const canEdit = ['admin', 'financeiro', 'pedagogico', 'ap'].includes(currentUserRole);
             const canViewFinancialInfo = !['teacher', 'pedagogico', 'ap', 'am'].includes(currentUserRole);
-            const searchTerm = document.getElementById('aluno-search')?.value.toLowerCase() || '';
 
-            let filteredStudents = students;
-            if (filter !== 'todos') {
-                filteredStudents = students.filter(s => s.status && s.status.toLowerCase() === filter);
+            const filteredStudents = getFilteredStudents();
+            const totalItems = filteredStudents.length;
+            const totalPages = Math.ceil(totalItems / itemsPerPage);
+            
+            // Reset to page 1 if current page is beyond total pages
+            if (currentPage > totalPages && totalPages > 0) {
+                currentPage = 1;
             }
 
-            if (searchTerm) {
-                filteredStudents = filteredStudents.filter(s => s.name.toLowerCase().includes(searchTerm));
-            }
-
-            // Sort students alphabetically by name
-            filteredStudents.sort((a, b) => a.name.localeCompare(b.name));
+            // Calculate pagination
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const paginatedStudents = filteredStudents.slice(startIndex, endIndex);
 
             if (filteredStudents.length === 0) {
                 const colspanCount = canViewFinancialInfo ? 5 : 4;
                 listBody.innerHTML = `<tr><td colspan="${colspanCount}" class="text-center py-10 text-stone-500">Nenhum aluno encontrado.</td></tr>`;
+                updatePaginationControls(0, 0, 0);
                 return;
             }
 
-            listBody.innerHTML = filteredStudents.map(student => `
+            listBody.innerHTML = paginatedStudents.map(student => `
                 <tr data-action="view-aluno" data-id="${student.id}" class="cursor-pointer">
                     <td class="font-medium">${student.name}</td>
                     <td><span class="status-tag status-${(student.status || 'pendente').toLowerCase()}">${student.status || 'Pendente'}</span></td>
@@ -1018,6 +1104,63 @@
                     </td>
                 </tr>
             `).join('');
+            
+            updatePaginationControls(totalItems, totalPages, startIndex + 1, Math.min(endIndex, totalItems));
+        }
+        
+        function updatePaginationControls(totalItems, totalPages, startItem, endItem) {
+            const paginationInfo = document.getElementById('pagination-info');
+            const prevBtn = document.getElementById('prev-page');
+            const nextBtn = document.getElementById('next-page');
+            const pageNumbers = document.getElementById('page-numbers');
+            
+            if (totalItems === 0) {
+                paginationInfo.textContent = 'Nenhum item encontrado';
+                prevBtn.disabled = true;
+                nextBtn.disabled = true;
+                pageNumbers.innerHTML = '';
+                return;
+            }
+            
+            paginationInfo.textContent = `Mostrando ${startItem}-${endItem} de ${totalItems} alunos`;
+            
+            prevBtn.disabled = currentPage <= 1;
+            nextBtn.disabled = currentPage >= totalPages;
+            
+            // Generate page numbers
+            let pageNumbersHTML = '';
+            const maxVisiblePages = 5;
+            let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+            let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+            
+            if (endPage - startPage < maxVisiblePages - 1) {
+                startPage = Math.max(1, endPage - maxVisiblePages + 1);
+            }
+            
+            for (let i = startPage; i <= endPage; i++) {
+                const isActive = i === currentPage;
+                pageNumbersHTML += `
+                    <button class="page-number-btn ${isActive ? 'active' : ''}" data-page="${i}">
+                        ${i}
+                    </button>
+                `;
+            }
+            
+            pageNumbers.innerHTML = pageNumbersHTML;
+            
+            // Add click events to page number buttons
+            document.querySelectorAll('.page-number-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    currentPage = parseInt(btn.dataset.page);
+                    const filter = document.querySelector('#alunos-filter-buttons .filter-btn.active').dataset.filter;
+                    updateAlunosList(filter);
+                });
+            });
+        }
+        
+        // Reset pagination when switching sections
+        function resetPagination() {
+            currentPage = 1;
         }
 
         function renderTurmasSection() {
@@ -1212,16 +1355,21 @@
                     c.sectors && c.sectors.includes('professor') && 
                     (c.name === currentUserName || c.email === currentUserName || c.id === userId)
                 );
-                const teacherNameToFilter = teacherCollaborator ? teacherCollaborator.name : currentUserName;
+                const originalTeacherName = teacherCollaborator ? teacherCollaborator.name : currentUserName;
+                
+                // Use smart name matching to find the actual teacher name in schedules
+                const teacherNameToFilter = findTeacherByName(originalTeacherName) || originalTeacherName;
                 
                 // Show debug info if teacher has no schedules
                 const teacherSchedules = schedules.filter(s => s.teacher === teacherNameToFilter);
                 if (teacherSchedules.length === 0) {
                     console.log('DEBUG: Teacher schedule mapping', {
                         currentUserName,
+                        originalTeacherName,
                         teacherNameToFilter,
                         availableTeachersInSchedules: [...new Set(schedules.map(s => s.teacher))],
-                        collaboratorTeachers: collaborators.filter(c => c.sectors && c.sectors.includes('professor')).map(c => c.name)
+                        collaboratorTeachers: collaborators.filter(c => c.sectors && c.sectors.includes('professor')).map(c => c.name),
+                        smartMappingResult: findTeacherByName(originalTeacherName)
                     });
                     
                     // Show helper message for teachers
@@ -1258,8 +1406,29 @@
             }
         }
 
+        // Helper function to find teacher by first name matching
+        function findTeacherByName(searchName) {
+            if (!searchName) return null;
+            
+            // First try exact match
+            const exactMatch = schedules.find(s => s.teacher === searchName);
+            if (exactMatch) return searchName;
+            
+            // Then try first name matching
+            const searchFirstName = searchName.trim().split(' ')[0].toLowerCase();
+            const teachers = [...new Set(schedules.map(s => s.teacher))];
+            
+            const firstNameMatch = teachers.find(teacher => {
+                const teacherFirstName = teacher.trim().split(' ')[0].toLowerCase();
+                return teacherFirstName === searchFirstName;
+            });
+            
+            return firstNameMatch || null;
+        }
+
         function calculateWeeklyHours(teacherName) {
-            const teacherSchedules = schedules.filter(s => s.teacher === teacherName && s.type !== 'break');
+            const actualTeacherName = findTeacherByName(teacherName) || teacherName;
+            const teacherSchedules = schedules.filter(s => s.teacher === actualTeacherName && s.type !== 'break');
             return teacherSchedules.length; // Each class = 1 hour
         }
 
@@ -1283,7 +1452,8 @@
             let filteredSchedules = [...schedules];
 
             if (teacherFilter !== 'all') {
-                filteredSchedules = filteredSchedules.filter(s => s.teacher === teacherFilter);
+                const actualTeacherName = findTeacherByName(teacherFilter) || teacherFilter;
+                filteredSchedules = filteredSchedules.filter(s => s.teacher === actualTeacherName);
             }
             
             // Debug log for teachers to help identify mapping issues
@@ -1326,9 +1496,10 @@
                         <div class="text-sm font-medium text-stone-700 uppercase tracking-wide mb-3 text-center">Resumo da Carga Horária Semanal</div>
                         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mb-3">
                             ${Object.entries(teacherHours).map(([name, hours]) => `
-                                <div class="bg-white rounded-lg p-2 text-center border" style="border-color: #F1D24B40;">
-                                    <div class="text-lg font-bold text-stone-800">${hours}h</div>
-                                    <div class="text-xs text-stone-600">${name}</div>
+                                <div class="rounded-lg p-3 text-center border" style="background-color: #F1D24B20; border-color: #F1D24B40;">
+                                    <div class="text-sm font-medium uppercase tracking-wide" style="color: #F1D24B;">Carga Semanal</div>
+                                    <div class="text-2xl font-bold mt-1" style="color: #8B6914;">${hours} horas</div>
+                                    <div class="text-xs mt-1" style="color: #F1D24B;">${name}</div>
                                 </div>
                             `).join('')}
                         </div>
@@ -3366,6 +3537,101 @@
             openHtmlInNewWindow("Cronogramas Pedagógicos (CPs)", docHtml);
         }
 
+        // --- Debug Functions ---
+        function debugSyncStatus() {
+            if (currentUserRole !== 'admin') return;
+            
+            const syncInfo = {
+                isDevelopmentMode: window.isDevelopmentMode,
+                hasFirebase: !!db,
+                currentUser: currentUserName,
+                currentRole: currentUserRole,
+                challengeContent: challengeContent,
+                localStorage: localStorage.getItem('slap-challenge-content'),
+                timestamp: new Date().toISOString()
+            };
+            
+            document.getElementById('form-modal-title').textContent = 'Debug: Status de Sincronização';
+            document.getElementById('form-modal-content-area').innerHTML = `
+                <div class="space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <h4 class="font-semibold text-blue-800 mb-2">Modo de Execução</h4>
+                            <div class="text-sm">
+                                <div class="flex justify-between">
+                                    <span>Modo:</span>
+                                    <span class="font-medium ${window.isDevelopmentMode ? 'text-orange-600' : 'text-green-600'}">
+                                        ${window.isDevelopmentMode ? 'Desenvolvimento (Local)' : 'Produção (Firebase)'}
+                                    </span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>Firebase:</span>
+                                    <span class="font-medium ${db ? 'text-green-600' : 'text-red-600'}">
+                                        ${db ? 'Conectado' : 'Desconectado'}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                            <h4 class="font-semibold text-green-800 mb-2">Usuário Atual</h4>
+                            <div class="text-sm">
+                                <div class="flex justify-between">
+                                    <span>Nome:</span>
+                                    <span class="font-medium">${currentUserName}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>Papel:</span>
+                                    <span class="font-medium">${currentUserRole}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-semibold text-stone-800 mb-3">Conteúdo Atual do Desafio</h4>
+                        <div class="bg-stone-50 border border-stone-200 rounded-lg p-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="font-medium">Mês:</span> ${challengeContent.month || 'N/A'}
+                                </div>
+                                <div>
+                                    <span class="font-medium">Subtítulo:</span> ${challengeContent.subtitle || 'N/A'}
+                                </div>
+                                <div>
+                                    <span class="font-medium">Vídeo:</span> ${challengeContent.videoUrl ? 'Definido' : 'Não definido'}
+                                </div>
+                                <div>
+                                    <span class="font-medium">Deadline:</span> ${challengeContent.deadline ? new Date(challengeContent.deadline).toLocaleString('pt-BR') : 'N/A'}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                        <h5 class="font-medium text-yellow-800 mb-2">Diagnóstico:</h5>
+                        <div class="text-sm text-yellow-700 space-y-1">
+                            ${window.isDevelopmentMode ? 
+                                '<p>⚠️ <strong>Modo Desenvolvimento:</strong> Mudanças são salvas apenas localmente (localStorage). Para testar sincronização, use o modo produção com Firebase.</p>' :
+                                '<p>✅ <strong>Modo Produção:</strong> Mudanças são compartilhadas entre todos os usuários via Firebase em tempo real.</p>'
+                            }
+                            ${!db && !window.isDevelopmentMode ? 
+                                '<p>❌ <strong>Firebase desconectado:</strong> Sistema está usando localStorage como fallback.</p>' : ''
+                            }
+                            <p>🔄 <strong>Sincronização:</strong> ${window.isDevelopmentMode ? 'Desabilitada (modo local)' : 'Ativa para todos os usuários'}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="text-right">
+                        <button type="button" data-action="close-form-modal" class="secondary-btn">Fechar</button>
+                    </div>
+                </div>
+            `;
+            document.getElementById('form-modal').classList.add('visible');
+            
+            console.log('SYNC DEBUG INFO:', syncInfo);
+        }
+        
         // --- Teacher Debug Functions ---
         function showTeacherMapping() {
             if (currentUserRole !== 'admin') return;
@@ -3634,6 +3900,11 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                             </svg>
                             Editar Conteúdo
+                        </button>
+                        ` : ''}
+                        ${['admin'].includes(currentUserRole) ? `
+                        <button class="bg-stone-600 text-white px-3 py-1 rounded text-sm" data-action="debug-sync-status">
+                            Debug Sync
                         </button>
                         ` : ''}
                     </div>
@@ -3952,7 +4223,7 @@
             if (challengeContent.videoUrl) {
                 container.innerHTML = `
                     <div class="mb-4">
-                        <p class="font-medium text-stone-700 mb-2">Understanding ZPD</p>
+                        <p class="font-medium text-stone-700 mb-2">Quiz Pedagógico</p>
                         <div class="aspect-video bg-stone-200 rounded-lg overflow-hidden">
                             <video controls class="w-full h-full">
                                 <source src="${challengeContent.videoUrl}" type="video/mp4">
@@ -5214,6 +5485,7 @@
                 if (navTarget && !navTarget.disabled) {
                     const pageKey = navTarget.dataset.target;
                     if (pageKey && pageRenderers[pageKey]) {
+                        resetPagination();
                         pageRenderers[pageKey]();
                         setActiveNavItem(navTarget);
                     }
@@ -5293,6 +5565,7 @@
                         'edit-challenge-content': openChallengeContentForm,
                         'delete-calendar-event': () => deleteCalendarEvent(id),
                         'show-teacher-mapping': showTeacherMapping,
+                        'debug-sync-status': debugSyncStatus,
                     };
                     if (actionHandlers[action]) {
                         actionHandlers[action]();
