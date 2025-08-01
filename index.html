@@ -1429,7 +1429,29 @@
         function calculateWeeklyHours(teacherName) {
             const actualTeacherName = findTeacherByName(teacherName) || teacherName;
             const teacherSchedules = schedules.filter(s => s.teacher === actualTeacherName && s.type !== 'break');
-            return teacherSchedules.length; // Each class = 1 hour
+            
+            let totalHours = 0;
+            teacherSchedules.forEach(schedule => {
+                const duration = calculateClassDuration(schedule.startTime, schedule.endTime);
+                totalHours += duration;
+            });
+            
+            return totalHours;
+        }
+
+        function calculateClassDuration(startTime, endTime) {
+            // Convert time strings (HH:MM) to minutes
+            const [startHour, startMinute] = startTime.split(':').map(Number);
+            const [endHour, endMinute] = endTime.split(':').map(Number);
+            
+            const startTotalMinutes = startHour * 60 + startMinute;
+            const endTotalMinutes = endHour * 60 + endMinute;
+            
+            // Calculate duration in hours
+            const durationMinutes = endTotalMinutes - startTotalMinutes;
+            const durationHours = durationMinutes / 60;
+            
+            return durationHours;
         }
 
         function checkTimeConflict(teacher, day, startTime, endTime, excludeId = null) {
@@ -1475,9 +1497,9 @@
                 const weeklyHours = calculateWeeklyHours(teacherFilter);
                 hoursContainer.innerHTML = `
                     <div class="rounded-lg p-4 text-center border" style="background-color: #F1D24B20; border-color: #F1D24B40;">
-                        <div class="text-sm font-medium uppercase tracking-wide" style="color: #F1D24B;">Carga Horária Semanal</div>
-                        <div class="text-3xl font-bold mt-1" style="color: #8B6914;">${weeklyHours} horas</div>
-                        <div class="text-xs mt-1" style="color: #F1D24B;">${teacherFilter}</div>
+                        <div class="text-sm font-medium uppercase tracking-wide text-stone-700">Carga Horária Semanal</div>
+                        <div class="text-3xl font-bold mt-1 text-stone-800">${weeklyHours} horas</div>
+                        <div class="text-xs mt-1 text-stone-600">${teacherFilter}</div>
                     </div>
                 `;
             } else if (teacherFilter === 'all' && canViewAllHours && hoursContainer) {
@@ -1497,9 +1519,9 @@
                         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mb-3">
                             ${Object.entries(teacherHours).map(([name, hours]) => `
                                 <div class="rounded-lg p-3 text-center border" style="background-color: #F1D24B20; border-color: #F1D24B40;">
-                                    <div class="text-sm font-medium uppercase tracking-wide" style="color: #F1D24B;">Carga Semanal</div>
-                                    <div class="text-2xl font-bold mt-1" style="color: #8B6914;">${hours} horas</div>
-                                    <div class="text-xs mt-1" style="color: #F1D24B;">${name}</div>
+                                    <div class="text-sm font-medium uppercase tracking-wide text-stone-700">Carga Semanal</div>
+                                    <div class="text-2xl font-bold mt-1 text-stone-800">${hours} horas</div>
+                                    <div class="text-xs mt-1 text-stone-600">${name}</div>
                                 </div>
                             `).join('')}
                         </div>
