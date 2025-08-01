@@ -2870,29 +2870,36 @@ function openCalendarEventForm(eventId = null) {
             mainNav.innerHTML = menuItemsHTML;
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', () => {
             const pageRenderers = { 'inicio': renderInicioSection, 'calendario': renderCalendarioSection, 'diretrizes': renderDiretrizesSection, 'alunos': renderAlunosSection, 'turmas': renderTurmasSection, 'vips': renderVipsSection, 'eventos': renderEventosSection, 'orcamentos': renderOrcamentosSection, 'tarefas': renderTarefasSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection, 'cancelamentos': renderCancelamentosSection, 'colaboradores': renderColaboradoresSection, 'banco-de-fotos': renderBancoDeFotosSection, 'cps': renderCPsSection, 'dojo': renderDojoSection };
             
             document.body.addEventListener('click', (event) => {
+                // --- LÓGICA DE NAVEGAÇÃO (MENU LATERAL) ---
                 const navTarget = event.target.closest('.nav-item');
                 if (navTarget && !navTarget.disabled) {
                     const pageKey = navTarget.dataset.target;
+                    
                     if (pageKey === 'desafio-pedagogico') {
-        // IMPORTANTE: Insira o link final aqui
-        window.open('https://LINK_DO_DESAFIO_VAI_AQUI.COM', '_blank');
-        return; // Impede o código de continuar
-    }
+                        // IMPORTANTE: Insira o link final aqui
+                        window.open('https://LINK_DO_DESAFIO_VAI_AQUI.COM', '_blank');
+                        return; // Impede o código de continuar
+                    }
 
-    if (pageKey && pageRenderers[pageKey]) {
+                    // Se a chave da página existir nos renderizadores, executa a função e ativa o item do menu
                     if (pageKey && pageRenderers[pageKey]) {
                         pageRenderers[pageKey]();
                         setActiveNavItem(navTarget);
                     }
+                    return; // Retorna para não processar o mesmo clique como uma ação
                 }
                 
+                // --- LÓGICA DE AÇÕES (BOTÕES, ÍCONES, ETC.) ---
                 const actionTarget = event.target.closest('[data-action]');
                 if (actionTarget) {
-                    if(actionTarget.closest('.modal-content') && !['close-modal', 'export-vip-pef', 'export-turma-pef'].includes(actionTarget.dataset.action)) event.stopPropagation();
+                    // Impede que cliques dentro do modal fechem o modal, exceto para botões específicos
+                    if(actionTarget.closest('.modal-content') && !['close-modal', 'export-vip-pef', 'export-turma-pef'].includes(actionTarget.dataset.action)) {
+                        event.stopPropagation();
+                    }
                     
                     const { action, id, collection, folderName, nivelId, aulaIndex, direction, unitId, lessonNumber, status } = actionTarget.dataset;
                     const actionHandlers = {
@@ -2901,10 +2908,10 @@ function openCalendarEventForm(eventId = null) {
                         'view-aluno': () => openAlunoModal(id),
                         'edit-aluno': () => openAlunoForm(id),
                         'add-calendar-event': () => openCalendarEventForm(),
-    'edit-calendar-event': () => openCalendarEventForm(id),
-    'add-guideline': () => openGuidelineForm(),
-    'edit-guideline': () => openGuidelineForm(id),
-    'delete-guideline': () => deleteItem('guidelines', id),
+                        'edit-calendar-event': () => openCalendarEventForm(id),
+                        'add-guideline': () => openGuidelineForm(),
+                        'edit-guideline': () => openGuidelineForm(id),
+                        'delete-guideline': () => deleteItem('guidelines', id),
                         'add-turma': () => openTurmaForm(),
                         'open-turma-pef': () => openTurmaPefModal(id),
                         'edit-turma': () => openTurmaForm(id),
@@ -2967,11 +2974,13 @@ function openCalendarEventForm(eventId = null) {
                     }
                 }
 
+                // Listener específico para checkboxes de tarefas
                 if(event.target.matches('input[type="checkbox"][data-action="toggle-task"]')) {
                     const taskId = event.target.dataset.id;
                     const isCompleted = event.target.checked;
                     toggleTaskCompletion(taskId, isCompleted);
                 }
+                // Listener específico para checkboxes de despesas
                  if(event.target.matches('input[type="checkbox"][data-action="toggle-expense"]')) {
                     const expenseId = event.target.dataset.id;
                     const isPaid = event.target.checked;
@@ -2979,8 +2988,11 @@ function openCalendarEventForm(eventId = null) {
                 }
             });
 
+            // Listeners para os botões de logout
             document.getElementById('logout-button').addEventListener('click', handleLogout);
             document.getElementById('pending-logout').addEventListener('click', handleLogout);
+            
+            // Inicia a aplicação
             initializeFirebase();
         });
     </script>
