@@ -62,6 +62,7 @@
         .task-card:hover { border-color: #F1D24B; box-shadow: 0 4px 12px rgba(0,0,0,0.1); transform: translateY(-2px); }
         .user-tag { display: inline-flex; align-items: center; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; }
         .tag-admin { background-color: #E5E7EB; color: #374151; }
+        .tag-break { background-color: #FEF3C7; color: #92400E; }
         .deadline-text { font-weight: 600; color: #57534e; }
         .deadline-overdue { color: #b91c1c; }
         .task-delete-btn { background: none; border: none; cursor: pointer; color: #9ca3af; transition: color 0.2s; }
@@ -644,7 +645,8 @@
             document.getElementById('main-title').textContent = 'Dashboard';
             document.getElementById('main-description').textContent = 'Visão geral das suas atividades e da equipe.';
             
-            // Calculate statistics
+            // Calculate statistics based on user role
+            const isTeacher = currentUserRole === 'teacher';
             const totalStudents = students.length;
             const activeStudents = students.filter(s => s.status === 'Ativo').length;
             const totalTurmas = turmas.length;
@@ -659,13 +661,14 @@
                     
                     <!-- Compact Statistics -->
                     <div class="grid grid-cols-2 ${canViewFinancialInfo ? 'md:grid-cols-4' : 'md:grid-cols-3'} gap-4">
+                        ${!isTeacher ? `
                         <div class="bg-white p-4 rounded-lg shadow-sm border border-stone-200 text-center">
                             <p class="text-2xl font-bold text-blue-600">${totalStudents}</p>
                             <p class="text-sm text-stone-600">Total Alunos</p>
-                        </div>
+                        </div>` : ''}
                         <div class="bg-white p-4 rounded-lg shadow-sm border border-stone-200 text-center">
                             <p class="text-2xl font-bold text-green-600">${activeStudents}</p>
-                            <p class="text-sm text-stone-600">Ativos</p>
+                            <p class="text-sm text-stone-600">Alunos Ativos</p>
                         </div>
                         <div class="bg-white p-4 rounded-lg shadow-sm border border-stone-200 text-center">
                             <p class="text-2xl font-bold text-purple-600">${totalTurmas}</p>
@@ -679,20 +682,34 @@
                         ` : ''}
                     </div>
                     
-                    <!-- Employee Highlight Section - Compact -->
-                    <div class="bg-white p-4 rounded-lg shadow-sm border border-stone-200">
-                        <div class="flex justify-between items-start mb-3">
-                            <h4 class="text-base font-semibold text-stone-800">Destaque do Mês</h4>
-                            ${currentUserRole === 'admin' ? `
-                            <button class="text-stone-500 hover:text-stone-700 p-1" data-action="edit-monthly-highlight" title="Editar destaque">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                                </svg>
-                            </button>
-                            ` : ''}
+                    <!-- Employee Highlight and Date Section -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Employee Highlight Section - Compact -->
+                        <div class="bg-white p-4 rounded-lg shadow-sm border border-stone-200">
+                            <div class="flex justify-between items-start mb-3">
+                                <h4 class="text-base font-semibold text-stone-800">Destaque do Mês</h4>
+                                ${currentUserRole === 'admin' ? `
+                                <button class="text-stone-500 hover:text-stone-700 p-1" data-action="edit-monthly-highlight" title="Editar destaque">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                    </svg>
+                                </button>
+                                ` : ''}
+                            </div>
+                            <div id="monthly-highlight-content" class="text-sm">
+                                <!-- Monthly highlight content will be rendered here -->
+                            </div>
                         </div>
-                        <div id="monthly-highlight-content" class="text-sm">
-                            <!-- Monthly highlight content will be rendered here -->
+
+                        <!-- Current Date Card -->
+                        <div class="bg-white p-6 rounded-lg shadow-sm border border-stone-200 flex items-center justify-center">
+                            <div class="text-center">
+                                <h4 class="text-lg font-semibold text-stone-800 mb-3">Hoje</h4>
+                                <div class="text-4xl font-bold text-blue-600 mb-2">${new Date().getDate()}</div>
+                                <div class="text-lg text-stone-600 mb-1">${getCurrentMonthName()}</div>
+                                <div class="text-base text-stone-500 mb-2">${new Date().getFullYear()}</div>
+                                <div class="text-sm text-stone-400">${getCurrentDayName()}</div>
+                            </div>
                         </div>
                     </div>
                     
@@ -726,11 +743,160 @@
                             </button>
                         </div>
                     </div>
+
+                    <!-- Enhanced Dashboard Sections -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Top 3 Dojo Ranking -->
+                        <div class="bg-white p-6 rounded-lg shadow-sm border border-stone-200">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="text-lg font-semibold text-stone-800">Top 3 Dojo</h3>
+                                <button class="text-blue-600 text-sm hover:text-blue-800 nav-item" data-target="dojo">Ver ranking completo</button>
+                            </div>
+                            <div class="space-y-3">
+                                ${getTop3DojoRanking().map((student, index) => `
+                                    <div class="flex items-center gap-3 p-3 border border-stone-200 rounded-lg hover:bg-stone-50">
+                                        <div class="w-8 h-8 flex items-center justify-center rounded-full ${index === 0 ? 'bg-yellow-100 text-yellow-800' : index === 1 ? 'bg-gray-100 text-gray-800' : 'bg-orange-100 text-orange-800'}">
+                                            <span class="text-sm font-bold">${index + 1}°</span>
+                                        </div>
+                                        <div class="flex-1">
+                                            <p class="text-sm font-medium text-stone-800">${student.name}</p>
+                                            <p class="text-xs text-stone-500">${student.points} pontos</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                                ${getTop3DojoRanking().length === 0 ? '<p class="text-sm text-stone-500 text-center py-4">Ainda não há ranking</p>' : ''}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Teacher-specific Weekly Schedule Preview -->
+                    ${isTeacher ? `
+                    <div class="bg-white p-6 rounded-lg shadow-sm border border-stone-200">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-semibold text-stone-800">Minha Grade da Semana</h3>
+                            <button class="text-blue-600 text-sm hover:text-blue-800 nav-item" data-target="grade">Ver grade completa</button>
+                        </div>
+                        <div class="grid grid-cols-5 gap-2">
+                            ${["Segunda", "Terça", "Quarta", "Quinta", "Sexta"].map(day => `
+                                <div class="text-center">
+                                    <p class="text-xs font-medium text-stone-600 mb-2">${day}</p>
+                                    <div class="space-y-1">
+                                        ${getTeacherDaySchedule(day, currentUserName).slice(0, 3).map(schedule => `
+                                            <div class="bg-blue-50 text-xs p-1 rounded border border-blue-200">
+                                                ${schedule.startTime} - ${schedule.student}
+                                            </div>
+                                        `).join('')}
+                                        ${getTeacherDaySchedule(day, currentUserName).length > 3 ? `<div class="text-xs text-stone-500">+${getTeacherDaySchedule(day, currentUserName).length - 3} mais</div>` : ''}
+                                        ${getTeacherDaySchedule(day, currentUserName).length === 0 ? '<div class="text-xs text-stone-400">Sem aulas</div>' : ''}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>` : ''}
+
+                    <!-- Redes SLAP -->
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
+                        <h4 class="text-lg font-bold text-stone-800 mb-4">Redes SLAP</h4>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                            <a href="https://instagram.com/speakinglikeapro" target="_blank" class="p-3 bg-pink-50 hover:bg-pink-100 rounded-lg text-center transition-colors">
+                                <svg class="w-6 h-6 text-pink-600 mx-auto mb-1" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                                </svg>
+                                <p class="text-xs font-medium text-pink-700">Instagram</p>
+                            </a>
+                            <a href="https://youtube.com/@speakinglikeapro" target="_blank" class="p-3 bg-red-50 hover:bg-red-100 rounded-lg text-center transition-colors">
+                                <svg class="w-6 h-6 text-red-600 mx-auto mb-1" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                                </svg>
+                                <p class="text-xs font-medium text-red-700">YouTube</p>
+                            </a>
+                            <a href="https://tiktok.com/@speakinglikeapro" target="_blank" class="p-3 bg-gray-50 hover:bg-gray-100 rounded-lg text-center transition-colors">
+                                <svg class="w-6 h-6 text-gray-600 mx-auto mb-1" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/>
+                                </svg>
+                                <p class="text-xs font-medium text-gray-700">TikTok</p>
+                            </a>
+                            <a href="https://linkedin.com/company/speaking-like-a-pro" target="_blank" class="p-3 bg-blue-50 hover:bg-blue-100 rounded-lg text-center transition-colors">
+                                <svg class="w-6 h-6 text-blue-600 mx-auto mb-1" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                                </svg>
+                                <p class="text-xs font-medium text-blue-700">LinkedIn</p>
+                            </a>
+                        </div>
+                    </div>
                 </div>
             `;
             
             // Initialize monthly highlight
             renderMonthlyHighlight();
+        }
+
+        // Dashboard helper functions
+        function getPendingTasks() {
+            return tasks.filter(task => !task.completed);
+        }
+
+        function getUpcomingEvents() {
+            const today = new Date();
+            const nextWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+            return events.filter(event => {
+                const eventDate = new Date(event.dataEvento + 'T00:00:00');
+                return eventDate >= today && eventDate <= nextWeek;
+            }).sort((a, b) => new Date(a.dataEvento) - new Date(b.dataEvento));
+        }
+
+        function getTeacherDaySchedule(day, teacherName) {
+            return schedules.filter(s => s.day === day && s.teacher === teacherName && s.type !== 'break')
+                           .sort((a, b) => a.startTime.localeCompare(b.startTime));
+        }
+
+        function getNewStudentsThisMonth() {
+            const now = new Date();
+            const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+            return students.filter(student => {
+                if (!student.createdAt) return false;
+                const createdDate = new Date(student.createdAt);
+                return createdDate >= firstDayOfMonth;
+            }).length;
+        }
+
+        function getCancellationsThisMonth() {
+            const now = new Date();
+            const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+            return cancellations.filter(cancellation => {
+                const cancellationDate = new Date(cancellation.cancellationDate + 'T00:00:00');
+                return cancellationDate >= firstDayOfMonth;
+            }).length;
+        }
+
+        function getCompletedTasksThisWeek() {
+            const now = new Date();
+            const weekStart = new Date(now.setDate(now.getDate() - now.getDay()));
+            return tasks.filter(task => {
+                if (!task.completed || !task.completedAt) return false;
+                const completedDate = new Date(task.completedAt);
+                return completedDate >= weekStart;
+            }).length;
+        }
+
+        function getTotalTeachingHours() {
+            return schedules.filter(s => s.type !== 'break').length;
+        }
+
+        function getTop3DojoRanking() {
+            return dojoRanking.sort((a, b) => b.points - a.points).slice(0, 3);
+        }
+
+        function getCurrentMonthName() {
+            const months = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 
+                           'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+            return months[new Date().getMonth()];
+        }
+
+        function getCurrentDayName() {
+            const days = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 
+                         'Quinta-feira', 'Sexta-feira', 'Sábado'];
+            return days[new Date().getDay()];
         }
         
         function initializeChart() {
@@ -1063,6 +1229,7 @@
                            ${addAulaButton}
                         </div>
                     </div>
+                    <div id="weekly-hours-container" class="mb-6"></div>
                     <div id="schedule-grid-container"></div>
                 </section>
             `;
@@ -1070,13 +1237,33 @@
             if (isTeacher) {
                 renderScheduleGrid(currentUserName);
             } else {
-                document.getElementById('teacher-filter').addEventListener('change', () => renderScheduleGrid(document.getElementById('teacher-filter').value));
+                const teacherFilter = document.getElementById('teacher-filter');
+                if (teacherFilter) {
+                    teacherFilter.addEventListener('change', () => renderScheduleGrid(teacherFilter.value));
+                }
                 renderScheduleGrid('all');
             }
         }
 
+        function calculateWeeklyHours(teacherName) {
+            const teacherSchedules = schedules.filter(s => s.teacher === teacherName && s.type !== 'break');
+            return teacherSchedules.length; // Each class = 1 hour
+        }
+
+        function checkTimeConflict(teacher, day, startTime, endTime, excludeId = null) {
+            return schedules.some(s => 
+                s.teacher === teacher && 
+                s.day === day && 
+                s.id !== excludeId &&
+                ((startTime >= s.startTime && startTime < s.endTime) || 
+                 (endTime > s.startTime && endTime <= s.endTime) ||
+                 (startTime <= s.startTime && endTime >= s.endTime))
+            );
+        }
+
         function renderScheduleGrid(teacherFilter) {
             const gridContainer = document.getElementById('schedule-grid-container');
+            const hoursContainer = document.getElementById('weekly-hours-container');
             if (!gridContainer) return;
 
             const days = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta"];
@@ -1086,22 +1273,78 @@
                 filteredSchedules = filteredSchedules.filter(s => s.teacher === teacherFilter);
             }
 
+            // Show weekly hours for specific teacher or all teachers summary
+            const canViewAllHours = ['admin', 'pedagogico', 'ap'].includes(currentUserRole);
+            
+            if (teacherFilter !== 'all' && hoursContainer) {
+                const weeklyHours = calculateWeeklyHours(teacherFilter);
+                hoursContainer.innerHTML = `
+                    <div class="bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-4 text-center">
+                        <div class="text-sm font-medium text-blue-600 uppercase tracking-wide">Carga Horária Semanal</div>
+                        <div class="text-3xl font-bold text-blue-800 mt-1">${weeklyHours} horas</div>
+                        <div class="text-xs text-blue-600 mt-1">${teacherFilter}</div>
+                    </div>
+                `;
+            } else if (teacherFilter === 'all' && canViewAllHours && hoursContainer) {
+                // Show summary of all teachers' hours
+                const teacherHours = {};
+                const teachers = collaborators.filter(c => c.sectors && c.sectors.includes('professor'));
+                
+                teachers.forEach(teacher => {
+                    teacherHours[teacher.name] = calculateWeeklyHours(teacher.name);
+                });
+                
+                const totalHours = Object.values(teacherHours).reduce((sum, hours) => sum + hours, 0);
+                
+                hoursContainer.innerHTML = `
+                    <div class="bg-gradient-to-r from-green-50 to-green-100 border border-green-200 rounded-lg p-4">
+                        <div class="text-sm font-medium text-green-600 uppercase tracking-wide mb-3 text-center">Resumo da Carga Horária Semanal</div>
+                        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mb-3">
+                            ${Object.entries(teacherHours).map(([name, hours]) => `
+                                <div class="bg-white rounded-lg p-2 text-center border border-green-100">
+                                    <div class="text-lg font-bold text-green-800">${hours}h</div>
+                                    <div class="text-xs text-green-600">${name}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                        <div class="text-center border-t border-green-200 pt-3">
+                            <div class="text-sm text-green-600">Total Geral</div>
+                            <div class="text-2xl font-bold text-green-800">${totalHours} horas</div>
+                        </div>
+                    </div>
+                `;
+            } else if (hoursContainer) {
+                hoursContainer.innerHTML = '';
+            }
+
             let gridHtml = `<div class="schedule-grid">`;
             days.forEach(day => {
                 gridHtml += `<div class="day-column"><h3 class="day-column-header">${day}</h3>`;
                 const dayClasses = filteredSchedules.filter(s => s.day === day).sort((a, b) => a.startTime.localeCompare(b.startTime));
                 if (dayClasses.length > 0) {
                     dayClasses.forEach(c => {
-                        const tagClass = c.type === 'vip' ? 'tag-vip' : 'tag-turma';
-                        const tagText = c.type === 'vip' ? 'VIP' : 'TURMA';
+                        let tagClass, tagText;
+                        if (c.type === 'break') {
+                            tagClass = 'tag-break';
+                            tagText = 'BREAK';
+                        } else if (c.type === 'vip') {
+                            tagClass = 'tag-vip';
+                            tagText = 'VIP';
+                        } else {
+                            tagClass = 'tag-turma';
+                            tagText = 'TURMA';
+                        }
+                        
                         const teacherName = teacherFilter === 'all' ? `<p class="text-xs text-stone-500"><em>(${c.teacher})</em></p>` : '';
+                        const studentInfo = c.type === 'break' ? 
+                            `<p class="font-bold text-stone-600">Intervalo</p>` : 
+                            `<p class="font-bold text-stone-800">${c.student}</p><p class="text-sm text-stone-700">${c.level}</p>`;
                         
                         gridHtml += `
                             <div class="class-entry" data-action="view-schedule" data-id="${c.id}">
                                 <span class="class-tag ${tagClass}">${tagText}</span>
                                 <p class="text-xs text-stone-600">${c.startTime} - ${c.endTime}</p>
-                                <p class="font-bold text-stone-800">${c.student}</p>
-                                <p class="text-sm text-stone-700">${c.level}</p>
+                                ${studentInfo}
                                 ${teacherName}
                             </div>`;
                     });
@@ -2263,13 +2506,13 @@
 
             const teacherOptions = collaborators.filter(c => c.sectors && c.sectors.includes('professor')).map(c => `<option value="${c.name}" ${schedule?.teacher === c.name ? 'selected' : ''}>${c.name}</option>`).join('');
             const dayOptions = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Seg/Qua", "Ter/Qui"].map(d => `<option value="${d}" ${schedule?.day === d ? 'selected' : ''}>${d}</option>`).join('');
-            const typeOptions = ["vip", "turma"].map(t => `<option value="${t}" ${schedule?.type === t ? 'selected' : ''}>${t.toUpperCase()}</option>`).join('');
+            const typeOptions = ["vip", "turma", "break"].map(t => `<option value="${t}" ${schedule?.type === t ? 'selected' : ''}>${t === 'break' ? 'BREAK' : t.toUpperCase()}</option>`).join('');
             const levelOptions = cps.map(cp => `<option value="${cp.title}" ${schedule?.level === cp.title ? 'selected' : ''}>${cp.title}</option>`).join('') + `<option value="outro">Outro (especificar)</option>`;
             
             let formHtml = `<form id="form-modal-body" class="space-y-4">
                 <input type="hidden" id="schedule-id" value="${scheduleId || ''}">
-                <div><label class="font-medium text-sm">Aluno/Turma</label><input type="text" id="schedule-student" class="form-input" required value="${schedule?.student || ''}" ${isTeacher ? 'disabled' : ''}></div>
-                <div>
+                <div class="schedule-student-field"><label class="font-medium text-sm">Aluno/Turma</label><input type="text" id="schedule-student" class="form-input" required value="${schedule?.student || ''}" ${isTeacher ? 'disabled' : ''}></div>
+                <div class="schedule-level-field">
                     <label class="font-medium text-sm">Nível</label>
                     <select id="schedule-level" class="form-input" required ${isTeacher ? 'disabled' : ''}>${levelOptions}</select>
                     <input type="text" id="schedule-level-custom" class="form-input mt-2 hidden" placeholder="Digite o nível personalizado" ${isTeacher ? 'disabled' : ''}>
@@ -2283,6 +2526,10 @@
                     <div><label class="font-medium text-sm">Início</label><input type="time" id="schedule-start" class="form-input" required value="${schedule?.startTime || ''}" ${isTeacher ? 'disabled' : ''}></div>
                     <div><label class="font-medium text-sm">Fim</label><input type="time" id="schedule-end" class="form-input" required value="${schedule?.endTime || ''}" ${isTeacher ? 'disabled' : ''}></div>
                 </div>
+                <div id="conflict-warning" class="hidden bg-red-50 border border-red-200 rounded-lg p-3 text-red-700">
+                    <strong>⚠️ Conflito de horário detectado!</strong>
+                    <p>Já existe uma aula agendada para este professor neste horário.</p>
+                </div>
                 ${!isTeacher ? `<div class="pt-4 flex justify-end gap-2">${scheduleId ? `<button type="button" class="danger-btn" data-action="delete-item" data-collection="schedules" data-id="${scheduleId}">Apagar</button>` : ''}<button type="submit" class="primary-btn w-auto">Salvar</button></div>` : ''}
             </form>`;
             document.getElementById('form-modal-content-area').innerHTML = formHtml;
@@ -2292,6 +2539,54 @@
             levelSelect.addEventListener('change', (e) => {
                 levelCustomInput.classList.toggle('hidden', e.target.value !== 'outro');
             });
+
+            // Hide/show fields based on type selection
+            function updateFormFields() {
+                const type = document.getElementById('schedule-type').value;
+                const studentField = document.querySelector('.schedule-student-field');
+                const levelField = document.querySelector('.schedule-level-field');
+                const studentInput = document.getElementById('schedule-student');
+                const levelSelect = document.getElementById('schedule-level');
+                
+                if (type === 'break') {
+                    studentField.style.display = 'none';
+                    levelField.style.display = 'none';
+                    studentInput.required = false;
+                    levelSelect.required = false;
+                } else {
+                    studentField.style.display = 'block';
+                    levelField.style.display = 'block';
+                    studentInput.required = true;
+                    levelSelect.required = true;
+                }
+            }
+
+            // Check for time conflicts
+            function checkConflicts() {
+                const teacher = document.getElementById('schedule-teacher').value;
+                const day = document.getElementById('schedule-day').value;
+                const startTime = document.getElementById('schedule-start').value;
+                const endTime = document.getElementById('schedule-end').value;
+                const scheduleId = document.getElementById('schedule-id').value;
+                const warning = document.getElementById('conflict-warning');
+                
+                if (teacher && day && startTime && endTime) {
+                    const hasConflict = checkTimeConflict(teacher, day, startTime, endTime, scheduleId);
+                    if (hasConflict) {
+                        warning.classList.remove('hidden');
+                    } else {
+                        warning.classList.add('hidden');
+                    }
+                }
+            }
+            
+            document.getElementById('schedule-type').addEventListener('change', updateFormFields);
+            document.getElementById('schedule-teacher').addEventListener('change', checkConflicts);
+            document.getElementById('schedule-day').addEventListener('change', checkConflicts);
+            document.getElementById('schedule-start').addEventListener('change', checkConflicts);
+            document.getElementById('schedule-end').addEventListener('change', checkConflicts);
+            
+            updateFormFields();
 
             document.getElementById('form-modal-body').onsubmit = saveScheduleEntry;
             document.getElementById('form-modal').classList.add('visible');
@@ -2329,11 +2624,12 @@
                 ? document.getElementById('schedule-level-custom').value
                 : levelSelect.value;
 
+            const scheduleType = document.getElementById('schedule-type').value;
             const baseData = { 
-                student: document.getElementById('schedule-student').value, 
-                level: levelValue, 
+                student: scheduleType === 'break' ? 'Break' : document.getElementById('schedule-student').value, 
+                level: scheduleType === 'break' ? 'N/A' : levelValue, 
                 teacher: document.getElementById('schedule-teacher').value, 
-                type: document.getElementById('schedule-type').value, 
+                type: scheduleType, 
                 startTime: document.getElementById('schedule-start').value, 
                 endTime: document.getElementById('schedule-end').value 
             };
@@ -3816,7 +4112,7 @@
             const contentArea = document.getElementById('content-area');
             
             contentArea.innerHTML = `
-                <div class="max-w-4xl mx-auto">
+                <div class="max-w-6xl mx-auto">
                     <div class="mb-6 flex justify-between items-center">
                         <input type="text" id="guidelines-search" class="guidelines-search" 
                                placeholder="Buscar diretrizes..." 
@@ -4426,6 +4722,11 @@
         window.selectAnswer = selectAnswer;
         window.nextQuestion = nextQuestion;
         window.startQuiz = startQuiz;
+        window.checkTimeConflict = checkTimeConflict;
+        window.showSection = function(sectionName) {
+            const navItem = document.querySelector(`[data-target="${sectionName}"]`);
+            if (navItem) navItem.click();
+        };
 
         function saveGuidelines() {
             localStorage.setItem('slap-guidelines', JSON.stringify(guidelines));
@@ -4619,9 +4920,9 @@
                 { key: 'grade', label: 'Grade', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" x2="16" y1="2" y2="6"></line><line x1="8" x2="8" y1="2" y2="6"></line><line x1="3" x2="21" y1="10" y2="10"></line></svg>', roles: ['admin', 'ap', 'pedagogico', 'financeiro', 'teacher'] },
                 { key: 'calendario', label: 'Calendário', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>', roles: ['admin', 'ap', 'pedagogico', 'financeiro', 'teacher', 'am'] },
                 { key: 'desafio-pedagogico', label: 'Desafio Pedagógico', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c3 3 9 3 12 0v-5"></path></svg>', roles: ['admin', 'pedagogico', 'teacher'] },
+                { key: 'english-quiz', label: 'English Quiz', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>', roles: null },
+
                 { key: 'diretrizes', label: 'Diretrizes', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14,2 14,8 20,8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10,9 9,9 8,9"></polyline></svg>', roles: ['admin', 'teacher'] },
-                { key: 'english-quiz', label: 'English Quiz', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11H7l5-7 5 7h-2M9 11v6h6v-6M9 11l3-3 3 3"></path></svg>', roles: null },
-                { key: 'brainflip', label: 'BrainFlip', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="7" rx="2" ry="2"></rect><path d="M5 15v4a2 2 0 0 0 2 2h4"></path><path d="M3 12h12"></path></svg>', roles: ['pedagogico', 'teacher'] },
                 { key: 'tarefas', label: 'Tarefas', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>', roles: ['admin', 'am', 'ap', 'pedagogico', 'financeiro', 'teacher'] },
                 { key: 'cps', label: 'CPs', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>', roles: ['admin', 'pedagogico', 'ap'] },
                 { key: 'eventos', label: 'Eventos', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3z"/><path d="M12.44 8.917a4 4 0 0 0-4.88 0C4.965 10.685 3 13.982 3 17.5V22h18v-4.5c0-3.518-1.965-6.815-4.56-8.583z"/></svg>', roles: ['admin', 'am', 'ap', 'pedagogico'] },
@@ -4641,7 +4942,7 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            const pageRenderers = { 'inicio': renderInicioSection, 'alunos': renderAlunosSection, 'turmas': renderTurmasSection, 'vips': renderVipsSection, 'eventos': renderEventosSection, 'orcamentos': renderOrcamentosSection, 'tarefas': renderTarefasSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection, 'cancelamentos': renderCancelamentosSection, 'colaboradores': renderColaboradoresSection, 'banco-de-fotos': renderBancoDeFotosSection, 'cps': renderCPsSection, 'dojo': renderDojoSection, 'calendario': renderCalendarioSection, 'desafio-pedagogico': renderDesafioPedagogicoSection, 'diretrizes': renderDiretrizesSection, 'english-quiz': renderEnglishQuizSection, 'brainflip': renderBrainFlipSection };
+            const pageRenderers = { 'inicio': renderInicioSection, 'alunos': renderAlunosSection, 'turmas': renderTurmasSection, 'vips': renderVipsSection, 'eventos': renderEventosSection, 'orcamentos': renderOrcamentosSection, 'tarefas': renderTarefasSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection, 'cancelamentos': renderCancelamentosSection, 'colaboradores': renderColaboradoresSection, 'banco-de-fotos': renderBancoDeFotosSection, 'cps': renderCPsSection, 'dojo': renderDojoSection, 'calendario': renderCalendarioSection, 'desafio-pedagogico': renderDesafioPedagogicoSection, 'diretrizes': renderDiretrizesSection, 'english-quiz': renderEnglishQuizSection };
             
             document.body.addEventListener('click', (event) => {
                 // Close modals when clicking overlay or close button
