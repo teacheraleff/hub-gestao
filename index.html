@@ -508,6 +508,9 @@
                 filteredStudents = filteredStudents.filter(s => s.name.toLowerCase().includes(searchTerm));
             }
 
+            // Sort students alphabetically by name
+            filteredStudents.sort((a, b) => a.name.localeCompare(b.name));
+
             if (filteredStudents.length === 0) {
                 listBody.innerHTML = '<tr><td colspan="5" class="text-center py-10 text-stone-500">Nenhum aluno encontrado.</td></tr>';
                 return;
@@ -1300,7 +1303,16 @@
 
             const teacherOptions = collaborators.filter(c => c.sectors?.includes('professor')).map(c => `<option value="${c.id}" data-name="${c.name}" ${turma?.teacherId === c.id ? 'selected' : ''}>${c.name}</option>`).join('');
             const levelOptions = cps.map(cp => `<option value="${cp.title}" ${turma?.level === cp.title ? 'selected' : ''}>${cp.title}</option>`).join('') + `<option value="outro">Outro (especificar)</option>`;
-            const studentOptions = students.filter(s => s.status === 'Ativo').map(s => `<option value="${s.id}" ${(turma?.studentIds || []).includes(s.id) ? 'selected' : ''}>${s.name}</option>`).join('');
+            
+            const studentCheckboxes = students
+                .filter(s => s.status === 'Ativo')
+                .sort((a, b) => a.name.localeCompare(b.name))
+                .map(s => `
+                    <div class="flex items-center">
+                        <input type="checkbox" id="student-${s.id}" value="${s.id}" name="turma-students" class="h-4 w-4 rounded" ${(turma?.studentIds || []).includes(s.id) ? 'checked' : ''}>
+                        <label for="student-${s.id}" class="ml-2 text-sm">${s.name}</label>
+                    </div>
+                `).join('');
 
             document.getElementById('form-modal-content-area').innerHTML = `
                 <form id="form-modal-body" class="space-y-4">
@@ -1317,7 +1329,12 @@
                         <div><label class="font-medium text-sm">Data de Início</label><input type="date" id="turma-startDate" class="form-input" value="${turma?.startDate || ''}"></div>
                         <div><label class="font-medium text-sm">Data de Finalização</label><input type="date" id="turma-endDate" class="form-input" value="${turma?.endDate || ''}"></div>
                     </div>
-                    <div><label class="font-medium text-sm">Alunos (selecione um ou mais)</label><select id="turma-students" class="form-input" multiple required style="height: 150px;">${studentOptions}</select></div>
+                    <div>
+                        <label class="font-medium text-sm">Alunos</label>
+                        <div id="turma-students-checkboxes" class="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-y-2 gap-x-4 max-h-48 overflow-y-auto p-3 border rounded-md bg-stone-50">
+                            ${studentCheckboxes}
+                        </div>
+                    </div>
                     <div class="flex justify-end gap-2">
                         ${turmaId ? `<button type="button" class="danger-btn" data-action="delete-item" data-collection="turmas" data-id="${turmaId}">Excluir</button>` : ''}
                         <button type="submit" class="primary-btn w-auto">Salvar Turma</button>
@@ -1349,7 +1366,7 @@
                 teacherId: selectedTeacherOption.value,
                 teacherName: selectedTeacherOption.getAttribute('data-name'),
                 level: levelValue,
-                studentIds: Array.from(document.getElementById('turma-students').selectedOptions).map(o => o.value),
+                studentIds: Array.from(document.querySelectorAll('input[name="turma-students"]:checked')).map(cb => cb.value),
                 semestre: document.getElementById('turma-semestre').value,
                 startDate: document.getElementById('turma-startDate').value,
                 endDate: document.getElementById('turma-endDate').value,
@@ -2774,8 +2791,13 @@
                             const button = actionTarget;
                             const group = button.closest('.pef-status-btn-group');
                             if (!group) return;
-                            group.querySelectorAll('button').forEach(btn => btn.classList.remove('active', 'P', 'F', 'PP'));
-                            button.classList.add('active', status);
+
+                            if (button.classList.contains('active')) {
+                                button.classList.remove('active', 'P', 'F', 'PP');
+                            } else {
+                                group.querySelectorAll('button').forEach(btn => btn.classList.remove('active', 'P', 'F', 'PP'));
+                                button.classList.add('active', status);
+                            }
                         },
                         'save-pef-lesson': () => savePefLesson(unitId, lessonNumber),
                         'add-event': openEventForm,
