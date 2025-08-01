@@ -333,16 +333,16 @@
 
     <div id="hub-view" class="hidden">
         <div id="app-container" class="min-h-screen md:flex bg-stone-50">
-            <aside class="md:w-64 bg-white md:border-r border-b border-stone-200 p-4 md:p-6 flex flex-col">
+            <aside class="md:w-64 bg-white md:border-r border-b border-stone-200 p-4 md:p-6 flex flex-col h-screen md:h-auto">
                 <div class="mb-4 text-center">
                     <img id="profile-picture" src="https://res.cloudinary.com/dqfi22uz0/image/upload/v1749349751/DBB440C2-684E-4DCF-9CD3-B2DDC18F1E53_3_vgocga.jpg" alt="Foto de Perfil" class="w-24 h-24 mx-auto rounded-full object-cover border-4 border-stone-200">
                 </div>
                 <h1 class="text-xl font-bold text-stone-800 text-center">Hub SLAP</h1>
                 <p id="welcome-message" class="text-center text-sm text-stone-600 mb-6"></p>
-                <nav id="main-navigation" class="space-y-1 flex-1">
+                <nav id="main-navigation" class="space-y-1 flex-1 overflow-y-auto">
                     <!-- Menu items are dynamically generated here -->
                 </nav>
-                <div class="mt-auto pt-4">
+                <div class="pt-4 border-t border-stone-200 mt-4">
                     <button id="logout-button" class="nav-item w-full text-left px-4 py-2.5 rounded-lg text-stone-700 hover:bg-red-50 hover:text-red-600 transition-colors flex items-center font-semibold">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-3"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
                         Sair
@@ -380,6 +380,40 @@
                 </button>
             </div>
             <div id="form-modal-content-area"></div>
+        </div>
+    </div>
+
+    <!-- Monthly Highlight Modal -->
+    <div id="monthly-highlight-modal" class="modal-overlay">
+        <div class="modal-content max-w-md">
+            <div class="modal-header">
+                <h4>Editar Destaque do Mês</h4>
+                <button data-action="close-highlight-modal" class="modal-close-btn">&times;</button>
+            </div>
+            <form id="monthly-highlight-form">
+                <div class="space-y-4">
+                    <div>
+                        <label class="font-medium text-sm">Nome do Funcionário</label>
+                        <input type="text" id="highlight-name" class="form-input" required>
+                    </div>
+                    <div>
+                        <label class="font-medium text-sm">URL da Foto (Cloudinary)</label>
+                        <input type="url" id="highlight-photo-url" class="form-input" placeholder="https://res.cloudinary.com/..." required>
+                    </div>
+                    <div>
+                        <label class="font-medium text-sm">Descrição</label>
+                        <textarea id="highlight-description" rows="4" class="form-input" placeholder="Descreva os méritos e conquistas..." required></textarea>
+                    </div>
+                    <div>
+                        <label class="font-medium text-sm">Premiação</label>
+                        <input type="text" id="highlight-award" class="form-input" placeholder="Ex: R$ 500 em vale-compras">
+                    </div>
+                    <div class="flex justify-end gap-2">
+                        <button type="button" data-action="close-highlight-modal" class="secondary-btn">Cancelar</button>
+                        <button type="submit" class="primary-btn w-auto">Salvar</button>
+                    </div>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -1328,7 +1362,10 @@
             }
 
             const addAulaButton = ['admin', 'ap', 'pedagogico'].includes(currentUserRole)
-                ? `<button class="primary-btn w-auto" data-action="add-schedule">+ Adicionar Aula</button>`
+                ? `<div class="flex gap-2">
+                     <button class="primary-btn w-auto" data-action="add-schedule">+ Adicionar Aula</button>
+                     <button class="secondary-btn w-auto" data-action="add-break">+ Adicionar Break</button>
+                   </div>`
                 : '';
                 
             const debugButton = ['admin'].includes(currentUserRole)
@@ -2721,6 +2758,103 @@
             } catch (error) { console.error("Error saving collaborator:", error); showErrorMessage("Erro", "Falha ao salvar o colaborador."); }
         }
 
+        function openBreakForm() {
+            clearModalHeaderButtons();
+            document.getElementById('form-modal-title').textContent = "Adicionar Break";
+            
+            const teacherOptions = collaborators.filter(c => c.sectors && c.sectors.includes('professor')).map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+            const dayOptions = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta"].map(d => `<option value="${d}">${d}</option>`).join('');
+            
+            document.getElementById('form-modal-content-area').innerHTML = `
+                <form id="form-modal-body" class="space-y-4">
+                    <div><label class="font-medium text-sm">Professor</label><select id="break-teacher" class="form-input" required>${teacherOptions}</select></div>
+                    <div><label class="font-medium text-sm">Dia da Semana</label><select id="break-day" class="form-input" required>${dayOptions}</select></div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><label class="font-medium text-sm">Horário de Início</label><input type="time" id="break-start" class="form-input" required></div>
+                        <div><label class="font-medium text-sm">Horário de Fim</label><input type="time" id="break-end" class="form-input" required></div>
+                    </div>
+                    <div id="break-conflict-warning" class="hidden bg-red-50 border border-red-200 rounded-lg p-3 text-red-700">
+                        <strong>⚠️ Conflito de horário detectado!</strong>
+                        <p>Já existe uma aula ou break agendado para este professor neste horário.</p>
+                    </div>
+                    <div class="text-right"><button type="submit" class="primary-btn w-auto">Adicionar Break</button></div>
+                </form>`;
+            
+            // Add conflict checking
+            const teacherSelect = document.getElementById('break-teacher');
+            const daySelect = document.getElementById('break-day');
+            const startInput = document.getElementById('break-start');
+            const endInput = document.getElementById('break-end');
+            const conflictWarning = document.getElementById('break-conflict-warning');
+            
+            function checkBreakConflicts() {
+                const teacher = teacherSelect.value;
+                const day = daySelect.value;
+                const startTime = startInput.value;
+                const endTime = endInput.value;
+                
+                if (teacher && day && startTime && endTime) {
+                    const hasConflict = checkTimeConflict(teacher, day, startTime, endTime);
+                    conflictWarning.classList.toggle('hidden', !hasConflict);
+                }
+            }
+            
+            [teacherSelect, daySelect, startInput, endInput].forEach(element => {
+                element.addEventListener('change', checkBreakConflicts);
+            });
+            
+            document.getElementById('form-modal-body').onsubmit = saveBreak;
+            document.getElementById('form-modal').classList.add('visible');
+        }
+
+        async function saveBreak(event) {
+            event.preventDefault();
+            
+            const teacher = document.getElementById('break-teacher').value;
+            const day = document.getElementById('break-day').value;
+            const startTime = document.getElementById('break-start').value;
+            const endTime = document.getElementById('break-end').value;
+            
+            // Validate time
+            if (startTime >= endTime) {
+                showErrorMessage("Erro de Validação", "O horário de início deve ser anterior ao horário de fim.");
+                return;
+            }
+            
+            // Check for conflicts
+            const hasConflict = checkTimeConflict(teacher, day, startTime, endTime);
+            if (hasConflict) {
+                showErrorMessage("Conflito de Horário", "Já existe uma aula ou break agendado para este professor neste horário.");
+                return;
+            }
+            
+            const data = {
+                teacher: teacher,
+                day: day,
+                startTime: startTime,
+                endTime: endTime,
+                type: 'break',
+                student: 'Intervalo',
+                level: 'N/A',
+                createdAt: serverTimestamp()
+            };
+            
+            if (!db) { 
+                console.warn("Offline mode."); 
+                closeFormModal(); 
+                return; 
+            }
+            
+            try {
+                await addDoc(collection(db, `artifacts/${appId}/public/data/schedules`), data);
+                showSuccessMessage("Sucesso!", "Break adicionado à grade.");
+                closeFormModal();
+            } catch (error) { 
+                console.error("Error saving break:", error); 
+                showErrorMessage("Erro", "Falha ao salvar o break."); 
+            }
+        }
+
         function openScheduleForm(scheduleId = null) {
             clearModalHeaderButtons();
             const schedule = scheduleId ? schedules.find(s => s.id === scheduleId) : null;
@@ -3924,11 +4058,7 @@
                             Editar Conteúdo
                         </button>
                         ` : ''}
-                        ${['admin'].includes(currentUserRole) ? `
-                        <button class="bg-stone-600 text-white px-3 py-1 rounded text-sm" data-action="debug-sync-status">
-                            Debug Sync
-                        </button>
-                        ` : ''}
+
                     </div>
                     
 
@@ -4248,7 +4378,6 @@
             if (challengeContent.videoUrl) {
                 container.innerHTML = `
                     <div class="mb-4">
-                        <p class="font-medium text-stone-700 mb-2">Quiz Pedagógico</p>
                         <div class="aspect-video bg-stone-200 rounded-lg overflow-hidden">
                             <video controls class="w-full h-full">
                                 <source src="${challengeContent.videoUrl}" type="video/mp4">
@@ -4767,39 +4896,7 @@
                     </div>
                 </div>
                 
-                <!-- Monthly Highlight Modal -->
-                <div id="monthly-highlight-modal" class="modal-overlay">
-                    <div class="modal-content max-w-md">
-                        <div class="modal-header">
-                            <h4>Editar Destaque do Mês</h4>
-                            <button data-action="close-highlight-modal" class="modal-close-btn">&times;</button>
-                        </div>
-                        <form id="monthly-highlight-form">
-                            <div class="space-y-4">
-                                <div>
-                                    <label class="font-medium text-sm">Nome do Funcionário</label>
-                                    <input type="text" id="highlight-name" class="form-input" required>
-                                </div>
-                                <div>
-                                    <label class="font-medium text-sm">URL da Foto</label>
-                                    <input type="url" id="highlight-photo-url" class="form-input" placeholder="https://exemplo.com/foto.jpg" required>
-                                </div>
-                                <div>
-                                    <label class="font-medium text-sm">Descrição</label>
-                                    <textarea id="highlight-description" rows="4" class="form-input" placeholder="Descreva os méritos e conquistas..." required></textarea>
-                                </div>
-                                <div>
-                                    <label class="font-medium text-sm">Premiação</label>
-                                    <input type="text" id="highlight-award" class="form-input" placeholder="Ex: R$ 500 em vale-compras">
-                                </div>
-                                <div class="flex justify-end gap-2">
-                                    <button type="button" data-action="close-highlight-modal" class="secondary-btn">Cancelar</button>
-                                    <button type="submit" class="primary-btn w-auto">Salvar</button>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
-                </div>
+
             `;
             
             loadGuidelines();
@@ -5506,7 +5603,7 @@
             const mainNav = document.getElementById('main-navigation');
             const menuItems = [
                 { key: 'inicio', label: 'Início', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>', roles: null },
-                { key: 'dojo', label: 'Dojo', icon: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-3"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>', roles: null },
+                { key: 'dojo', label: 'Dojo', icon: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-3"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>', roles: null },
                 { key: 'alunos', label: 'Alunos', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>', roles: ['admin', 'pedagogico', 'financeiro', 'ap'] },
                 { key: 'turmas', label: 'Turmas', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>', roles: ['admin', 'pedagogico', 'teacher', 'ap'] },
                 { key: 'vips', label: 'VIPs', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20a6 6 0 0 0-12 0"/><circle cx="12" cy="10" r="4"/><circle cx="12" cy="12" r="10"/></svg>', roles: ['admin', 'pedagogico', 'teacher', 'ap'] },
@@ -5601,6 +5698,7 @@
                         'add-collaborator': () => openCollaboratorForm(),
                         'edit-collaborator': () => openCollaboratorForm(id),
                         'add-schedule': openScheduleForm,
+                        'add-break': openBreakForm,
                         'view-schedule': () => openScheduleForm(id),
                         'add-expense': openExpenseForm,
                         'view-expense': () => openExpenseForm(id),
