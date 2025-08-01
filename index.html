@@ -321,7 +321,7 @@
 
     <div id="pending-view" class="hidden items-center justify-center min-h-screen">
         <div class="text-center p-8 bg-white rounded-xl shadow-lg">
-            <h2 class="text-2xl font-bold text-yellow-500">Aguardando Aprovação</h2>
+            <h2 class="text-2xl font-bold" style="color: #F1D24B;">Aguardando Aprovação</h2>
             <p class="text-stone-600 mt-2">Sua conta foi criada e está aguardando aprovação de um administrador.</p>
             <button id="pending-logout" class="mt-6 secondary-btn w-auto">Sair</button>
         </div>
@@ -485,6 +485,7 @@
                 
                 if (['admin', 'am', 'ap', 'pedagogico', 'financeiro', 'teacher'].includes(currentUserRole)) {
                     setupFirestoreListeners();
+                    updateWelcomeMessages(currentUserName);
                     showHubView();
                 } else {
                     showPendingView();
@@ -597,7 +598,7 @@
                     </form>
                     <p class="text-sm text-center text-stone-600">
                         Não tem uma conta?
-                        <button data-action="open-signup" class="font-medium text-yellow-600 hover:text-yellow-500">Cadastre-se</button>
+                        <button data-action="open-signup" class="font-medium" style="color: #F1D24B;">Cadastre-se</button>
                     </p>
                 </div>
             `;
@@ -660,29 +661,32 @@
                     <!-- Welcome Header removed - now integrated in main header -->
                     
                     <!-- Compact Statistics -->
-                    <div class="grid grid-cols-2 ${canViewFinancialInfo ? 'md:grid-cols-4' : 'md:grid-cols-3'} gap-4">
+                    <div class="grid ${
+                        isTeacher ? 'grid-cols-2' : 
+                        canViewFinancialInfo ? 'grid-cols-2 md:grid-cols-4' : 'grid-cols-2 md:grid-cols-3'
+                    } gap-4">
                         ${!isTeacher ? `
                         <div class="bg-white p-4 rounded-lg shadow-sm border border-stone-200 text-center">
-                            <p class="text-2xl font-bold text-blue-600">${totalStudents}</p>
+                            <p class="text-2xl font-bold" style="color: #84C7DF;">${totalStudents}</p>
                             <p class="text-sm text-stone-600">Total Alunos</p>
                         </div>` : ''}
                         <div class="bg-white p-4 rounded-lg shadow-sm border border-stone-200 text-center">
-                            <p class="text-2xl font-bold text-green-600">${activeStudents}</p>
+                            <p class="text-2xl font-bold" style="color: #F1D24B;">${activeStudents}</p>
                             <p class="text-sm text-stone-600">Alunos Ativos</p>
                         </div>
                         <div class="bg-white p-4 rounded-lg shadow-sm border border-stone-200 text-center">
-                            <p class="text-2xl font-bold text-purple-600">${totalTurmas}</p>
+                            <p class="text-2xl font-bold" style="color: #8671D1;">${totalTurmas}</p>
                             <p class="text-sm text-stone-600">Turmas</p>
                         </div>
                         ${canViewFinancialInfo ? `
                         <div class="bg-white p-4 rounded-lg shadow-sm border border-stone-200 text-center">
-                            <p class="text-2xl font-bold text-yellow-600">R$ ${totalRevenue.toFixed(0)}</p>
+                            <p class="text-2xl font-bold" style="color: #FF5C3D;">R$ ${totalRevenue.toFixed(0)}</p>
                             <p class="text-sm text-stone-600">Receita</p>
                         </div>
                         ` : ''}
                     </div>
                     
-                    <!-- Employee Highlight and Date Section -->
+                    <!-- Employee Highlight and Top 3 Dojo Section -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <!-- Employee Highlight Section - Compact -->
                         <div class="bg-white p-4 rounded-lg shadow-sm border border-stone-200">
@@ -691,7 +695,7 @@
                                 ${currentUserRole === 'admin' ? `
                                 <button class="text-stone-500 hover:text-stone-700 p-1" data-action="edit-monthly-highlight" title="Editar destaque">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002 2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                                     </svg>
                                 </button>
                                 ` : ''}
@@ -701,80 +705,42 @@
                             </div>
                         </div>
 
-                        <!-- Current Date Card -->
-                        <div class="bg-white p-6 rounded-lg shadow-sm border border-stone-200 flex items-center justify-center">
-                            <div class="text-center">
-                                <h4 class="text-lg font-semibold text-stone-800 mb-3">Hoje</h4>
-                                <div class="text-4xl font-bold text-blue-600 mb-2">${new Date().getDate()}</div>
-                                <div class="text-lg text-stone-600 mb-1">${getCurrentMonthName()}</div>
-                                <div class="text-base text-stone-500 mb-2">${new Date().getFullYear()}</div>
-                                <div class="text-sm text-stone-400">${getCurrentDayName()}</div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Quick Actions Grid -->
-                    <div class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
-                        <h4 class="text-lg font-bold text-stone-800 mb-4">Acesso Rápido</h4>
-                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                            <button class="p-3 bg-blue-50 hover:bg-blue-100 rounded-lg text-center transition-colors nav-item" data-target="alunos">
-                                <svg class="w-6 h-6 text-blue-600 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                                </svg>
-                                <p class="text-xs font-medium text-blue-700">Alunos</p>
-                            </button>
-                            <button class="p-3 bg-green-50 hover:bg-green-100 rounded-lg text-center transition-colors nav-item" data-target="turmas">
-                                <svg class="w-6 h-6 text-green-600 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
-                                </svg>
-                                <p class="text-xs font-medium text-green-700">Turmas</p>
-                            </button>
-                            <button class="p-3 bg-purple-50 hover:bg-purple-100 rounded-lg text-center transition-colors nav-item" data-target="calendario">
-                                <svg class="w-6 h-6 text-purple-600 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                                </svg>
-                                <p class="text-xs font-medium text-purple-700">Calendário</p>
-                            </button>
-                            <button class="p-3 bg-orange-50 hover:bg-orange-100 rounded-lg text-center transition-colors nav-item" data-target="diretrizes">
-                                <svg class="w-6 h-6 text-orange-600 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                </svg>
-                                <p class="text-xs font-medium text-orange-700">Diretrizes</p>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Enhanced Dashboard Sections -->
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <!-- Top 3 Dojo Ranking -->
-                        <div class="bg-white p-6 rounded-lg shadow-sm border border-stone-200">
-                            <div class="flex justify-between items-center mb-4">
-                                <h3 class="text-lg font-semibold text-stone-800">Top 3 Dojo</h3>
-                                <button class="text-blue-600 text-sm hover:text-blue-800 nav-item" data-target="dojo">Ver ranking completo</button>
-                            </div>
-                            <div class="space-y-3">
-                                ${getTop3DojoRanking().map((student, index) => `
-                                    <div class="flex items-center gap-3 p-3 border border-stone-200 rounded-lg hover:bg-stone-50">
-                                        <div class="w-8 h-8 flex items-center justify-center rounded-full ${index === 0 ? 'bg-yellow-100 text-yellow-800' : index === 1 ? 'bg-gray-100 text-gray-800' : 'bg-orange-100 text-orange-800'}">
-                                            <span class="text-sm font-bold">${index + 1}°</span>
+                        <!-- Top 3 Dojo Section -->
+                        <div class="bg-white p-4 rounded-lg shadow-sm border border-stone-200">
+                            <h4 class="text-base font-semibold text-stone-800 mb-3">Top 3 Dojo</h4>
+                            <div class="space-y-2">
+                                ${getTop3DojoRanking().map((item, index) => `
+                                    <div class="flex items-center justify-between p-2 rounded-lg" style="background: ${
+                                        index === 0 ? 'linear-gradient(to right, #fefce8, #fef3c7)' : 
+                                        index === 1 ? 'linear-gradient(to right, #f1f5f9, #e2e8f0)' : 
+                                        'linear-gradient(to right, #fff7ed, #fed7aa)'
+                                    }">
+                                        <div class="flex items-center space-x-2">
+                                            <span class="text-lg font-bold" style="color: ${
+                                                index === 0 ? '#F1D24B' : 
+                                                index === 1 ? '#84C7DF' : 
+                                                '#FF5C3D'
+                                            }">${
+                                                index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'
+                                            }</span>
+                                            <span class="font-medium text-stone-700">${item.name}</span>
                                         </div>
-                                        <div class="flex-1">
-                                            <p class="text-sm font-medium text-stone-800">${student.name}</p>
-                                            <p class="text-xs text-stone-500">${student.points} pontos</p>
-                                        </div>
+                                        <span class="text-sm font-semibold" style="color: #F1D24B">${item.score} pts</span>
                                     </div>
                                 `).join('')}
                                 ${getTop3DojoRanking().length === 0 ? '<p class="text-sm text-stone-500 text-center py-4">Ainda não há ranking</p>' : ''}
                             </div>
                         </div>
                     </div>
+                    
+
 
                     <!-- Teacher-specific Weekly Schedule Preview -->
                     ${isTeacher ? `
                     <div class="bg-white p-6 rounded-lg shadow-sm border border-stone-200">
                         <div class="flex justify-between items-center mb-4">
                             <h3 class="text-lg font-semibold text-stone-800">Minha Grade da Semana</h3>
-                            <button class="text-blue-600 text-sm hover:text-blue-800 nav-item" data-target="grade">Ver grade completa</button>
+                            <button class="text-sm nav-item" style="color: #F1D24B;" data-target="grade">Ver grade completa</button>
                         </div>
                         <div class="grid grid-cols-5 gap-2">
                             ${["Segunda", "Terça", "Quarta", "Quinta", "Sexta"].map(day => `
@@ -782,7 +748,7 @@
                                     <p class="text-xs font-medium text-stone-600 mb-2">${day}</p>
                                     <div class="space-y-1">
                                         ${getTeacherDaySchedule(day, currentUserName).slice(0, 3).map(schedule => `
-                                            <div class="bg-blue-50 text-xs p-1 rounded border border-blue-200">
+                                            <div class="text-xs p-1 rounded" style="background-color: #F1D24B20; border: 1px solid #F1D24B40; color: #8B6914;">
                                                 ${schedule.startTime} - ${schedule.student}
                                             </div>
                                         `).join('')}
@@ -798,29 +764,29 @@
                     <div class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
                         <h4 class="text-lg font-bold text-stone-800 mb-4">Redes SLAP</h4>
                         <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                            <a href="https://instagram.com/speakinglikeapro" target="_blank" class="p-3 bg-pink-50 hover:bg-pink-100 rounded-lg text-center transition-colors">
-                                <svg class="w-6 h-6 text-pink-600 mx-auto mb-1" fill="currentColor" viewBox="0 0 24 24">
+                            <a href="https://instagram.com/speakinglikeapro" target="_blank" class="p-3 rounded-lg text-center transition-colors" style="background-color: #FF5C3D20; color: #FF5C3D">
+                                <svg class="w-6 h-6 mx-auto mb-1" fill="currentColor" viewBox="0 0 24 24">
                                     <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
                                 </svg>
-                                <p class="text-xs font-medium text-pink-700">Instagram</p>
+                                <p class="text-xs font-medium">Instagram</p>
                             </a>
-                            <a href="https://youtube.com/@speakinglikeapro" target="_blank" class="p-3 bg-red-50 hover:bg-red-100 rounded-lg text-center transition-colors">
-                                <svg class="w-6 h-6 text-red-600 mx-auto mb-1" fill="currentColor" viewBox="0 0 24 24">
+                            <a href="https://youtube.com/@speakinglikeapro" target="_blank" class="p-3 rounded-lg text-center transition-colors" style="background-color: #84C7DF20; color: #84C7DF">
+                                <svg class="w-6 h-6 mx-auto mb-1" fill="currentColor" viewBox="0 0 24 24">
                                     <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
                                 </svg>
-                                <p class="text-xs font-medium text-red-700">YouTube</p>
+                                <p class="text-xs font-medium">YouTube</p>
                             </a>
-                            <a href="https://tiktok.com/@speakinglikeapro" target="_blank" class="p-3 bg-gray-50 hover:bg-gray-100 rounded-lg text-center transition-colors">
-                                <svg class="w-6 h-6 text-gray-600 mx-auto mb-1" fill="currentColor" viewBox="0 0 24 24">
+                            <a href="https://tiktok.com/@speakinglikeapro" target="_blank" class="p-3 rounded-lg text-center transition-colors" style="background-color: #8671D120; color: #8671D1">
+                                <svg class="w-6 h-6 mx-auto mb-1" fill="currentColor" viewBox="0 0 24 24">
                                     <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/>
                                 </svg>
-                                <p class="text-xs font-medium text-gray-700">TikTok</p>
+                                <p class="text-xs font-medium">TikTok</p>
                             </a>
-                            <a href="https://linkedin.com/company/speaking-like-a-pro" target="_blank" class="p-3 bg-blue-50 hover:bg-blue-100 rounded-lg text-center transition-colors">
-                                <svg class="w-6 h-6 text-blue-600 mx-auto mb-1" fill="currentColor" viewBox="0 0 24 24">
+                            <a href="https://linkedin.com/company/speaking-like-a-pro" target="_blank" class="p-3 rounded-lg text-center transition-colors" style="background-color: #F1D24B20; color: #F1D24B">
+                                <svg class="w-6 h-6 mx-auto mb-1" fill="currentColor" viewBox="0 0 24 24">
                                     <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
                                 </svg>
-                                <p class="text-xs font-medium text-blue-700">LinkedIn</p>
+                                <p class="text-xs font-medium">LinkedIn</p>
                             </a>
                         </div>
                     </div>
@@ -1280,9 +1246,9 @@
                 const weeklyHours = calculateWeeklyHours(teacherFilter);
                 hoursContainer.innerHTML = `
                     <div class="bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-4 text-center">
-                        <div class="text-sm font-medium text-blue-600 uppercase tracking-wide">Carga Horária Semanal</div>
-                        <div class="text-3xl font-bold text-blue-800 mt-1">${weeklyHours} horas</div>
-                        <div class="text-xs text-blue-600 mt-1">${teacherFilter}</div>
+                        <div class="text-sm font-medium uppercase tracking-wide" style="color: #F1D24B;">Carga Horária Semanal</div>
+                        <div class="text-3xl font-bold mt-1" style="color: #8B6914;">${weeklyHours} horas</div>
+                        <div class="text-xs mt-1" style="color: #F1D24B;">${teacherFilter}</div>
                     </div>
                 `;
             } else if (teacherFilter === 'all' && canViewAllHours && hoursContainer) {
@@ -1298,17 +1264,17 @@
                 
                 hoursContainer.innerHTML = `
                     <div class="bg-gradient-to-r from-green-50 to-green-100 border border-green-200 rounded-lg p-4">
-                        <div class="text-sm font-medium text-green-600 uppercase tracking-wide mb-3 text-center">Resumo da Carga Horária Semanal</div>
+                        <div class="text-sm font-medium uppercase tracking-wide mb-3 text-center" style="color: #F1D24B;">Resumo da Carga Horária Semanal</div>
                         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mb-3">
                             ${Object.entries(teacherHours).map(([name, hours]) => `
                                 <div class="bg-white rounded-lg p-2 text-center border border-green-100">
-                                    <div class="text-lg font-bold text-green-800">${hours}h</div>
-                                    <div class="text-xs text-green-600">${name}</div>
+                                    <div class="text-lg font-bold" style="color: #8B6914;">${hours}h</div>
+                                    <div class="text-xs" style="color: #F1D24B;">${name}</div>
                                 </div>
                             `).join('')}
                         </div>
                         <div class="text-center border-t border-green-200 pt-3">
-                            <div class="text-sm text-green-600">Total Geral</div>
+                            <div class="text-sm" style="color: #F1D24B;">Total Geral</div>
                             <div class="text-2xl font-bold text-green-800">${totalHours} horas</div>
                         </div>
                     </div>
@@ -4824,15 +4790,16 @@
         function updateWelcomeMessages(name) {
             // Wait for DOM to be fully ready
             function tryUpdate() {
+                const firstName = (name || '').split(' ')[0];
                 const welcomeMsg = document.getElementById('welcome-message');
                 if (welcomeMsg) {
-                    welcomeMsg.textContent = `Bem-vindo, ${name}!`;
+                    welcomeMsg.textContent = `Bem-vindo(a), ${firstName}`;
                 }
                 const headerWelcome = document.getElementById('header-welcome-message');
                 if (headerWelcome) {
                     headerWelcome.innerHTML = `
-                        <div class="text-sm font-medium">Welcome,</div>
-                        <div class="text-lg font-bold">${name}</div>
+                        <div class="text-sm font-medium">Bem-vindo(a),</div>
+                        <div class="text-lg font-bold">${firstName}</div>
                     `;
                 }
             }
@@ -4840,7 +4807,7 @@
             if (document.readyState === 'loading') {
                 document.addEventListener('DOMContentLoaded', tryUpdate);
             } else {
-                setTimeout(tryUpdate, 100);
+                tryUpdate();
             }
         }
 
@@ -4913,7 +4880,7 @@
             const mainNav = document.getElementById('main-navigation');
             const menuItems = [
                 { key: 'inicio', label: 'Início', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>', roles: null },
-                { key: 'dojo', label: 'Dojo', icon: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-3"><path d="M6.5 12.5h11"/><path d="M12 6.5v11"/><path d="M17.5 17.5 19 19"/><path d="M6.5 6.5 5 5"/><path d="M17.5 6.5 19 5"/><path d="M6.5 17.5 5 19"/><path d="M2 12C2 6.5 6.5 2 12 2s10 4.5 10 10-4.5 10-10 10S2 17.5 2 12Z"/><path d="M16 8h2"/><path d="M6 16H4"/></svg>', roles: null },
+                { key: 'dojo', label: 'Dojo', icon: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-3"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>', roles: null },
                 { key: 'alunos', label: 'Alunos', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>', roles: ['admin', 'pedagogico', 'financeiro', 'ap'] },
                 { key: 'turmas', label: 'Turmas', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>', roles: ['admin', 'pedagogico', 'teacher', 'ap'] },
                 { key: 'vips', label: 'VIPs', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20a6 6 0 0 0-12 0"/><circle cx="12" cy="10" r="4"/><circle cx="12" cy="12" r="10"/></svg>', roles: ['admin', 'pedagogico', 'teacher', 'ap'] },
