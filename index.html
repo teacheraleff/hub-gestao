@@ -10,6 +10,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Palette: SLAP Brand Colors: #F1D24B (Yellow), #FF5C3D (Orange), #84C7DF (Blue), #8671D1 (Purple) -->
     <style>
         body {
             font-family: 'DM Sans', sans-serif;
@@ -129,8 +130,10 @@
 </head>
 <body class="bg-stone-100 text-stone-800">
 
+    <!-- Login, Pending, and Hub Views -->
     <div id="login-view" class="flex items-center justify-center min-h-screen">
-        </div>
+        <!-- O conteúdo do login será gerado pelo JS -->
+    </div>
 
     <div id="pending-view" class="hidden items-center justify-center min-h-screen">
         <div class="text-center p-8 bg-white rounded-xl shadow-lg">
@@ -149,7 +152,8 @@
                 <h1 class="text-xl font-bold text-stone-800 text-center">Hub SLAP</h1>
                 <p id="welcome-message" class="text-center text-sm text-stone-600 mb-6"></p>
                 <nav id="main-navigation" class="space-y-1 flex-1">
-                    </nav>
+                    <!-- Menu items are dynamically generated here -->
+                </nav>
                 <div class="mt-auto pt-4">
                     <button id="logout-button" class="nav-item w-full text-left px-4 py-2.5 rounded-lg text-stone-700 hover:bg-red-50 hover:text-red-600 transition-colors flex items-center font-semibold">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-3"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
@@ -170,9 +174,10 @@
         </div>
     </div>
 
+    <!-- Modal -->
     <div id="form-modal" class="modal-overlay">
         <div class="modal-content">
-            <div class="modal-header">
+            <div id="modal-header-container" class="modal-header">
                 <h4 id="form-modal-title"></h4>
                 <button class="modal-close-btn" data-action="close-modal">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
@@ -1074,6 +1079,7 @@
                         </table>
                     </div>
 
+                    <!-- Missões Ativas Section -->
                     <div class="mt-12 pt-8 border-t border-stone-200">
                         <div class="flex justify-between items-center mb-6">
                             <h3 class="text-xl font-bold text-stone-800">Missões Ativas</h3>
@@ -1097,20 +1103,30 @@
 
 
         // --- MODAL & FORM FUNCTIONS ---
+        function clearModalHeaderButtons() {
+            const header = document.getElementById('modal-header-container');
+            const title = header.querySelector('#form-modal-title');
+            const closeBtn = header.querySelector('.modal-close-btn');
+            header.innerHTML = '';
+            header.appendChild(title);
+            header.appendChild(closeBtn);
+        }
         function closeFormModal() { 
             const modal = document.getElementById('form-modal');
             modal.classList.remove('visible'); 
+            clearModalHeaderButtons();
             // Clear attributes to prevent listener conflicts
             modal.removeAttribute('data-pef-modal');
             modal.removeAttribute('data-unit-id');
             modal.removeAttribute('data-pef-type');
             modal.removeAttribute('data-student-name');
         }
-        function showSuccessMessage(title, message) { const modalTitle = document.getElementById('form-modal-title'); const modalContentArea = document.getElementById('form-modal-content-area'); modalTitle.textContent = title; modalContentArea.innerHTML = `<div class="text-center"><svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-12 w-12 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg><p class="mt-4 text-stone-600">${message}</p><button data-action="close-modal" class="primary-btn mt-6 w-auto px-8">OK</button></div>`; document.getElementById('form-modal').classList.add('visible'); }
-        function showErrorMessage(title, message) { const modalTitle = document.getElementById('form-modal-title'); const modalContentArea = document.getElementById('form-modal-content-area'); modalTitle.textContent = title; modalContentArea.innerHTML = `<div class="text-center"><svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-12 w-12 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg><p class="mt-4 text-stone-600">${message}</p><button data-action="close-modal" class="primary-btn mt-6 w-auto px-8">OK</button></div>`; document.getElementById('form-modal').classList.add('visible'); }
-        function showConfirmationModal(title, message, onConfirm) { const modalTitle = document.getElementById('form-modal-title'); const modalContentArea = document.getElementById('form-modal-content-area'); modalTitle.textContent = title; modalContentArea.innerHTML = `<p class="text-stone-600">${message}</p><div class="mt-6 flex justify-end gap-4"><button class="secondary-btn" data-action="close-modal">Cancelar</button><button id="confirm-action-btn" class="danger-btn w-auto">Confirmar</button></div>`; document.getElementById('form-modal').classList.add('visible'); document.getElementById('confirm-action-btn').onclick = () => { onConfirm(); closeFormModal(); }; }
+        function showSuccessMessage(title, message) { clearModalHeaderButtons(); const modalTitle = document.getElementById('form-modal-title'); const modalContentArea = document.getElementById('form-modal-content-area'); modalTitle.textContent = title; modalContentArea.innerHTML = `<div class="text-center"><svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-12 w-12 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg><p class="mt-4 text-stone-600">${message}</p><button data-action="close-modal" class="primary-btn mt-6 w-auto px-8">OK</button></div>`; document.getElementById('form-modal').classList.add('visible'); }
+        function showErrorMessage(title, message) { clearModalHeaderButtons(); const modalTitle = document.getElementById('form-modal-title'); const modalContentArea = document.getElementById('form-modal-content-area'); modalTitle.textContent = title; modalContentArea.innerHTML = `<div class="text-center"><svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-12 w-12 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg><p class="mt-4 text-stone-600">${message}</p><button data-action="close-modal" class="primary-btn mt-6 w-auto px-8">OK</button></div>`; document.getElementById('form-modal').classList.add('visible'); }
+        function showConfirmationModal(title, message, onConfirm) { clearModalHeaderButtons(); const modalTitle = document.getElementById('form-modal-title'); const modalContentArea = document.getElementById('form-modal-content-area'); modalTitle.textContent = title; modalContentArea.innerHTML = `<p class="text-stone-600">${message}</p><div class="mt-6 flex justify-end gap-4"><button class="secondary-btn" data-action="close-modal">Cancelar</button><button id="confirm-action-btn" class="danger-btn w-auto">Confirmar</button></div>`; document.getElementById('form-modal').classList.add('visible'); document.getElementById('confirm-action-btn').onclick = () => { onConfirm(); closeFormModal(); }; }
         
         function openSignUpModal() {
+            clearModalHeaderButtons();
             const modalTitle = document.getElementById('form-modal-title');
             const modalContentArea = document.getElementById('form-modal-content-area');
             
@@ -1128,6 +1144,7 @@
         }
 
         function openAlunoForm(alunoId = null) {
+            clearModalHeaderButtons();
             const aluno = alunoId ? students.find(s => s.id === alunoId) : null;
             document.getElementById('form-modal-title').textContent = aluno ? "Editar Aluno" : "Adicionar Novo Aluno";
             
@@ -1226,6 +1243,7 @@
         }
 
         function openAlunoModal(alunoId) {
+            clearModalHeaderButtons();
             const aluno = students.find(s => s.id === alunoId);
             if (!aluno) return;
             document.getElementById('form-modal-title').textContent = `Perfil de ${aluno.name}`;
@@ -1276,6 +1294,7 @@
         }
 
         function openTurmaForm(turmaId = null) {
+            clearModalHeaderButtons();
             const turma = turmaId ? turmas.find(t => t.id === turmaId) : null;
             document.getElementById('form-modal-title').textContent = turma ? "Editar Turma" : "Adicionar Nova Turma";
 
@@ -1357,6 +1376,7 @@
         }
 
         function openVipForm(vipId = null) {
+            clearModalHeaderButtons();
             const vip = vipId ? vips.find(v => v.id === vipId) : null;
             document.getElementById('form-modal-title').textContent = vip ? "Editar VIP" : "Adicionar Novo VIP";
 
@@ -1446,19 +1466,19 @@
             modal.dataset.pefModal = "true";
             modal.dataset.unitId = turmaId;
             modal.dataset.pefType = "turma";
-
+            
+            clearModalHeaderButtons();
+            const modalHeader = document.getElementById('modal-header-container');
             const modalTitle = document.getElementById('form-modal-title');
-            const modalHeader = modalTitle.parentElement;
-            if (!modalHeader.querySelector('[data-action="export-turma-pef"]')) {
-                const exportButton = document.createElement('button');
-                exportButton.className = 'secondary-btn w-auto';
-                exportButton.textContent = 'Exportar PEF';
-                exportButton.dataset.action = 'export-turma-pef';
-                exportButton.dataset.id = turmaId;
-                modalHeader.insertBefore(exportButton, modalHeader.querySelector('.modal-close-btn'));
-            }
-
             const modalContentArea = document.getElementById('form-modal-content-area');
+
+            const exportButton = document.createElement('button');
+            exportButton.className = 'secondary-btn w-auto';
+            exportButton.textContent = 'Exportar PEF';
+            exportButton.dataset.action = 'export-turma-pef';
+            exportButton.dataset.id = turmaId;
+            modalHeader.insertBefore(exportButton, modalHeader.querySelector('.modal-close-btn'));
+            
             modalTitle.textContent = `PEF: ${turma.name}`;
 
             const turmaStudents = (turma.studentIds || []).map(id => students.find(s => s.id === id)).filter(Boolean);
@@ -1514,19 +1534,18 @@
             modal.dataset.unitId = vipId;
             modal.dataset.pefType = "vip";
 
+            clearModalHeaderButtons();
+            const modalHeader = document.getElementById('modal-header-container');
             const modalTitle = document.getElementById('form-modal-title');
-            const modalHeader = modalTitle.parentElement;
-            
-            if (!modalHeader.querySelector('[data-action="export-vip-pef"]')) {
-                const exportButton = document.createElement('button');
-                exportButton.className = 'secondary-btn w-auto';
-                exportButton.textContent = 'Exportar PEF';
-                exportButton.dataset.action = 'export-vip-pef';
-                exportButton.dataset.id = vipId;
-                modalHeader.insertBefore(exportButton, modalHeader.querySelector('.modal-close-btn'));
-            }
-
             const modalContentArea = document.getElementById('form-modal-content-area');
+            
+            const exportButton = document.createElement('button');
+            exportButton.className = 'secondary-btn w-auto';
+            exportButton.textContent = 'Exportar PEF';
+            exportButton.dataset.action = 'export-vip-pef';
+            exportButton.dataset.id = vipId;
+            modalHeader.insertBefore(exportButton, modalHeader.querySelector('.modal-close-btn'));
+            
             modalTitle.textContent = `PEF (VIP): ${vip.studentName}`;
 
             const unitAttendance = attendance.find(a => a.id === vipId);
@@ -1622,6 +1641,7 @@
         }
 
         function openEventForm(eventId = null) {
+            clearModalHeaderButtons();
             const event = eventId ? events.find(e => e.id === eventId) : null;
             document.getElementById('form-modal-title').textContent = event ? "Editar Evento" : "Adicionar Novo Evento";
             const sectorOptions = ["Financeiro", "Pedagógico", "Comercial", "Marketing"].map(s => `<option value="${s}" ${event?.setor === s ? 'selected' : ''}>${s}</option>`).join('');
@@ -1667,6 +1687,7 @@
         }
 
         function openEventModal(eventId) {
+            clearModalHeaderButtons();
             const event = events.find(e => e.id === eventId);
             if (!event) return;
             document.getElementById('form-modal-title').textContent = event.nome;
@@ -1685,6 +1706,7 @@
         }
 
         function openBudgetForm(budgetId = null) {
+            clearModalHeaderButtons();
             const budget = budgetId ? budgets.find(b => b.id === budgetId) : null;
             const collaboratorOptions = collaborators.filter(c => c.sectors && c.sectors.includes('orcamentos')).map(c => `<option value="${c.name}" ${budget?.criadoPor === c.name ? 'selected' : ''}>${c.name}</option>`).join('');
             document.getElementById('form-modal-title').textContent = budget ? "Editar Orçamento" : "Adicionar Novo Orçamento";
@@ -1731,6 +1753,7 @@
         }
 
         function openBudgetModal(budgetId) {
+            clearModalHeaderButtons();
             const budget = budgets.find(b => b.id === budgetId);
             if (!budget) return;
             document.getElementById('form-modal-title').textContent = budget.titulo;
@@ -1751,6 +1774,7 @@
         }
 
         function openTaskForm() {
+            clearModalHeaderButtons();
             document.getElementById('form-modal-title').textContent = "Adicionar Nova Tarefa";
             const collaboratorOptions = collaborators.filter(c => c.sectors && (c.sectors.includes('tarefas') || c.sectors.includes('professor'))).map(c => `<option value="${c.name}">${c.name}</option>`).join('');
 
@@ -1783,6 +1807,7 @@
         }
         
         function openCollaboratorForm(collaboratorId = null) {
+            clearModalHeaderButtons();
             const collaborator = collaboratorId ? collaborators.find(c => c.id === collaboratorId) : null;
             document.getElementById('form-modal-title').textContent = collaborator ? "Editar Colaborador" : "Adicionar Novo Colaborador";
             
@@ -1856,6 +1881,7 @@
         }
 
         function openScheduleForm(scheduleId = null) {
+            clearModalHeaderButtons();
             const schedule = scheduleId ? schedules.find(s => s.id === scheduleId) : null;
             document.getElementById('form-modal-title').textContent = schedule ? "Detalhes da Aula" : "Adicionar Nova Aula";
             const isTeacher = currentUserRole === 'teacher';
@@ -1954,6 +1980,7 @@
         }
 
         function openExpenseForm(expenseId = null) {
+            clearModalHeaderButtons();
             const expense = expenseId ? expenses.find(e => e.id === expenseId) : null;
             document.getElementById('form-modal-title').textContent = expense ? "Editar Despesa" : "Adicionar Nova Despesa";
             document.getElementById('form-modal-content-area').innerHTML = `
@@ -2025,6 +2052,7 @@
         async function toggleExpensePaid(expenseId, isPaid) { if (!db) return; const expenseRef = doc(db, `artifacts/${appId}/public/data/expenses`, expenseId); try { await updateDoc(expenseRef, { isPaid: isPaid }); } catch (error) { console.error("Error updating expense status:", error); } }
 
         function openCancelamentoForm(cancelamentoId = null) {
+            clearModalHeaderButtons();
             const cancelamento = cancelamentoId ? cancellations.find(c => c.id === cancelamentoId) : null;
             const collaboratorOptions = collaborators.filter(c => c.sectors && c.sectors.includes('cancelamentos')).map(c => `<option value="${c.name}" ${cancelamento?.processedBy === c.name ? 'selected' : ''}>${c.name}</option>`).join('');
             
@@ -2100,6 +2128,7 @@
             }
         }
         function openCancelamentoModal(cancelamentoId) {
+            clearModalHeaderButtons();
             const cancelamento = cancellations.find(c => c.id === cancelamentoId);
             if (!cancelamento) return;
             const canEdit = ['admin', 'financeiro'].includes(currentUserRole);
@@ -2119,6 +2148,7 @@
         }
         
         function openPhotoFormModal() {
+            clearModalHeaderButtons();
             const currentFolder = document.getElementById('banco-de-fotos-section')?.dataset.currentFolder || 'Geral';
             document.getElementById('form-modal-title').textContent = "Adicionar Nova Foto";
             
@@ -2161,6 +2191,7 @@
         }
         
         function openFolderFormModal() {
+            clearModalHeaderButtons();
             document.getElementById('form-modal-title').textContent = "Adicionar Nova Pasta";
             document.getElementById('form-modal-content-area').innerHTML = `
                 <form id="form-modal-body" class="space-y-4">
@@ -2217,6 +2248,7 @@
         }
 
         function openNivelForm(nivelId = null) {
+            clearModalHeaderButtons();
             const nivel = nivelId ? cps.find(n => n.id === nivelId) : null;
             document.getElementById('form-modal-title').textContent = nivel ? 'Editar Nível' : 'Adicionar Novo Nível';
             document.getElementById('form-modal-content-area').innerHTML = `
@@ -2248,6 +2280,7 @@
         }
         
         function openAulaForm(nivelId, aulaIndex = null) {
+            clearModalHeaderButtons();
             const nivel = cps.find(n => n.id === nivelId);
             const aula = (aulaIndex !== null && nivel && nivel.lessons) ? nivel.lessons[aulaIndex] : null;
             document.getElementById('form-modal-title').textContent = aula ? 'Editar Aula' : 'Adicionar Nova Aula';
@@ -2329,6 +2362,7 @@
         }
         
         function openDojoCompetitorForm(competitorId = null) {
+            clearModalHeaderButtons();
             const competitor = competitorId ? dojoRanking.find(c => c.id === competitorId) : null;
             document.getElementById('form-modal-title').textContent = competitor ? 'Editar Competidor' : 'Adicionar Competidor';
             document.getElementById('form-modal-content-area').innerHTML = `
@@ -2364,6 +2398,7 @@
         }
 
         function openDojoPointsForm(competitorId) {
+            clearModalHeaderButtons();
             const competitor = dojoRanking.find(c => c.id === competitorId);
             if (!competitor) return;
             document.getElementById('form-modal-title').textContent = `Editar Pontos de ${competitor.name}`;
@@ -2389,6 +2424,7 @@
         }
 
         function openDojoMissionForm() {
+            clearModalHeaderButtons();
             document.getElementById('form-modal-title').textContent = 'Adicionar Nova Missão';
             document.getElementById('form-modal-content-area').innerHTML = `
                 <form id="form-modal-body" class="space-y-4">
