@@ -62,7 +62,7 @@
         .task-card:hover { border-color: #F1D24B; box-shadow: 0 4px 12px rgba(0,0,0,0.1); transform: translateY(-2px); }
         .user-tag { display: inline-flex; align-items: center; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; }
         .tag-admin { background-color: #E5E7EB; color: #374151; }
-        .tag-break { background-color: #FEF3C7; color: #92400E; }
+        .tag-break { background-color: #374151; color: #FFFFFF; }
         .deadline-text { font-weight: 600; color: #57534e; }
         .deadline-overdue { color: #b91c1c; }
         .task-delete-btn { background: none; border: none; cursor: pointer; color: #9ca3af; transition: color 0.2s; }
@@ -1367,10 +1367,6 @@
                      <button class="secondary-btn w-auto" data-action="add-break">+ Adicionar Break</button>
                    </div>`
                 : '';
-                
-            const debugButton = ['admin'].includes(currentUserRole)
-                ? `<button class="secondary-btn w-auto" data-action="show-teacher-mapping">Debug Professor</button>`
-                : '';
 
             contentArea.innerHTML = `
                 <section id="grade-section" class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
@@ -1378,7 +1374,6 @@
                         ${filterHtml}
                         <div class="flex gap-2 ml-auto">
                            ${addAulaButton}
-                           ${debugButton}
                         </div>
                     </div>
                     <div id="weekly-hours-container" class="mb-6"></div>
@@ -2566,17 +2561,32 @@
 
         function openEventModal(eventId) {
             clearModalHeaderButtons();
-            const event = events.find(e => e.id === eventId);
+            
+            // Look for event in both arrays
+            let event = events.find(e => e.id === eventId);
+            if (!event) {
+                event = calendarEvents.find(e => e.id === eventId);
+            }
+            
             if (!event) return;
-            document.getElementById('form-modal-title').textContent = event.nome;
+            
+            // Handle different event structure formats
+            const eventTitle = event.nome || event.title || 'Evento';
+            const eventDate = event.data || event.date || '';
+            const eventTime = event.time || '';
+            const eventLocation = event.local || event.location || '';
+            const eventSector = event.setor || event.sector || '';
+            const eventDescription = event.descricao || event.description || '';
+            
+            document.getElementById('form-modal-title').textContent = eventTitle;
             document.getElementById('form-modal-content-area').innerHTML = `
                 <div class="space-y-4">
-                    <p><strong>Data:</strong> ${new Date(event.data + 'T00:00:00').toLocaleDateString('pt-BR')} ${event.time ? `às ${event.time}`: ''}</p>
-                    <p><strong>Local:</strong> ${event.local}</p>
-                    ${event.setor ? `<p><strong>Setor:</strong> <span class="status-tag status-${event.setor.toLowerCase()}">${event.setor}</span></p>` : ''}
-                    ${event.descricao ? `<div><strong>Descrição:</strong><p class="mt-1 p-3 bg-stone-50 rounded-md whitespace-pre-wrap">${event.descricao}</p></div>` : ''}
+                    <p><strong>Data:</strong> ${eventDate ? new Date(eventDate + 'T00:00:00').toLocaleDateString('pt-BR') : 'Não informada'} ${eventTime ? `às ${eventTime}`: ''}</p>
+                    <p><strong>Local:</strong> ${eventLocation || 'Não informado'}</p>
+                    ${eventSector ? `<p><strong>Setor:</strong> <span class="status-tag status-${eventSector.toLowerCase()}">${eventSector}</span></p>` : ''}
+                    ${eventDescription ? `<div><strong>Descrição:</strong><p class="mt-1 p-3 bg-stone-50 rounded-md whitespace-pre-wrap">${eventDescription}</p></div>` : ''}
                     <div class="border-t pt-4 flex justify-end gap-2">
-                        <button class="secondary-btn" data-action="edit-event" data-id="${event.id}">Editar</button>
+                        <button class="secondary-btn" data-action="edit-calendar-event" data-id="${event.id}">Editar</button>
                         <button class="danger-btn" data-action="delete-calendar-event" data-id="${event.id}">Apagar</button>
                     </div>
                 </div>`;
@@ -3788,74 +3798,7 @@
             console.log('SYNC DEBUG INFO:', syncInfo);
         }
         
-        // --- Teacher Debug Functions ---
-        function showTeacherMapping() {
-            if (currentUserRole !== 'admin') return;
-            
-            const teachersInSchedules = [...new Set(schedules.map(s => s.teacher))];
-            const teachersInCollaborators = collaborators.filter(c => c.sectors && c.sectors.includes('professor'));
-            const usersWithTeacherRole = collaborators.filter(c => c.role === 'teacher');
-            
-            const mappingInfo = teachersInCollaborators.map(teacher => {
-                const hasSchedules = teachersInSchedules.includes(teacher.name);
-                const scheduleCount = schedules.filter(s => s.teacher === teacher.name).length;
-                return {
-                    name: teacher.name,
-                    email: teacher.email || 'N/A',
-                    id: teacher.id || 'N/A',
-                    hasSchedules,
-                    scheduleCount,
-                    status: hasSchedules ? 'OK' : 'SEM HORÁRIOS'
-                };
-            });
-            
-            document.getElementById('form-modal-title').textContent = 'Debug: Mapeamento de Professores';
-            document.getElementById('form-modal-content-area').innerHTML = `
-                <div class="space-y-6">
-                    <div>
-                        <h4 class="font-semibold text-stone-800 mb-3">Professores Cadastrados vs Horários</h4>
-                        <div class="space-y-2 max-h-60 overflow-y-auto">
-                            ${mappingInfo.map(info => `
-                                <div class="flex justify-between items-center p-3 rounded-lg border ${info.hasSchedules ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}">
-                                    <div>
-                                        <div class="font-medium text-stone-800">${info.name}</div>
-                                        <div class="text-xs text-stone-600">ID: ${info.id} | Email: ${info.email}</div>
-                                    </div>
-                                    <div class="text-right">
-                                        <div class="text-sm font-medium ${info.hasSchedules ? 'text-green-600' : 'text-red-600'}">${info.status}</div>
-                                        <div class="text-xs text-stone-500">${info.scheduleCount} horários</div>
-                                    </div>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                    
-                    <div>
-                        <h4 class="font-semibold text-stone-800 mb-3">Professores Únicos nos Horários</h4>
-                        <div class="flex flex-wrap gap-2">
-                            ${teachersInSchedules.map(name => `
-                                <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">${name}</span>
-                            `).join('')}
-                        </div>
-                    </div>
-                    
-                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                        <h5 class="font-medium text-yellow-800 mb-2">Instruções para Correção:</h5>
-                        <ul class="text-sm text-yellow-700 space-y-1">
-                            <li>• Verifique se o nome do professor nos horários corresponde exatamente ao nome no cadastro de colaboradores</li>
-                            <li>• Nomes devem ser idênticos (incluindo acentos e espaços)</li>
-                            <li>• Use "Editar" nas aulas para corrigir o nome do professor se necessário</li>
-                            <li>• Ou edite o nome do colaborador para corresponder aos horários existentes</li>
-                        </ul>
-                    </div>
-                    
-                    <div class="text-right">
-                        <button type="button" data-action="close-form-modal" class="secondary-btn">Fechar</button>
-                    </div>
-                </div>
-            `;
-            document.getElementById('form-modal').classList.add('visible');
-        }
+
         
         // --- Calendar Functions ---
         async function deleteCalendarEvent(eventId) {
@@ -4061,9 +4004,6 @@
 
                     </div>
                     
-
-                    </div>
-                    
                     <div class="mt-6 bg-stone-800 text-white p-6 rounded-lg shadow-lg">
                         <div class="flex flex-col md:flex-row items-center justify-center md:justify-around gap-6 md:gap-12">
                             <div class="text-center">
@@ -4095,8 +4035,8 @@
                         <div class="space-y-8">
                             <div>
                                 <h4 class="text-xl font-semibold mb-3 flex items-center">
-                                    <svg class="w-6 h-6 mr-2 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h8m2-10a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    <svg class="w-6 h-6 mr-2 text-red-500" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M8 5v14l11-7z"/>
                                     </svg>
                                     Video Materials
                                 </h4>
@@ -4196,31 +4136,59 @@
         const questionsInChallenge = 25;
 
         const fullQuizData = [
-            { q: "Vygotsky's ZPD is best described as a...", o: ["A fixed student level", "A physical space for learning", "A metaphorical space of potential growth", "A set of learning objectives"], a: 2, e: "ZPD is not a physical place or a fixed level, but a conceptual space where learning potential is activated through guidance." },
-            { q: "The 'proximal' in ZPD refers to...", o: ["The proximity of the student to the teacher", "What is close to being mastered by the learner", "The next topic in the syllabus", "The end goal of the course"], a: 1, e: "'Proximal' means 'nearby' or 'next', indicating skills the learner is ready to acquire with help." },
-            { q: "Which concept is intrinsically linked to ZPD and acts as the mechanism for learning within it?", o: ["Rote memorization", "Scaffolding", "Independent study", "Summative assessment"], a: 1, e: "Scaffolding is the structured support provided by an MKO (More Knowledgeable Other) that enables a learner to navigate their ZPD." },
-            { q: "Who can be considered a 'More Knowledgeable Other' (MKO)?", o: ["Only the certified teacher", "Only a native speaker", "Anyone with more expertise, including peers or technology", "Only a parent or guardian"], a: 2, e: "An MKO is anyone or anything that has a better understanding or a higher ability level, including teachers, advanced peers, or even a well-designed app." },
-            { q: "What is the primary goal of instruction within the ZPD?", o: ["To make tasks easier for the student", "To internalize skills, making the student independent", "To ensure the student never makes a mistake", "To accelerate through the curriculum"], a: 1, e: "The ultimate goal is for the learner to internalize the guided process, turning what was once achievable with help into an independent skill." },
-            { q: "What typically happens when a learning task is far *below* a student's ZPD?", o: ["Anxiety and frustration", "Optimal learning", "Boredom and disengagement", "Internalization of skills"], a: 2, e: "Tasks that are too easy and already mastered lead to boredom, as they don't provide a challenge." },
-            { q: "What typically happens when a learning task is far *above* a student's ZPD?", o: ["Rapid skill acquisition", "Frustration and anxiety", "Increased student confidence", "Effective peer collaboration"], a: 1, e: "Tasks that are too difficult, even with help, cause frustration and can hinder the learning process." },
-            { q: "Vygotsky's theory is a form of...", o: ["Behaviorism", "Cognitivism", "Social constructivism", "Humanism"], a: 2, e: "Social constructivism posits that knowledge is constructed through social interaction." },
-            { q: "The ZPD is best understood as a concept that is...", o: ["Static and measurable", "Fixed for each age group", "Dynamic and constantly changing", "Irrelevant to adult learners"], a: 2, e: "As a learner acquires new skills, their ZPD shifts. It is a dynamic, not static, concept." },
-            { q: "The lower limit of the ZPD represents...", o: ["What a learner can do with assistance", "The learner's potential development", "What a learner can do independently", "The instructional goal"], a: 2, e: "The lower limit is defined by the skills that the student has already mastered and can perform without any help." },
-            { q: "The upper limit of the ZPD represents...", o: ["Tasks that are impossible for the learner", "What the learner can achieve with guidance", "Skills the learner has already mastered", "The starting point of instruction"], a: 1, e: "The upper limit is the most a learner can achieve at that moment, but only with the help of an MKO." },
-            { q: "The ZPD bridges the gap between...", o: ["Social speech and private speech", "Actual development and potential development", "Teacher and student", "Theory and practice"], a: 1, e: "It represents the space between what is known (actual development) and what could be known with help (potential development)." },
-            { q: "Applying ZPD in the classroom requires teachers to first...", o: ["Group students by age", "Deliver a standardized lecture", "Accurately assess students' current abilities", "Provide the final answers"], a: 2, e: "To identify a student's ZPD, a teacher must first understand what the student can already do on their own." },
-            { q: "The concept of ZPD challenges the sole reliance on...", o: ["Formative assessment", "Collaborative projects", "Standardized, independent testing", "Peer tutoring"], a: 2, e: "Standardized tests only measure what a student can do alone, ignoring their potential for growth with assistance." },
-            { q: "Scaffolding, as a teaching strategy, should be...", o: ["Permanent and consistent", "The same for all students", "Temporary and gradually removed", "Used only for difficult subjects"], a: 2, e: "The goal of scaffolding is to provide support only when needed and then fade it away as the learner becomes more competent." },
-            { q: "Which of the following is a classic example of scaffolding?", o: ["Letting the student struggle alone", "Giving the student the correct answer immediately", "Breaking a complex task into smaller, manageable steps", "Assigning extra homework"], a: 2, e: "Breaking down a task is a key scaffolding technique to make complex skills more accessible." },
-            { q: "The term 'scaffolding' was coined by...", o: ["Lev Vygotsky", "Jean Piaget", "Jerome Bruner", "B.F. Skinner"], a: 2, e: "While inspired by Vygotsky's ZPD, the term 'scaffolding' was actually introduced by Jerome Bruner." },
-            { q: "What is the process of gradually removing scaffolding called?", o: ["Fading", "Zoning", "Modeling", "Receding"], a: 0, e: "Fading is the term used for the gradual withdrawal of support as the learner's proficiency increases." },
-            { q: "A teacher demonstrating how to solve a math problem before students try it is an example of...", o: ["Summative assessment", "Modeling, a scaffolding technique", "Independent learning", "Trial and error"], a: 1, e: "Modeling is a form of scaffolding where the expert demonstrates the process for the learner." },
-            { q: "Can a well-designed software application function as a More Knowledgeable Other (MKO)?", o: ["No, an MKO must be a human", "Yes, if it provides guidance and feedback", "Only if it has artificial intelligence", "Only for teaching basic facts"], a: 1, e: "An MKO can be anything or anyone with more knowledge on the task, including technology like apps or computer programs." },
-            { q: "In a collaborative learning group, a more advanced peer can act as an...", o: ["Obstacle", "MKO (More Knowledgeable Other)", "Formal assessor", "Distraction"], a: 1, e: "Peer-to-peer learning is a powerful application of Vygotsky's theory, where students serve as MKOs for each other." },
-            { q: "According to Vygotsky, what is the most important 'psychological tool' for cognitive development?", o: ["Memory", "Language", "Logic", "Attention"], a: 1, e: "Vygotsky viewed language as the primary tool that shapes thought and enables higher-order cognitive functions." },
-            { q: "Vygotsky saw a child's 'private speech' (talking to oneself) as...", o: ["A sign of immaturity", "A tool for problem-solving and self-regulation", "A meaningless activity", "A symptom of social isolation"], a: 1, e: "Unlike Piaget, Vygotsky believed private speech is a crucial step in internalizing thought and directing one's own actions." },
-            { q: "How did Vygotsky's view of private speech differ from Piaget's?", o: ["Vygotsky saw it as social, Piaget as egocentric", "Vygotsky saw it as useless, Piaget as vital", "They had the same view", "Piaget didn't study private speech"], a: 0, e: "Piaget viewed it as 'egocentric speech' that fades away, while Vygotsky saw it as a cognitive tool that becomes 'inner speech'." },
-            { q: "According to Vygotsky, thought and language...", o: ["Are identical from birth", "Develop independently at first and then merge", "Language is a byproduct of thought", "Thought is a byproduct of language"], a: 1, e: "He proposed that in early development, thought is non-verbal and speech is non-intellectual. They merge around age two." }
+            // Dogme ELT Questions (25 questions)
+            { q: "According to Thornbury, what is the main role of the teacher in a Dogme-based classroom?", o: ["To follow the coursebook closely", "To correct all grammar errors immediately", "To facilitate and respond to emergent language*", "To deliver pre-planned grammar presentations"], a: 2, e: "In Dogme ELT, teachers act as facilitators who respond to language that emerges naturally from student interaction rather than following rigid lesson plans." },
+            { q: "What does 'noticing' primarily help with in advanced learners?", o: ["Expanding vocabulary rapidly", "Developing listening skills", "Identifying fossilized errors*", "Memorizing phrasal verbs"], a: 2, e: "Noticing helps advanced learners become aware of persistent language errors that have become fossilized in their production." },
+            { q: "Dogme ELT emphasizes:", o: ["Heavy reliance on multimedia resources", "Teaching fixed grammar structures", "Predefined learning outcomes", "Conversation-driven instruction*"], a: 3, e: "Dogme prioritizes natural conversation and interaction over predetermined curricula and materials." },
+            { q: "What is a common challenge advanced learners face, according to Thornbury?", o: ["Lack of interest in grammar", "Inability to understand basic tenses", "Repetition of fossilized errors*", "Low vocabulary range"], a: 2, e: "Advanced learners often struggle with persistent errors that have become automatic and require conscious attention to correct." },
+            { q: "Emergent language refers to:", o: ["Vocabulary from the syllabus", "Language that arises spontaneously during interaction*", "Language from previous homework", "Phrases taken from authentic texts"], a: 1, e: "Emergent language is the language that naturally emerges from student interaction and communication needs in the moment." },
+            { q: "Which of the following best represents Thornbury's view of the coursebook in Dogme?", o: ["A non-negotiable part of every lesson", "A helpful supplementary tool", "An optional, secondary resource", "Often an obstacle to genuine interaction*"], a: 3, e: "Thornbury views coursebooks as potentially limiting authentic interaction and emergent learning opportunities." },
+            { q: "What is one core principle of Dogme teaching?", o: ["Silence is golden", "Grammar translation is key", "Learner output drives learning*", "Drilling ensures retention"], a: 2, e: "Dogme believes that learning is most effective when driven by what learners actually produce and need to communicate." },
+            { q: "Why is noticing especially important for advanced learners?", o: ["They are preparing for tests", "They don't need explicit grammar", "Their language awareness needs refining*", "They need more input than output"], a: 2, e: "Advanced learners benefit from refined language awareness to identify and correct subtle errors in their production." },
+            { q: "Which of the following is most aligned with emergent language pedagogy?", o: ["Ignoring student errors", "Focusing on accuracy before fluency", "Using language produced by learners as teaching material*", "Teaching only from the textbook"], a: 2, e: "Emergent pedagogy uses actual student language production as the primary source of teaching content and focus." },
+            { q: "A key benefit of emergent language instruction is:", o: ["It reduces lesson planning time", "It creates mechanical practice", "It fosters personalized learning experiences*", "It removes the need for assessment"], a: 2, e: "Emergent instruction creates highly personalized learning experiences based on individual student needs and output." },
+            { q: "Which teacher behavior best fits the noticing framework?", o: ["Allowing errors to persist unaddressed", "Reformulating student sentences in real-time*", "Avoiding correction to preserve fluency", "Testing students on isolated grammar points"], a: 1, e: "Reformulation helps students notice the difference between their production and more target-like forms." },
+            { q: "What type of flexibility does Dogme require from teachers?", o: ["Willingness to change jobs", "Ability to switch between coursebooks", "Adapting plans based on learner interaction*", "Using technology to change lesson pace"], a: 2, e: "Dogme teachers must be flexible enough to adapt their teaching based on what emerges from student interaction." },
+            { q: "According to Thornbury, language should be taught:", o: ["Before it is produced", "From student-generated content*", "With strict grammatical accuracy", "Only after assessment"], a: 1, e: "Thornbury advocates for using language that students actually produce as the basis for teaching and learning." },
+            { q: "What is the ultimate goal of noticing in advanced learners?", o: ["To prepare them for native-level conversation", "To memorize fixed expressions", "To activate conscious reflection about language use*", "To eliminate fluency gaps"], a: 2, e: "Noticing aims to develop conscious awareness and reflection about language patterns and usage." },
+            { q: "Thornbury advocates for:", o: ["Content-heavy PowerPoint lessons", "Structured grammar drills", "Spontaneous language-focused sessions*", "Coursebook-led speaking exercises"], a: 2, e: "Thornbury prefers spontaneous, language-focused sessions that emerge from student interaction." },
+            { q: "Which technique aligns most with Thornbury's approach?", o: ["Present–Practice–Produce", "Reformulation and guided noticing*", "Translation and dictation", "Grammar gap-fills"], a: 1, e: "Reformulation and guided noticing are key techniques in helping students become aware of language patterns." },
+            { q: "What type of classroom activity would Thornbury likely support?", o: ["Role-play with unpredictable outcomes*", "Reading comprehension from textbooks", "Silent reading sessions", "Grammar quizzes"], a: 0, e: "Unpredictable role-plays create opportunities for genuine emergent language that can be worked with pedagogically." },
+            { q: "How can teachers track emergent language?", o: ["Ignore it and continue the lesson", "Record and revisit student errors*", "Focus only on written accuracy", "Use ready-made worksheets"], a: 1, e: "Teachers should record emergent language issues to revisit and work on them pedagogically." },
+            { q: "What is a typical issue in fossilization?", o: ["Teachers overcorrect mistakes", "Learners are unaware of persistent errors*", "Materials are too advanced", "Students memorize too quickly"], a: 1, e: "Fossilization occurs when learners are unaware of persistent errors that have become automatic." },
+            { q: "Why might coursebooks be counterproductive in advanced classes, according to Thornbury?", o: ["They are too expensive", "They lack spontaneity and authentic interaction*", "They overuse listening activities", "They don't include enough homework"], a: 1, e: "Coursebooks can limit the spontaneous, authentic interaction that advanced learners need for continued development." },
+            { q: "Noticing can be enhanced through:", o: ["Multiple-choice questions", "Grammar translation", "Contrasting learner and native-like output*", "Ignoring errors for fluency"], a: 2, e: "Contrasting student output with more target-like versions helps enhance noticing and awareness." },
+            { q: "What is a sign that a learner needs more noticing?", o: ["They hesitate when speaking", "They produce frequent but subtle errors*", "They ask too many questions", "They refuse to write"], a: 1, e: "Frequent subtle errors indicate that learners have fossilized patterns that need conscious attention and noticing to correct." },
+            { q: "Which of the following best describes Dogme's view on input?", o: ["Authentic input must always come from native speakers", "All input should be teacher-generated", "Learners themselves generate the most relevant input*", "Input should be controlled and limited"], a: 2, e: "In Dogme, learners' own language production becomes the primary source of meaningful and relevant input for further learning." },
+            { q: "Which mindset should a teacher adopt for emergent language teaching?", o: ["Control and delivery", "Observation and responsiveness*", "Correction and drilling", "Silence and monitoring"], a: 1, e: "Emergent language teaching requires teachers to be observant and responsive to learning opportunities as they arise naturally." },
+            { q: "Which of the following best reflects Thornbury's philosophy?", o: ["Language is best acquired through repeated testing", "Learning occurs most effectively through structured tasks", "Language awareness must be developed through active engagement*", "Students need more input than output"], a: 2, e: "Thornbury believes that conscious engagement with language, particularly through noticing and reflection, is key to language development." },
+            
+            // Michael Lewis Lexical Approach Questions (25 questions)
+            { q: "According to Michael Lewis, what is the primary component of language?", o: ["Grammar rules", "Phonological systems", "Lexical chunks*", "Discrete vocabulary words"], a: 2, e: "Lewis argues that language is primarily made up of prefabricated chunks or collocations rather than individual words and grammar rules." },
+            { q: "What does Lewis mean by 'language consists of grammaticalized lexis'?", o: ["Grammar should be taught before vocabulary", "Vocabulary should be organized by parts of speech", "Grammar emerges from lexical patterns*", "Lexis must be learned through grammar"], a: 2, e: "Lewis believes that grammar patterns emerge naturally from how words combine in chunks, rather than being separate rules to memorize." },
+            { q: "Which of the following is an example of a lexical chunk?", o: ["Verb + ing", "Present perfect", "Make a mistake*", "A noun in plural"], a: 2, e: "A lexical chunk is a group of words that commonly appear together, like 'make a mistake', 'strong coffee', or 'by the way'." },
+            { q: "The Lexical Approach argues against:", o: ["Teaching collocations", "Learning isolated grammar structures*", "Using authentic texts", "Encouraging fluency"], a: 1, e: "The Lexical Approach opposes teaching grammar as isolated rules separate from meaningful chunks of language." },
+            { q: "According to Schmitt (2000), why does the brain prefer chunks?", o: ["They are easier to spell", "They activate the visual cortex", "They reduce cognitive load*", "They follow textbook logic"], a: 2, e: "Processing prefabricated chunks requires less cognitive effort than constructing language from individual elements each time." },
+            { q: "What replaces the traditional PPP model in Lewis's approach?", o: ["Explain–Drill–Repeat", "Present–Produce–Perfect", "Observe–Hypothesise–Experiment*", "Input–Output–Feedback"], a: 2, e: "Lewis proposes OHE (Observe–Hypothesise–Experiment) as a more natural way to acquire language through discovery rather than presentation." },
+            { q: "In the 'Observe' phase, students:", o: ["Take grammar notes from rules", "Memorize irregular verbs", "Identify lexical patterns in authentic texts*", "Translate texts word for word"], a: 2, e: "Students observe how language naturally occurs in authentic contexts to notice chunks and patterns." },
+            { q: "During the 'Hypothesise' phase, students:", o: ["Guess meanings and usage of chunks*", "Correct grammar in sentences", "Write essays from memory", "Identify parts of speech"], a: 0, e: "Students form hypotheses about how chunks work and their meanings based on observed patterns." },
+            { q: "The 'Experiment' stage encourages students to:", o: ["Avoid errors", "Use chunks in creative, real tasks*", "Fill in grammar worksheets", "Learn from the teacher's corrections"], a: 1, e: "Students experiment with using chunks in authentic, meaningful communication tasks." },
+            { q: "What is the ultimate goal of the Lexical Approach?", o: ["Perfect grammar use", "Fluent and natural communication*", "Memorizing academic vocabulary", "Mastering verb conjugation"], a: 1, e: "The Lexical Approach aims for natural, fluent communication through mastery of lexical chunks." },
+            { q: "Lewis views grammar as something that should be:", o: ["Taught in isolation", "Memorized before speaking", "Avoided completely", "Acquired implicitly through chunks*"], a: 3, e: "Grammar should be acquired naturally through exposure to and use of lexical chunks rather than explicit teaching." },
+            { q: "What kind of input does the Lexical Approach favor?", o: ["Artificially simplified sentences", "Authentic and real-life language*", "Grammatical drills", "Repetition of isolated verbs"], a: 1, e: "Authentic, real-life language provides natural examples of how chunks are used in context." },
+            { q: "What kind of classroom activity best aligns with the Lexical Approach?", o: ["Gap-fills using collocations*", "Timed grammar quizzes", "Phoneme dictation", "Silent reading of lists"], a: 0, e: "Activities that focus on collocations and chunks help students notice and practice lexical patterns." },
+            { q: "Which of the following would NOT be typical in a lexical classroom?", o: ["Chunk identification in authentic audio", "Creative rewriting using collocations", "Translation of entire paragraphs", "Teaching grammar in isolation*"], a: 3, e: "Teaching grammar in isolation goes against the lexical approach principle of learning grammar through chunks." },
+            { q: "What is a 'collocation box' used for?", o: ["Listing irregular verbs", "Tracking spelling mistakes", "Organizing common word pairings*", "Highlighting past participles"], a: 2, e: "Collocation boxes help organize and learn common word combinations and lexical patterns." },
+            { q: "A teacher using the Lexical Approach might ask students to:", o: ["List all prepositions", "Identify and reuse useful chunks in conversation*", "Avoid idioms in writing", "Conjugate all modal verbs"], a: 1, e: "Students are encouraged to notice useful chunks and then actively use them in their own communication." },
+            { q: "Lewis's methodology emphasizes:", o: ["Structured grammar presentations", "Contextualized exposure to real language*", "Memorizing dictionaries", "Monolingual definitions"], a: 1, e: "Real, contextualized language exposure helps students see how chunks function naturally." },
+            { q: "Repetition and recycling of chunks is used to:", o: ["Teach phonology", "Improve pronunciation accuracy", "Enhance retention and fluency*", "Promote grammar mastery"], a: 2, e: "Repeated exposure and use of chunks helps students internalize them for fluent, automatic use." },
+            { q: "Which phrase best summarizes Lewis's belief?", o: ["Grammar creates vocabulary", "Lexis is secondary to form", "Grammar is the foundation of all speech", "Lexis drives grammar, not the other way around*"], a: 3, e: "Lewis believes that lexical patterns drive grammatical understanding, reversing traditional priorities." },
+            { q: "Chunk-for-chunk translation helps learners:", o: ["Understand isolated grammar rules", "Focus on equivalent lexical patterns*", "Translate word-by-word", "Ignore pragmatic meaning"], a: 1, e: "Chunk-for-chunk translation helps learners see equivalent patterns between languages rather than word-by-word correspondence." },
+            { q: "How can the Lexical Approach be integrated into CLT or TBL?", o: ["Through drills after reading", "By teaching grammar first, then activating it", "By highlighting useful chunks and encouraging use in tasks*", "Through rote learning of textbook dialogues"], a: 2, e: "Integration involves identifying useful chunks in communicative tasks and encouraging their active use." },
+            { q: "What does 'noticing lexical patterns' mean in this context?", o: ["Memorizing vocabulary lists", "Focusing on how language is built through fixed expressions*", "Avoiding grammar at all times", "Creating new words from roots"], a: 1, e: "Noticing lexical patterns involves recognizing how language is constructed through recurring combinations of words." },
+            { q: "According to Lewis, grammar is best learned:", o: ["After lexis is fully mastered", "Through explicit drills", "Within lexical chunks and meaningful context*", "Through native-speaker imitation"], a: 2, e: "Grammar is most effectively learned when encountered within meaningful lexical chunks rather than as isolated rules." },
+            { q: "Why are authentic texts important in the Lexical Approach?", o: ["They test reading speed", "They illustrate textbook rules", "They provide real examples of chunk usage*", "They contain simpler grammar"], a: 2, e: "Authentic texts show how chunks are actually used in real communication contexts." },
+            { q: "What kind of outcome does Lewis's approach aim for?", o: ["Native-like pronunciation", "Controlled accuracy", "Spontaneous and meaningful fluency*", "Structured writing skills"], a: 2, e: "The goal is natural, spontaneous fluency through mastery of lexical chunks rather than perfect formal accuracy." }
         ];
 
         async function initializePedagogicalChallenge() {
@@ -4662,9 +4630,42 @@
         }
 
         window.startQuiz = function() {
-            // Generate random questions
+            // Generate random questions and shuffle options
             const shuffled = fullQuizData.sort(() => Math.random() - 0.5);
-            quizQuestions = shuffled.slice(0, questionsInChallenge);
+            quizQuestions = shuffled.slice(0, questionsInChallenge).map(question => {
+                // Find correct answer by asterisk (*) and clean options
+                let correctIndex = -1;
+                const cleanedOptions = question.o.map((option, index) => {
+                    if (option.includes('*')) {
+                        correctIndex = index;
+                        return option.replace('*', ''); // Remove asterisk for display
+                    }
+                    return option;
+                });
+                
+                // If no asterisk found, use the original 'a' property
+                if (correctIndex === -1) {
+                    correctIndex = question.a;
+                }
+                
+                // Create shuffled options with correct answer tracking
+                const optionsWithIndices = cleanedOptions.map((option, index) => ({
+                    text: option,
+                    originalIndex: index
+                }));
+                
+                // Shuffle the options
+                const shuffledOptions = optionsWithIndices.sort(() => Math.random() - 0.5);
+                
+                // Find new correct answer index after shuffling
+                const newCorrectIndex = shuffledOptions.findIndex(opt => opt.originalIndex === correctIndex);
+                
+                return {
+                    ...question,
+                    o: shuffledOptions.map(opt => opt.text),
+                    a: newCorrectIndex
+                };
+            });
             currentQuestionIndex = 0;
             
             showNameInput();
@@ -5593,9 +5594,15 @@
         }
 
         function viewCalendarEvent(eventId) {
-            const event = calendarEvents.find(e => e.id === eventId);
+            // First check calendarEvents, then check events array
+            let event = calendarEvents.find(e => e.id === eventId);
+            if (!event) {
+                event = events.find(e => e.id === eventId);
+            }
+            
             if (event) {
-                openCalendarEventForm(eventId);
+                // Use openEventModal to show view with delete option
+                openEventModal(eventId);
             }
         }
 
@@ -5732,8 +5739,15 @@
                         'add-guideline': openGuidelineForm,
                         'edit-monthly-highlight': openMonthlyHighlightForm,
                         'edit-challenge-content': openChallengeContentForm,
-                        'delete-calendar-event': () => deleteCalendarEvent(id),
-                        'show-teacher-mapping': showTeacherMapping,
+                        'delete-calendar-event': () => {
+                            if (id) {
+                                deleteCalendarEvent(id);
+                            } else {
+                                console.error('Event ID not found for deletion');
+                                showErrorMessage("Erro", "ID do evento não encontrado.");
+                            }
+                        },
+
                         'debug-sync-status': debugSyncStatus,
                     };
                     if (actionHandlers[action]) {
