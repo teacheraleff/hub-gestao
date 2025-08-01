@@ -4165,13 +4165,16 @@
         }
         
         function setDefaultChallengeContent() {
+            const now = new Date();
+            const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+            
             challengeContent = {
                 videoUrl: 'https://res.cloudinary.com/dqfi22uz0/video/upload/v1751160446/Vygotksy_s_Zone_of_Proximal_Development_Explained_in_4_minutes_n3dmpt.mp4',
                 audio1Url: 'https://res.cloudinary.com/dqfi22uz0/video/upload/v1751161824/zdp1_yldo65.mp3',
                 audio2Url: 'https://res.cloudinary.com/dqfi22uz0/video/upload/v1751162058/ZDP2_jfyspg.mp3',
                 month: 'JANEIRO 2025',
                 subtitle: 'A new topic every month to sharpen your skills.',
-                deadline: null
+                deadline: endOfMonth.toISOString()
             };
             saveChallengeContent();
         }
@@ -4284,6 +4287,9 @@
         }
 
         function createAudioPlayer(audioUrl, playerId) {
+            // Add timestamp to avoid cache issues with Cloudinary
+            const cacheBustedUrl = audioUrl.includes('?') ? `${audioUrl}&t=${Date.now()}` : `${audioUrl}?t=${Date.now()}`;
+            
             return `
                 <div class="audio-player-container" data-player="${playerId}">
                     <button class="play-pause-button">
@@ -4292,12 +4298,28 @@
                     </button>
                     <span class="time-display">0:00 / 0:00</span>
                     <input type="range" class="progress-bar" value="0" step="1">
-                    <audio class="audio-element" preload="metadata" src="${audioUrl}"></audio>
+                    <audio class="audio-element" preload="metadata" src="${cacheBustedUrl}"></audio>
                 </div>
             `;
         }
 
+        function cleanupAudioPlayers() {
+            // Stop and cleanup existing audio players
+            const existingPlayers = document.querySelectorAll('.audio-player-container');
+            existingPlayers.forEach(container => {
+                const audio = container.querySelector('.audio-element');
+                if (audio) {
+                    audio.pause();
+                    audio.currentTime = 0;
+                    audio.src = ''; // Clear the source to force reload
+                }
+            });
+        }
+
         function initializeAudioPlayers() {
+            // Clean up any existing audio players first
+            cleanupAudioPlayers();
+            
             const players = document.querySelectorAll('.audio-player-container');
             
             players.forEach(container => {
@@ -4307,6 +4329,11 @@
                 const pauseIcon = container.querySelector('.pause-icon');
                 const progressBar = container.querySelector('.progress-bar');
                 const timeDisplay = container.querySelector('.time-display');
+                
+                // Force reload audio element to clear cache
+                if (audio.src) {
+                    audio.load();
+                }
 
                 audio.addEventListener('loadedmetadata', () => {
                     progressBar.max = audio.duration;
@@ -4362,9 +4389,18 @@
             
             // Pre-fill deadline
             if (challengeContent.deadline) {
-                const date = new Date(challengeContent.deadline);
-                const formattedDate = date.toISOString().slice(0, 16);
-                document.getElementById('challenge-deadline').value = formattedDate;
+                let date;
+                if (typeof challengeContent.deadline === 'number') {
+                    date = new Date(challengeContent.deadline);
+                } else {
+                    date = new Date(challengeContent.deadline);
+                }
+                
+                // Ensure the date is valid before formatting
+                if (!isNaN(date.getTime())) {
+                    const formattedDate = date.toISOString().slice(0, 16);
+                    document.getElementById('challenge-deadline').value = formattedDate;
+                }
             }
             
             modal.classList.add('visible');
@@ -4379,13 +4415,21 @@
         async function saveChallengeContentForm() {
             const deadlineValue = document.getElementById('challenge-deadline').value;
             
+            let deadline = null;
+            if (deadlineValue) {
+                const deadlineDate = new Date(deadlineValue);
+                if (!isNaN(deadlineDate.getTime())) {
+                    deadline = deadlineDate.toISOString(); // Store as ISO string for consistency
+                }
+            }
+            
             challengeContent = {
                 videoUrl: document.getElementById('challenge-video-url').value.trim(),
                 audio1Url: document.getElementById('challenge-audio1-url').value.trim(),
                 audio2Url: document.getElementById('challenge-audio2-url').value.trim(),
                 month: document.getElementById('challenge-month').value.trim() || 'MONTHLY MODULE',
                 subtitle: document.getElementById('challenge-subtitle').value.trim() || 'A new topic every month to sharpen your skills.',
-                deadline: deadlineValue ? new Date(deadlineValue).getTime() : null
+                deadline: deadline
             };
             
             await saveChallengeContent();
@@ -4410,7 +4454,12 @@
             // Use custom deadline or default to end of current month
             let deadline;
             if (challengeContent.deadline) {
-                deadline = new Date(challengeContent.deadline);
+                // Handle both timestamp and date string formats
+                if (typeof challengeContent.deadline === 'number') {
+                    deadline = new Date(challengeContent.deadline);
+                } else {
+                    deadline = new Date(challengeContent.deadline);
+                }
             } else {
                 const now = new Date();
                 deadline = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
@@ -4418,7 +4467,7 @@
             
             function updateCountdown() {
                 const now = new Date().getTime();
-                const distance = deadline - now;
+                const distance = deadline.getTime() - now;
                 
                 const daysEl = document.getElementById('days');
                 const hoursEl = document.getElementById('hours');
