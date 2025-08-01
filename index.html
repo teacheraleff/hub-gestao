@@ -725,7 +725,7 @@
                                             }</span>
                                             <span class="font-medium text-stone-700">${item.name}</span>
                                         </div>
-                                        <span class="text-sm font-semibold" style="color: #F1D24B">${item.score} pts</span>
+                                        <span class="text-sm font-semibold" style="color: #F1D24B">${item.points || 0} pts</span>
                                     </div>
                                 `).join('')}
                                 ${getTop3DojoRanking().length === 0 ? '<p class="text-sm text-stone-500 text-center py-4">Ainda não há ranking</p>' : ''}
@@ -740,20 +740,21 @@
                     <div class="bg-white p-6 rounded-lg shadow-sm border border-stone-200">
                         <div class="flex justify-between items-center mb-4">
                             <h3 class="text-lg font-semibold text-stone-800">Minha Grade da Semana</h3>
-                            <button class="text-sm nav-item" style="color: #F1D24B;" data-target="grade">Ver grade completa</button>
+                            <button class="text-sm font-medium hover:underline nav-item" style="color: #F1D24B;" data-target="grade">Ver grade completa →</button>
                         </div>
-                        <div class="grid grid-cols-5 gap-2">
+                        <div class="grid grid-cols-5 gap-3">
                             ${["Segunda", "Terça", "Quarta", "Quinta", "Sexta"].map(day => `
                                 <div class="text-center">
-                                    <p class="text-xs font-medium text-stone-600 mb-2">${day}</p>
-                                    <div class="space-y-1">
-                                        ${getTeacherDaySchedule(day, currentUserName).slice(0, 3).map(schedule => `
-                                            <div class="text-xs p-1 rounded" style="background-color: #F1D24B20; border: 1px solid #F1D24B40; color: #8B6914;">
-                                                ${schedule.startTime} - ${schedule.student}
+                                    <p class="text-sm font-semibold text-stone-700 mb-3">${day.substring(0, 3)}</p>
+                                    <div class="space-y-2">
+                                        ${getTeacherDaySchedule(day, currentUserName).slice(0, 2).map(schedule => `
+                                            <div class="text-xs p-2 rounded-lg shadow-sm border" style="background: linear-gradient(135deg, #F1D24B15 0%, #F1D24B25 100%); border-color: #F1D24B30; color: #8B6914;">
+                                                <div class="font-medium">${schedule.startTime}</div>
+                                                <div class="text-stone-600">${schedule.student}</div>
                                             </div>
                                         `).join('')}
-                                        ${getTeacherDaySchedule(day, currentUserName).length > 3 ? `<div class="text-xs text-stone-500">+${getTeacherDaySchedule(day, currentUserName).length - 3} mais</div>` : ''}
-                                        ${getTeacherDaySchedule(day, currentUserName).length === 0 ? '<div class="text-xs text-stone-400">Sem aulas</div>' : ''}
+                                        ${getTeacherDaySchedule(day, currentUserName).length > 2 ? `<div class="text-xs text-stone-500 font-medium">+${getTeacherDaySchedule(day, currentUserName).length - 2}</div>` : ''}
+                                        ${getTeacherDaySchedule(day, currentUserName).length === 0 ? '<div class="text-xs text-stone-400 p-2 bg-stone-50 rounded-lg border border-stone-200">Livre</div>' : ''}
                                     </div>
                                 </div>
                             `).join('')}
@@ -1263,19 +1264,19 @@
                 const totalHours = Object.values(teacherHours).reduce((sum, hours) => sum + hours, 0);
                 
                 hoursContainer.innerHTML = `
-                    <div class="bg-gradient-to-r from-green-50 to-green-100 border border-green-200 rounded-lg p-4">
-                        <div class="text-sm font-medium uppercase tracking-wide mb-3 text-center" style="color: #F1D24B;">Resumo da Carga Horária Semanal</div>
+                    <div class="bg-gradient-to-r from-yellow-50 to-yellow-100 border border-yellow-200 rounded-lg p-4" style="background: linear-gradient(to right, #F1D24B15, #F1D24B25);">
+                        <div class="text-sm font-medium text-stone-700 uppercase tracking-wide mb-3 text-center">Resumo da Carga Horária Semanal</div>
                         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mb-3">
                             ${Object.entries(teacherHours).map(([name, hours]) => `
-                                <div class="bg-white rounded-lg p-2 text-center border border-green-100">
-                                    <div class="text-lg font-bold" style="color: #8B6914;">${hours}h</div>
-                                    <div class="text-xs" style="color: #F1D24B;">${name}</div>
+                                <div class="bg-white rounded-lg p-2 text-center border border-yellow-200">
+                                    <div class="text-lg font-bold text-stone-800">${hours}h</div>
+                                    <div class="text-xs text-stone-600">${name}</div>
                                 </div>
                             `).join('')}
                         </div>
-                        <div class="text-center border-t border-green-200 pt-3">
-                            <div class="text-sm" style="color: #F1D24B;">Total Geral</div>
-                            <div class="text-2xl font-bold text-green-800">${totalHours} horas</div>
+                        <div class="text-center border-t border-yellow-200 pt-3">
+                            <div class="text-sm text-stone-700">Total Geral</div>
+                            <div class="text-2xl font-bold text-stone-800">${totalHours} horas</div>
                         </div>
                     </div>
                 `;
