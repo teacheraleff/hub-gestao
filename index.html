@@ -168,20 +168,6 @@
                         <h2 id="main-title" class="text-3xl font-bold text-[#F1D24B]"></h2>
                         <p id="main-description" class="mt-2 text-stone-600"></p>
                     </header>
-                    <div class="relative ml-auto">
-                        <button id="notification-button" class="relative p-2 text-stone-500 hover:text-stone-700 focus:outline-none">
-                            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                            </svg>
-                            <span id="notification-badge" class="absolute top-1 right-1 block h-2 w-2 rounded-full bg-red-500 ring-2 ring-white hidden"></span>
-                        </button>
-                        <div id="notification-panel" class="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-xl overflow-hidden z-20 hidden">
-                            <div class="py-2 px-4 text-sm font-semibold text-stone-700 border-b">Notificações</div>
-                            <div id="notification-list" class="divide-y max-h-96 overflow-y-auto">
-                                <!-- Notifications will be rendered here -->
-                            </div>
-                        </div>
-                    </div>
                 </div>
                 <div id="content-area"></div>
             </main>
@@ -215,7 +201,7 @@
         const pendingView = document.getElementById('pending-view');
         
         let db, auth, storage, userId, currentUserName, currentUserRole;
-        let usersData = [], students = [], turmas = [], vips = [], attendance = [], tasks = [], events = [], budgets = [], collaborators = [], schedules = [], expenses = [], cancellations = [], notifications = [], photos = [], photoFolders = [], cps = [], dojoRanking = [], dojoMissions = [];
+        let usersData = [], students = [], turmas = [], vips = [], attendance = [], tasks = [], events = [], budgets = [], collaborators = [], schedules = [], expenses = [], cancellations = [], photos = [], photoFolders = [], cps = [], dojoRanking = [], dojoMissions = [];
         let allUnsubscribers = [];
         const appId = 'hub-gestao-slap';
 
@@ -285,11 +271,6 @@
                     targetArray.length = 0;
                     snapshot.docs.forEach(doc => targetArray.push({ id: doc.id, ...doc.data() }));
                     
-                    if (collectionName === 'notifications') {
-                        updateNotificationBadge();
-                        return;
-                    }
-
                     const activePageId = contentArea.firstElementChild?.id;
                     if (renderFunc && activePageId) {
                         const pageBaseName = activePageId.replace('-section', '');
@@ -348,7 +329,6 @@
             }, (ref) => query(ref, orderBy("order")));
             getCollectionListener('dojo_ranking', dojoRanking, renderDojoSection);
             getCollectionListener('dojo_missions', dojoMissions, renderDojoSection, (ref) => query(ref, orderBy("points", "desc")));
-            getCollectionListener('notifications', notifications, null, (ref) => query(ref, orderBy('createdAt', 'desc'), limit(30)));
         }
 
         // --- AUTH, VIEW, and MENU FUNCTIONS ---
@@ -471,10 +451,13 @@
                             <button class="secondary-btn filter-btn" data-filter="ativo">Ativos</button>
                             <button class="secondary-btn filter-btn" data-filter="cancelado">Cancelados</button>
                         </div>
-                        ${canAdd ? `<button class="primary-btn w-auto" data-action="add-aluno">+ Adicionar Aluno</button>` : ''}
+                        <div class="flex gap-2">
+                            <button class="secondary-btn w-auto" data-action="export-alunos-excel">Exportar Excel</button>
+                            ${canAdd ? `<button class="primary-btn w-auto" data-action="add-aluno">+ Adicionar Aluno</button>` : ''}
+                        </div>
                     </div>
                     <div class="overflow-x-auto">
-                        <table class="data-table">
+                        <table class="data-table" id="alunos-table">
                             <thead>
                                 <tr>
                                     <th>Nome do Aluno</th>
@@ -837,7 +820,7 @@
                         </table>
                     </div>
                     <div class="data-total">
-                        <p>Total a Pagar: R$ ${totalToPay.toFixed(2)}</p>
+                        <p>Total a Pagar: ${totalToPay.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
                     </div>
                 </section>
             `;
@@ -1237,7 +1220,6 @@
                 } else {
                     data.createdAt = serverTimestamp();
                     await addDoc(collection(db, `artifacts/${appId}/public/data/students`), data);
-                    await createNotification(`Novo aluno cadastrado: ${data.name}`);
                     showSuccessMessage("Sucesso!", "Novo aluno cadastrado.");
                 }
             } catch (error) {
@@ -1526,6 +1508,18 @@
             modal.dataset.pefType = "vip";
 
             const modalTitle = document.getElementById('form-modal-title');
+            const modalHeader = modalTitle.parentElement;
+            
+            // Add export button if it doesn't exist
+            if (!modalHeader.querySelector('[data-action="export-vip-pef"]')) {
+                const exportButton = document.createElement('button');
+                exportButton.className = 'secondary-btn w-auto';
+                exportButton.textContent = 'Exportar PEF';
+                exportButton.dataset.action = 'export-vip-pef';
+                exportButton.dataset.id = vipId;
+                modalHeader.insertBefore(exportButton, modalHeader.querySelector('.modal-close-btn'));
+            }
+
             const modalContentArea = document.getElementById('form-modal-content-area');
             modalTitle.textContent = `PEF (VIP): ${vip.studentName}`;
 
@@ -1661,7 +1655,6 @@
                 } else {
                     data.createdAt = serverTimestamp();
                     await addDoc(collection(db, `artifacts/${appId}/public/data/events`), data);
-                    await createNotification(`Novo evento adicionado: ${data.nome}`);
                     showSuccessMessage("Sucesso!", "Novo evento adicionado.");
                 }
             } catch (error) { console.error("Error saving event:", error); showErrorMessage("Erro", "Falha ao salvar o evento."); }
@@ -1726,7 +1719,6 @@
                 } else {
                     data.createdAt = serverTimestamp();
                     await addDoc(collection(db, `artifacts/${appId}/public/data/budgets`), data);
-                    await createNotification(`Novo orçamento criado: ${data.titulo}`);
                     showSuccessMessage("Sucesso!", "Novo orçamento adicionado.");
                 }
             } catch (error) { console.error("Error saving budget:", error); showErrorMessage("Erro", "Falha ao salvar o orçamento."); }
@@ -1780,7 +1772,6 @@
             if (!db) { console.warn("Offline mode."); closeFormModal(); return; }
             try {
                 await addDoc(collection(db, `artifacts/${appId}/public/data/tasks`), data);
-                await createNotification(`Nova tarefa para ${data.assignedTo.join(', ')}: ${data.description}`);
                 showSuccessMessage("Sucesso!", "Tarefa adicionada.");
             } catch (error) { console.error("Error saving task:", error); showErrorMessage("Erro", "Falha ao salvar a tarefa."); }
         }
@@ -1845,7 +1836,6 @@
                     showSuccessMessage("Sucesso!", "Colaborador atualizado.");
                 } else {
                     await addDoc(collection(db, `artifacts/${appId}/public/data/collaborators`), data);
-                    await createNotification(`Novo colaborador adicionado: ${data.name}`);
                     showSuccessMessage("Sucesso!", "Colaborador adicionado.");
                 }
                 
@@ -2157,7 +2147,6 @@
 
             try {
                 await addDoc(collection(db, `artifacts/${appId}/public/data/photo_bank`), data);
-                await createNotification(`Nova foto adicionada em ${data.folder}: ${data.title}`);
                 showSuccessMessage("Sucesso!", "Foto adicionada ao banco.");
             } catch (error) {
                 console.error("Error saving photo:", error);
@@ -2440,66 +2429,130 @@
             );
         }
         
-        // --- NOTIFICATION FUNCTIONS ---
-        async function createNotification(message) {
-            if (!db) return;
-            try {
-                await addDoc(collection(db, `artifacts/${appId}/public/data/notifications`), {
-                    message: message,
-                    createdAt: serverTimestamp(),
-                    createdBy: currentUserName || 'Sistema'
+        // --- EXPORT FUNCTIONS ---
+        function exportToCsv(filename, rows) {
+            const separator = ',';
+            const keys = Object.keys(rows[0]);
+            const csvContent =
+                keys.join(separator) +
+                '\n' +
+                rows.map(row => {
+                    return keys.map(k => {
+                        let cell = row[k] === null || row[k] === undefined ? '' : row[k];
+                        cell = cell instanceof Date 
+                            ? cell.toLocaleString()
+                            : cell.toString().replace(/"/g, '""');
+                        if (cell.search(/("|,|\n)/g) >= 0) {
+                            cell = `"${cell}"`;
+                        }
+                        return cell;
+                    }).join(separator);
+                }).join('\n');
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            if (link.download !== undefined) {
+                const url = URL.createObjectURL(blob);
+                link.setAttribute('href', url);
+                link.setAttribute('download', filename);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+        }
+
+        function handleExportAlunos() {
+            const tableRows = document.querySelectorAll('#alunos-list tr');
+            if (tableRows.length === 0 || tableRows[0].children.length <= 1) {
+                showErrorMessage("Exportação Falhou", "Não há dados para exportar.");
+                return;
+            }
+            
+            const headers = ['Nome do Aluno', 'Status', 'Valor Pago', 'Responsável'];
+            let rows = [];
+            tableRows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                rows.push({
+                    [headers[0]]: cells[0].textContent,
+                    [headers[1]]: cells[1].textContent,
+                    [headers[2]]: cells[2].textContent,
+                    [headers[3]]: cells[3].textContent,
                 });
-            } catch (error) {
-                console.error("Error creating notification:", error);
-            }
+            });
+
+            const currentFilter = document.querySelector('#alunos-filter-buttons .filter-btn.active').dataset.filter;
+            exportToCsv(`slap_alunos_${currentFilter}.csv`, rows);
         }
 
-        function updateNotificationBadge() {
-            const badge = document.getElementById('notification-badge');
-            if (!badge) return;
-            const lastCheck = localStorage.getItem('lastNotificationCheck');
-            if (!lastCheck || notifications.length === 0) {
-                badge.classList.toggle('hidden', notifications.length === 0);
+        function exportVipPef(vipId) {
+            const vip = vips.find(v => v.id === vipId);
+            const student = students.find(s => s.id === vip.studentId);
+            const unitAttendance = attendance.find(a => a.id === vipId);
+            if (!vip || !student) {
+                showErrorMessage("Erro", "Não foi possível encontrar os dados para exportação.");
                 return;
             }
-            const lastCheckDate = new Date(lastCheck);
-            const unreadCount = notifications.filter(n => n.createdAt && n.createdAt.toDate() > lastCheckDate).length;
-            badge.classList.toggle('hidden', unreadCount === 0);
-        }
 
-        function renderNotificationList() {
-            const listEl = document.getElementById('notification-list');
-            if (!listEl) return;
-            if (notifications.length === 0) {
-                listEl.innerHTML = `<p class="p-4 text-sm text-stone-500 text-center">Nenhuma notificação.</p>`;
-                return;
-            }
-            listEl.innerHTML = notifications.map(n => {
-                const time = n.createdAt ? timeAgo(n.createdAt.toDate()) : '';
-                return `
-                    <div class="p-3 hover:bg-stone-50">
-                        <p class="text-sm text-stone-700">${n.message}</p>
-                        <p class="text-xs text-stone-400 mt-1">${time}</p>
-                    </div>
+            const statusMap = { 'P': 'Presente', 'F': 'Falta', 'PP': 'Presença Parcial', '': 'Não Registado' };
+            let tableRows = '';
+            for (let i = 1; i <= 40; i++) {
+                const lessonData = unitAttendance?.lessons?.[i] || {};
+                const studentStatus = lessonData.students?.[student.id] || '';
+                tableRows += `
+                    <tr>
+                        <td>${i}</td>
+                        <td>${lessonData.date || ''}</td>
+                        <td>${statusMap[studentStatus]}</td>
+                        <td>${lessonData.topic || ''}</td>
+                        <td>${lessonData.notes || ''}</td>
+                    </tr>
                 `;
-            }).join('');
-        }
+            }
 
-        function timeAgo(date) {
-            const seconds = Math.floor((new Date() - date) / 1000);
-            let interval = seconds / 31536000;
-            if (interval > 1) return Math.floor(interval) + " anos atrás";
-            interval = seconds / 2592000;
-            if (interval > 1) return Math.floor(interval) + " meses atrás";
-            interval = seconds / 86400;
-            if (interval > 1) return Math.floor(interval) + " dias atrás";
-            interval = seconds / 3600;
-            if (interval > 1) return Math.floor(interval) + " horas atrás";
-            interval = seconds / 60;
-            if (interval > 1) return Math.floor(interval) + " minutos atrás";
-            return "agora mesmo";
+            const docHtml = `
+                <html>
+                <head>
+                    <title>PEF - ${student.name}</title>
+                    <style>
+                        body { font-family: sans-serif; margin: 2rem; }
+                        h1, h2 { color: #333; }
+                        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+                        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+                        th { background-color: #f2f2f2; }
+                        .header-info p { margin: 4px 0; }
+                    </style>
+                </head>
+                <body>
+                    <h1>Relatório de Presença e Frequência (PEF)</h1>
+                    <div class="header-info">
+                        <p><strong>Aluno:</strong> ${student.name}</p>
+                        <p><strong>Professor:</strong> ${vip.teacherName}</p>
+                        <p><strong>Nível:</strong> ${vip.level}</p>
+                        <p><strong>Semestre:</strong> ${vip.semestre || 'N/A'}</p>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Aula</th>
+                                <th>Data</th>
+                                <th>Status</th>
+                                <th>Tema da Aula</th>
+                                <th>Observações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${tableRows}
+                        </tbody>
+                    </table>
+                </body>
+                </html>
+            `;
+            
+            const newWindow = window.open();
+            newWindow.document.write(docHtml);
+            newWindow.document.close();
         }
-
 
         function renderMenu() {
             const mainNav = document.getElementById('main-navigation');
@@ -2543,7 +2596,7 @@
                 
                 const actionTarget = event.target.closest('[data-action]');
                 if (actionTarget) {
-                    if(actionTarget.closest('.modal-content') && actionTarget.dataset.action !== 'close-modal') event.stopPropagation();
+                    if(actionTarget.closest('.modal-content') && !['close-modal', 'export-vip-pef'].includes(actionTarget.dataset.action)) event.stopPropagation();
                     
                     const { action, id, collection, folderName, nivelId, aulaIndex, direction, unitId, lessonNumber, status } = actionTarget.dataset;
                     const actionHandlers = {
@@ -2598,6 +2651,8 @@
                         'add-dojo-competitor': () => openDojoCompetitorForm(),
                         'edit-dojo-points': () => openDojoPointsForm(id),
                         'add-dojo-mission': openDojoMissionForm,
+                        'export-alunos-excel': handleExportAlunos,
+                        'export-vip-pef': () => exportVipPef(id),
                     };
                     if (actionHandlers[action]) {
                         actionHandlers[action]();
@@ -2616,28 +2671,8 @@
                 }
             });
 
-            const notificationButton = document.getElementById('notification-button');
-            const notificationPanel = document.getElementById('notification-panel');
-
-            notificationButton.addEventListener('click', (event) => {
-                event.stopPropagation();
-                const isHidden = notificationPanel.classList.toggle('hidden');
-                if (!isHidden) {
-                    renderNotificationList();
-                    localStorage.setItem('lastNotificationCheck', new Date().toISOString());
-                    updateNotificationBadge();
-                }
-            });
-
-            document.addEventListener('click', (event) => {
-                if (!notificationPanel.classList.contains('hidden') && !notificationButton.contains(event.target) && !notificationPanel.contains(event.target)) {
-                    notificationPanel.classList.add('hidden');
-                }
-            });
-
             document.getElementById('logout-button').addEventListener('click', handleLogout);
             document.getElementById('pending-logout').addEventListener('click', handleLogout);
-            // document.getElementById('profile-picture-upload').addEventListener('change', handleProfilePictureUpload);
             initializeFirebase();
         });
     </script>
