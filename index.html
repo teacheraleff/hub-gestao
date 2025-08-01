@@ -710,10 +710,10 @@
                             <h4 class="text-base font-semibold text-stone-800 mb-3">Top 3 Dojo</h4>
                             <div class="space-y-2">
                                 ${getTop3DojoRanking().map((item, index) => `
-                                    <div class="flex items-center justify-between p-2 rounded-lg" style="background: ${
-                                        index === 0 ? 'linear-gradient(to right, #fefce8, #fef3c7)' : 
-                                        index === 1 ? 'linear-gradient(to right, #f1f5f9, #e2e8f0)' : 
-                                        'linear-gradient(to right, #fff7ed, #fed7aa)'
+                                    <div class="flex items-center justify-between p-2 rounded-lg" style="background-color: ${
+                                        index === 0 ? '#F1D24B20' : 
+                                        index === 1 ? '#84C7DF20' : 
+                                        '#FF5C3D20'
                                     }">
                                         <div class="flex items-center space-x-2">
                                             <span class="text-lg font-bold" style="color: ${
@@ -725,7 +725,7 @@
                                             }</span>
                                             <span class="font-medium text-stone-700">${item.name}</span>
                                         </div>
-                                        <span class="text-sm font-semibold" style="color: #F1D24B">${item.points || 0} pts</span>
+                                        <span class="text-sm font-semibold text-stone-700">${item.points || 0} pts</span>
                                     </div>
                                 `).join('')}
                                 ${getTop3DojoRanking().length === 0 ? '<p class="text-sm text-stone-500 text-center py-4">Ainda não há ranking</p>' : ''}
@@ -748,7 +748,7 @@
                                     <p class="text-sm font-semibold text-stone-700 mb-3">${day.substring(0, 3)}</p>
                                     <div class="space-y-2">
                                         ${getTeacherDaySchedule(day, currentUserName).slice(0, 2).map(schedule => `
-                                            <div class="text-xs p-2 rounded-lg shadow-sm border" style="background: linear-gradient(135deg, #F1D24B15 0%, #F1D24B25 100%); border-color: #F1D24B30; color: #8B6914;">
+                                            <div class="text-xs p-2 rounded-lg shadow-sm border" style="background-color: #F1D24B20; border-color: #F1D24B30; color: #8B6914;">
                                                 <div class="font-medium">${schedule.startTime}</div>
                                                 <div class="text-stone-600">${schedule.student}</div>
                                             </div>
@@ -1246,7 +1246,7 @@
             if (teacherFilter !== 'all' && hoursContainer) {
                 const weeklyHours = calculateWeeklyHours(teacherFilter);
                 hoursContainer.innerHTML = `
-                    <div class="bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-4 text-center">
+                    <div class="rounded-lg p-4 text-center border" style="background-color: #F1D24B20; border-color: #F1D24B40;">
                         <div class="text-sm font-medium uppercase tracking-wide" style="color: #F1D24B;">Carga Horária Semanal</div>
                         <div class="text-3xl font-bold mt-1" style="color: #8B6914;">${weeklyHours} horas</div>
                         <div class="text-xs mt-1" style="color: #F1D24B;">${teacherFilter}</div>
@@ -1264,17 +1264,17 @@
                 const totalHours = Object.values(teacherHours).reduce((sum, hours) => sum + hours, 0);
                 
                 hoursContainer.innerHTML = `
-                    <div class="bg-gradient-to-r from-yellow-50 to-yellow-100 border border-yellow-200 rounded-lg p-4" style="background: linear-gradient(to right, #F1D24B15, #F1D24B25);">
+                    <div class="rounded-lg p-4 border" style="background-color: #F1D24B20; border-color: #F1D24B40;">
                         <div class="text-sm font-medium text-stone-700 uppercase tracking-wide mb-3 text-center">Resumo da Carga Horária Semanal</div>
                         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mb-3">
                             ${Object.entries(teacherHours).map(([name, hours]) => `
-                                <div class="bg-white rounded-lg p-2 text-center border border-yellow-200">
+                                <div class="bg-white rounded-lg p-2 text-center border" style="border-color: #F1D24B40;">
                                     <div class="text-lg font-bold text-stone-800">${hours}h</div>
                                     <div class="text-xs text-stone-600">${name}</div>
                                 </div>
                             `).join('')}
                         </div>
-                        <div class="text-center border-t border-yellow-200 pt-3">
+                        <div class="text-center pt-3" style="border-top: 1px solid #F1D24B40;">
                             <div class="text-sm text-stone-700">Total Geral</div>
                             <div class="text-2xl font-bold text-stone-800">${totalHours} horas</div>
                         </div>
