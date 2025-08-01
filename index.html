@@ -1187,6 +1187,10 @@
             const addAulaButton = ['admin', 'ap', 'pedagogico'].includes(currentUserRole)
                 ? `<button class="primary-btn w-auto" data-action="add-schedule">+ Adicionar Aula</button>`
                 : '';
+                
+            const debugButton = ['admin'].includes(currentUserRole)
+                ? `<button class="secondary-btn w-auto" data-action="show-teacher-mapping">Debug Professor</button>`
+                : '';
 
             contentArea.innerHTML = `
                 <section id="grade-section" class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
@@ -1194,6 +1198,7 @@
                         ${filterHtml}
                         <div class="flex gap-2 ml-auto">
                            ${addAulaButton}
+                           ${debugButton}
                         </div>
                     </div>
                     <div id="weekly-hours-container" class="mb-6"></div>
@@ -1202,7 +1207,48 @@
             `;
 
             if (isTeacher) {
-                renderScheduleGrid(currentUserName);
+                // Find the teacher's name in collaborators to ensure correct mapping
+                const teacherCollaborator = collaborators.find(c => 
+                    c.sectors && c.sectors.includes('professor') && 
+                    (c.name === currentUserName || c.email === currentUserName || c.id === userId)
+                );
+                const teacherNameToFilter = teacherCollaborator ? teacherCollaborator.name : currentUserName;
+                
+                // Show debug info if teacher has no schedules
+                const teacherSchedules = schedules.filter(s => s.teacher === teacherNameToFilter);
+                if (teacherSchedules.length === 0) {
+                    console.log('DEBUG: Teacher schedule mapping', {
+                        currentUserName,
+                        teacherNameToFilter,
+                        availableTeachersInSchedules: [...new Set(schedules.map(s => s.teacher))],
+                        collaboratorTeachers: collaborators.filter(c => c.sectors && c.sectors.includes('professor')).map(c => c.name)
+                    });
+                    
+                    // Show helper message for teachers
+                    const availableTeachers = [...new Set(schedules.map(s => s.teacher))];
+                    if (availableTeachers.length > 0) {
+                        document.getElementById('schedule-grid-container').innerHTML = `
+                            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
+                                <div class="mb-4">
+                                    <svg class="w-16 h-16 mx-auto text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.662-.833-2.464 0L4.732 15.5c-.77.833.192 2.5 1.732 2.5z"/>
+                                    </svg>
+                                </div>
+                                <h3 class="text-lg font-semibold text-yellow-800 mb-2">Grade não encontrada</h3>
+                                <p class="text-yellow-700 mb-4">Não encontramos horários para o seu nome de usuário.</p>
+                                <div class="bg-white rounded-lg p-4 mb-4">
+                                    <p class="text-sm text-gray-600 mb-2"><strong>Seu nome no sistema:</strong> ${currentUserName}</p>
+                                    <p class="text-sm text-gray-600 mb-2"><strong>Professores com horários cadastrados:</strong></p>
+                                    <div class="text-sm text-gray-800 font-medium">${availableTeachers.join(', ')}</div>
+                                </div>
+                                <p class="text-yellow-700 text-sm">Entre em contato com o administrador para ajustar o mapeamento do seu nome.</p>
+                            </div>
+                        `;
+                        return;
+                    }
+                }
+                
+                renderScheduleGrid(teacherNameToFilter);
             } else {
                 const teacherFilter = document.getElementById('teacher-filter');
                 if (teacherFilter) {
@@ -1238,6 +1284,18 @@
 
             if (teacherFilter !== 'all') {
                 filteredSchedules = filteredSchedules.filter(s => s.teacher === teacherFilter);
+            }
+            
+            // Debug log for teachers to help identify mapping issues
+            if (currentUserRole === 'teacher' && teacherFilter !== 'all') {
+                console.log('DEBUG: Grade filtering for teacher', {
+                    teacherFilter,
+                    currentUserName,
+                    currentUserRole,
+                    filteredSchedulesCount: filteredSchedules.length,
+                    allSchedulesCount: schedules.length,
+                    uniqueTeachers: [...new Set(schedules.map(s => s.teacher))]
+                });
             }
 
             // Show weekly hours for specific teacher or all teachers summary
@@ -1282,6 +1340,11 @@
                 `;
             } else if (hoursContainer) {
                 hoursContainer.innerHTML = '';
+            }
+            
+            // Show message if no schedules found for teacher role
+            if (currentUserRole === 'teacher' && filteredSchedules.length === 0) {
+                return; // Already handled above
             }
 
             let gridHtml = `<div class="schedule-grid">`;
@@ -2284,7 +2347,7 @@
                     ${event.descricao ? `<div><strong>Descrição:</strong><p class="mt-1 p-3 bg-stone-50 rounded-md whitespace-pre-wrap">${event.descricao}</p></div>` : ''}
                     <div class="border-t pt-4 flex justify-end gap-2">
                         <button class="secondary-btn" data-action="edit-event" data-id="${event.id}">Editar</button>
-                        <button class="danger-btn" data-action="delete-item" data-collection="events" data-id="${event.id}">Apagar</button>
+                        <button class="danger-btn" data-action="delete-calendar-event" data-id="${event.id}">Apagar</button>
                     </div>
                 </div>`;
             document.getElementById('form-modal').classList.add('visible');
@@ -3303,7 +3366,102 @@
             openHtmlInNewWindow("Cronogramas Pedagógicos (CPs)", docHtml);
         }
 
+        // --- Teacher Debug Functions ---
+        function showTeacherMapping() {
+            if (currentUserRole !== 'admin') return;
+            
+            const teachersInSchedules = [...new Set(schedules.map(s => s.teacher))];
+            const teachersInCollaborators = collaborators.filter(c => c.sectors && c.sectors.includes('professor'));
+            const usersWithTeacherRole = collaborators.filter(c => c.role === 'teacher');
+            
+            const mappingInfo = teachersInCollaborators.map(teacher => {
+                const hasSchedules = teachersInSchedules.includes(teacher.name);
+                const scheduleCount = schedules.filter(s => s.teacher === teacher.name).length;
+                return {
+                    name: teacher.name,
+                    email: teacher.email || 'N/A',
+                    id: teacher.id || 'N/A',
+                    hasSchedules,
+                    scheduleCount,
+                    status: hasSchedules ? 'OK' : 'SEM HORÁRIOS'
+                };
+            });
+            
+            document.getElementById('form-modal-title').textContent = 'Debug: Mapeamento de Professores';
+            document.getElementById('form-modal-content-area').innerHTML = `
+                <div class="space-y-6">
+                    <div>
+                        <h4 class="font-semibold text-stone-800 mb-3">Professores Cadastrados vs Horários</h4>
+                        <div class="space-y-2 max-h-60 overflow-y-auto">
+                            ${mappingInfo.map(info => `
+                                <div class="flex justify-between items-center p-3 rounded-lg border ${info.hasSchedules ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}">
+                                    <div>
+                                        <div class="font-medium text-stone-800">${info.name}</div>
+                                        <div class="text-xs text-stone-600">ID: ${info.id} | Email: ${info.email}</div>
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="text-sm font-medium ${info.hasSchedules ? 'text-green-600' : 'text-red-600'}">${info.status}</div>
+                                        <div class="text-xs text-stone-500">${info.scheduleCount} horários</div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-semibold text-stone-800 mb-3">Professores Únicos nos Horários</h4>
+                        <div class="flex flex-wrap gap-2">
+                            ${teachersInSchedules.map(name => `
+                                <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">${name}</span>
+                            `).join('')}
+                        </div>
+                    </div>
+                    
+                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                        <h5 class="font-medium text-yellow-800 mb-2">Instruções para Correção:</h5>
+                        <ul class="text-sm text-yellow-700 space-y-1">
+                            <li>• Verifique se o nome do professor nos horários corresponde exatamente ao nome no cadastro de colaboradores</li>
+                            <li>• Nomes devem ser idênticos (incluindo acentos e espaços)</li>
+                            <li>• Use "Editar" nas aulas para corrigir o nome do professor se necessário</li>
+                            <li>• Ou edite o nome do colaborador para corresponder aos horários existentes</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="text-right">
+                        <button type="button" data-action="close-form-modal" class="secondary-btn">Fechar</button>
+                    </div>
+                </div>
+            `;
+            document.getElementById('form-modal').classList.add('visible');
+        }
+        
         // --- Calendar Functions ---
+        async function deleteCalendarEvent(eventId) {
+            if (!confirm('Tem certeza que deseja apagar este evento?')) {
+                return;
+            }
+            
+            if (window.isDevelopmentMode) {
+                // Remove from local array and localStorage
+                events = events.filter(e => e.id !== eventId);
+                localStorage.setItem('demo-events', JSON.stringify(events));
+                
+                // Close modal and refresh calendar
+                document.getElementById('form-modal').classList.remove('visible');
+                renderCalendarioSection();
+                showSuccessMessage("Sucesso!", "Evento apagado com sucesso.");
+            } else if (db) {
+                try {
+                    await deleteDoc(doc(db, `artifacts/${appId}/public/data/events`, eventId));
+                    document.getElementById('form-modal').classList.remove('visible');
+                    showSuccessMessage("Sucesso!", "Evento apagado com sucesso.");
+                } catch (error) {
+                    console.error("Error deleting event:", error);
+                    showErrorMessage("Erro", "Falha ao apagar o evento.");
+                }
+            }
+        }
+        
         function renderCalendarioSection() {
             document.getElementById('main-title').textContent = 'Calendário de Eventos';
             const contentArea = document.getElementById('content-area');
@@ -3465,12 +3623,12 @@
                     <div class="flex flex-wrap items-center justify-between gap-4">
                         <div class="flex-grow text-center">
                             <h1 class="text-2xl sm:text-3xl font-bold text-stone-800">Pedagogical Challenge</h1>
-                            <p class="text-md sm:text-lg text-stone-700 mt-1">A new topic every month to sharpen your skills.</p>
+                            <p id="challenge-subtitle-display" class="text-md sm:text-lg text-stone-700 mt-1">A new topic every month to sharpen your skills.</p>
                         </div>
                         <div class="bg-white text-stone-800 px-4 py-2 rounded-lg shadow-inner text-center flex-shrink-0">
                             <span id="challenge-month-display" class="font-bold text-xl">MONTHLY MODULE</span>
                         </div>
-                        ${currentUserRole === 'admin' ? `
+                        ${['admin', 'ap'].includes(currentUserRole) ? `
                         <button class="secondary-btn w-auto" data-action="edit-challenge-content">
                             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
@@ -3579,6 +3737,11 @@
                                     <input type="text" id="challenge-month" class="form-input" placeholder="Ex: JANEIRO 2025">
                                 </div>
                                 <div>
+                                    <label class="font-medium text-sm">Tema do Mês (Subtítulo)</label>
+                                    <input type="text" id="challenge-subtitle" class="form-input" placeholder="Ex: A new topic every month to sharpen your skills.">
+                                    <p class="text-xs text-stone-500 mt-1">Texto que aparece abaixo do título principal</p>
+                                </div>
+                                <div>
                                     <label class="font-medium text-sm">Data Limite (Deadline)</label>
                                     <input type="datetime-local" id="challenge-deadline" class="form-input">
                                 </div>
@@ -3592,7 +3755,7 @@
                 </div>
             `;
             
-            initializePedagogicalChallenge();
+            initializePedagogicalChallenge().catch(console.error);
         }
 
         // --- Pedagogical Challenge Implementation ---
@@ -3637,32 +3800,132 @@
             { q: "According to Vygotsky, thought and language...", o: ["Are identical from birth", "Develop independently at first and then merge", "Language is a byproduct of thought", "Thought is a byproduct of language"], a: 1, e: "He proposed that in early development, thought is non-verbal and speech is non-intellectual. They merge around age two." }
         ];
 
-        function initializePedagogicalChallenge() {
-            loadChallengeContent();
+        async function initializePedagogicalChallenge() {
+            await loadChallengeContent();
             renderChallengeContent();
             initializeCountdown();
             showQuizWelcome();
-        }
-
-        function loadChallengeContent() {
-            const saved = localStorage.getItem('slap-challenge-content');
-            if (saved) {
-                challengeContent = JSON.parse(saved);
-            } else {
-                // Default content
-                challengeContent = {
-                    videoUrl: 'https://res.cloudinary.com/dqfi22uz0/video/upload/v1751160446/Vygotksy_s_Zone_of_Proximal_Development_Explained_in_4_minutes_n3dmpt.mp4',
-                    audio1Url: 'https://res.cloudinary.com/dqfi22uz0/video/upload/v1751161824/zdp1_yldo65.mp3',
-                    audio2Url: 'https://res.cloudinary.com/dqfi22uz0/video/upload/v1751162058/ZDP2_jfyspg.mp3',
-                    month: 'JANEIRO 2025',
-                    deadline: null
-                };
-                saveChallengeContent();
+            
+            // Set up real-time listener for Firebase updates
+            if (!window.isDevelopmentMode && db) {
+                const docRef = doc(db, `artifacts/${appId}/public/data/challenge-content`, 'current');
+                onSnapshot(docRef, (doc) => {
+                    if (doc.exists()) {
+                        const data = doc.data();
+                        const newContent = {
+                            videoUrl: data.videoUrl || '',
+                            audio1Url: data.audio1Url || '',
+                            audio2Url: data.audio2Url || '',
+                            month: data.month || 'MONTHLY MODULE',
+                            subtitle: data.subtitle || 'A new topic every month to sharpen your skills.',
+                            deadline: data.deadline || null
+                        };
+                        
+                        // Only update if content changed to avoid infinite loops
+                        if (JSON.stringify(newContent) !== JSON.stringify(challengeContent)) {
+                            challengeContent = newContent;
+                            renderChallengeContent();
+                            
+                            // Restart countdown with new deadline
+                            if (countdownInterval) {
+                                clearInterval(countdownInterval);
+                            }
+                            initializeCountdown();
+                            
+                            // Show notification that content was updated
+                            if (data.updatedBy && data.updatedBy !== currentUserName) {
+                                showSuccessMessage("Atualização!", `Conteúdo atualizado por ${data.updatedBy}`);
+                            }
+                        }
+                    }
+                }, (error) => {
+                    console.error("Error listening to challenge content updates:", error);
+                });
             }
         }
 
-        function saveChallengeContent() {
-            localStorage.setItem('slap-challenge-content', JSON.stringify(challengeContent));
+        async function loadChallengeContent() {
+            if (window.isDevelopmentMode) {
+                // In development mode, load from localStorage
+                const saved = localStorage.getItem('slap-challenge-content');
+                if (saved) {
+                    challengeContent = JSON.parse(saved);
+                } else {
+                    setDefaultChallengeContent();
+                }
+            } else if (db) {
+                // In production, load from Firebase so it's shared across all users
+                try {
+                    const docRef = doc(db, `artifacts/${appId}/public/data/challenge-content`, 'current');
+                    const docSnap = await getDoc(docRef);
+                    
+                    if (docSnap.exists()) {
+                        const data = docSnap.data();
+                        challengeContent = {
+                            videoUrl: data.videoUrl || '',
+                            audio1Url: data.audio1Url || '',
+                            audio2Url: data.audio2Url || '',
+                            month: data.month || 'MONTHLY MODULE',
+                            subtitle: data.subtitle || 'A new topic every month to sharpen your skills.',
+                            deadline: data.deadline || null
+                        };
+                    } else {
+                        setDefaultChallengeContent();
+                    }
+                } catch (error) {
+                    console.error("Error loading challenge content:", error);
+                    // Fallback to localStorage
+                    const saved = localStorage.getItem('slap-challenge-content');
+                    if (saved) {
+                        challengeContent = JSON.parse(saved);
+                    } else {
+                        setDefaultChallengeContent();
+                    }
+                }
+            } else {
+                // Fallback to localStorage
+                const saved = localStorage.getItem('slap-challenge-content');
+                if (saved) {
+                    challengeContent = JSON.parse(saved);
+                } else {
+                    setDefaultChallengeContent();
+                }
+            }
+        }
+        
+        function setDefaultChallengeContent() {
+            challengeContent = {
+                videoUrl: 'https://res.cloudinary.com/dqfi22uz0/video/upload/v1751160446/Vygotksy_s_Zone_of_Proximal_Development_Explained_in_4_minutes_n3dmpt.mp4',
+                audio1Url: 'https://res.cloudinary.com/dqfi22uz0/video/upload/v1751161824/zdp1_yldo65.mp3',
+                audio2Url: 'https://res.cloudinary.com/dqfi22uz0/video/upload/v1751162058/ZDP2_jfyspg.mp3',
+                month: 'JANEIRO 2025',
+                subtitle: 'A new topic every month to sharpen your skills.',
+                deadline: null
+            };
+            saveChallengeContent();
+        }
+
+        async function saveChallengeContent() {
+            if (window.isDevelopmentMode) {
+                // In development mode, save to localStorage
+                localStorage.setItem('slap-challenge-content', JSON.stringify(challengeContent));
+            } else if (db) {
+                // In production, save to Firebase so it's shared across all users
+                try {
+                    await setDoc(doc(db, `artifacts/${appId}/public/data/challenge-content`, 'current'), {
+                        ...challengeContent,
+                        updatedAt: serverTimestamp(),
+                        updatedBy: currentUserName
+                    });
+                } catch (error) {
+                    console.error("Error saving challenge content:", error);
+                    // Fallback to localStorage if Firebase fails
+                    localStorage.setItem('slap-challenge-content', JSON.stringify(challengeContent));
+                }
+            } else {
+                // Fallback to localStorage
+                localStorage.setItem('slap-challenge-content', JSON.stringify(challengeContent));
+            }
         }
 
         function renderChallengeContent() {
@@ -3673,8 +3936,14 @@
 
         function updateChallengeHeader() {
             const monthDisplay = document.getElementById('challenge-month-display');
+            const subtitleDisplay = document.getElementById('challenge-subtitle-display');
+            
             if (monthDisplay && challengeContent.month) {
                 monthDisplay.textContent = challengeContent.month;
+            }
+            
+            if (subtitleDisplay && challengeContent.subtitle) {
+                subtitleDisplay.textContent = challengeContent.subtitle;
             }
         }
 
@@ -3734,7 +4003,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 14.142M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/>
                         </svg>
                         <p>Nenhum áudio configurado</p>
-                        ${currentUserRole === 'admin' ? '<p class="text-xs mt-1">Configure áudios através do botão "Editar Conteúdo"</p>' : ''}
+                        ${['admin', 'ap'].includes(currentUserRole) ? '<p class="text-xs mt-1">Configure áudios através do botão "Editar Conteúdo"</p>' : ''}
                     </div>
                 `;
             }
@@ -3818,6 +4087,7 @@
             document.getElementById('challenge-audio1-url').value = challengeContent.audio1Url || '';
             document.getElementById('challenge-audio2-url').value = challengeContent.audio2Url || '';
             document.getElementById('challenge-month').value = challengeContent.month || '';
+            document.getElementById('challenge-subtitle').value = challengeContent.subtitle || '';
             
             // Pre-fill deadline
             if (challengeContent.deadline) {
@@ -3835,7 +4105,7 @@
             };
         }
 
-        function saveChallengeContentForm() {
+        async function saveChallengeContentForm() {
             const deadlineValue = document.getElementById('challenge-deadline').value;
             
             challengeContent = {
@@ -3843,10 +4113,11 @@
                 audio1Url: document.getElementById('challenge-audio1-url').value.trim(),
                 audio2Url: document.getElementById('challenge-audio2-url').value.trim(),
                 month: document.getElementById('challenge-month').value.trim() || 'MONTHLY MODULE',
+                subtitle: document.getElementById('challenge-subtitle').value.trim() || 'A new topic every month to sharpen your skills.',
                 deadline: deadlineValue ? new Date(deadlineValue).getTime() : null
             };
             
-            saveChallengeContent();
+            await saveChallengeContent();
             renderChallengeContent();
             
             // Restart countdown with new deadline
@@ -4738,23 +5009,35 @@
             const modal = document.getElementById('monthly-highlight-modal');
             const form = document.getElementById('monthly-highlight-form');
             
+            if (!modal) {
+                console.error('Modal monthly-highlight-modal not found');
+                return;
+            }
+            
             // Pre-fill form if there's existing data
             if (monthlyHighlight) {
-                document.getElementById('highlight-name').value = monthlyHighlight.name || '';
-                document.getElementById('highlight-photo-url').value = monthlyHighlight.photoUrl || '';
-                document.getElementById('highlight-description').value = monthlyHighlight.description || '';
-                document.getElementById('highlight-award').value = monthlyHighlight.award || '';
-            } else {
+                const nameField = document.getElementById('highlight-name');
+                const photoField = document.getElementById('highlight-photo-url');
+                const descField = document.getElementById('highlight-description');
+                const awardField = document.getElementById('highlight-award');
+                
+                if (nameField) nameField.value = monthlyHighlight.name || '';
+                if (photoField) photoField.value = monthlyHighlight.photoUrl || '';
+                if (descField) descField.value = monthlyHighlight.description || '';
+                if (awardField) awardField.value = monthlyHighlight.award || '';
+            } else if (form) {
                 form.reset();
             }
             
             modal.classList.add('visible');
             
-            form.onsubmit = (e) => {
-                e.preventDefault();
-                saveMonthlyHighlight();
-                modal.classList.remove('visible');
-            };
+            if (form) {
+                form.onsubmit = (e) => {
+                    e.preventDefault();
+                    saveMonthlyHighlight();
+                    modal.classList.remove('visible');
+                };
+            }
         }
 
         function saveMonthlyHighlight() {
@@ -5008,6 +5291,8 @@
                         'add-guideline': openGuidelineForm,
                         'edit-monthly-highlight': openMonthlyHighlightForm,
                         'edit-challenge-content': openChallengeContentForm,
+                        'delete-calendar-event': () => deleteCalendarEvent(id),
+                        'show-teacher-mapping': showTeacherMapping,
                     };
                     if (actionHandlers[action]) {
                         actionHandlers[action]();
