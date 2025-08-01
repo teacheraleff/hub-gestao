@@ -10,7 +10,6 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Palette: SLAP Brand Colors: #F1D24B (Yellow), #FF5C3D (Orange), #84C7DF (Blue), #8671D1 (Purple) -->
     <style>
         body {
             font-family: 'DM Sans', sans-serif;
@@ -130,15 +129,13 @@
 </head>
 <body class="bg-stone-100 text-stone-800">
 
-    <!-- Login, Pending, and Hub Views -->
     <div id="login-view" class="flex items-center justify-center min-h-screen">
-        <!-- O conteúdo do login será gerado pelo JS -->
-    </div>
+        </div>
 
     <div id="pending-view" class="hidden items-center justify-center min-h-screen">
         <div class="text-center p-8 bg-white rounded-xl shadow-lg">
             <h2 class="text-2xl font-bold text-yellow-500">Aguardando Aprovação</h2>
-            <p class="text-stone-600 mt-2">A sua conta foi criada e está a aguardar aprovação de um administrador.</p>
+            <p class="text-stone-600 mt-2">Sua conta foi criada e está aguardando aprovação de um administrador.</p>
             <button id="pending-logout" class="mt-6 secondary-btn w-auto">Sair</button>
         </div>
     </div>
@@ -152,8 +149,7 @@
                 <h1 class="text-xl font-bold text-stone-800 text-center">Hub SLAP</h1>
                 <p id="welcome-message" class="text-center text-sm text-stone-600 mb-6"></p>
                 <nav id="main-navigation" class="space-y-1 flex-1">
-                    <!-- Menu items are dynamically generated here -->
-                </nav>
+                    </nav>
                 <div class="mt-auto pt-4">
                     <button id="logout-button" class="nav-item w-full text-left px-4 py-2.5 rounded-lg text-stone-700 hover:bg-red-50 hover:text-red-600 transition-colors flex items-center font-semibold">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-3"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
@@ -174,7 +170,6 @@
         </div>
     </div>
 
-    <!-- Modal -->
     <div id="form-modal" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
@@ -342,17 +337,17 @@
                 <div class="w-full max-w-md p-8 space-y-8 bg-white rounded-xl shadow-lg">
                     <div class="text-center">
                         <img src="https://res.cloudinary.com/dqfi22uz0/image/upload/v1749349751/DBB440C2-684E-4DCF-9CD3-B2DDC18F1E53_3_vgocga.jpg" alt="Logo SLAP" class="w-24 h-auto mx-auto rounded-lg mb-4">
-                        <h2 class="text-2xl font-bold text-stone-900">Aceda à sua conta</h2>
-                        <p class="mt-2 text-sm text-stone-600">Bem-vindo de volta!</p>
+                        <h2 class="text-2xl font-bold text-stone-900">Acesse sua conta</h2>
+                        <p class="mt-2 text-sm text-stone-600">Bem-vindo(a) de volta!</p>
                     </div>
                     <form id="login-form" class="mt-8 space-y-6">
                         <div>
-                            <label for="login-email" class="sr-only">Email</label>
-                            <input id="login-email" name="email" type="email" autocomplete="email" required class="form-input" placeholder="Endereço de email">
+                            <label for="login-email" class="sr-only">E-mail</label>
+                            <input id="login-email" name="email" type="email" autocomplete="email" required class="form-input" placeholder="Endereço de e-mail">
                         </div>
                         <div>
-                            <label for="login-password" class="sr-only">Palavra-passe</label>
-                            <input id="login-password" name="password" type="password" autocomplete="current-password" required class="form-input" placeholder="Palavra-passe">
+                            <label for="login-password" class="sr-only">Senha</label>
+                            <input id="login-password" name="password" type="password" autocomplete="current-password" required class="form-input" placeholder="Senha">
                         </div>
                         <p id="login-error" class="text-sm text-red-600 text-center"></p>
                         <div>
@@ -361,7 +356,7 @@
                     </form>
                     <p class="text-sm text-center text-stone-600">
                         Não tem uma conta?
-                        <button data-action="open-signup" class="font-medium text-yellow-600 hover:text-yellow-500">Registe-se</button>
+                        <button data-action="open-signup" class="font-medium text-yellow-600 hover:text-yellow-500">Cadastre-se</button>
                     </p>
                 </div>
             `;
@@ -375,7 +370,7 @@
             pendingView.classList.remove('flex');
             hubView.classList.remove('hidden'); 
             const firstName = (currentUserName || '').split(' ')[0];
-            document.getElementById('welcome-message').textContent = `Bem-vindo, ${firstName}`;
+            document.getElementById('welcome-message').textContent = `Bem-vindo(a), ${firstName}`;
             renderMenu(); 
             renderInicioSection(); 
             setActiveNavItem(document.querySelector('[data-target="inicio"]')); 
@@ -396,10 +391,10 @@
                 await signInWithEmailAndPassword(auth, email, password);
             } catch (error) {
                 const errorElement = document.getElementById('login-error');
-                if(errorElement) errorElement.textContent = "Email ou palavra-passe inválidos.";
+                if(errorElement) errorElement.textContent = "E-mail ou senha inválidos.";
             }
         }
-        async function handleSignUp(event) { event.preventDefault(); const name = event.target.name.value; const email = event.target.email.value; const password = event.target.password.value; try { const cred = await createUserWithEmailAndPassword(auth, email, password); await updateProfile(cred.user, { displayName: name }); await setDoc(doc(db, "users", cred.user.uid), { name, email, role: "pending", createdAt: serverTimestamp() }); await signOut(auth); showSuccessMessage("Registo Concluído!", "A sua conta foi criada. Aguarde aprovação de um administrador para aceder."); } catch (error) { showErrorMessage("Erro", "Erro ao criar conta. Verifique o email e a palavra-passe."); } }
+        async function handleSignUp(event) { event.preventDefault(); const name = event.target.name.value; const email = event.target.email.value; const password = event.target.password.value; try { const cred = await createUserWithEmailAndPassword(auth, email, password); await updateProfile(cred.user, { displayName: name }); await setDoc(doc(db, "users", cred.user.uid), { name, email, role: "pending", createdAt: serverTimestamp() }); await signOut(auth); showSuccessMessage("Cadastro Concluído!", "Sua conta foi criada. Aguarde aprovação de um administrador para acessar."); } catch (error) { showErrorMessage("Erro", "Erro ao criar conta. Verifique o e-mail e a senha."); } }
         async function handleLogout() { 
             await signOut(auth);
         }
@@ -407,11 +402,11 @@
         // --- CONTENT RENDERING ---
         function renderInicioSection() {
             document.getElementById('main-title').textContent = 'Dashboard';
-            document.getElementById('main-description').textContent = 'Visão geral das suas atividades e da equipa.';
+            document.getElementById('main-description').textContent = 'Visão geral das suas atividades e da equipe.';
             contentArea.innerHTML = `<div id="inicio-section" class="bg-white p-8 rounded-lg shadow-sm text-center">
                 <img src="https://res.cloudinary.com/dqfi22uz0/image/upload/v1749349751/DBB440C2-684E-4DCF-9CD3-B2DDC18F1E53_3_vgocga.jpg" alt="Logo SLAP" class="w-32 h-auto mx-auto rounded-lg mb-6">
-                <h3 class="text-2xl font-bold text-stone-800">Bem-vindo ao Hub SLAP</h3>
-                <p class="mt-2 text-stone-600 max-w-2xl mx-auto">Selecione uma opção no menu à esquerda para começar a gerir as suas operações.</p>
+                <h3 class="text-2xl font-bold text-stone-800">Bem-vindo(a) ao Hub SLAP</h3>
+                <p class="mt-2 text-stone-600 max-w-2xl mx-auto">Selecione uma opção no menu à esquerda para começar a gerenciar suas operações.</p>
             </div>`;
         }
 
@@ -452,7 +447,7 @@
                             <button class="secondary-btn filter-btn" data-filter="cancelado">Cancelados</button>
                         </div>
                         <div class="flex gap-2">
-                            <button class="secondary-btn w-auto" data-action="export-alunos-excel">Exportar Excel</button>
+                            <button class="secondary-btn w-auto" data-action="export-alunos-doc">Exportar Documento</button>
                             ${canAdd ? `<button class="primary-btn w-auto" data-action="add-aluno">+ Adicionar Aluno</button>` : ''}
                         </div>
                     </div>
@@ -528,7 +523,7 @@
 
         function renderTurmasSection() {
             document.getElementById('main-title').textContent = 'Gestão de Turmas';
-            document.getElementById('main-description').textContent = 'Crie turmas, adicione alunos e registe as presenças.';
+            document.getElementById('main-description').textContent = 'Crie turmas, adicione alunos e registre as presenças.';
             
             const canManage = ['admin', 'pedagogico', 'ap'].includes(currentUserRole);
             let itemsToDisplay = turmas;
@@ -564,7 +559,7 @@
 
         function renderVipsSection() {
             document.getElementById('main-title').textContent = 'Gestão de VIPs';
-            document.getElementById('main-description').textContent = 'Gerencie alunos VIP e registe as suas presenças.';
+            document.getElementById('main-description').textContent = 'Gerencie alunos VIP e registre suas presenças.';
             
             const canManage = ['admin', 'pedagogico', 'ap'].includes(currentUserRole);
             let itemsToDisplay = vips;
@@ -624,7 +619,7 @@
         
         function renderTarefasSection() { 
             document.getElementById('main-title').textContent = 'Lista de Tarefas'; 
-            document.getElementById('main-description').textContent = 'Gerencie e acompanhe as tarefas da equipa.'; 
+            document.getElementById('main-description').textContent = 'Gerencie e acompanhe as tarefas da equipe.'; 
             
             const collaboratorOptions = collaborators.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
 
@@ -672,7 +667,7 @@
         
         function renderGradeSection() {
             document.getElementById('main-title').textContent = 'Grade de Horários';
-            document.getElementById('main-description').textContent = 'Visualize e gerencie a grade de aulas da equipa.';
+            document.getElementById('main-description').textContent = 'Visualize e gerencie a grade de aulas da equipe.';
             
             const isTeacher = currentUserRole === 'teacher';
             let filterHtml = '';
@@ -827,7 +822,7 @@
         }
         
         function renderCancelamentosSection() {
-            document.getElementById('main-title').textContent = 'Registo de Cancelamentos';
+            document.getElementById('main-title').textContent = 'Registro de Cancelamentos';
             document.getElementById('main-description').textContent = 'Gerencie todos os cancelamentos de matrículas.';
             const canAdd = ['admin', 'financeiro'].includes(currentUserRole);
             
@@ -967,9 +962,12 @@
 
             contentArea.innerHTML = `
                 <section id="cps-section">
-                    <div class="flex justify-between items-center mb-6">
+                    <div class="flex justify-between items-center mb-6 flex-wrap gap-4">
                         <h3 class="text-xl font-bold text-stone-800">Níveis do Curso</h3>
-                        ${addNivelBtn}
+                        <div class="flex gap-2">
+                           <button class="secondary-btn w-auto" data-action="export-cps-doc">Exportar CPs</button>
+                           ${addNivelBtn}
+                        </div>
                     </div>
                     <div id="cp-list-container">
                         ${cps.map((nivel, index) => `
@@ -1076,7 +1074,6 @@
                         </table>
                     </div>
 
-                    <!-- Missões Ativas Section -->
                     <div class="mt-12 pt-8 border-t border-stone-200">
                         <div class="flex justify-between items-center mb-6">
                             <h3 class="text-xl font-bold text-stone-800">Missões Ativas</h3>
@@ -1121,9 +1118,9 @@
             modalContentArea.innerHTML = `
                 <form id="signup-form" class="space-y-4">
                     <div><label for="signup-name" class="font-medium text-sm">Nome Completo</label><input type="text" id="signup-name" name="name" required class="form-input mt-1"></div>
-                    <div><label for="signup-email" class="font-medium text-sm">Email</label><input type="email" id="signup-email" name="email" required class="form-input mt-1"></div>
-                    <div><label for="signup-password" class="font-medium text-sm">Palavra-passe (mín. 6 caracteres)</label><input type="password" id="signup-password" name="password" required class="form-input mt-1"></div>
-                    <div class="text-right"><button type="submit" class="primary-btn w-auto">Registar</button></div>
+                    <div><label for="signup-email" class="font-medium text-sm">E-mail</label><input type="email" id="signup-email" name="email" required class="form-input mt-1"></div>
+                    <div><label for="signup-password" class="font-medium text-sm">Senha (mín. 6 caracteres)</label><input type="password" id="signup-password" name="password" required class="form-input mt-1"></div>
+                    <div class="text-right"><button type="submit" class="primary-btn w-auto">Cadastrar</button></div>
                 </form>
             `;
             document.getElementById('signup-form').addEventListener('submit', handleSignUp);
@@ -1451,6 +1448,16 @@
             modal.dataset.pefType = "turma";
 
             const modalTitle = document.getElementById('form-modal-title');
+            const modalHeader = modalTitle.parentElement;
+            if (!modalHeader.querySelector('[data-action="export-turma-pef"]')) {
+                const exportButton = document.createElement('button');
+                exportButton.className = 'secondary-btn w-auto';
+                exportButton.textContent = 'Exportar PEF';
+                exportButton.dataset.action = 'export-turma-pef';
+                exportButton.dataset.id = turmaId;
+                modalHeader.insertBefore(exportButton, modalHeader.querySelector('.modal-close-btn'));
+            }
+
             const modalContentArea = document.getElementById('form-modal-content-area');
             modalTitle.textContent = `PEF: ${turma.name}`;
 
@@ -1510,7 +1517,6 @@
             const modalTitle = document.getElementById('form-modal-title');
             const modalHeader = modalTitle.parentElement;
             
-            // Add export button if it doesn't exist
             if (!modalHeader.querySelector('[data-action="export-vip-pef"]')) {
                 const exportButton = document.createElement('button');
                 exportButton.className = 'secondary-btn w-auto';
@@ -1900,7 +1906,7 @@
                 if (startTime < teacher.shiftStart || startTime > teacher.shiftEnd) {
                     showConfirmationModal(
                         "Aviso de Horário", 
-                        `Este horário (${startTime}) está fora do turno do professor (${teacher.shiftStart} - ${teacher.shiftEnd}). Tem a certeza que quer continuar?`,
+                        `Este horário (${startTime}) está fora do turno do professor (${teacher.shiftStart} - ${teacher.shiftEnd}). Tem certeza que quer continuar?`,
                         () => proceedWithSaveSchedule()
                     );
                     return;
@@ -2031,7 +2037,7 @@
                 studentFieldHtml = `<div><label class="font-medium text-sm">Aluno a Cancelar</label><select id="cancelamento-studentId" class="form-input" required><option value="">Selecione um aluno...</option>${studentOptions}</select></div>`;
             }
 
-            document.getElementById('form-modal-title').textContent = cancelamento ? "Editar Cancelamento" : "Registar Novo Cancelamento";
+            document.getElementById('form-modal-title').textContent = cancelamento ? "Editar Cancelamento" : "Registrar Novo Cancelamento";
             document.getElementById('form-modal-content-area').innerHTML = `
                 <form id="form-modal-body" class="space-y-4">
                     <input type="hidden" id="cancelamento-id" value="${cancelamentoId || ''}">
@@ -2058,7 +2064,7 @@
                         processedBy: document.getElementById('cancelamento-processedBy').value,
                     };
                     await updateDoc(doc(db, `artifacts/${appId}/public/data/cancellations`, cancelamentoId), data);
-                    showSuccessMessage("Sucesso!", "Registo de cancelamento atualizado.");
+                    showSuccessMessage("Sucesso!", "Registro de cancelamento atualizado.");
                 } else {
                     // Logic to create a new cancellation and update student status
                     const studentSelect = document.getElementById('cancelamento-studentId');
@@ -2086,7 +2092,7 @@
                     const studentRef = doc(db, `artifacts/${appId}/public/data/students`, studentId);
                     await updateDoc(studentRef, { status: 'Cancelado' });
 
-                    showSuccessMessage("Sucesso!", `Cancelamento registado e status do aluno ${studentName} atualizado.`);
+                    showSuccessMessage("Sucesso!", `Cancelamento registrado e status do aluno ${studentName} atualizado.`);
                 }
             } catch (error) {
                 console.error("Error saving cancellation:", error);
@@ -2415,7 +2421,7 @@
             if (!db) { console.warn("Offline mode."); return; }
             showConfirmationModal(
                 "Confirmar Exclusão",
-                "Tem a certeza que deseja apagar este item? Esta ação não pode ser desfeita.",
+                "Tem certeza que deseja apagar este item? Esta ação não pode ser desfeita.",
                 async () => {
                     try {
                         await deleteDoc(doc(db, `artifacts/${appId}/public/data/${collectionName}`, itemId));
@@ -2430,59 +2436,62 @@
         }
         
         // --- EXPORT FUNCTIONS ---
-        function exportToCsv(filename, rows) {
-            const separator = ',';
-            const keys = Object.keys(rows[0]);
-            const csvContent =
-                keys.join(separator) +
-                '\n' +
-                rows.map(row => {
-                    return keys.map(k => {
-                        let cell = row[k] === null || row[k] === undefined ? '' : row[k];
-                        cell = cell instanceof Date 
-                            ? cell.toLocaleString()
-                            : cell.toString().replace(/"/g, '""');
-                        if (cell.search(/("|,|\n)/g) >= 0) {
-                            cell = `"${cell}"`;
-                        }
-                        return cell;
-                    }).join(separator);
-                }).join('\n');
-
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            if (link.download !== undefined) {
-                const url = URL.createObjectURL(blob);
-                link.setAttribute('href', url);
-                link.setAttribute('download', filename);
-                link.style.visibility = 'hidden';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            }
+        function openHtmlInNewWindow(title, htmlContent) {
+            const newWindow = window.open();
+            newWindow.document.write(htmlContent);
+            newWindow.document.title = title;
+            newWindow.document.close();
         }
-
-        function handleExportAlunos() {
+        
+        function exportAlunosDoc() {
             const tableRows = document.querySelectorAll('#alunos-list tr');
+            const filterButton = document.querySelector('#alunos-filter-buttons .filter-btn.active');
+            const filterName = filterButton.textContent;
+
             if (tableRows.length === 0 || tableRows[0].children.length <= 1) {
                 showErrorMessage("Exportação Falhou", "Não há dados para exportar.");
                 return;
             }
             
-            const headers = ['Nome do Aluno', 'Status', 'Valor Pago', 'Responsável'];
-            let rows = [];
+            let tableContent = '';
             tableRows.forEach(row => {
-                const cells = row.querySelectorAll('td');
-                rows.push({
-                    [headers[0]]: cells[0].textContent,
-                    [headers[1]]: cells[1].textContent,
-                    [headers[2]]: cells[2].textContent,
-                    [headers[3]]: cells[3].textContent,
-                });
+                tableContent += `<tr>${row.innerHTML}</tr>`;
             });
+            // Remove a coluna de Ações
+            tableContent = tableContent.replace(/<td class="text-center">.*?<\/td>/g, '');
 
-            const currentFilter = document.querySelector('#alunos-filter-buttons .filter-btn.active').dataset.filter;
-            exportToCsv(`slap_alunos_${currentFilter}.csv`, rows);
+            const docHtml = `
+                <html>
+                <head>
+                    <title>Relatório de Alunos - ${filterName}</title>
+                    <style>
+                        body { font-family: sans-serif; margin: 2rem; }
+                        h1 { color: #333; }
+                        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+                        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+                        th { background-color: #f2f2f2; }
+                    </style>
+                </head>
+                <body>
+                    <h1>Relatório de Alunos: ${filterName}</h1>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Nome do Aluno</th>
+                                <th>Status</th>
+                                <th>Valor Pago</th>
+                                <th>Responsável</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${tableContent}
+                        </tbody>
+                    </table>
+                </body>
+                </html>
+            `;
+            
+            openHtmlInNewWindow(`Relatório de Alunos - ${filterName}`, docHtml);
         }
 
         function exportVipPef(vipId) {
@@ -2494,7 +2503,7 @@
                 return;
             }
 
-            const statusMap = { 'P': 'Presente', 'F': 'Falta', 'PP': 'Presença Parcial', '': 'Não Registado' };
+            const statusMap = { 'P': 'Presente', 'F': 'Falta', 'PP': 'Presença Parcial', '': 'Não Registrado' };
             let tableRows = '';
             for (let i = 1; i <= 40; i++) {
                 const lessonData = unitAttendance?.lessons?.[i] || {};
@@ -2549,9 +2558,124 @@
                 </html>
             `;
             
-            const newWindow = window.open();
-            newWindow.document.write(docHtml);
-            newWindow.document.close();
+            openHtmlInNewWindow(`PEF - ${student.name}`, docHtml);
+        }
+        
+        function exportTurmaPef(turmaId) {
+            const turma = turmas.find(t => t.id === turmaId);
+            if (!turma) { showErrorMessage("Erro", "Turma não encontrada."); return; }
+            
+            const turmaStudents = (turma.studentIds || []).map(id => students.find(s => s.id === id)).filter(Boolean);
+            const unitAttendance = attendance.find(a => a.id === turmaId);
+            if (!turmaStudents.length) { showErrorMessage("Erro", "Nenhum aluno na turma para exportar."); return; }
+
+            const statusMap = { 'P': 'Presente', 'F': 'Falta', 'PP': 'Presença Parcial', '': 'Não Registrado' };
+            let lessonsHtml = '';
+
+            for (let i = 1; i <= 40; i++) {
+                const lessonData = unitAttendance?.lessons?.[i] || {};
+                const studentStatusesHtml = turmaStudents.map(s => {
+                    const status = lessonData?.students?.[s.id] || '';
+                    return `<li><strong>${s.name}:</strong> ${statusMap[status]}</li>`;
+                }).join('');
+
+                lessonsHtml += `
+                    <div class="lesson-block">
+                        <h3>Aula ${i} - Data: ${lessonData.date || 'Não definida'}</h3>
+                        <p><strong>Tema:</strong> ${lessonData.topic || 'N/A'}</p>
+                        <p><strong>Observações:</strong> ${lessonData.notes || 'N/A'}</p>
+                        <h4>Presenças:</h4>
+                        <ul>${studentStatusesHtml}</ul>
+                    </div>
+                `;
+            }
+
+            const docHtml = `
+                <html>
+                <head>
+                    <title>PEF - Turma ${turma.name}</title>
+                    <style>
+                        body { font-family: sans-serif; margin: 2rem; }
+                        h1, h2, h3, h4 { color: #333; }
+                        .header-info p { margin: 4px 0; }
+                        .lesson-block { border: 1px solid #ccc; padding: 1rem; margin-bottom: 1rem; border-radius: 8px; }
+                        .lesson-block ul { list-style: none; padding-left: 0; }
+                        .lesson-block li { padding: 4px 0; border-bottom: 1px dotted #eee; }
+                        .lesson-block li:last-child { border-bottom: none; }
+                    </style>
+                </head>
+                <body>
+                    <h1>Relatório de Presença e Frequência (PEF)</h1>
+                    <div class="header-info">
+                        <h2>Turma: ${turma.name}</h2>
+                        <p><strong>Professor:</strong> ${turma.teacherName}</p>
+                        <p><strong>Nível:</strong> ${turma.level}</p>
+                        <p><strong>Semestre:</strong> ${turma.semestre || 'N/A'}</p>
+                    </div>
+                    ${lessonsHtml}
+                </body>
+                </html>
+            `;
+
+            openHtmlInNewWindow(`PEF - Turma ${turma.name}`, docHtml);
+        }
+
+        function exportCPsDoc() {
+            if (cps.length === 0) {
+                showErrorMessage("Exportação Falhou", "Não há Cronogramas Pedagógicos para exportar.");
+                return;
+            }
+
+            let CPsHtml = '';
+            cps.forEach(nivel => {
+                CPsHtml += `<h2>Nível: ${nivel.title}</h2>`;
+                const lessonsHtml = (nivel.lessons && nivel.lessons.length > 0)
+                    ? nivel.lessons.map((aula, index) => `
+                        <tr>
+                            <td>${index + 1}</td>
+                            <td>${aula.title}</td>
+                            <td>${aula.topic}</td>
+                            <td>${(aula.keywords || []).join(', ')}</td>
+                        </tr>
+                    `).join('')
+                    : '<tr><td colspan="4">Nenhuma aula cadastrada.</td></tr>';
+
+                CPsHtml += `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width:5%;">#</th>
+                                <th style="width:25%;">Título da Aula</th>
+                                <th>Tema/Descrição</th>
+                                <th style="width:20%;">Palavras-chave</th>
+                            </tr>
+                        </thead>
+                        <tbody>${lessonsHtml}</tbody>
+                    </table>
+                `;
+            });
+
+             const docHtml = `
+                <html>
+                <head>
+                    <title>Cronogramas Pedagógicos (CPs) - SLAP</title>
+                    <style>
+                        body { font-family: sans-serif; margin: 2rem; }
+                        h1 { color: #333; border-bottom: 2px solid #F1D24B; padding-bottom: 0.5rem; }
+                        h2 { color: #444; margin-top: 2.5rem; border-bottom: 1px solid #ddd; padding-bottom: 0.25rem; }
+                        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+                        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; vertical-align: top; }
+                        th { background-color: #f2f2f2; }
+                    </style>
+                </head>
+                <body>
+                    <h1>Cronogramas Pedagógicos (CPs) - SLAP</h1>
+                    ${CPsHtml}
+                </body>
+                </html>
+            `;
+            
+            openHtmlInNewWindow("Cronogramas Pedagógicos (CPs)", docHtml);
         }
 
         function renderMenu() {
@@ -2570,7 +2694,7 @@
                 { key: 'banco-de-fotos', label: 'Banco de Fotos', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>', roles: ['admin', 'am'] },
                 { key: 'colaboradores', label: 'Colaboradores', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>', roles: ['admin', 'pedagogico', 'financeiro'] },
                 { key: 'cancelamentos', label: 'Cancelamentos', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="23" y1="18" x2="17" y2="12"/><line x1="17" y1="18" x2="23" y2="12"/></svg>', roles: ['admin', 'pedagogico', 'financeiro'] },
-                { key: 'folha-pagamento', label: 'Folha de Pgto.', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>', roles: ['admin', 'financeiro'] }
+                { key: 'folha-pagamento', label: 'Folha de Pag.', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>', roles: ['admin', 'financeiro'] }
             ];
 
             const menuItemsHTML = menuItems
@@ -2596,7 +2720,7 @@
                 
                 const actionTarget = event.target.closest('[data-action]');
                 if (actionTarget) {
-                    if(actionTarget.closest('.modal-content') && !['close-modal', 'export-vip-pef'].includes(actionTarget.dataset.action)) event.stopPropagation();
+                    if(actionTarget.closest('.modal-content') && !['close-modal', 'export-vip-pef', 'export-turma-pef'].includes(actionTarget.dataset.action)) event.stopPropagation();
                     
                     const { action, id, collection, folderName, nivelId, aulaIndex, direction, unitId, lessonNumber, status } = actionTarget.dataset;
                     const actionHandlers = {
@@ -2651,8 +2775,10 @@
                         'add-dojo-competitor': () => openDojoCompetitorForm(),
                         'edit-dojo-points': () => openDojoPointsForm(id),
                         'add-dojo-mission': openDojoMissionForm,
-                        'export-alunos-excel': handleExportAlunos,
+                        'export-alunos-doc': exportAlunosDoc,
                         'export-vip-pef': () => exportVipPef(id),
+                        'export-turma-pef': () => exportTurmaPef(id),
+                        'export-cps-doc': exportCPsDoc,
                     };
                     if (actionHandlers[action]) {
                         actionHandlers[action]();
