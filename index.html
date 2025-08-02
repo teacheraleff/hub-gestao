@@ -478,6 +478,7 @@
 
         // --- DEVELOPMENT MODE FUNCTIONS ---
         function startAppInDevelopmentMode() {
+            console.log('=== STARTING APP IN DEVELOPMENT MODE ===');
             window.isDevelopmentMode = true;
             // Set up basic user data for development
             currentUserName = "Admin SLAP";
@@ -526,6 +527,7 @@
                     : (typeof window.firebaseConfig !== 'undefined' ? window.firebaseConfig : {});
 
                 if (!firebaseConfig.apiKey) {
+                    console.log("=== FIREBASE CONFIG NOT FOUND - DEVELOPMENT MODE ===");
                     console.warn("Configuração do Firebase não encontrada. Executando em modo de desenvolvimento local.");
                     // Initialize in development mode with localStorage
                     window.isDevelopmentMode = true;
@@ -5866,7 +5868,25 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            const pageRenderers = { 'inicio': renderInicioSection, 'alunos': renderAlunosSection, 'turmas': renderTurmasSection, 'vips': renderVipsSection, 'eventos': renderEventosSection, 'orcamentos': renderOrcamentosSection, 'tarefas': renderTarefasSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection, 'cancelamentos': renderCancelamentosSection, 'colaboradores': renderColaboradoresSection, 'cps': renderCPsSection, 'dojo': renderDojoSection, 'calendario': renderCalendarioSection, 'desafio-pedagogico': renderDesafioPedagogicoSection, 'diretrizes': renderDiretrizesSection };
+            console.log('DOMContentLoaded event fired - starting initialization');
+            const pageRenderers = { 
+                'inicio': renderInicioSection, 
+                'alunos': renderAlunosSection, 
+                'turmas': renderTurmasSection, 
+                'vips': renderVipsSection, 
+                'eventos': renderEventosSection, 
+                'orcamentos': renderOrcamentosSection, 
+                'tarefas': renderTarefasSection, 
+                'grade': renderGradeSection, 
+                'folha-pagamento': renderFolhaPagamentoSection, 
+                'cancelamentos': renderCancelamentosSection, 
+                'colaboradores': renderColaboradoresSection, 
+                'cps': renderCPsSection, 
+                'dojo': renderDojoSection, 
+                'calendario': renderCalendarioSection, 
+                'desafio-pedagogico': renderDesafioPedagogicoSection, 
+                'diretrizes': renderDiretrizesSection 
+            };
             
             document.body.addEventListener('click', (event) => {
                 // Close modals when clicking overlay or close button
@@ -5888,8 +5908,13 @@
                     const pageKey = navTarget.dataset.target;
                     if (pageKey && pageRenderers[pageKey]) {
                         resetPagination();
-                        pageRenderers[pageKey]();
-                        setActiveNavItem(navTarget);
+                        const renderFunction = pageRenderers[pageKey];
+                        if (renderFunction.constructor.name === 'AsyncFunction') {
+                            renderFunction().then(() => setActiveNavItem(navTarget));
+                        } else {
+                            renderFunction();
+                            setActiveNavItem(navTarget);
+                        }
                     }
                 }
                 
@@ -5998,6 +6023,7 @@
 
             document.getElementById('logout-button').addEventListener('click', handleLogout);
             document.getElementById('pending-logout').addEventListener('click', handleLogout);
+            console.log('About to initialize Firebase');
             initializeFirebase();
         });
     </script>
