@@ -631,7 +631,23 @@
 
                 if (activePageId === 'inicio-section') renderInicioSection();
             });
-            getCollectionListener('events', events, renderEventosSection);
+            getCollectionListener('events', events, () => {
+                const activePageId = contentArea.firstElementChild?.id;
+                if (activePageId === 'eventos-section') {
+                    renderEventosSection();
+                } else if (activePageId === 'calendario-section') {
+                    // Update calendar events from events collection
+                    calendarEvents = events.map(event => ({
+                        id: event.id,
+                        title: event.titulo,
+                        date: event.dataEvento,
+                        time: event.horario,
+                        type: event.tipo || 'evento',
+                        description: event.descricao
+                    }));
+                    renderCalendar();
+                }
+            });
             getCollectionListener('schedules', schedules, () => {
                  if (contentArea.firstElementChild?.id === 'grade-section') renderGradeSection();
             });
@@ -651,6 +667,12 @@
             
             // Setup monthly highlight listener
             setupMonthlyHighlightListener();
+            
+            // Setup guidelines listener
+            setupGuidelinesListener();
+            
+            // Setup calendar events listener (uses existing events collection)
+            // No need for separate listener since events are already handled by existing listener
         }
 
         // --- AUTH, VIEW, and MENU FUNCTIONS ---
@@ -3722,7 +3744,7 @@
             }
         }
         
-        function renderCalendarioSection() {
+        async function renderCalendarioSection() {
             document.getElementById('main-title').textContent = 'Calendário de Eventos';
             const contentArea = document.getElementById('content-area');
             
@@ -3794,15 +3816,15 @@
                 </div>
             `;
             
-            initializeCalendar();
+            await initializeCalendar();
         }
 
         let currentCalendarDate = new Date();
         let calendarEvents = [];
 
-        function initializeCalendar() {
+        async function initializeCalendar() {
+            await loadCalendarEvents();
             renderCalendar();
-            loadCalendarEvents();
         }
 
         function changeMonth(direction) {
@@ -3854,23 +3876,56 @@
             return calendarEvents.filter(event => event.date === dateString);
         }
 
-        function loadCalendarEvents() {
-            // Load from localStorage or initialize with sample data
-            const savedEvents = localStorage.getItem('calendar-events');
-            if (savedEvents) {
-                calendarEvents = JSON.parse(savedEvents);
-            } else {
-                calendarEvents = [
-                    { id: '1', title: 'Reunião Pedagógica', date: '2025-01-15', time: '09:00', type: 'reuniao', description: 'Reunião mensal da equipe pedagógica' },
-                    { id: '2', title: 'Gravação Aula', date: '2025-01-20', time: '14:00', type: 'gravacao', description: 'Gravação da aula de pronunciação avançada' }
-                ];
-                saveCalendarEvents();
+        async function loadCalendarEvents() {
+            if (window.isDevelopmentMode) {
+                // Development mode - use localStorage
+                const savedEvents = localStorage.getItem('calendar-events');
+                if (savedEvents) {
+                    calendarEvents = JSON.parse(savedEvents);
+                } else {
+                    calendarEvents = [
+                        { id: '1', title: 'Reunião Pedagógica', date: '2025-01-15', time: '09:00', type: 'reuniao', description: 'Reunião mensal da equipe pedagógica' },
+                        { id: '2', title: 'Gravação Aula', date: '2025-01-20', time: '14:00', type: 'gravacao', description: 'Gravação da aula de pronunciação avançada' }
+                    ];
+                    saveCalendarEvents();
+                }
+                renderCalendar();
+            } else if (db) {
+                // Production mode - use Firebase (read from events collection)
+                try {
+                    const eventsSnapshot = await getDocs(collection(db, `artifacts/${appId}/public/data/events`));
+                    calendarEvents = [];
+                    eventsSnapshot.forEach(doc => {
+                        const eventData = doc.data();
+                        calendarEvents.push({
+                            id: doc.id,
+                            title: eventData.titulo || eventData.title,
+                            date: eventData.dataEvento || eventData.date,
+                            time: eventData.horario || eventData.time,
+                            type: eventData.tipo || eventData.type || 'evento',
+                            description: eventData.descricao || eventData.description
+                        });
+                    });
+                } catch (error) {
+                    console.error('Error loading calendar events:', error);
+                    // Fallback to localStorage
+                    const savedEvents = localStorage.getItem('calendar-events');
+                    if (savedEvents) {
+                        calendarEvents = JSON.parse(savedEvents);
+                    } else {
+                        calendarEvents = [];
+                    }
+                }
+                renderCalendar();
             }
-            renderCalendar();
         }
 
-        function saveCalendarEvents() {
-            localStorage.setItem('calendar-events', JSON.stringify(calendarEvents));
+        async function saveCalendarEvents() {
+            if (window.isDevelopmentMode) {
+                // Development mode - save to localStorage
+                localStorage.setItem('calendar-events', JSON.stringify(calendarEvents));
+            }
+            // Note: In production, calendar events are saved via the events collection which is already Firebase-synced
         }
 
         // --- Pedagogical Challenge Functions ---
@@ -4982,7 +5037,7 @@
 
             `;
             
-            loadGuidelines();
+            await loadGuidelines();
         }
 
         let guidelines = {
@@ -4996,29 +5051,51 @@
             prohibitedItems: { currentPage: 1, itemsPerPage: 6 }
         };
 
-        function loadGuidelines() {
-            // Load from localStorage or initialize with sample data
-            const savedGuidelines = localStorage.getItem('slap-guidelines');
-            if (savedGuidelines) {
-                guidelines = JSON.parse(savedGuidelines);
-            } else {
-                guidelines = {
-                    goodPractices: [
-                        { id: '1', title: 'Pontualidade nas Aulas', description: 'Sempre chegue às aulas com pelo menos 5 minutos de antecedência para preparar o ambiente e receber os alunos adequadamente.' },
-                        { id: '2', title: 'Feedback Construtivo', description: 'Ofereça feedback específico e encorajador aos alunos, focando em aspectos que podem ser melhorados.' },
-                        { id: '3', title: 'Material Organizado', description: 'Mantenha todos os materiais didáticos organizados e facilmente acessíveis durante as aulas.' },
-                        { id: '4', title: 'Comunicação Clara', description: 'Use linguagem simples e clara, adaptando a complexidade ao nível dos alunos.' }
-                    ],
-                    prohibitedItems: [
-                        { id: '1', title: 'Uso de Celular Durante Aulas', description: 'É proibido o uso de dispositivos móveis para fins pessoais durante o período de aula.' },
-                        { id: '2', title: 'Linguagem Inadequada', description: 'Evite o uso de gírias excessivas ou linguagem informal que possa prejudicar o aprendizado.' },
-                        { id: '3', title: 'Atraso Frequente', description: 'Atrasos constantes são inaceitáveis e prejudicam o andamento das atividades pedagógicas.' },
-                        { id: '4', title: 'Material Não Aprovado', description: 'Não utilize materiais didáticos que não tenham sido aprovados pela coordenação pedagógica.' }
-                    ]
-                };
-                saveGuidelines();
+        async function loadGuidelines() {
+            if (window.isDevelopmentMode) {
+                // Development mode - use localStorage
+                const savedGuidelines = localStorage.getItem('slap-guidelines');
+                if (savedGuidelines) {
+                    guidelines = JSON.parse(savedGuidelines);
+                } else {
+                    guidelines = {
+                        goodPractices: [
+                            { id: '1', title: 'Pontualidade nas Aulas', description: 'Sempre chegue às aulas com pelo menos 5 minutos de antecedência para preparar o ambiente e receber os alunos adequadamente.' },
+                            { id: '2', title: 'Feedback Construtivo', description: 'Ofereça feedback específico e encorajador aos alunos, focando em aspectos que podem ser melhorados.' },
+                            { id: '3', title: 'Material Organizado', description: 'Mantenha todos os materiais didáticos organizados e facilmente acessíveis durante as aulas.' },
+                            { id: '4', title: 'Comunicação Clara', description: 'Use linguagem simples e clara, adaptando a complexidade ao nível dos alunos.' }
+                        ],
+                        prohibitedItems: [
+                            { id: '1', title: 'Uso de Celular Durante Aulas', description: 'É proibido o uso de dispositivos móveis para fins pessoais durante o período de aula.' },
+                            { id: '2', title: 'Linguagem Inadequada', description: 'Evite o uso de gírias excessivas ou linguagem informal que possa prejudicar o aprendizado.' },
+                            { id: '3', title: 'Atraso Frequente', description: 'Atrasos constantes são inaceitáveis e prejudicam o andamento das atividades pedagógicas.' },
+                            { id: '4', title: 'Material Não Aprovado', description: 'Não utilize materiais didáticos que não tenham sido aprovado pela coordenação pedagógica.' }
+                        ]
+                    };
+                    saveGuidelines();
+                }
+                renderGuidelines();
+            } else if (db) {
+                // Production mode - use Firebase
+                try {
+                    const guidelinesDoc = await getDoc(doc(db, `artifacts/${appId}/public/settings/guidelines`));
+                    if (guidelinesDoc.exists()) {
+                        guidelines = guidelinesDoc.data();
+                    } else {
+                        guidelines = { goodPractices: [], prohibitedItems: [] };
+                    }
+                } catch (error) {
+                    console.error('Error loading guidelines:', error);
+                    // Fallback to localStorage
+                    const savedGuidelines = localStorage.getItem('slap-guidelines');
+                    if (savedGuidelines) {
+                        guidelines = JSON.parse(savedGuidelines);
+                    } else {
+                        guidelines = { goodPractices: [], prohibitedItems: [] };
+                    }
+                }
+                renderGuidelines();
             }
-            renderGuidelines();
         }
 
         function renderGuidelines(filter = '') {
@@ -5449,8 +5526,22 @@
             if (navItem) navItem.click();
         };
 
-        function saveGuidelines() {
-            localStorage.setItem('slap-guidelines', JSON.stringify(guidelines));
+        async function saveGuidelines() {
+            if (window.isDevelopmentMode) {
+                // Development mode - save to localStorage
+                localStorage.setItem('slap-guidelines', JSON.stringify(guidelines));
+            } else if (db) {
+                // Production mode - save to Firebase
+                try {
+                    await setDoc(doc(db, `artifacts/${appId}/public/settings/guidelines`), guidelines);
+                    console.log('Guidelines saved to Firebase');
+                } catch (error) {
+                    console.error('Error saving guidelines to Firebase:', error);
+                    // Fallback to localStorage
+                    localStorage.setItem('slap-guidelines', JSON.stringify(guidelines));
+                    showErrorMessage('Aviso', 'Diretrizes salvas localmente. Sincronização com servidor falhou.');
+                }
+            }
         }
 
         // --- Monthly Highlight Functions ---
@@ -5531,6 +5622,30 @@
                     }
                 }, (error) => {
                     console.error('Error listening to monthly highlight:', error);
+                });
+                
+                allUnsubscribers.push(unsubscribe);
+            }
+        }
+
+        // Setup guidelines listener for real-time updates
+        function setupGuidelinesListener() {
+            if (!window.isDevelopmentMode && db) {
+                const guidelinesDocRef = doc(db, `artifacts/${appId}/public/settings/guidelines`);
+                const unsubscribe = onSnapshot(guidelinesDocRef, (doc) => {
+                    if (doc.exists()) {
+                        guidelines = doc.data();
+                    } else {
+                        guidelines = { goodPractices: [], prohibitedItems: [] };
+                    }
+                    
+                    // Only re-render if we're on the guidelines page
+                    const activePageId = contentArea.firstElementChild?.id;
+                    if (activePageId === 'diretrizes-section') {
+                        renderGuidelines();
+                    }
+                }, (error) => {
+                    console.error('Error listening to guidelines:', error);
                 });
                 
                 allUnsubscribers.push(unsubscribe);
