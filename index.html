@@ -478,7 +478,6 @@
 
         // --- DEVELOPMENT MODE FUNCTIONS ---
         function startAppInDevelopmentMode() {
-            console.log('=== STARTING APP IN DEVELOPMENT MODE ===');
             window.isDevelopmentMode = true;
             // Set up basic user data for development
             currentUserName = "Admin SLAP";
@@ -492,10 +491,8 @@
             loadDemoData();
             updateWelcomeMessages(currentUserName);
             showHubView();
-            console.log('About to render inicio section and menu');
             renderInicioSection();
             renderMenu();
-            console.log('App initialization completed successfully');
         }
         
         function loadDemoData() {
@@ -529,7 +526,6 @@
                     : (typeof window.firebaseConfig !== 'undefined' ? window.firebaseConfig : {});
 
                 if (!firebaseConfig.apiKey) {
-                    console.log("=== FIREBASE CONFIG NOT FOUND - DEVELOPMENT MODE ===");
                     console.warn("Configuração do Firebase não encontrada. Executando em modo de desenvolvimento local.");
                     // Initialize in development mode with localStorage
                     window.isDevelopmentMode = true;
@@ -635,23 +631,7 @@
 
                 if (activePageId === 'inicio-section') renderInicioSection();
             });
-            getCollectionListener('events', events, () => {
-                const activePageId = contentArea.firstElementChild?.id;
-                if (activePageId === 'eventos-section') {
-                    renderEventosSection();
-                } else if (activePageId === 'calendario-section') {
-                    // Update calendar events from events collection
-                    calendarEvents = events.map(event => ({
-                        id: event.id,
-                        title: event.titulo,
-                        date: event.dataEvento,
-                        time: event.horario,
-                        type: event.tipo || 'evento',
-                        description: event.descricao
-                    }));
-                    renderCalendar();
-                }
-            });
+            getCollectionListener('events', events, renderEventosSection);
             getCollectionListener('schedules', schedules, () => {
                  if (contentArea.firstElementChild?.id === 'grade-section') renderGradeSection();
             });
@@ -668,15 +648,6 @@
             }, (ref) => query(ref, orderBy("order")));
             getCollectionListener('dojo_ranking', dojoRanking, renderDojoSection);
             getCollectionListener('dojo_missions', dojoMissions, renderDojoSection, (ref) => query(ref, orderBy("points", "desc")));
-            
-            // Setup monthly highlight listener
-            setupMonthlyHighlightListener();
-            
-            // Setup guidelines listener
-            setupGuidelinesListener();
-            
-            // Setup calendar events listener (uses existing events collection)
-            // No need for separate listener since events are already handled by existing listener
         }
 
         // --- AUTH, VIEW, and MENU FUNCTIONS ---
@@ -906,7 +877,7 @@
             `;
             
             // Initialize monthly highlight
-            loadMonthlyHighlight();
+            renderMonthlyHighlight();
         }
 
         // Dashboard helper functions
@@ -3827,7 +3798,8 @@
         let calendarEvents = [];
 
         function initializeCalendar() {
-            loadCalendarEvents().then(() => renderCalendar());
+            renderCalendar();
+            loadCalendarEvents();
         }
 
         function changeMonth(direction) {
@@ -3879,56 +3851,23 @@
             return calendarEvents.filter(event => event.date === dateString);
         }
 
-        async function loadCalendarEvents() {
-            if (window.isDevelopmentMode) {
-                // Development mode - use localStorage
-                const savedEvents = localStorage.getItem('calendar-events');
-                if (savedEvents) {
-                    calendarEvents = JSON.parse(savedEvents);
-                } else {
-                    calendarEvents = [
-                        { id: '1', title: 'Reunião Pedagógica', date: '2025-01-15', time: '09:00', type: 'reuniao', description: 'Reunião mensal da equipe pedagógica' },
-                        { id: '2', title: 'Gravação Aula', date: '2025-01-20', time: '14:00', type: 'gravacao', description: 'Gravação da aula de pronunciação avançada' }
-                    ];
-                    saveCalendarEvents();
-                }
-                renderCalendar();
-            } else if (db) {
-                // Production mode - use Firebase (read from events collection)
-                try {
-                    const eventsSnapshot = await getDocs(collection(db, `artifacts/${appId}/public/data/events`));
-                    calendarEvents = [];
-                    eventsSnapshot.forEach(doc => {
-                        const eventData = doc.data();
-                        calendarEvents.push({
-                            id: doc.id,
-                            title: eventData.titulo || eventData.title,
-                            date: eventData.dataEvento || eventData.date,
-                            time: eventData.horario || eventData.time,
-                            type: eventData.tipo || eventData.type || 'evento',
-                            description: eventData.descricao || eventData.description
-                        });
-                    });
-                } catch (error) {
-                    console.error('Error loading calendar events:', error);
-                    // Fallback to localStorage
-                    const savedEvents = localStorage.getItem('calendar-events');
-                    if (savedEvents) {
-                        calendarEvents = JSON.parse(savedEvents);
-                    } else {
-                        calendarEvents = [];
-                    }
-                }
-                renderCalendar();
+        function loadCalendarEvents() {
+            // Load from localStorage or initialize with sample data
+            const savedEvents = localStorage.getItem('calendar-events');
+            if (savedEvents) {
+                calendarEvents = JSON.parse(savedEvents);
+            } else {
+                calendarEvents = [
+                    { id: '1', title: 'Reunião Pedagógica', date: '2025-01-15', time: '09:00', type: 'reuniao', description: 'Reunião mensal da equipe pedagógica' },
+                    { id: '2', title: 'Gravação Aula', date: '2025-01-20', time: '14:00', type: 'gravacao', description: 'Gravação da aula de pronunciação avançada' }
+                ];
+                saveCalendarEvents();
             }
+            renderCalendar();
         }
 
-        async function saveCalendarEvents() {
-            if (window.isDevelopmentMode) {
-                // Development mode - save to localStorage
-                localStorage.setItem('calendar-events', JSON.stringify(calendarEvents));
-            }
-            // Note: In production, calendar events are saved via the events collection which is already Firebase-synced
+        function saveCalendarEvents() {
+            localStorage.setItem('calendar-events', JSON.stringify(calendarEvents));
         }
 
         // --- Pedagogical Challenge Functions ---
@@ -5054,51 +4993,29 @@
             prohibitedItems: { currentPage: 1, itemsPerPage: 6 }
         };
 
-        async function loadGuidelines() {
-            if (window.isDevelopmentMode) {
-                // Development mode - use localStorage
-                const savedGuidelines = localStorage.getItem('slap-guidelines');
-                if (savedGuidelines) {
-                    guidelines = JSON.parse(savedGuidelines);
-                } else {
-                    guidelines = {
-                        goodPractices: [
-                            { id: '1', title: 'Pontualidade nas Aulas', description: 'Sempre chegue às aulas com pelo menos 5 minutos de antecedência para preparar o ambiente e receber os alunos adequadamente.' },
-                            { id: '2', title: 'Feedback Construtivo', description: 'Ofereça feedback específico e encorajador aos alunos, focando em aspectos que podem ser melhorados.' },
-                            { id: '3', title: 'Material Organizado', description: 'Mantenha todos os materiais didáticos organizados e facilmente acessíveis durante as aulas.' },
-                            { id: '4', title: 'Comunicação Clara', description: 'Use linguagem simples e clara, adaptando a complexidade ao nível dos alunos.' }
-                        ],
-                        prohibitedItems: [
-                            { id: '1', title: 'Uso de Celular Durante Aulas', description: 'É proibido o uso de dispositivos móveis para fins pessoais durante o período de aula.' },
-                            { id: '2', title: 'Linguagem Inadequada', description: 'Evite o uso de gírias excessivas ou linguagem informal que possa prejudicar o aprendizado.' },
-                            { id: '3', title: 'Atraso Frequente', description: 'Atrasos constantes são inaceitáveis e prejudicam o andamento das atividades pedagógicas.' },
-                            { id: '4', title: 'Material Não Aprovado', description: 'Não utilize materiais didáticos que não tenham sido aprovado pela coordenação pedagógica.' }
-                        ]
-                    };
-                    saveGuidelines();
-                }
-                renderGuidelines();
-            } else if (db) {
-                // Production mode - use Firebase
-                try {
-                    const guidelinesDoc = await getDoc(doc(db, `artifacts/${appId}/public/settings/guidelines`));
-                    if (guidelinesDoc.exists()) {
-                        guidelines = guidelinesDoc.data();
-                    } else {
-                        guidelines = { goodPractices: [], prohibitedItems: [] };
-                    }
-                } catch (error) {
-                    console.error('Error loading guidelines:', error);
-                    // Fallback to localStorage
-                    const savedGuidelines = localStorage.getItem('slap-guidelines');
-                    if (savedGuidelines) {
-                        guidelines = JSON.parse(savedGuidelines);
-                    } else {
-                        guidelines = { goodPractices: [], prohibitedItems: [] };
-                    }
-                }
-                renderGuidelines();
+        function loadGuidelines() {
+            // Load from localStorage or initialize with sample data
+            const savedGuidelines = localStorage.getItem('slap-guidelines');
+            if (savedGuidelines) {
+                guidelines = JSON.parse(savedGuidelines);
+            } else {
+                guidelines = {
+                    goodPractices: [
+                        { id: '1', title: 'Pontualidade nas Aulas', description: 'Sempre chegue às aulas com pelo menos 5 minutos de antecedência para preparar o ambiente e receber os alunos adequadamente.' },
+                        { id: '2', title: 'Feedback Construtivo', description: 'Ofereça feedback específico e encorajador aos alunos, focando em aspectos que podem ser melhorados.' },
+                        { id: '3', title: 'Material Organizado', description: 'Mantenha todos os materiais didáticos organizados e facilmente acessíveis durante as aulas.' },
+                        { id: '4', title: 'Comunicação Clara', description: 'Use linguagem simples e clara, adaptando a complexidade ao nível dos alunos.' }
+                    ],
+                    prohibitedItems: [
+                        { id: '1', title: 'Uso de Celular Durante Aulas', description: 'É proibido o uso de dispositivos móveis para fins pessoais durante o período de aula.' },
+                        { id: '2', title: 'Linguagem Inadequada', description: 'Evite o uso de gírias excessivas ou linguagem informal que possa prejudicar o aprendizado.' },
+                        { id: '3', title: 'Atraso Frequente', description: 'Atrasos constantes são inaceitáveis e prejudicam o andamento das atividades pedagógicas.' },
+                        { id: '4', title: 'Material Não Aprovado', description: 'Não utilize materiais didáticos que não tenham sido aprovados pela coordenação pedagógica.' }
+                    ]
+                };
+                saveGuidelines();
             }
+            renderGuidelines();
         }
 
         function renderGuidelines(filter = '') {
@@ -5529,22 +5446,8 @@
             if (navItem) navItem.click();
         };
 
-        async function saveGuidelines() {
-            if (window.isDevelopmentMode) {
-                // Development mode - save to localStorage
-                localStorage.setItem('slap-guidelines', JSON.stringify(guidelines));
-            } else if (db) {
-                // Production mode - save to Firebase
-                try {
-                    await setDoc(doc(db, `artifacts/${appId}/public/settings/guidelines`), guidelines);
-                    console.log('Guidelines saved to Firebase');
-                } catch (error) {
-                    console.error('Error saving guidelines to Firebase:', error);
-                    // Fallback to localStorage
-                    localStorage.setItem('slap-guidelines', JSON.stringify(guidelines));
-                    showErrorMessage('Aviso', 'Diretrizes salvas localmente. Sincronização com servidor falhou.');
-                }
-            }
+        function saveGuidelines() {
+            localStorage.setItem('slap-guidelines', JSON.stringify(guidelines));
         }
 
         // --- Monthly Highlight Functions ---
@@ -5552,7 +5455,12 @@
 
         function renderMonthlyHighlight() {
             const container = document.getElementById('monthly-highlight-content');
+            const savedHighlight = localStorage.getItem('slap-monthly-highlight');
             
+            if (savedHighlight) {
+                monthlyHighlight = JSON.parse(savedHighlight);
+            }
+
             if (monthlyHighlight && monthlyHighlight.name) {
                 container.innerHTML = `
                     <div class="highlight-card">
@@ -5574,84 +5482,6 @@
                         ${currentUserRole === 'admin' ? '<p class="text-xs mt-1">Clique em "Editar" para adicionar</p>' : ''}
                     </div>
                 `;
-            }
-        }
-
-        // Load monthly highlight from Firebase or localStorage
-        async function loadMonthlyHighlight() {
-            if (window.isDevelopmentMode) {
-                // Development mode - use localStorage
-                const savedHighlight = localStorage.getItem('slap-monthly-highlight');
-                if (savedHighlight) {
-                    monthlyHighlight = JSON.parse(savedHighlight);
-                }
-                renderMonthlyHighlight();
-            } else if (db) {
-                // Production mode - use Firebase
-                try {
-                    const highlightDoc = await getDoc(doc(db, `artifacts/${appId}/public/settings/monthly-highlight`));
-                    if (highlightDoc.exists()) {
-                        monthlyHighlight = highlightDoc.data();
-                    } else {
-                        monthlyHighlight = null;
-                    }
-                } catch (error) {
-                    console.error('Error loading monthly highlight:', error);
-                    // Fallback to localStorage
-                    const savedHighlight = localStorage.getItem('slap-monthly-highlight');
-                    if (savedHighlight) {
-                        monthlyHighlight = JSON.parse(savedHighlight);
-                    }
-                }
-                renderMonthlyHighlight();
-            }
-        }
-
-        // Setup monthly highlight listener for real-time updates
-        function setupMonthlyHighlightListener() {
-            if (!window.isDevelopmentMode && db) {
-                const highlightDocRef = doc(db, `artifacts/${appId}/public/settings/monthly-highlight`);
-                const unsubscribe = onSnapshot(highlightDocRef, (doc) => {
-                    if (doc.exists()) {
-                        monthlyHighlight = doc.data();
-                    } else {
-                        monthlyHighlight = null;
-                    }
-                    
-                    // Only re-render if we're on the home page
-                    const activePageId = contentArea.firstElementChild?.id;
-                    if (activePageId === 'inicio-section') {
-                        renderMonthlyHighlight();
-                    }
-                }, (error) => {
-                    console.error('Error listening to monthly highlight:', error);
-                });
-                
-                allUnsubscribers.push(unsubscribe);
-            }
-        }
-
-        // Setup guidelines listener for real-time updates
-        function setupGuidelinesListener() {
-            if (!window.isDevelopmentMode && db) {
-                const guidelinesDocRef = doc(db, `artifacts/${appId}/public/settings/guidelines`);
-                const unsubscribe = onSnapshot(guidelinesDocRef, (doc) => {
-                    if (doc.exists()) {
-                        guidelines = doc.data();
-                    } else {
-                        guidelines = { goodPractices: [], prohibitedItems: [] };
-                    }
-                    
-                    // Only re-render if we're on the guidelines page
-                    const activePageId = contentArea.firstElementChild?.id;
-                    if (activePageId === 'diretrizes-section') {
-                        renderGuidelines();
-                    }
-                }, (error) => {
-                    console.error('Error listening to guidelines:', error);
-                });
-                
-                allUnsubscribers.push(unsubscribe);
             }
         }
 
@@ -5690,7 +5520,7 @@
             }
         }
 
-        async function saveMonthlyHighlight() {
+        function saveMonthlyHighlight() {
             const name = document.getElementById('highlight-name').value;
             const photoUrl = document.getElementById('highlight-photo-url').value;
             const description = document.getElementById('highlight-description').value;
@@ -5701,27 +5531,11 @@
                 photoUrl: photoUrl,
                 description: description,
                 award: award,
-                updatedAt: new Date().toISOString(),
-                updatedBy: currentUserName || 'Admin'
+                updatedAt: new Date().toISOString()
             };
             
-            if (window.isDevelopmentMode) {
-                // Development mode - save to localStorage
-                localStorage.setItem('slap-monthly-highlight', JSON.stringify(monthlyHighlight));
-                renderMonthlyHighlight();
-            } else if (db) {
-                // Production mode - save to Firebase
-                try {
-                    await setDoc(doc(db, `artifacts/${appId}/public/settings/monthly-highlight`), monthlyHighlight);
-                    console.log('Monthly highlight saved to Firebase');
-                } catch (error) {
-                    console.error('Error saving monthly highlight to Firebase:', error);
-                    // Fallback to localStorage
-                    localStorage.setItem('slap-monthly-highlight', JSON.stringify(monthlyHighlight));
-                    renderMonthlyHighlight();
-                    showErrorMessage('Aviso', 'Dados salvos localmente. Sincronização com servidor falhhou.');
-                }
-            }
+            localStorage.setItem('slap-monthly-highlight', JSON.stringify(monthlyHighlight));
+            renderMonthlyHighlight();
             
             // Reset form safely
             const form = document.getElementById('monthly-highlight-form');
@@ -5869,25 +5683,7 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            console.log('DOMContentLoaded event fired - starting initialization');
-            const pageRenderers = { 
-                'inicio': renderInicioSection, 
-                'alunos': renderAlunosSection, 
-                'turmas': renderTurmasSection, 
-                'vips': renderVipsSection, 
-                'eventos': renderEventosSection, 
-                'orcamentos': renderOrcamentosSection, 
-                'tarefas': renderTarefasSection, 
-                'grade': renderGradeSection, 
-                'folha-pagamento': renderFolhaPagamentoSection, 
-                'cancelamentos': renderCancelamentosSection, 
-                'colaboradores': renderColaboradoresSection, 
-                'cps': renderCPsSection, 
-                'dojo': renderDojoSection, 
-                'calendario': renderCalendarioSection, 
-                'desafio-pedagogico': renderDesafioPedagogicoSection, 
-                'diretrizes': renderDiretrizesSection 
-            };
+            const pageRenderers = { 'inicio': renderInicioSection, 'alunos': renderAlunosSection, 'turmas': renderTurmasSection, 'vips': renderVipsSection, 'eventos': renderEventosSection, 'orcamentos': renderOrcamentosSection, 'tarefas': renderTarefasSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection, 'cancelamentos': renderCancelamentosSection, 'colaboradores': renderColaboradoresSection, 'cps': renderCPsSection, 'dojo': renderDojoSection, 'calendario': renderCalendarioSection, 'desafio-pedagogico': renderDesafioPedagogicoSection, 'diretrizes': renderDiretrizesSection };
             
             document.body.addEventListener('click', (event) => {
                 // Close modals when clicking overlay or close button
@@ -6019,7 +5815,6 @@
 
             document.getElementById('logout-button').addEventListener('click', handleLogout);
             document.getElementById('pending-logout').addEventListener('click', handleLogout);
-            console.log('About to initialize Firebase');
             initializeFirebase();
         });
     </script>
