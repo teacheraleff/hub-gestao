@@ -648,6 +648,9 @@
             }, (ref) => query(ref, orderBy("order")));
             getCollectionListener('dojo_ranking', dojoRanking, renderDojoSection);
             getCollectionListener('dojo_missions', dojoMissions, renderDojoSection, (ref) => query(ref, orderBy("points", "desc")));
+            
+            // Setup monthly highlight listener
+            setupMonthlyHighlightListener();
         }
 
         // --- AUTH, VIEW, and MENU FUNCTIONS ---
@@ -877,7 +880,7 @@
             `;
             
             // Initialize monthly highlight
-            renderMonthlyHighlight();
+            loadMonthlyHighlight();
         }
 
         // Dashboard helper functions
@@ -5455,12 +5458,7 @@
 
         function renderMonthlyHighlight() {
             const container = document.getElementById('monthly-highlight-content');
-            const savedHighlight = localStorage.getItem('slap-monthly-highlight');
             
-            if (savedHighlight) {
-                monthlyHighlight = JSON.parse(savedHighlight);
-            }
-
             if (monthlyHighlight && monthlyHighlight.name) {
                 container.innerHTML = `
                     <div class="highlight-card">
@@ -5482,6 +5480,60 @@
                         ${currentUserRole === 'admin' ? '<p class="text-xs mt-1">Clique em "Editar" para adicionar</p>' : ''}
                     </div>
                 `;
+            }
+        }
+
+        // Load monthly highlight from Firebase or localStorage
+        async function loadMonthlyHighlight() {
+            if (window.isDevelopmentMode) {
+                // Development mode - use localStorage
+                const savedHighlight = localStorage.getItem('slap-monthly-highlight');
+                if (savedHighlight) {
+                    monthlyHighlight = JSON.parse(savedHighlight);
+                }
+                renderMonthlyHighlight();
+            } else if (db) {
+                // Production mode - use Firebase
+                try {
+                    const highlightDoc = await getDoc(doc(db, `artifacts/${appId}/public/settings/monthly-highlight`));
+                    if (highlightDoc.exists()) {
+                        monthlyHighlight = highlightDoc.data();
+                    } else {
+                        monthlyHighlight = null;
+                    }
+                } catch (error) {
+                    console.error('Error loading monthly highlight:', error);
+                    // Fallback to localStorage
+                    const savedHighlight = localStorage.getItem('slap-monthly-highlight');
+                    if (savedHighlight) {
+                        monthlyHighlight = JSON.parse(savedHighlight);
+                    }
+                }
+                renderMonthlyHighlight();
+            }
+        }
+
+        // Setup monthly highlight listener for real-time updates
+        function setupMonthlyHighlightListener() {
+            if (!window.isDevelopmentMode && db) {
+                const highlightDocRef = doc(db, `artifacts/${appId}/public/settings/monthly-highlight`);
+                const unsubscribe = onSnapshot(highlightDocRef, (doc) => {
+                    if (doc.exists()) {
+                        monthlyHighlight = doc.data();
+                    } else {
+                        monthlyHighlight = null;
+                    }
+                    
+                    // Only re-render if we're on the home page
+                    const activePageId = contentArea.firstElementChild?.id;
+                    if (activePageId === 'inicio-section') {
+                        renderMonthlyHighlight();
+                    }
+                }, (error) => {
+                    console.error('Error listening to monthly highlight:', error);
+                });
+                
+                allUnsubscribers.push(unsubscribe);
             }
         }
 
@@ -5520,7 +5572,7 @@
             }
         }
 
-        function saveMonthlyHighlight() {
+        async function saveMonthlyHighlight() {
             const name = document.getElementById('highlight-name').value;
             const photoUrl = document.getElementById('highlight-photo-url').value;
             const description = document.getElementById('highlight-description').value;
@@ -5531,11 +5583,27 @@
                 photoUrl: photoUrl,
                 description: description,
                 award: award,
-                updatedAt: new Date().toISOString()
+                updatedAt: new Date().toISOString(),
+                updatedBy: currentUserName || 'Admin'
             };
             
-            localStorage.setItem('slap-monthly-highlight', JSON.stringify(monthlyHighlight));
-            renderMonthlyHighlight();
+            if (window.isDevelopmentMode) {
+                // Development mode - save to localStorage
+                localStorage.setItem('slap-monthly-highlight', JSON.stringify(monthlyHighlight));
+                renderMonthlyHighlight();
+            } else if (db) {
+                // Production mode - save to Firebase
+                try {
+                    await setDoc(doc(db, `artifacts/${appId}/public/settings/monthly-highlight`), monthlyHighlight);
+                    console.log('Monthly highlight saved to Firebase');
+                } catch (error) {
+                    console.error('Error saving monthly highlight to Firebase:', error);
+                    // Fallback to localStorage
+                    localStorage.setItem('slap-monthly-highlight', JSON.stringify(monthlyHighlight));
+                    renderMonthlyHighlight();
+                    showErrorMessage('Aviso', 'Dados salvos localmente. Sincronização com servidor falhhou.');
+                }
+            }
             
             // Reset form safely
             const form = document.getElementById('monthly-highlight-form');
