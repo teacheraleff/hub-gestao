@@ -3969,7 +3969,10 @@
         let teacherName = '';
         let quizQuestions = [];
         let currentQuestionIndex = 0;
-        const questionsInChallenge = 25;
+        let correctStreak = 0;
+        let totalAttempts = 0;
+        const questionsNeededForSuccess = 20;
+        const questionsInChallenge = 20;
 
         const fullQuizData = [
             // Dogme ELT Questions (25 questions)
@@ -4273,7 +4276,10 @@
                 if (audio) {
                     audio.pause();
                     audio.currentTime = 0;
-                    audio.src = ''; // Clear the source to force reload
+                    // Remove event listeners to prevent memory leaks
+                    audio.removeEventListener('loadedmetadata', () => {});
+                    audio.removeEventListener('timeupdate', () => {});
+                    audio.removeEventListener('error', () => {});
                 }
             });
         }
@@ -4285,7 +4291,7 @@
             const players = document.querySelectorAll('.audio-player-container');
             console.log('Initializing audio players. Found:', players.length, 'players');
             
-            players.forEach(container => {
+            players.forEach((container, index) => {
                 const audio = container.querySelector('.audio-element');
                 const playButton = container.querySelector('.play-pause-button');
                 const playIcon = container.querySelector('.play-icon');
@@ -4294,64 +4300,112 @@
                 const timeDisplay = container.querySelector('.time-display');
                 
                 if (!audio || !playButton || !playIcon || !pauseIcon || !progressBar || !timeDisplay) {
-                    console.error('Missing audio player elements');
+                    console.error('Missing audio player elements for player', index);
                     return;
                 }
                 
-                console.log('Setting up audio player for:', audio.src);
+                console.log('Setting up audio player', index, 'for:', audio.src);
+                
+                // Ensure audio element is properly configured
+                audio.preload = 'metadata';
+                audio.crossOrigin = 'anonymous';
                 
                 // Force reload audio element to clear cache
                 if (audio.src) {
                     audio.load();
                 }
 
-                audio.addEventListener('loadedmetadata', () => {
-                    progressBar.max = audio.duration;
-                    updateTimeDisplay();
-                    console.log('Audio metadata loaded, duration:', audio.duration);
-                });
+                const loadedMetadataHandler = () => {
+                    if (audio.duration && !isNaN(audio.duration) && audio.duration !== Infinity) {
+                        progressBar.max = audio.duration;
+                        updateTimeDisplay();
+                        console.log('Audio', index, 'metadata loaded, duration:', audio.duration);
+                    }
+                };
 
-                audio.addEventListener('timeupdate', () => {
-                    progressBar.value = audio.currentTime;
-                    updateTimeDisplay();
-                });
+                const timeUpdateHandler = () => {
+                    if (audio.duration && !isNaN(audio.duration)) {
+                        progressBar.value = audio.currentTime;
+                        updateTimeDisplay();
+                    }
+                };
 
-                audio.addEventListener('error', (e) => {
-                    console.error('Audio loading error:', e);
-                });
+                const errorHandler = (e) => {
+                    console.error('Audio', index, 'loading error:', e);
+                    timeDisplay.textContent = 'Error loading audio';
+                };
+
+                const endedHandler = () => {
+                    playIcon.classList.remove('hidden');
+                    pauseIcon.classList.add('hidden');
+                    audio.currentTime = 0;
+                    progressBar.value = 0;
+                    updateTimeDisplay();
+                };
+
+                // Add event listeners
+                audio.addEventListener('loadedmetadata', loadedMetadataHandler);
+                audio.addEventListener('timeupdate', timeUpdateHandler);
+                audio.addEventListener('error', errorHandler);
+                audio.addEventListener('ended', endedHandler);
 
                 playButton.addEventListener('click', () => {
-                    console.log('Play button clicked, audio paused:', audio.paused);
+                    console.log('Play button clicked for audio', index, ', paused:', audio.paused);
                     if (audio.paused) {
+                        // Pause all other audio players first
+                        const allAudioElements = document.querySelectorAll('.audio-element');
+                        allAudioElements.forEach(otherAudio => {
+                            if (otherAudio !== audio && !otherAudio.paused) {
+                                otherAudio.pause();
+                                const otherContainer = otherAudio.closest('.audio-player-container');
+                                if (otherContainer) {
+                                    const otherPlayIcon = otherContainer.querySelector('.play-icon');
+                                    const otherPauseIcon = otherContainer.querySelector('.pause-icon');
+                                    if (otherPlayIcon && otherPauseIcon) {
+                                        otherPlayIcon.classList.remove('hidden');
+                                        otherPauseIcon.classList.add('hidden');
+                                    }
+                                }
+                            }
+                        });
+                        
                         audio.play().then(() => {
                             playIcon.classList.add('hidden');
                             pauseIcon.classList.remove('hidden');
+                            console.log('Audio', index, 'started playing');
                         }).catch(e => {
-                            console.error('Error playing audio:', e);
+                            console.error('Error playing audio', index, ':', e);
+                            alert('Erro ao reproduzir áudio. Verifique se a URL está funcionando.');
                         });
                     } else {
                         audio.pause();
                         playIcon.classList.remove('hidden');
                         pauseIcon.classList.add('hidden');
+                        console.log('Audio', index, 'paused');
                     }
                 });
 
                 progressBar.addEventListener('input', () => {
-                    audio.currentTime = progressBar.value;
+                    if (audio.duration && !isNaN(audio.duration)) {
+                        audio.currentTime = progressBar.value;
+                    }
                 });
 
                 function updateTimeDisplay() {
-                    const current = formatTime(audio.currentTime);
-                    const duration = formatTime(audio.duration);
+                    const current = formatTime(audio.currentTime || 0);
+                    const duration = formatTime(audio.duration || 0);
                     timeDisplay.textContent = `${current} / ${duration}`;
                 }
 
                 function formatTime(seconds) {
-                    if (isNaN(seconds)) return '0:00';
+                    if (isNaN(seconds) || seconds === Infinity) return '0:00';
                     const minutes = Math.floor(seconds / 60);
                     const secs = Math.floor(seconds % 60);
                     return `${minutes}:${secs.toString().padStart(2, '0')}`;
                 }
+                
+                // Initialize display
+                updateTimeDisplay();
             });
         }
 
@@ -4482,17 +4536,29 @@
                     <svg class="w-16 h-16 mx-auto mb-4 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
                     </svg>
-                    <h3 class="text-xl font-bold mb-2">Ready for the Challenge?</h3>
-                    <p class="text-stone-600 mb-6">Study the materials above, then take the quiz to test your knowledge!</p>
-                    <button onclick="window.startQuiz()" class="primary-btn w-auto mx-auto">Start Quiz</button>
+                    <h3 class="text-xl font-bold mb-2 text-violet-600">🎯 Desafio Pedagógico</h3>
+                    <p class="text-stone-600 mb-4">Estude o conteúdo acima e depois faça o desafio para testar seu conhecimento!</p>
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 max-w-md mx-auto">
+                        <p class="text-sm text-blue-800">
+                            <strong>🏆 Desafio:</strong> Acerte 20 perguntas consecutivas<br>
+                            <strong>⚠️ Regra:</strong> Uma pergunta errada reinicia tudo<br>
+                            <strong>🔀 Sistema:</strong> Perguntas sempre em ordem aleatória
+                        </p>
+                    </div>
+                    <button onclick="window.startQuiz()" class="primary-btn w-auto mx-auto">🚀 Iniciar Desafio</button>
                 </div>
             `;
         }
 
         window.startQuiz = function() {
-            // Generate random questions and shuffle options
-            const shuffled = fullQuizData.sort(() => Math.random() - 0.5);
-            quizQuestions = shuffled.slice(0, questionsInChallenge).map(question => {
+            // Reset streak variables
+            correctStreak = 0;
+            totalAttempts = 0;
+            currentQuestionIndex = 0;
+            
+            // Shuffle all questions to ensure randomness every time
+            const shuffled = [...fullQuizData].sort(() => Math.random() - 0.5);
+            quizQuestions = shuffled.map(question => {
                 // Find correct answer by asterisk (*) and clean options
                 let correctIndex = -1;
                 const cleanedOptions = question.o.map((option, index) => {
@@ -4526,7 +4592,6 @@
                     a: newCorrectIndex
                 };
             });
-            currentQuestionIndex = 0;
             
             showNameInput();
         }
@@ -4535,9 +4600,14 @@
             const quizContainer = document.getElementById('quiz-container');
             quizContainer.innerHTML = `
                 <div class="text-center h-full flex flex-col justify-center">
-                    <h3 class="text-xl font-bold mb-4">Enter Your Name</h3>
-                    <input type="text" id="teacher-name-input" class="form-input mb-4 max-w-sm mx-auto" placeholder="Your full name" required>
-                    <button onclick="window.submitName()" class="primary-btn w-auto mx-auto">Continue</button>
+                    <h3 class="text-xl font-bold mb-4 text-violet-600">🎯 Desafio Pedagógico - Streak Challenge</h3>
+                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+                        <p class="text-stone-700 mb-2"><strong>Objetivo:</strong> Acerte 20 perguntas consecutivas para completar o desafio!</p>
+                        <p class="text-red-600 text-sm font-medium">⚠️ Se errar uma pergunta, o desafio reinicia do zero!</p>
+                        <p class="text-blue-600 text-sm mt-2">💡 As perguntas sempre aparecem em ordem aleatória</p>
+                    </div>
+                    <input type="text" id="teacher-name-input" class="form-input mb-4 max-w-sm mx-auto" placeholder="Seu nome completo" required>
+                    <button onclick="window.submitName()" class="primary-btn w-auto mx-auto">🚀 Iniciar Desafio</button>
                 </div>
             `;
         }
@@ -4554,23 +4624,62 @@
         }
 
         function showQuestion() {
+            // Get current question from shuffled pool
+            if (currentQuestionIndex >= quizQuestions.length) {
+                // Reshuffle if we've gone through all questions
+                const shuffled = [...fullQuizData].sort(() => Math.random() - 0.5);
+                quizQuestions = shuffled.map(question => {
+                    let correctIndex = -1;
+                    const cleanedOptions = question.o.map((option, index) => {
+                        if (option.includes('*')) {
+                            correctIndex = index;
+                            return option.replace('*', '');
+                        }
+                        return option;
+                    });
+                    
+                    if (correctIndex === -1) {
+                        correctIndex = question.a;
+                    }
+                    
+                    const optionsWithIndices = cleanedOptions.map((option, index) => ({
+                        text: option,
+                        originalIndex: index
+                    }));
+                    
+                    const shuffledOptions = optionsWithIndices.sort(() => Math.random() - 0.5);
+                    const newCorrectIndex = shuffledOptions.findIndex(opt => opt.originalIndex === correctIndex);
+                    
+                    return {
+                        ...question,
+                        o: shuffledOptions.map(opt => opt.text),
+                        a: newCorrectIndex
+                    };
+                });
+                currentQuestionIndex = 0;
+            }
+            
             const question = quizQuestions[currentQuestionIndex];
             if (!question) {
                 console.error('Question not found at index:', currentQuestionIndex);
                 return;
             }
+            
             const quizContainer = document.getElementById('quiz-container');
             
             quizContainer.innerHTML = `
                 <div class="h-full flex flex-col">
                     <div class="mb-4">
                         <div class="flex justify-between items-center mb-2">
-                            <span class="text-sm font-medium text-stone-600">Question ${currentQuestionIndex + 1} of ${questionsInChallenge}</span>
-                            <span class="text-sm font-medium text-violet-600">${Math.round(((currentQuestionIndex + 1) / questionsInChallenge) * 100)}%</span>
+                            <span class="text-sm font-medium text-stone-600">Streak: ${correctStreak}/${questionsNeededForSuccess}</span>
+                            <span class="text-sm font-medium text-violet-600">Tentativas: ${totalAttempts + 1}</span>
                         </div>
-                        <div class="w-full bg-stone-200 rounded-full h-2">
-                            <div class="bg-violet-600 h-2 rounded-full transition-all duration-300" style="width: ${((currentQuestionIndex + 1) / questionsInChallenge) * 100}%"></div>
+                        <div class="w-full bg-stone-200 rounded-full h-3">
+                            <div class="bg-gradient-to-r from-green-400 to-green-600 h-3 rounded-full transition-all duration-500" style="width: ${(correctStreak / questionsNeededForSuccess) * 100}%"></div>
                         </div>
+                        <p class="text-xs text-center mt-1 text-stone-500">
+                            ${correctStreak === 0 ? 'Comece seu streak!' : `${questionsNeededForSuccess - correctStreak} restantes para completar!`}
+                        </p>
                     </div>
                     
                     <div class="flex-grow flex flex-col justify-center">
@@ -4584,13 +4693,12 @@
                         </div>
                     </div>
                     
-                    <div id="explanation" class="hidden mt-4 p-4 bg-blue-50 rounded-lg">
-                        <p class="text-sm text-blue-800"></p>
+                    <div id="explanation" class="hidden mt-4 p-4 rounded-lg">
+                        <p class="text-sm"></p>
                     </div>
                     
-                    <div class="mt-6 flex justify-between">
-                        <button onclick="window.previousQuestion()" class="secondary-btn ${currentQuestionIndex === 0 ? 'opacity-50 cursor-not-allowed' : ''}" ${currentQuestionIndex === 0 ? 'disabled' : ''}>Previous</button>
-                        <button id="next-btn" onclick="window.nextQuestion()" class="primary-btn w-auto hidden">Next Question</button>
+                    <div class="mt-6 flex justify-center">
+                        <button id="next-btn" onclick="window.nextQuestion()" class="primary-btn w-auto hidden">Próxima Pergunta</button>
                     </div>
                 </div>
             `;
@@ -4610,20 +4718,50 @@
             // Disable all options
             options.forEach(option => option.disabled = true);
             
+            const isCorrect = selectedIndex === question.a;
+            
             // Show correct/incorrect
             options.forEach((option, index) => {
                 if (index === question.a) {
                     option.classList.add('correct');
-                } else if (index === selectedIndex && selectedIndex !== question.a) {
+                } else if (index === selectedIndex && !isCorrect) {
                     option.classList.add('incorrect');
                 }
             });
             
-            // Show explanation
-            explanation.querySelector('p').textContent = question.e;
-            explanation.classList.remove('hidden');
+            // Update streak logic
+            if (isCorrect) {
+                correctStreak++;
+                explanation.className = 'mt-4 p-4 bg-green-50 border border-green-200 rounded-lg';
+                explanation.querySelector('p').className = 'text-sm text-green-800';
+                explanation.querySelector('p').innerHTML = `<strong>✅ Correto!</strong> ${question.e}`;
+                
+                // Check if challenge is completed
+                if (correctStreak >= questionsNeededForSuccess) {
+                    setTimeout(() => {
+                        showSuccessResult();
+                    }, 2000);
+                    explanation.classList.remove('hidden');
+                    return;
+                }
+            } else {
+                // Reset streak on wrong answer
+                correctStreak = 0;
+                totalAttempts++;
+                explanation.className = 'mt-4 p-4 bg-red-50 border border-red-200 rounded-lg';
+                explanation.querySelector('p').className = 'text-sm text-red-800';
+                explanation.querySelector('p').innerHTML = `<strong>❌ Incorreto!</strong> Seu streak reiniciou. ${question.e}`;
+                
+                // Show restart message
+                setTimeout(() => {
+                    showRestartMessage();
+                }, 3000);
+                explanation.classList.remove('hidden');
+                return;
+            }
             
-            // Show next button
+            // Show explanation and next button
+            explanation.classList.remove('hidden');
             nextBtn.classList.remove('hidden');
             
             // Track answer
@@ -4632,49 +4770,68 @@
 
         window.nextQuestion = function() {
             currentQuestionIndex++;
-            
-            if (currentQuestionIndex < questionsInChallenge) {
-                showQuestion();
-            } else {
-                showResults();
-            }
+            showQuestion();
         }
 
-        window.previousQuestion = function() {
-            if (currentQuestionIndex > 0) {
-                currentQuestionIndex--;
-                showQuestion();
-            }
-        }
-
-        function showResults() {
-            const correctAnswers = quizQuestions.filter(q => q.userAnswer === q.a).length;
-            const percentage = Math.round((correctAnswers / questionsInChallenge) * 100);
-            const passed = percentage >= 70;
-            
+        function showRestartMessage() {
             const quizContainer = document.getElementById('quiz-container');
             quizContainer.innerHTML = `
                 <div class="text-center h-full flex flex-col justify-center">
                     <div class="mb-6">
-                        ${passed ? 
-                            '<svg class="w-20 h-20 mx-auto mb-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>' :
-                            '<svg class="w-20 h-20 mx-auto mb-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>'
-                        }
-                        <h2 class="text-2xl font-bold mb-2 ${passed ? 'text-green-600' : 'text-red-600'}">${passed ? 'Congratulations!' : 'Keep Studying!'}</h2>
-                        <p class="text-stone-600 mb-4">${teacherName}, you scored ${correctAnswers}/${questionsInChallenge} (${percentage}%)</p>
-                        ${passed ? 
-                            '<p class="text-green-600 font-medium mb-6">You have successfully completed this month\'s pedagogical challenge!</p>' :
-                            '<p class="text-red-600 font-medium mb-6">You need 70% or higher to pass. Review the materials and try again!</p>'
-                        }
+                        <svg class="w-20 h-20 mx-auto mb-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.314 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                        </svg>
+                        <h2 class="text-2xl font-bold mb-2 text-red-600">Streak Reiniciado!</h2>
+                        <p class="text-stone-600 mb-4">Você errou uma pergunta. O desafio vai recomeçar do zero.</p>
+                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6 max-w-md mx-auto">
+                            <p class="text-sm text-stone-700">
+                                <strong>Tentativas:</strong> ${totalAttempts}<br>
+                                <strong>Streak anterior:</strong> Foi resetado para 0<br>
+                                <strong>Meta:</strong> 20 perguntas consecutivas corretas
+                            </p>
+                        </div>
                     </div>
                     
                     <div class="space-y-2">
-                        <button onclick="window.startQuiz()" class="secondary-btn w-auto mx-auto">Try Again</button>
-                        <button onclick="showQuizWelcome()" class="primary-btn w-auto mx-auto">Back to Start</button>
+                        <button onclick="window.startQuiz()" class="primary-btn w-auto mx-auto">🔄 Tentar Novamente</button>
+                        <button onclick="showQuizWelcome()" class="secondary-btn w-auto mx-auto">📚 Voltar ao Início</button>
                     </div>
                 </div>
             `;
         }
+
+        function showSuccessResult() {
+            const quizContainer = document.getElementById('quiz-container');
+            quizContainer.innerHTML = `
+                <div class="text-center h-full flex flex-col justify-center">
+                    <div class="mb-6">
+                        <svg class="w-24 h-24 mx-auto mb-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <h2 class="text-3xl font-bold mb-2 text-green-600">🎉 Parabéns, ${teacherName}!</h2>
+                        <p class="text-stone-600 mb-4">Você completou o Desafio Pedagógico com sucesso!</p>
+                        <div class="bg-green-50 border border-green-200 rounded-lg p-6 mb-6 max-w-md mx-auto">
+                            <h3 class="text-lg font-semibold text-green-800 mb-3">🏆 Resultado Final</h3>
+                            <div class="text-sm text-green-700 space-y-1">
+                                <p><strong>✅ Streak Final:</strong> ${correctStreak}/${questionsNeededForSuccess}</p>
+                                <p><strong>🎯 Tentativas Total:</strong> ${totalAttempts + 1}</p>
+                                <p><strong>📊 Status:</strong> <span class="text-green-600 font-bold">APROVADO</span></p>
+                            </div>
+                        </div>
+                        <p class="text-green-600 font-medium mb-6">
+                            Você demonstrou excelente conhecimento sobre Dogme ELT e Lexical Approach!
+                        </p>
+                    </div>
+                    
+                    <div class="space-y-2">
+                        <button onclick="showQuizWelcome()" class="primary-btn w-auto mx-auto">🏠 Voltar ao Início</button>
+                        <button onclick="window.startQuiz()" class="secondary-btn w-auto mx-auto">🔄 Fazer Novamente</button>
+                    </div>
+                </div>
+            `;
+        }
+
+
 
         // --- Guidelines Functions ---
         function renderDiretrizesSection() {
