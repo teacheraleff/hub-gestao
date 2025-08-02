@@ -240,6 +240,49 @@
         .guideline-title { font-size: 1.125rem; font-weight: 700; color: #44403c; }
         .guideline-description { color: #6b7280; line-height: 1.5; }
         .guideline-delete-btn { background: none; border: none; cursor: pointer; color: #9ca3af; margin-left: auto; padding: 0.25rem; }
+
+        /* --- Pagination Styles --- */
+        .pagination-controls { margin-top: 1rem; }
+        .pagination-btn { 
+            padding: 0.5rem; 
+            border: 1px solid #d1d5db; 
+            background: #ffffff; 
+            border-radius: 0.375rem; 
+            cursor: pointer; 
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .pagination-btn:hover:not(.disabled) { 
+            background: #f3f4f6; 
+            border-color: #9ca3af; 
+        }
+        .pagination-btn.disabled { 
+            opacity: 0.5; 
+            cursor: not-allowed; 
+            background: #f9fafb;
+        }
+        .pagination-number { 
+            padding: 0.5rem 0.75rem; 
+            border: 1px solid #d1d5db; 
+            background: #ffffff; 
+            border-radius: 0.375rem; 
+            cursor: pointer; 
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .pagination-number:hover { 
+            background: #f3f4f6; 
+            border-color: #9ca3af; 
+        }
+        .pagination-number.active { 
+            background: #F1D24B; 
+            border-color: #F1D24B; 
+            color: #1f2937;
+            font-weight: 700;
+        }
         .guideline-delete-btn:hover { color: #ef4444; }
 
         /* --- BrainFlip Game Styles --- */
@@ -4878,6 +4921,9 @@
                             <div id="good-practices-container">
                                 <!-- Good practices will be rendered here -->
                             </div>
+                            <div id="good-practices-pagination" class="pagination-controls mt-4">
+                                <!-- Pagination controls will be rendered here -->
+                            </div>
                         </div>
                         
                         <div>
@@ -4889,6 +4935,9 @@
                             </h2>
                             <div id="prohibited-items-container">
                                 <!-- Prohibited items will be rendered here -->
+                            </div>
+                            <div id="prohibited-items-pagination" class="pagination-controls mt-4">
+                                <!-- Pagination controls will be rendered here -->
                             </div>
                         </div>
                     </div>
@@ -4938,6 +4987,12 @@
             prohibitedItems: []
         };
 
+        // Pagination variables for guidelines
+        let guidelinesPagination = {
+            goodPractices: { currentPage: 1, itemsPerPage: 6 },
+            prohibitedItems: { currentPage: 1, itemsPerPage: 6 }
+        };
+
         function loadGuidelines() {
             // Load from localStorage or initialize with sample data
             const savedGuidelines = localStorage.getItem('slap-guidelines');
@@ -4977,47 +5032,31 @@
                 item.description.toLowerCase().includes(filter.toLowerCase())
             );
             
-            goodPracticesContainer.innerHTML = filteredGoodPractices.map((item, index) => `
-                <div class="guideline-card good-practice">
-                    <div class="guideline-header">
-                        <svg class="guideline-icon w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                        </svg>
-                        <div class="flex-1">
-                            <h3 class="guideline-title">${item.title}</h3>
-                        </div>
-                        ${currentUserRole === 'admin' ? `
-                        <button class="danger-btn !text-xs !py-1 !px-2 ml-2" onclick="deleteGuideline('goodPractices', ${index})">
-                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                            </svg>
-                        </button>
-                        ` : ''}
-                    </div>
-                    <p class="guideline-description">${item.description}</p>
-                </div>
-            `).join('');
+            // When filtering, reset pagination to page 1
+            if (filter) {
+                guidelinesPagination.goodPractices.currentPage = 1;
+                guidelinesPagination.prohibitedItems.currentPage = 1;
+            }
             
-            prohibitedItemsContainer.innerHTML = filteredProhibitedItems.map((item, index) => `
-                <div class="guideline-card prohibited">
-                    <div class="guideline-header">
-                        <svg class="guideline-icon w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                        </svg>
-                        <div class="flex-1">
-                            <h3 class="guideline-title">${item.title}</h3>
-                        </div>
-                        ${currentUserRole === 'admin' ? `
-                        <button class="danger-btn !text-xs !py-1 !px-2 ml-2" onclick="deleteGuideline('prohibitedItems', ${index})">
-                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                            </svg>
-                        </button>
-                        ` : ''}
-                    </div>
-                    <p class="guideline-description">${item.description}</p>
-                </div>
-            `).join('');
+            // Render Good Practices with pagination
+            renderGuidelineSection(
+                'goodPractices', 
+                filteredGoodPractices, 
+                goodPracticesContainer, 
+                document.getElementById('good-practices-pagination'),
+                'good-practice',
+                'text-green-600'
+            );
+            
+            // Render Prohibited Items with pagination
+            renderGuidelineSection(
+                'prohibitedItems', 
+                filteredProhibitedItems, 
+                prohibitedItemsContainer, 
+                document.getElementById('prohibited-items-pagination'),
+                'prohibited',
+                'text-red-600'
+            );
             
             // Show/hide sections based on search results
             const goodPracticesSection = document.querySelector('.grid > div:first-child');
@@ -5033,6 +5072,119 @@
                 prohibitedSection.style.display = 'none';
             } else {
                 prohibitedSection.style.display = 'block';
+            }
+        }
+
+        function renderGuidelineSection(type, items, container, paginationContainer, cardClass, iconColorClass) {
+            const pagination = guidelinesPagination[type];
+            const startIndex = (pagination.currentPage - 1) * pagination.itemsPerPage;
+            const endIndex = startIndex + pagination.itemsPerPage;
+            const itemsToShow = items.slice(startIndex, endIndex);
+            const totalPages = Math.ceil(items.length / pagination.itemsPerPage);
+            
+            // Render items
+            container.innerHTML = itemsToShow.map((item, index) => {
+                const realIndex = startIndex + index;
+                const iconPath = type === 'goodPractices' ? 'M5 13l4 4L19 7' : 'M6 18L18 6M6 6l12 12';
+                
+                return `
+                    <div class="guideline-card ${cardClass}">
+                        <div class="guideline-header">
+                            <svg class="guideline-icon w-6 h-6 ${iconColorClass}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${iconPath}"></path>
+                            </svg>
+                            <div class="flex-1">
+                                <h3 class="guideline-title">${item.title}</h3>
+                            </div>
+                            ${currentUserRole === 'admin' ? `
+                            <button class="danger-btn !text-xs !py-1 !px-2 ml-2" onclick="deleteGuidelineItem('${type}', ${realIndex})">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                </svg>
+                            </button>
+                            ` : ''}
+                        </div>
+                        <p class="guideline-description">${item.description}</p>
+                    </div>
+                `;
+            }).join('');
+            
+            // Render pagination controls
+            if (totalPages > 1) {
+                paginationContainer.innerHTML = `
+                    <div class="flex justify-center items-center gap-2">
+                        <button 
+                            class="pagination-btn ${pagination.currentPage === 1 ? 'disabled' : ''}" 
+                            onclick="changeGuidelinePage('${type}', ${pagination.currentPage - 1})"
+                            ${pagination.currentPage === 1 ? 'disabled' : ''}>
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                            </svg>
+                        </button>
+                        
+                        <div class="flex gap-1">
+                            ${Array.from({length: totalPages}, (_, i) => i + 1).map(page => `
+                                <button 
+                                    class="pagination-number ${page === pagination.currentPage ? 'active' : ''}"
+                                    onclick="changeGuidelinePage('${type}', ${page})">
+                                    ${page}
+                                </button>
+                            `).join('')}
+                        </div>
+                        
+                        <button 
+                            class="pagination-btn ${pagination.currentPage === totalPages ? 'disabled' : ''}" 
+                            onclick="changeGuidelinePage('${type}', ${pagination.currentPage + 1})"
+                            ${pagination.currentPage === totalPages ? 'disabled' : ''}>
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="text-center text-sm text-stone-500 mt-2">
+                        Mostrando ${Math.min(startIndex + 1, items.length)}-${Math.min(endIndex, items.length)} de ${items.length} itens
+                    </div>
+                `;
+            } else {
+                paginationContainer.innerHTML = '';
+            }
+        }
+
+        function changeGuidelinePage(type, newPage) {
+            const pagination = guidelinesPagination[type];
+            const filteredItems = type === 'goodPractices' ? 
+                guidelines.goodPractices.filter(item => 
+                    item.title.toLowerCase().includes(document.getElementById('guidelines-search').value.toLowerCase()) || 
+                    item.description.toLowerCase().includes(document.getElementById('guidelines-search').value.toLowerCase())
+                ) :
+                guidelines.prohibitedItems.filter(item => 
+                    item.title.toLowerCase().includes(document.getElementById('guidelines-search').value.toLowerCase()) || 
+                    item.description.toLowerCase().includes(document.getElementById('guidelines-search').value.toLowerCase())
+                );
+            
+            const totalPages = Math.ceil(filteredItems.length / pagination.itemsPerPage);
+            
+            if (newPage >= 1 && newPage <= totalPages) {
+                pagination.currentPage = newPage;
+                renderGuidelines(document.getElementById('guidelines-search').value);
+            }
+        }
+
+        function deleteGuidelineItem(type, realIndex) {
+            const itemTitle = guidelines[type][realIndex].title;
+            
+            if (confirm(`Tem certeza que deseja excluir "${itemTitle}"?`)) {
+                guidelines[type].splice(realIndex, 1);
+                saveGuidelines();
+                
+                // Adjust current page if necessary
+                const pagination = guidelinesPagination[type];
+                const totalPages = Math.ceil(guidelines[type].length / pagination.itemsPerPage);
+                if (pagination.currentPage > totalPages && totalPages > 0) {
+                    pagination.currentPage = totalPages;
+                }
+                
+                renderGuidelines(document.getElementById('guidelines-search').value);
             }
         }
 
@@ -5053,14 +5205,9 @@
             modal.classList.add('visible');
         }
 
+        // Legacy function kept for compatibility - redirects to new function
         function deleteGuideline(type, index) {
-            const itemTitle = guidelines[type][index].title;
-            
-            if (confirm(`Tem certeza que deseja excluir "${itemTitle}"?`)) {
-                guidelines[type].splice(index, 1);
-                saveGuidelines();
-                renderGuidelines();
-            }
+            deleteGuidelineItem(type, index);
         }
 
 
@@ -5287,6 +5434,8 @@
         window.openGuidelineForm = openGuidelineForm;
         window.saveGuideline = saveGuideline;
         window.deleteGuideline = deleteGuideline;
+        window.deleteGuidelineItem = deleteGuidelineItem;
+        window.changeGuidelinePage = changeGuidelinePage;
         window.exportAlunosDoc = exportAlunosDoc;
         window.selectAnswer = selectAnswer;
         window.nextQuestion = nextQuestion;
