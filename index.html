@@ -162,7 +162,7 @@
         .highlight-empty { text-align: center; padding: 2rem; color: #9ca3af; }
 
         /* --- Pedagogical Challenge Styles --- */
-        .quiz-option {
+        .pedagogical-quiz-option {
             display: block;
             width: 100%;
             padding: 0.75rem 1rem;
@@ -175,21 +175,21 @@
             border: 2px solid transparent;
             cursor: pointer;
         }
-        .quiz-option:hover:not(:disabled) {
+        .pedagogical-quiz-option:hover:not(:disabled) {
             background-color: #e7e5e4;
             border-color: #F1D24B;
         }
-        .quiz-option:disabled {
+        .pedagogical-quiz-option:disabled {
             cursor: not-allowed;
             opacity: 0.8;
         }
-        .quiz-option.correct {
+        .pedagogical-quiz-option.correct {
             background-color: #D1FAE5;
             border-color: #34D399;
             color: #065F46;
             font-weight: 600;
         }
-        .quiz-option.incorrect {
+        .pedagogical-quiz-option.incorrect {
             background-color: #FEE2E2;
             border-color: #F87171;
             color: #991B1B;
@@ -242,13 +242,7 @@
         .guideline-delete-btn { background: none; border: none; cursor: pointer; color: #9ca3af; margin-left: auto; padding: 0.25rem; }
         .guideline-delete-btn:hover { color: #ef4444; }
 
-        /* --- English Quiz and BrainFlip Game Styles --- */
-        .quiz-nav-button {
-            background-color: #F1D24B; color: #44403c; border: none; padding: 0.75rem 1.5rem; border-radius: 9999px; font-weight: 600; cursor: pointer; transition: background-color 0.2s;
-        }
-        .quiz-nav-button:hover {
-            background-color: #eab308;
-        }
+        /* --- BrainFlip Game Styles --- */
 
         /* BrainFlip Flashcard Styles */
         .flashcard-container {
@@ -431,7 +425,7 @@
         const pendingView = document.getElementById('pending-view');
         
         let db, auth, storage, userId, currentUserName, currentUserRole;
-        let usersData = [], students = [], turmas = [], vips = [], attendance = [], tasks = [], events = [], budgets = [], collaborators = [], schedules = [], expenses = [], cancellations = [], photos = [], photoFolders = [], cps = [], dojoRanking = [], dojoMissions = [];
+        let usersData = [], students = [], turmas = [], vips = [], attendance = [], tasks = [], events = [], budgets = [], collaborators = [], schedules = [], expenses = [], cancellations = [], cps = [], dojoRanking = [], dojoMissions = [];
         let allUnsubscribers = [];
         const appId = 'hub-gestao-slap';
         
@@ -591,7 +585,7 @@
                 if (activePageId === 'grade-section') renderGradeSection();
                 if (activePageId === 'tasks-section') renderTarefasSection();
                 if (activePageId === 'colaboradores-section') renderColaboradoresSection();
-                if (activePageId === 'banco-de-fotos-section') renderBancoDeFotosSection();
+
                 if (activePageId === 'inicio-section') renderInicioSection();
             });
             getCollectionListener('events', events, renderEventosSection);
@@ -600,8 +594,8 @@
             });
             getCollectionListener('expenses', expenses, renderFolhaPagamentoSection);
             getCollectionListener('cancellations', cancellations, renderCancelamentosSection);
-            getCollectionListener('photo_bank', photos, () => renderBancoDeFotosSection(document.getElementById('banco-de-fotos-section')?.dataset.currentFolder));
-            getCollectionListener('photo_folders', photoFolders, () => renderBancoDeFotosSection());
+
+
             getCollectionListener('cps', cps, () => {
                 const activePageId = contentArea.firstElementChild?.id;
                 if (activePageId === 'cps-section') renderCPsSection();
@@ -1756,67 +1750,7 @@
             `;
         }
 
-        function renderBancoDeFotosSection(folderNameToOpen = null) {
-            document.getElementById('main-title').textContent = 'Banco de Fotos';
-            document.getElementById('main-description').textContent = 'Gerencie os recursos visuais para marketing e divulgação.';
-            
-            if (folderNameToOpen) {
-                renderPhotoGallery(folderNameToOpen);
-                return;
-            }
 
-            contentArea.innerHTML = `
-                <section id="banco-de-fotos-section">
-                    <div class="flex justify-between items-center mb-6">
-                        <h3 class="text-xl font-bold text-stone-800">Pastas</h3>
-                        <div class="flex gap-2">
-                           <button class="secondary-btn w-auto" data-action="add-folder">+ Nova Pasta</button>
-                           <button class="primary-btn w-auto" data-action="add-photo">+ Adicionar Foto</button>
-                        </div>
-                    </div>
-                    <div class="folder-grid">
-                        ${photoFolders.map(folder => `
-                            <div class="folder-card" data-action="open-folder" data-folder-name="${folder.name}">
-                                <button class="folder-delete-btn" data-action="delete-folder" data-id="${folder.id}" data-folder-name="${folder.name}">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                                </button>
-                                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mx-auto mb-3 text-yellow-400"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"></path></svg>
-                                <p class="font-semibold text-stone-700">${folder.name}</p>
-                            </div>
-                        `).join('')}
-                    </div>
-                </section>
-            `;
-        }
-
-        function renderPhotoGallery(folderName) {
-             const photosInFolder = photos.filter(p => p.folder === folderName);
-             contentArea.innerHTML = `
-                <section id="banco-de-fotos-section" data-current-folder="${folderName}">
-                    <div class="flex justify-between items-center mb-6">
-                        <div>
-                            <button class="secondary-btn mb-2" data-action="back-to-folders">← Voltar para Pastas</button>
-                            <h3 class="text-2xl font-bold text-stone-800">Pasta: ${folderName}</h3>
-                        </div>
-                        <button class="primary-btn w-auto" data-action="add-photo">+ Adicionar Foto</button>
-                    </div>
-                    <div class="photo-grid">
-                        ${photosInFolder.length > 0 ? photosInFolder.map(photo => `
-                            <div class="photo-card">
-                                <img src="${photo.url}" alt="${photo.title}" class="bg-stone-100">
-                                <div class="photo-card-info">
-                                    <p class="font-semibold text-stone-800 truncate">${photo.title}</p>
-                                    <div class="mt-4 flex gap-2">
-                                        <a href="${photo.url}" download="${photo.title.replace(/\s+/g, '_')}.jpg" class="primary-btn text-center text-sm py-2">Download</a>
-                                        <button class="danger-btn text-sm py-2" data-action="delete-item" data-collection="photo_bank" data-id="${photo.id}">Excluir</button>
-                                    </div>
-                                </div>
-                            </div>
-                        `).join('') : '<p class="text-stone-500 col-span-full text-center py-10">Nenhuma foto nesta pasta.</p>'}
-                    </div>
-                </section>
-             `;
-        }
 
         function renderCPsSection() {
             document.getElementById('main-title').textContent = 'Cronogramas Pedagógicos (CPs)';
@@ -3185,105 +3119,7 @@
             document.getElementById('form-modal').classList.add('visible');
         }
         
-        function openPhotoFormModal() {
-            clearModalHeaderButtons();
-            const currentFolder = document.getElementById('banco-de-fotos-section')?.dataset.currentFolder || 'Geral';
-            document.getElementById('form-modal-title').textContent = "Adicionar Nova Foto";
-            
-            const folderOptions = photoFolders.map(f => `<option value="${f.name}" ${f.name === currentFolder ? 'selected' : ''}>${f.name}</option>`).join('');
 
-            document.getElementById('form-modal-content-area').innerHTML = `
-                <form id="form-modal-body" class="space-y-4">
-                    <div><label class="font-medium text-sm">Título da Foto</label><input type="text" id="photo-title" class="form-input" required></div>
-                    <div><label class="font-medium text-sm">URL da Imagem (Cloudinary)</label><input type="url" id="photo-url" class="form-input" required placeholder="https://res.cloudinary.com/..."></div>
-                    <div><label class="font-medium text-sm">Pasta</label><select id="photo-folder" class="form-input" required>${folderOptions}</select></div>
-                    <div class="text-right"><button type="submit" class="primary-btn w-auto">Salvar Foto</button></div>
-                </form>
-            `;
-            document.getElementById('form-modal-body').onsubmit = savePhoto;
-            document.getElementById('form-modal').classList.add('visible');
-        }
-
-        async function savePhoto(event) {
-            event.preventDefault();
-            const data = {
-                title: document.getElementById('photo-title').value,
-                url: document.getElementById('photo-url').value,
-                folder: document.getElementById('photo-folder').value,
-                uploadedBy: currentUserName,
-                createdAt: serverTimestamp()
-            };
-
-            if (!data.title || !data.url || !data.folder) {
-                showErrorMessage("Erro", "Todos os campos são obrigatórios.");
-                return;
-            }
-
-            try {
-                await addDoc(collection(db, `artifacts/${appId}/public/data/photo_bank`), data);
-                showSuccessMessage("Sucesso!", "Foto adicionada ao banco.");
-            } catch (error) {
-                console.error("Error saving photo:", error);
-                showErrorMessage("Erro", "Não foi possível salvar a foto.");
-            }
-        }
-        
-        function openFolderFormModal() {
-            clearModalHeaderButtons();
-            document.getElementById('form-modal-title').textContent = "Adicionar Nova Pasta";
-            document.getElementById('form-modal-content-area').innerHTML = `
-                <form id="form-modal-body" class="space-y-4">
-                    <div><label class="font-medium text-sm">Nome da Pasta</label><input type="text" id="folder-name" class="form-input" required></div>
-                    <div class="text-right"><button type="submit" class="primary-btn w-auto">Salvar Pasta</button></div>
-                </form>
-            `;
-            document.getElementById('form-modal-body').onsubmit = saveFolder;
-            document.getElementById('form-modal').classList.add('visible');
-        }
-
-        async function saveFolder(event) {
-            event.preventDefault();
-            const name = document.getElementById('folder-name').value;
-            if (!name) { showErrorMessage("Erro", "O nome da pasta é obrigatório."); return; }
-            const folderExists = photoFolders.some(f => f.name.toLowerCase() === name.toLowerCase());
-            if (folderExists) { showErrorMessage("Erro", "Uma pasta com este nome já existe."); return; }
-
-            try {
-                await addDoc(collection(db, `artifacts/${appId}/public/data/photo_folders`), { name, createdAt: serverTimestamp() });
-                showSuccessMessage("Sucesso!", "Pasta criada.");
-            } catch (error) {
-                console.error("Error saving folder:", error);
-                showErrorMessage("Erro", "Não foi possível criar a pasta.");
-            }
-        }
-
-        async function deleteFolder(folderId, folderName) {
-            if (!db) return;
-            showConfirmationModal(
-                "Excluir Pasta?",
-                `Tem certeza que deseja excluir a pasta "${folderName}"? TODAS as fotos dentro dela serão apagadas permanentemente.`,
-                async () => {
-                    try {
-                        // Batch delete photos in the folder
-                        const photosQuery = query(collection(db, `artifacts/${appId}/public/data/photo_bank`), where("folder", "==", folderName));
-                        const photosSnapshot = await getDocs(photosQuery);
-                        const batch = writeBatch(db);
-                        photosSnapshot.forEach(doc => {
-                            batch.delete(doc.ref);
-                        });
-                        await batch.commit();
-
-                        // Delete the folder document itself
-                        await deleteDoc(doc(db, `artifacts/${appId}/public/data/photo_folders`, folderId));
-                        
-                        showSuccessMessage("Sucesso", `Pasta "${folderName}" e todas as suas fotos foram excluídas.`);
-                    } catch (error) {
-                        console.error("Error deleting folder and its contents:", error);
-                        showErrorMessage("Erro", "Falha ao excluir a pasta.");
-                    }
-                }
-            );
-        }
 
         function openNivelForm(nivelId = null) {
             clearModalHeaderButtons();
@@ -4323,6 +4159,7 @@
         }
 
         function renderChallengeContent() {
+            console.log('Rendering challenge content:', challengeContent);
             renderVideoContent();
             renderAudioContent();
             updateChallengeHeader();
@@ -4343,6 +4180,7 @@
 
         function renderVideoContent() {
             const container = document.getElementById('challenge-video-container');
+            console.log('Rendering video content. URL:', challengeContent.videoUrl);
             if (challengeContent.videoUrl) {
                 container.innerHTML = `
                     <div class="mb-4">
@@ -4361,7 +4199,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h8m2-10a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         </svg>
                         <p>Nenhum vídeo configurado</p>
-                        ${currentUserRole === 'admin' ? '<p class="text-xs mt-1">Configure um vídeo através do botão "Editar Conteúdo"</p>' : ''}
+                        ${['admin', 'ap'].includes(currentUserRole) ? '<p class="text-xs mt-1">Configure um vídeo através do botão "Editar Conteúdo"</p>' : ''}
                     </div>
                 `;
             }
@@ -4369,6 +4207,7 @@
 
         function renderAudioContent() {
             const container = document.getElementById('challenge-audio-container');
+            console.log('Rendering audio content. Audio1:', challengeContent.audio1Url, 'Audio2:', challengeContent.audio2Url);
             let audioHtml = '';
 
             if (challengeContent.audio1Url) {
@@ -4402,7 +4241,11 @@
             }
 
             container.innerHTML = audioHtml;
-            initializeAudioPlayers();
+            
+            // Use setTimeout to ensure DOM is ready before initializing players
+            setTimeout(() => {
+                initializeAudioPlayers();
+            }, 100);
         }
 
         function createAudioPlayer(audioUrl, playerId) {
@@ -4440,6 +4283,7 @@
             cleanupAudioPlayers();
             
             const players = document.querySelectorAll('.audio-player-container');
+            console.log('Initializing audio players. Found:', players.length, 'players');
             
             players.forEach(container => {
                 const audio = container.querySelector('.audio-element');
@@ -4449,6 +4293,13 @@
                 const progressBar = container.querySelector('.progress-bar');
                 const timeDisplay = container.querySelector('.time-display');
                 
+                if (!audio || !playButton || !playIcon || !pauseIcon || !progressBar || !timeDisplay) {
+                    console.error('Missing audio player elements');
+                    return;
+                }
+                
+                console.log('Setting up audio player for:', audio.src);
+                
                 // Force reload audio element to clear cache
                 if (audio.src) {
                     audio.load();
@@ -4457,6 +4308,7 @@
                 audio.addEventListener('loadedmetadata', () => {
                     progressBar.max = audio.duration;
                     updateTimeDisplay();
+                    console.log('Audio metadata loaded, duration:', audio.duration);
                 });
 
                 audio.addEventListener('timeupdate', () => {
@@ -4464,11 +4316,19 @@
                     updateTimeDisplay();
                 });
 
+                audio.addEventListener('error', (e) => {
+                    console.error('Audio loading error:', e);
+                });
+
                 playButton.addEventListener('click', () => {
+                    console.log('Play button clicked, audio paused:', audio.paused);
                     if (audio.paused) {
-                        audio.play();
-                        playIcon.classList.add('hidden');
-                        pauseIcon.classList.remove('hidden');
+                        audio.play().then(() => {
+                            playIcon.classList.add('hidden');
+                            pauseIcon.classList.remove('hidden');
+                        }).catch(e => {
+                            console.error('Error playing audio:', e);
+                        });
                     } else {
                         audio.pause();
                         playIcon.classList.remove('hidden');
@@ -4717,7 +4577,7 @@
                         <h3 class="text-lg font-semibold mb-6">${question.q}</h3>
                         <div id="quiz-options" class="space-y-2">
                             ${question.o.map((option, index) => `
-                                <button class="quiz-option" onclick="window.selectAnswer(${index})">
+                                <button class="pedagogical-quiz-option" onclick="window.selectAnswer(${index})">
                                     ${option}
                                 </button>
                             `).join('')}
@@ -4743,7 +4603,7 @@
                 return;
             }
             
-            const options = document.querySelectorAll('.quiz-option');
+            const options = document.querySelectorAll('.pedagogical-quiz-option');
             const explanation = document.getElementById('explanation');
             const nextBtn = document.getElementById('next-btn');
             
@@ -5033,148 +4893,9 @@
             }
         }
 
-        // --- ENGLISH QUIZ SECTION ---
-        const quizData = [
-            { question: "I wish I ___ go to the party last night.", options: ["could", "could have", "can", "was able to"], correctAnswer: 1, explanation: "Para expressar arrependimento sobre o passado, usamos 'wish + could have + past participle'." },
-            { question: "She's really good ___ playing the piano.", options: ["in", "at", "on", "for"], correctAnswer: 1, explanation: "A preposição 'at' é usada com a expressão 'good at' para habilidades." },
-            { question: "By the time we arrived, the meeting ___ already ___.", options: ["has, started", "had, started", "was, starting", "would, start"], correctAnswer: 1, explanation: "O Past Perfect (had + past participle) indica uma ação que aconteceu antes de outra no passado." },
-            { question: "If I ___ you, I would accept the job offer.", options: ["am", "was", "were", "will be"], correctAnswer: 2, explanation: "No Second Conditional, sempre usamos 'were' para todas as pessoas após 'if I'." },
-            { question: "The word 'ubiquitous' means ___.", options: ["Rare", "Everywhere", "Beautiful", "Expensive"], correctAnswer: 1, explanation: "Ubiquitous significa presente em todo lugar, onipresente." },
-            { question: "You'll get used to ___ on the left.", options: ["drive", "be driving", "driving", "driven"], correctAnswer: 2, explanation: "A estrutura 'get used to' é seguida por um verbo no gerúndio (-ing)." },
-            { question: "The word 'gregarious' means ___.", options: ["Shy", "Sociable", "Angry", "Intelligent"], correctAnswer: 1, explanation: "Uma pessoa 'gregarious' é sociável e gosta de estar com outras pessoas." },
-            { question: "It is ___ to see you again.", options: ["a pleasure", "pleasure", "the pleasure", "pleasured"], correctAnswer: 0, explanation: "A expressão correta é 'It is a pleasure...'." },
-            { question: "I am not ___ to lift that box.", options: ["enough strong", "strong enough", "too strong", "so strong"], correctAnswer: 1, explanation: "A estrutura correta é adjetivo + 'enough' (strong enough)." },
-            { question: "She insisted ___ paying for the meal.", options: ["on", "in", "to", "for"], correctAnswer: 0, explanation: "O verbo 'insist' é seguido pela preposição 'on'." },
-            { question: "To 'spill the beans' means to ___.", options: ["Be clumsy", "Reveal a secret", "Eat quickly", "Waste money"], correctAnswer: 1, explanation: "A expressão 'spill the beans' significa revelar um segredo ou contar uma informação confidencial." },
-            { question: "Hardly ___ I got home when the phone rang.", options: ["had", "did", "have", "was"], correctAnswer: 0, explanation: "Quando uma frase começa com 'Hardly', usamos a inversão: 'Hardly had I... when...'." },
-            { question: "The word 'meticulous' is a synonym for ___.", options: ["Careless", "Fast", "Careful and precise", "Huge"], correctAnswer: 2, explanation: "'Meticulous' significa ser muito cuidadoso, prestando atenção a todos os detalhes." },
-            { question: "I'm ___ with this result.", options: ["disappoint", "disappointing", "disappointed", "disappointment"], correctAnswer: 2, explanation: "Adjetivos terminados em '-ed' (disappointed) descrevem como alguém se sente." },
-            { question: "There are ___ people here than at the last meeting.", options: ["less", "fewer", "little", "much"], correctAnswer: 1, explanation: "'Fewer' é usado para substantivos contáveis (people), enquanto 'less' é para incontáveis." },
-            { question: "The opposite of 'cautious' is ___.", options: ["Careful", "Brave", "Reckless", "Quiet"], correctAnswer: 2, explanation: "'Reckless' (imprudente) é o oposto de 'cautious' (cauteloso)." },
-            { question: "I'd like to ___ a complaint.", options: ["do", "have", "make", "give"], correctAnswer: 2, explanation: "A colocação correta é 'make a complaint'." },
-            { question: "The phrasal verb 'to run out of something' means ___.", options: ["to have no more of something", "to run outside", "to exercise", "to leave quickly"], correctAnswer: 0, explanation: "'Run out of' significa esgotar o estoque de algo, não ter mais." },
-            { question: "This soup is ___ hot to eat.", options: ["so", "such", "enough", "too"], correctAnswer: 3, explanation: "'Too' é usado antes de um adjetivo para indicar um excesso negativo." },
-            { question: "The word 'obsolete' means ___.", options: ["Very modern", "No longer in use", "Very popular", "Complicated"], correctAnswer: 1, explanation: "Algo 'obsolete' está ultrapassado ou não é mais usado." },
-            { question: "He reminded me ___ my appointment.", options: ["of", "to", "about", "for"], correctAnswer: 0, explanation: "A estrutura correta é 'remind someone of something'." },
-            { question: "If you don't mind, I'd rather you ___ smoke in here.", options: ["don't", "didn't", "wouldn't", "not"], correctAnswer: 1, explanation: "Após 'I'd rather' + pronome, usamos o Simple Past ('didn't') para expressar uma preferência sobre a ação de outra pessoa." }
-        ];
 
-        let currentQuizQuestions = [];
-        let currentEnglishQuestionIndex = 0;
-        let quizScore = 0;
 
-        function renderEnglishQuizSection() {
-            document.getElementById('main-title').textContent = 'English Quiz';
-            document.getElementById('main-description').textContent = 'Teste seus conhecimentos de inglês! Responda 10 perguntas e veja seu resultado.';
-            
-            contentArea.innerHTML = `
-                <section id="quiz-container" class="bg-white p-6 rounded-xl shadow-sm border border-stone-200 max-w-3xl mx-auto w-full">
-                    <!-- Quiz content will be injected here -->
-                </section>
-            `;
-            startQuiz();
-        }
 
-        function startQuiz() {
-            currentEnglishQuestionIndex = 0;
-            quizScore = 0;
-            quizData.sort(() => Math.random() - 0.5);
-            currentQuizQuestions = quizData.slice(0, 10);
-            displayQuestion();
-        }
-        
-        function displayQuestion() {
-            const quizContainer = document.getElementById('quiz-container');
-            if (currentEnglishQuestionIndex < currentQuizQuestions.length) {
-                const questionData = currentQuizQuestions[currentEnglishQuestionIndex];
-                let optionsHtml = '';
-                questionData.options.forEach((option, index) => {
-                    optionsHtml += `<button class="quiz-option" onclick="selectAnswer(${index})">${option}</button>`;
-                });
-
-                quizContainer.innerHTML = `
-                    <div id="quiz-content">
-                         <div class="flex justify-between items-center mb-4">
-                            <p class="text-sm font-semibold text-stone-500">Questão ${currentEnglishQuestionIndex + 1} de ${currentQuizQuestions.length}</p>
-                            <p class="text-sm font-semibold text-[#F1D24B]">Pontuação: ${quizScore}</p>
-                         </div>
-                        <h3 class="text-xl font-bold mb-6 text-stone-800">${questionData.question}</h3>
-                        <div id="quiz-options">${optionsHtml}</div>
-                        <div id="feedback-area" class="mt-4"></div>
-                        <div id="quiz-nav" class="mt-6 text-right"></div>
-                    </div>
-                `;
-            } else {
-                showQuizResult();
-            }
-        }
-
-        function selectAnswer(selectedIndex) {
-            const questionData = currentQuizQuestions[currentEnglishQuestionIndex];
-            const options = document.querySelectorAll('#quiz-options .quiz-option');
-            const feedbackArea = document.getElementById('feedback-area');
-            const navArea = document.getElementById('quiz-nav');
-
-            options.forEach(button => button.disabled = true);
-
-            if (selectedIndex === questionData.correctAnswer) {
-                quizScore++;
-                options[selectedIndex].classList.add('correct');
-                feedbackArea.innerHTML = `
-                    <div class="quiz-feedback correct">
-                        <p><strong>Correto!</strong> ${questionData.explanation}</p>
-                    </div>`;
-            } else {
-                options[selectedIndex].classList.add('incorrect');
-                options[questionData.correctAnswer].classList.add('correct');
-                feedbackArea.innerHTML = `
-                     <div class="quiz-feedback incorrect">
-                        <p><strong>Incorreto.</strong> A resposta certa é <strong>'${questionData.options[questionData.correctAnswer]}'</strong>. ${questionData.explanation}</p>
-                    </div>`;
-            }
-
-            if (currentEnglishQuestionIndex < currentQuizQuestions.length - 1) {
-                 navArea.innerHTML = `<button class="quiz-nav-button" onclick="nextQuestion()">Próxima Questão &rarr;</button>`;
-            } else {
-                 navArea.innerHTML = `<button class="quiz-nav-button" onclick="showQuizResult()">Ver Resultado</button>`;
-            }
-        }
-        
-        function nextQuestion() {
-            currentEnglishQuestionIndex++;
-            displayQuestion();
-        }
-
-        function showQuizResult() {
-            const quizContainer = document.getElementById('quiz-container');
-            const percentage = Math.round((quizScore / currentQuizQuestions.length) * 100);
-            let resultMessage = '';
-            let resultColor = '';
-
-            if (percentage >= 90) {
-                resultMessage = 'Excelente! Você tem um domínio avançado do inglês!';
-                resultColor = 'text-green-600';
-            } else if (percentage >= 70) {
-                resultMessage = 'Muito bom! Você tem um bom conhecimento do inglês.';
-                resultColor = 'text-blue-600';
-            } else if (percentage >= 50) {
-                resultMessage = 'Não está mal! Continue estudando para melhorar.';
-                resultColor = 'text-yellow-600';
-            } else {
-                resultMessage = 'Continue praticando! O inglês requer dedicação constante.';
-                resultColor = 'text-red-600';
-            }
-
-            quizContainer.innerHTML = `
-                <div class="text-center">
-                    <h2 class="text-3xl font-bold mb-4 text-stone-800">Quiz Finalizado!</h2>
-                    <div class="text-6xl font-bold mb-4 ${resultColor}">${quizScore}/${currentQuizQuestions.length}</div>
-                    <div class="text-2xl font-semibold mb-4 ${resultColor}">${percentage}%</div>
-                    <p class="text-lg mb-6 ${resultColor}">${resultMessage}</p>
-                    <button class="quiz-nav-button" onclick="startQuiz()">Tentar Novamente</button>
-                </div>
-            `;
-        }
 
         // --- BRAINFLIP GAME SECTION ---
         const flashcardsData = [
@@ -5617,8 +5338,6 @@
                 { key: 'grade', label: 'Grade', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" x2="16" y1="2" y2="6"></line><line x1="8" x2="8" y1="2" y2="6"></line><line x1="3" x2="21" y1="10" y2="10"></line></svg>', roles: ['admin', 'ap', 'pedagogico', 'financeiro', 'teacher'] },
                 { key: 'calendario', label: 'Calendário', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>', roles: ['admin', 'ap', 'pedagogico', 'financeiro', 'teacher', 'am'] },
                 { key: 'desafio-pedagogico', label: 'Desafio Pedagógico', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c3 3 9 3 12 0v-5"></path></svg>', roles: ['admin', 'pedagogico', 'teacher', 'ap'] },
-                { key: 'english-quiz', label: 'English Quiz', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>', roles: null },
-
                 { key: 'diretrizes', label: 'Diretrizes', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14,2 14,8 20,8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10,9 9,9 8,9"></polyline></svg>', roles: ['admin', 'teacher'] },
                 { key: 'tarefas', label: 'Tarefas', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>', roles: ['admin', 'am', 'ap', 'pedagogico', 'financeiro', 'teacher'] },
                 { key: 'cps', label: 'CPs', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>', roles: ['admin', 'pedagogico', 'ap'] },
@@ -5639,7 +5358,7 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            const pageRenderers = { 'inicio': renderInicioSection, 'alunos': renderAlunosSection, 'turmas': renderTurmasSection, 'vips': renderVipsSection, 'eventos': renderEventosSection, 'orcamentos': renderOrcamentosSection, 'tarefas': renderTarefasSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection, 'cancelamentos': renderCancelamentosSection, 'colaboradores': renderColaboradoresSection, 'banco-de-fotos': renderBancoDeFotosSection, 'cps': renderCPsSection, 'dojo': renderDojoSection, 'calendario': renderCalendarioSection, 'desafio-pedagogico': renderDesafioPedagogicoSection, 'diretrizes': renderDiretrizesSection, 'english-quiz': renderEnglishQuizSection };
+            const pageRenderers = { 'inicio': renderInicioSection, 'alunos': renderAlunosSection, 'turmas': renderTurmasSection, 'vips': renderVipsSection, 'eventos': renderEventosSection, 'orcamentos': renderOrcamentosSection, 'tarefas': renderTarefasSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection, 'cancelamentos': renderCancelamentosSection, 'colaboradores': renderColaboradoresSection, 'cps': renderCPsSection, 'dojo': renderDojoSection, 'calendario': renderCalendarioSection, 'desafio-pedagogico': renderDesafioPedagogicoSection, 'diretrizes': renderDiretrizesSection };
             
             document.body.addEventListener('click', (event) => {
                 // Close modals when clicking overlay or close button
@@ -5714,11 +5433,7 @@
                         'edit-cancelamento': () => openCancelamentoForm(id),
                         'delete-item': () => deleteItem(collection, id),
                         'close-modal': closeFormModal,
-                        'add-photo': openPhotoFormModal,
-                        'add-folder': openFolderFormModal,
-                        'delete-folder': () => deleteFolder(id, folderName),
-                        'open-folder': () => renderPhotoGallery(folderName),
-                        'back-to-folders': renderBancoDeFotosSection,
+
                         'toggle-cp-level': () => { const card = document.getElementById(`nivel-${id}`); if(card) { card.classList.toggle('open'); const icon = card.querySelector('svg'); icon.style.transform = card.classList.contains('open') ? 'rotate(180deg)' : 'rotate(0deg)'; } },
                         'add-nivel': () => openNivelForm(),
                         'edit-nivel': () => openNivelForm(id),
