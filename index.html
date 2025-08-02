@@ -2512,6 +2512,9 @@
             const eventSector = event.setor || event.sector || '';
             const eventDescription = event.descricao || event.description || '';
             
+            // Check if user can edit/delete events (teachers cannot)
+            const canEditEvents = currentUserRole !== 'teacher';
+            
             document.getElementById('form-modal-title').textContent = eventTitle;
             document.getElementById('form-modal-content-area').innerHTML = `
                 <div class="space-y-4">
@@ -2520,8 +2523,12 @@
                     ${eventSector ? `<p><strong>Setor:</strong> <span class="status-tag status-${eventSector.toLowerCase()}">${eventSector}</span></p>` : ''}
                     ${eventDescription ? `<div><strong>Descrição:</strong><p class="mt-1 p-3 bg-stone-50 rounded-md whitespace-pre-wrap">${eventDescription}</p></div>` : ''}
                     <div class="border-t pt-4 flex justify-end gap-2">
-                        <button class="secondary-btn" data-action="edit-calendar-event" data-id="${event.id}">Editar</button>
-                        <button class="danger-btn" data-action="delete-calendar-event" data-id="${event.id}">Apagar</button>
+                        ${canEditEvents ? `
+                            <button class="secondary-btn" data-action="edit-calendar-event" data-id="${event.id}">Editar</button>
+                            <button class="danger-btn" data-action="delete-calendar-event" data-id="${event.id}">Apagar</button>
+                        ` : `
+                            <button class="secondary-btn" data-action="close-form-modal">Fechar</button>
+                        `}
                     </div>
                 </div>`;
             document.getElementById('form-modal').classList.add('visible');
@@ -3638,6 +3645,12 @@
         
         // --- Calendar Functions ---
         async function deleteCalendarEvent(eventId) {
+            // Check if user has permission to delete events
+            if (currentUserRole === 'teacher') {
+                showErrorMessage("Acesso Negado", "Usuários com role 'teacher' não podem apagar eventos.");
+                return;
+            }
+            
             if (!confirm('Tem certeza que deseja apagar este evento?')) {
                 return;
             }
@@ -5415,6 +5428,12 @@
 
         // --- Calendar Event Functions ---
         function openCalendarEventForm(eventId = null) {
+            // Check if user has permission to create/edit events
+            if (currentUserRole === 'teacher') {
+                showErrorMessage("Acesso Negado", "Usuários com role 'teacher' não podem criar ou editar eventos.");
+                return;
+            }
+            
             const modal = document.getElementById('calendar-event-modal');
             const form = document.getElementById('calendar-event-form');
             const title = document.getElementById('event-modal-title');
@@ -5494,7 +5513,7 @@
                 { key: 'vips', label: 'VIPs', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20a6 6 0 0 0-12 0"/><circle cx="12" cy="10" r="4"/><circle cx="12" cy="12" r="10"/></svg>', roles: ['admin', 'pedagogico', 'teacher', 'ap'] },
                 { key: 'grade', label: 'Grade', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" x2="16" y1="2" y2="6"></line><line x1="8" x2="8" y1="2" y2="6"></line><line x1="3" x2="21" y1="10" y2="10"></line></svg>', roles: ['admin', 'ap', 'pedagogico', 'financeiro', 'teacher'] },
                 { key: 'calendario', label: 'Calendário', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>', roles: ['admin', 'ap', 'pedagogico', 'financeiro', 'teacher', 'am'] },
-                { key: 'desafio-pedagogico', label: 'Desafio Pedagógico', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c3 3 9 3 12 0v-5"></path></svg>', roles: ['admin', 'pedagogico', 'teacher', 'ap'] },
+                { key: 'desafio-pedagogico', label: 'Desafio Pedagógico', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>', roles: ['admin', 'pedagogico', 'teacher', 'ap'] },
                 { key: 'diretrizes', label: 'Diretrizes', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14,2 14,8 20,8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10,9 9,9 8,9"></polyline></svg>', roles: ['admin', 'teacher'] },
                 { key: 'tarefas', label: 'Tarefas', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>', roles: ['admin', 'am', 'ap', 'pedagogico', 'financeiro', 'teacher'] },
                 { key: 'cps', label: 'CPs', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>', roles: ['admin', 'pedagogico', 'ap'] },
@@ -5607,7 +5626,13 @@
                         'export-cps-doc': exportCPsDoc,
                         'add-calendar-event': openCalendarEventForm,
                         'view-calendar-event': () => viewCalendarEvent(id),
-                        'edit-calendar-event': () => openCalendarEventForm(id),
+                        'edit-calendar-event': () => {
+                            if (currentUserRole === 'teacher') {
+                                showErrorMessage("Acesso Negado", "Usuários com role 'teacher' não podem editar eventos.");
+                                return;
+                            }
+                            openCalendarEventForm(id);
+                        },
                         'add-guideline': openGuidelineForm,
                         'edit-monthly-highlight': openMonthlyHighlightForm,
                         'edit-challenge-content': openChallengeContentForm,
