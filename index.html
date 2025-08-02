@@ -492,8 +492,10 @@
             loadDemoData();
             updateWelcomeMessages(currentUserName);
             showHubView();
+            console.log('About to render inicio section and menu');
             renderInicioSection();
             renderMenu();
+            console.log('App initialization completed successfully');
         }
         
         function loadDemoData() {
@@ -3746,7 +3748,7 @@
             }
         }
         
-        async function renderCalendarioSection() {
+        function renderCalendarioSection() {
             document.getElementById('main-title').textContent = 'Calendário de Eventos';
             const contentArea = document.getElementById('content-area');
             
@@ -3818,15 +3820,14 @@
                 </div>
             `;
             
-            await initializeCalendar();
+            initializeCalendar();
         }
 
         let currentCalendarDate = new Date();
         let calendarEvents = [];
 
-        async function initializeCalendar() {
-            await loadCalendarEvents();
-            renderCalendar();
+        function initializeCalendar() {
+            loadCalendarEvents().then(() => renderCalendar());
         }
 
         function changeMonth(direction) {
@@ -5039,7 +5040,7 @@
 
             `;
             
-            await loadGuidelines();
+            loadGuidelines();
         }
 
         let guidelines = {
