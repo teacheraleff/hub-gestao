@@ -879,7 +879,7 @@
             `;
 
             // Initialize monthly highlight
-            renderMonthlyHighlight();
+            renderMonthlyHighlight().catch(console.error);
         }
 
         // Dashboard helper functions
@@ -1269,10 +1269,7 @@
                         <div class="base-card flex flex-col">
                             <div class="flex-1">
                                 <div class="flex justify-between items-start mb-2">
-                                    <div>
-                                        <h3 class="text-xl font-bold text-stone-800">${t.name}</h3>
-                                        <span class="status-tag status-turma text-xs">TURMA</span>
-                                    </div>
+                                    <h3 class="text-xl font-bold text-stone-800">${t.name}</h3>
                                     <span class="text-sm font-semibold text-stone-600">${turmaStudents.length} aluno(s)</span>
                                 </div>
                                 <p class="text-sm text-stone-500 mb-2">Professor: ${t.teacherName}</p>
@@ -2584,10 +2581,7 @@
             clearModalHeaderButtons();
 
             // Look for event in both arrays
-            let event = events.find(e => e.id === eventId);
-            if (!event) {
-                event = calendarEvents.find(e => e.id === eventId);
-            }
+            let event = calendarEvents.find(e => e.id === eventId);
 
             if (!event) return;
 
@@ -3742,25 +3736,14 @@
                 return;
             }
 
-            if (window.isDevelopmentMode) {
-                // Remove from local array and localStorage
-                events = events.filter(e => e.id !== eventId);
-                localStorage.setItem('demo-events', JSON.stringify(events));
+            // Remove from calendarEvents array and localStorage
+            calendarEvents = calendarEvents.filter(e => e.id !== eventId);
+            saveCalendarEvents();
 
-                // Close modal and refresh calendar
-                document.getElementById('form-modal').classList.remove('visible');
-                renderCalendarioSection();
-                showSuccessMessage("Sucesso!", "Evento apagado com sucesso.");
-            } else if (db) {
-                try {
-                    await deleteDoc(doc(db, `artifacts/${appId}/public/data/events`, eventId));
-                    document.getElementById('form-modal').classList.remove('visible');
-                    showSuccessMessage("Sucesso!", "Evento apagado com sucesso.");
-                } catch (error) {
-                    console.error("Error deleting event:", error);
-                    showErrorMessage("Erro", "Falha ao apagar o evento.");
-                }
-            }
+            // Close modal and refresh calendar
+            document.getElementById('form-modal').classList.remove('visible');
+            renderCalendar();
+            showSuccessMessage("Sucesso!", "Evento apagado com sucesso.");
         }
 
         function renderCalendarioSection() {
@@ -5497,12 +5480,21 @@
         // --- Monthly Highlight Functions ---
         let monthlyHighlight = null;
 
-        function renderMonthlyHighlight() {
+        async function renderMonthlyHighlight() {
             const container = document.getElementById('monthly-highlight-content');
-            const savedHighlight = localStorage.getItem('slap-monthly-highlight');
+            if (!container) return;
 
-            if (savedHighlight) {
-                monthlyHighlight = JSON.parse(savedHighlight);
+            try {
+                // Fetch from PostgreSQL
+                const response = await fetch('/api/monthly-highlight');
+                if (response.ok) {
+                    monthlyHighlight = await response.json();
+                } else {
+                    monthlyHighlight = null;
+                }
+            } catch (error) {
+                console.error('Error fetching monthly highlight:', error);
+                monthlyHighlight = null;
             }
 
             if (monthlyHighlight && monthlyHighlight.name) {
@@ -5564,13 +5556,13 @@
             }
         }
 
-        function saveMonthlyHighlight() {
+        async function saveMonthlyHighlight() {
             const name = document.getElementById('highlight-name').value;
             const photoUrl = document.getElementById('highlight-photo-url').value;
             const description = document.getElementById('highlight-description').value;
             const award = document.getElementById('highlight-award').value;
 
-            monthlyHighlight = {
+            const highlightData = {
                 name: name,
                 photoUrl: photoUrl,
                 description: description,
@@ -5578,13 +5570,31 @@
                 updatedAt: new Date().toISOString()
             };
 
-            localStorage.setItem('slap-monthly-highlight', JSON.stringify(monthlyHighlight));
-            renderMonthlyHighlight();
+            try {
+                const response = await fetch('/api/monthly-highlight', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(highlightData)
+                });
 
-            // Reset form safely
-            const form = document.getElementById('monthly-highlight-form');
-            if (form) {
-                form.reset();
+                if (response.ok) {
+                    monthlyHighlight = highlightData;
+                    await renderMonthlyHighlight();
+                    showSuccessMessage("Sucesso!", "Destaque do mês atualizado com sucesso.");
+                    
+                    // Reset form safely
+                    const form = document.getElementById('monthly-highlight-form');
+                    if (form) {
+                        form.reset();
+                    }
+                } else {
+                    throw new Error('Failed to save monthly highlight');
+                }
+            } catch (error) {
+                console.error('Error saving monthly highlight:', error);
+                showErrorMessage("Erro", "Falha ao salvar o destaque do mês.");
             }
         }
 
