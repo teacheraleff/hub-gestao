@@ -5571,6 +5571,8 @@
             };
 
             try {
+                console.log('Sending highlight data:', highlightData);
+                
                 const response = await fetch('/api/monthly-highlight', {
                     method: 'POST',
                     headers: {
@@ -5590,11 +5592,13 @@
                         form.reset();
                     }
                 } else {
-                    throw new Error('Failed to save monthly highlight');
+                    const errorText = await response.text();
+                    console.error('Server response:', response.status, errorText);
+                    throw new Error('Failed to save monthly highlight: ' + errorText);
                 }
             } catch (error) {
                 console.error('Error saving monthly highlight:', error);
-                showErrorMessage("Erro", "Falha ao salvar o destaque do mês.");
+                showErrorMessage("Erro", "Falha ao salvar o destaque do mês: " + error.message);
             }
         }
 
