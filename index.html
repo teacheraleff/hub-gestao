@@ -1251,7 +1251,38 @@
             const canManage = ['admin', 'pedagogico', 'ap'].includes(currentUserRole);
             let itemsToDisplay = turmas;
             if (currentUserRole === 'teacher') {
-                itemsToDisplay = turmas.filter(t => t.teacherName === currentUserName);
+                // Find the teacher's name in collaborators to ensure correct mapping
+                const teacherCollaborator = collaborators.find(c => 
+                    c.sectors && c.sectors.includes('professor') && 
+                    (c.name === currentUserName || c.email === currentUserName || c.id === userId)
+                );
+                const originalTeacherName = teacherCollaborator ? teacherCollaborator.name : currentUserName;
+                
+                // Use smart name matching to find the actual teacher name in turmas
+                const teacherNames = [...new Set(turmas.map(t => t.teacherName))];
+                const exactMatch = teacherNames.find(name => name === originalTeacherName);
+                let teacherNameToFilter = exactMatch;
+                
+                if (!exactMatch && originalTeacherName) {
+                    // Try first name matching
+                    const searchFirstName = originalTeacherName.trim().split(' ')[0].toLowerCase();
+                    const firstNameMatch = teacherNames.find(name => {
+                        const nameFirstName = name.trim().split(' ')[0].toLowerCase();
+                        return nameFirstName === searchFirstName;
+                    });
+                    teacherNameToFilter = firstNameMatch;
+                }
+                
+                teacherNameToFilter = teacherNameToFilter || originalTeacherName;
+                itemsToDisplay = turmas.filter(t => t.teacherName === teacherNameToFilter);
+                
+                console.log('DEBUG: Turmas filtering for teacher', {
+                    currentUserName,
+                    originalTeacherName,
+                    teacherNameToFilter,
+                    availableTeachersInTurmas: teacherNames,
+                    filteredTurmasCount: itemsToDisplay.length
+                });
             }
 
             contentArea.innerHTML = `
@@ -1296,10 +1327,42 @@
             let itemsToDisplay = vipStudents;
             
             if (currentUserRole === 'teacher') {
+                // Find the teacher's name in collaborators to ensure correct mapping
+                const teacherCollaborator = collaborators.find(c => 
+                    c.sectors && c.sectors.includes('professor') && 
+                    (c.name === currentUserName || c.email === currentUserName || c.id === userId)
+                );
+                const originalTeacherName = teacherCollaborator ? teacherCollaborator.name : currentUserName;
+                
+                // Use smart name matching to find the actual teacher name in VIPs
+                const teacherNames = [...new Set(vips.map(v => v.teacherName))];
+                const exactMatch = teacherNames.find(name => name === originalTeacherName);
+                let teacherNameToFilter = exactMatch;
+                
+                if (!exactMatch && originalTeacherName) {
+                    // Try first name matching
+                    const searchFirstName = originalTeacherName.trim().split(' ')[0].toLowerCase();
+                    const firstNameMatch = teacherNames.find(name => {
+                        const nameFirstName = name.trim().split(' ')[0].toLowerCase();
+                        return nameFirstName === searchFirstName;
+                    });
+                    teacherNameToFilter = firstNameMatch;
+                }
+                
+                teacherNameToFilter = teacherNameToFilter || originalTeacherName;
+                
                 // For teachers, filter VIP students who have matching VIP records with their name
                 itemsToDisplay = vipStudents.filter(student => {
                     const vipRecord = vips.find(v => v.studentId === student.id);
-                    return vipRecord && vipRecord.teacherName === currentUserName;
+                    return vipRecord && vipRecord.teacherName === teacherNameToFilter;
+                });
+                
+                console.log('DEBUG: VIPs filtering for teacher', {
+                    currentUserName,
+                    originalTeacherName,
+                    teacherNameToFilter,
+                    availableTeachersInVips: teacherNames,
+                    filteredVipsCount: itemsToDisplay.length
                 });
             }
 
@@ -1318,7 +1381,6 @@
                                 <div class="flex justify-between items-start mb-2">
                                     <div>
                                         <h3 class="text-xl font-bold text-stone-800">${student.name}</h3>
-                                        <span class="status-tag status-vip text-xs">VIP</span>
                                     </div>
                                     ${canManage ? `
                                     <div class="flex gap-1">
@@ -2046,8 +2108,11 @@
                     </div>
 
                     <h4 class="text-lg font-semibold text-stone-700 border-b pb-2 pt-4">Informações Financeiras</h4>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div><label class="font-medium text-sm">Tipo de Pagamento</label><select id="aluno-paymentType" class="form-input">${paymentTypeOptions}</select></div>
+                        <div><label class="font-medium text-sm">Quantidade de Parcelas</label><input type="number" min="1" max="24" id="aluno-parcelas" class="form-input" placeholder="Ex: 12" value="${aluno?.parcelas || ''}"></div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div><label class="font-medium text-sm">Valor Pago (R$)</label><input type="number" step="0.01" id="aluno-amountPaid" class="form-input" value="${aluno?.amountPaid || ''}"></div>
                         <div><label class="font-medium text-sm">Valor Recebido (R$)</label><input type="number" step="0.01" id="aluno-amountReceived" class="form-input" value="${aluno?.amountReceived || ''}"></div>
                     </div>
@@ -2092,6 +2157,7 @@
                 startDate: document.getElementById('aluno-startDate').value,
                 completedLevels: completedLevels,
                 paymentType: document.getElementById('aluno-paymentType').value,
+                parcelas: document.getElementById('aluno-parcelas').value,
                 amountPaid: document.getElementById('aluno-amountPaid').value,
                 amountReceived: document.getElementById('aluno-amountReceived').value,
                 notes: document.getElementById('aluno-notes').value,
@@ -2146,6 +2212,7 @@
                         <p><strong>Modalidade:</strong> <span class="status-tag status-${(aluno.modalidade || 'turma').toLowerCase()}">${aluno.modalidade || 'TURMA'}</span></p>
                         <p><strong>Início:</strong> ${aluno.startDate ? new Date(aluno.startDate + 'T00:00:00').toLocaleDateString('pt-BR') : 'N/A'}</p>
                         <p><strong>Pagamento:</strong> ${aluno.paymentType || 'N/A'}</p>
+                        <p><strong>Parcelas:</strong> ${aluno.parcelas ? `${aluno.parcelas}x` : 'Não informado'}</p>
                         <p><strong>Indicação:</strong> ${aluno.indicacao || 'Não informado'}</p>
                         <p><strong>Valor Pago:</strong> R$ ${parseFloat(aluno.amountPaid || 0).toFixed(2)}</p>
                         <p><strong>Valor Recebido:</strong> R$ ${parseFloat(aluno.amountReceived || 0).toFixed(2)}</p>
@@ -5488,7 +5555,19 @@
                 // Fetch from PostgreSQL
                 const response = await fetch('/api/monthly-highlight');
                 if (response.ok) {
-                    monthlyHighlight = await response.json();
+                    const data = await response.json();
+                    // Map database fields to frontend expected format
+                    if (data) {
+                        monthlyHighlight = {
+                            name: data.name,
+                            photoUrl: data.photo_url,
+                            description: data.description,
+                            award: data.award,
+                            updatedAt: data.updated_at
+                        };
+                    } else {
+                        monthlyHighlight = null;
+                    }
                 } else {
                     monthlyHighlight = null;
                 }
@@ -5581,8 +5660,14 @@
                     body: JSON.stringify(highlightData)
                 });
 
+                console.log('Response status:', response.status);
+                console.log('Response headers:', [...response.headers.entries()]);
+
                 if (response.ok) {
-                    monthlyHighlight = highlightData;
+                    const responseData = await response.json();
+                    console.log('Response data:', responseData);
+                    
+                    // Force re-fetch to get the latest data with correct field mapping
                     await renderMonthlyHighlight();
                     showSuccessMessage("Sucesso!", "Destaque do mês atualizado com sucesso.");
                     
@@ -5591,14 +5676,24 @@
                     if (form) {
                         form.reset();
                     }
+                    
+                    // Close modal
+                    const modal = document.getElementById('monthly-highlight-modal');
+                    if (modal) {
+                        modal.classList.remove('visible');
+                    }
                 } else {
                     const errorText = await response.text();
-                    console.error('Server response:', response.status, errorText);
-                    throw new Error('Failed to save monthly highlight: ' + errorText);
+                    console.error('Server response error:', response.status, errorText);
+                    throw new Error(`Server error ${response.status}: ${errorText}`);
                 }
             } catch (error) {
-                console.error('Error saving monthly highlight:', error);
-                showErrorMessage("Erro", "Falha ao salvar o destaque do mês: " + error.message);
+                console.error('Full error details:', error);
+                if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                    showErrorMessage("Erro de Conexão", "Não foi possível conectar ao servidor. Verifique sua conexão.");
+                } else {
+                    showErrorMessage("Erro", "Falha ao salvar o destaque do mês: " + error.message);
+                }
             }
         }
 
