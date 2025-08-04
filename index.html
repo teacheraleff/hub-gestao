@@ -2081,7 +2081,7 @@
             document.getElementById('form-modal-title').textContent = aluno ? "Editar Aluno" : "Adicionar Novo Aluno";
 
             const statusOptions = ['Ativo', 'Inativo', 'Cancelado', 'Pendente'].map(s => `<option value="${s}" ${aluno?.status === s ? 'selected' : ''}>${s}</option>`).join('');
-            const paymentTypeOptions = ['Cartão', 'Boleto', 'Permuta', 'Bolsa'].map(p => `<option value="${p}" ${aluno?.paymentType === p ? 'selected' : ''}>${p}</option>`).join('');
+            const paymentTypeOptions = ['Cartão', 'Boleto', 'Permuta', 'Bolsa', 'Assinatura'].map(p => `<option value="${p}" ${aluno?.paymentType === p ? 'selected' : ''}>${p}</option>`).join('');
 
             document.getElementById('form-modal-content-area').innerHTML = `
                 <form id="form-modal-body" class="space-y-4">
@@ -5627,10 +5627,9 @@
             modal.classList.add('visible');
 
             if (form) {
-                form.onsubmit = (e) => {
+                form.onsubmit = async (e) => {
                     e.preventDefault();
-                    saveMonthlyHighlight();
-                    modal.classList.remove('visible');
+                    await saveMonthlyHighlight();
                 };
             }
         }
