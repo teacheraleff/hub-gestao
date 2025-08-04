@@ -28,22 +28,24 @@
         .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e7e5e4; padding-bottom: 1rem; margin-bottom: 1rem; }
         .modal-header h4 { font-size: 1.25rem; font-weight: 700; color: #44403c; }
         .modal-close-btn { background: none; border: none; cursor: pointer; color: #a8a29e; }
-        
+
         .base-card { background-color: #ffffff; border-radius: 0.75rem; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid #e7e5e4; transition: all 0.2s; }
         .base-card:hover { border-color: #F1D24B; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        
+
         .status-tag { padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; }
         .status-aprovado, .status-presencial, .status-ativo { background-color: #D1FAE5; color: #065F46; }
         .status-online, .status-em-andamento, .status-inativo { background-color: #DBEAFE; color: #1E40AF; }
         .status-concluída { background-color: #F3F4F6; color: #4B5563; }
         .status-pendente, .status-em-espera { background-color: #FEF3C7; color: #92400E; }
+        .status-vip { background-color: #F1D24B; color: #1f2937; font-weight: 700; }
+        .status-turma { background-color: #84C7DF; color: #1f2937; font-weight: 700; }
         .status-rejeitado, .status-cancelado { background-color: #FEE2E2; color: #991B1B; }
 
         .status-financeiro { background-color: #D1FAE5; color: #065F46; }
         .status-pedagógico { background-color: #DBEAFE; color: #1E40AF; }
         .status-comercial { background-color: #FEF3C7; color: #92400E; }
         .status-marketing { background-color: #FEE2E2; color: #991B1B; }
-        
+
         .sector-tag, .keyword-tag {
             display: inline-block;
             padding: 0.25rem 0.75rem;
@@ -67,7 +69,7 @@
         .deadline-overdue { color: #b91c1c; }
         .task-delete-btn { background: none; border: none; cursor: pointer; color: #9ca3af; transition: color 0.2s; }
         .task-delete-btn:hover { color: #ef4444; }
-        
+
         .page-number-btn { padding: 0.25rem 0.75rem; border: 1px solid #d6d3d1; background-color: #ffffff; color: #44403c; border-radius: 0.375rem; font-size: 0.875rem; cursor: pointer; transition: all 0.2s; }
         .page-number-btn:hover { background-color: #f5f5f4; border-color: #F1D24B; }
         .page-number-btn.active { background-color: #F1D24B; border-color: #F1D24B; color: #44403c; font-weight: 600; }
@@ -82,7 +84,7 @@
         .class-tag { font-size: 0.625rem; font-weight: 700; padding: 2px 8px; border-radius: 9999px; color: white; margin-bottom: 4px; display: inline-block; text-transform: uppercase; }
         .tag-turma { background-color: #FF5C3D; }
         .tag-vip { background-color: #8671D1; }
-        
+
         .data-table { width: 100%; border-collapse: collapse; }
         .data-table th, .data-table td { padding: 0.75rem 1rem; text-align: left; border-bottom: 1px solid #e5e7eb; }
         .data-table th { font-weight: 600; font-size: 0.875rem; color: #6b7280; }
@@ -386,7 +388,7 @@
                     </button>
                 </div>
             </aside>
-        
+
             <main class="flex-1 relative">
                 <div class="bg-[#F1D24B] block w-full p-4 sm:p-6 md:p-8 absolute top-0 left-0 right-0 z-10">
                     <div class="flex justify-between items-start">
@@ -466,12 +468,12 @@
         const loginView = document.getElementById('login-view');
         const hubView = document.getElementById('hub-view');
         const pendingView = document.getElementById('pending-view');
-        
+
         let db, auth, storage, userId, currentUserName, currentUserRole;
         let usersData = [], students = [], turmas = [], vips = [], attendance = [], tasks = [], events = [], budgets = [], collaborators = [], schedules = [], expenses = [], cancellations = [], cps = [], dojoRanking = [], dojoMissions = [];
         let allUnsubscribers = [];
         const appId = 'hub-gestao-slap';
-        
+
         // Pagination state
         let currentPage = 1;
         let itemsPerPage = 20;
@@ -483,10 +485,10 @@
             currentUserName = "Admin SLAP";
             currentUserRole = "admin";
             userId = "demo-user";
-            
+
             // Set profile picture
             document.getElementById('profile-picture').src = 'https://res.cloudinary.com/dqfi22uz0/image/upload/v1749349751/DBB440C2-684E-4DCF-9CD3-B2DDC18F1E53_3_vgocga.jpg';
-            
+
             // Initialize with demo data
             loadDemoData();
             updateWelcomeMessages(currentUserName);
@@ -494,7 +496,7 @@
             renderInicioSection();
             renderMenu();
         }
-        
+
         function loadDemoData() {
             // Load demo data from localStorage or create default data
             students = JSON.parse(localStorage.getItem('demo-students') || '[]');
@@ -507,7 +509,7 @@
             expenses = JSON.parse(localStorage.getItem('demo-expenses') || '[]');
             cancellations = JSON.parse(localStorage.getItem('demo-cancellations') || '[]');
             cps = JSON.parse(localStorage.getItem('demo-cps') || '[]');
-            
+
             // Initialize with sample data if empty
             if (students.length === 0) {
                 students = [
@@ -537,7 +539,7 @@
                 db = getFirestore(app);
                 auth = getAuth(app);
                 storage = getStorage(app);
-                
+
                 onAuthStateChanged(auth, async (user) => {
                     if (user && !user.isAnonymous) {
                         await initializeAppWithUser(user);
@@ -555,13 +557,13 @@
             userId = user.uid;
             const userDocRef = doc(db, "users", userId);
             const userDoc = await getDoc(userDocRef);
-            
+
             if (userDoc.exists()) {
                 const userData = userDoc.data();
                 currentUserName = userData.name || user.displayName;
                 currentUserRole = userData.role;
                 document.getElementById('profile-picture').src = userData.photoURL || 'https://res.cloudinary.com/dqfi22uz0/image/upload/v1749349751/DBB440C2-684E-4DCF-9CD3-B2DDC18F1E53_3_vgocga.jpg';
-                
+
                 if (['admin', 'am', 'ap', 'pedagogico', 'financeiro', 'teacher'].includes(currentUserRole)) {
                     setupFirestoreListeners();
                     updateWelcomeMessages(currentUserName);
@@ -573,7 +575,7 @@
                 showPendingView();
             }
         }
-        
+
         // --- FIRESTORE LISTENERS ---
         function setupFirestoreListeners() {
             if (!db || !userId) return;
@@ -586,7 +588,7 @@
                 const unsubscribe = onSnapshot(finalQuery, (snapshot) => {
                     targetArray.length = 0;
                     snapshot.docs.forEach(doc => targetArray.push({ id: doc.id, ...doc.data() }));
-                    
+
                     const activePageId = contentArea.firstElementChild?.id;
                     if (renderFunc && activePageId) {
                         const pageBaseName = activePageId.replace('-section', '');
@@ -597,7 +599,7 @@
                 }, (error) => console.error(`Error on ${collectionName} listener:`, error));
                 allUnsubscribers.push(unsubscribe);
             };
-            
+
             getCollectionListener('users', usersData, null);
             getCollectionListener('students', students, () => {
                 if (contentArea.firstElementChild?.id === 'alunos-section') {
@@ -727,21 +729,21 @@
         function renderInicioSection() {
             document.getElementById('main-title').textContent = 'Dashboard';
             document.getElementById('main-description').textContent = 'Visão geral das suas atividades e da equipe.';
-            
+
             // Calculate statistics based on user role
             const isTeacher = currentUserRole === 'teacher';
             const totalStudents = students.length;
             const activeStudents = students.filter(s => s.status === 'Ativo').length;
             const totalTurmas = turmas.length;
             const totalRevenue = students.reduce((sum, s) => sum + (parseFloat(s.amountPaid) || 0), 0);
-            
+
             // Check if user can see financial information
             const canViewFinancialInfo = !['teacher', 'pedagogico', 'ap', 'am'].includes(currentUserRole);
-            
+
             contentArea.innerHTML = `
                 <div id="inicio-section" class="space-y-6">
                     <!-- Welcome Header removed - now integrated in main header -->
-                    
+
                     <!-- Compact Statistics -->
                     <div class="grid ${
                         isTeacher ? 'grid-cols-2' : 
@@ -767,7 +769,7 @@
                         </div>
                         ` : ''}
                     </div>
-                    
+
                     <!-- Employee Highlight and Top 3 Dojo Section -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <!-- Employee Highlight Section - Compact -->
@@ -814,7 +816,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
 
 
                     <!-- Teacher-specific Weekly Schedule Preview -->
@@ -875,7 +877,7 @@
                     </div>
                 </div>
             `;
-            
+
             // Initialize monthly highlight
             renderMonthlyHighlight();
         }
@@ -948,17 +950,17 @@
                          'Quinta-feira', 'Sexta-feira', 'Sábado'];
             return days[new Date().getDay()];
         }
-        
+
         function initializeChart() {
             const ctx = document.getElementById('studentsChart');
             if (!ctx) return;
-            
+
             const statusCounts = students.reduce((acc, student) => {
                 const status = student.status || 'Pendente';
                 acc[status] = (acc[status] || 0) + 1;
                 return acc;
             }, {});
-            
+
             new Chart(ctx, {
                 type: 'doughnut',
                 data: {
@@ -1042,7 +1044,7 @@
                             <tbody id="alunos-list"></tbody>
                         </table>
                     </div>
-                    
+
                     <!-- Controles de Paginação -->
                     <div id="pagination-controls" class="flex justify-between items-center mt-6 pt-4 border-t border-stone-200">
                         <div class="flex items-center gap-2">
@@ -1054,9 +1056,9 @@
                                 <option value="100">100</option>
                             </select>
                         </div>
-                        
+
                         <div id="pagination-info" class="text-sm text-stone-600"></div>
-                        
+
                         <div class="flex gap-1">
                             <button id="prev-page" class="secondary-btn !py-1 !px-3 disabled:opacity-50 disabled:cursor-not-allowed">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1073,7 +1075,7 @@
                     </div>
                 </section>
             `;
-            
+
             const searchInput = document.getElementById('aluno-search');
             const filterButtons = document.querySelectorAll('#alunos-filter-buttons .filter-btn');
 
@@ -1095,20 +1097,20 @@
             const itemsPerPageSelect = document.getElementById('items-per-page');
             const prevPageBtn = document.getElementById('prev-page');
             const nextPageBtn = document.getElementById('next-page');
-            
+
             itemsPerPageSelect.addEventListener('change', () => {
                 itemsPerPage = parseInt(itemsPerPageSelect.value);
                 currentPage = 1;
                 performUpdate();
             });
-            
+
             prevPageBtn.addEventListener('click', () => {
                 if (currentPage > 1) {
                     currentPage--;
                     performUpdate();
                 }
             });
-            
+
             nextPageBtn.addEventListener('click', () => {
                 const totalItems = getFilteredStudents().length;
                 const totalPages = Math.ceil(totalItems / itemsPerPage);
@@ -1120,20 +1122,20 @@
 
             updateAlunosList('todos');
         }
-        
+
         function getFilteredStudents() {
             const filter = document.querySelector('#alunos-filter-buttons .filter-btn.active')?.dataset.filter || 'todos';
             const searchTerm = document.getElementById('aluno-search')?.value.toLowerCase() || '';
-            
+
             let filteredStudents = students;
             if (filter !== 'todos') {
                 filteredStudents = students.filter(s => s.status && s.status.toLowerCase() === filter);
             }
-            
+
             if (searchTerm) {
                 filteredStudents = filteredStudents.filter(s => s.name.toLowerCase().includes(searchTerm));
             }
-            
+
             return filteredStudents.sort((a, b) => a.name.localeCompare(b.name));
         }
 
@@ -1146,7 +1148,7 @@
             const filteredStudents = getFilteredStudents();
             const totalItems = filteredStudents.length;
             const totalPages = Math.ceil(totalItems / itemsPerPage);
-            
+
             // Reset to page 1 if current page is beyond total pages
             if (currentPage > totalPages && totalPages > 0) {
                 currentPage = 1;
@@ -1166,7 +1168,15 @@
 
             listBody.innerHTML = paginatedStudents.map(student => `
                 <tr data-action="view-aluno" data-id="${student.id}" class="cursor-pointer">
-                    <td class="font-medium">${student.name}</td>
+                    <td class="font-medium">
+                        <div class="flex flex-col">
+                            <div>${student.name}</div>
+                            <div class="mt-1">
+                                <span class="status-tag status-${(student.modalidade || 'turma').toLowerCase()} text-xs">${student.modalidade || 'TURMA'}</span>
+                                ${student.indicacao ? `<span class="ml-2 text-xs text-stone-500">• ${student.indicacao}</span>` : ''}
+                            </div>
+                        </div>
+                    </td>
                     <td><span class="status-tag status-${(student.status || 'pendente').toLowerCase()}">${student.status || 'Pendente'}</span></td>
                     ${canViewFinancialInfo ? `<td class="font-mono">R$ ${parseFloat(student.amountPaid || 0).toFixed(2)}</td>` : ''}
                     <td>${student.responsibleName || 'N/A'}</td>
@@ -1175,16 +1185,16 @@
                     </td>
                 </tr>
             `).join('');
-            
+
             updatePaginationControls(totalItems, totalPages, startIndex + 1, Math.min(endIndex, totalItems));
         }
-        
+
         function updatePaginationControls(totalItems, totalPages, startItem, endItem) {
             const paginationInfo = document.getElementById('pagination-info');
             const prevBtn = document.getElementById('prev-page');
             const nextBtn = document.getElementById('next-page');
             const pageNumbers = document.getElementById('page-numbers');
-            
+
             if (totalItems === 0) {
                 paginationInfo.textContent = 'Nenhum item encontrado';
                 prevBtn.disabled = true;
@@ -1192,22 +1202,22 @@
                 pageNumbers.innerHTML = '';
                 return;
             }
-            
+
             paginationInfo.textContent = `Mostrando ${startItem}-${endItem} de ${totalItems} alunos`;
-            
+
             prevBtn.disabled = currentPage <= 1;
             nextBtn.disabled = currentPage >= totalPages;
-            
+
             // Generate page numbers
             let pageNumbersHTML = '';
             const maxVisiblePages = 5;
             let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
             let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-            
+
             if (endPage - startPage < maxVisiblePages - 1) {
                 startPage = Math.max(1, endPage - maxVisiblePages + 1);
             }
-            
+
             for (let i = startPage; i <= endPage; i++) {
                 const isActive = i === currentPage;
                 pageNumbersHTML += `
@@ -1216,9 +1226,9 @@
                     </button>
                 `;
             }
-            
+
             pageNumbers.innerHTML = pageNumbersHTML;
-            
+
             // Add click events to page number buttons
             document.querySelectorAll('.page-number-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
@@ -1228,7 +1238,7 @@
                 });
             });
         }
-        
+
         // Reset pagination when switching sections
         function resetPagination() {
             currentPage = 1;
@@ -1237,7 +1247,7 @@
         function renderTurmasSection() {
             document.getElementById('main-title').textContent = 'Gestão de Turmas';
             document.getElementById('main-description').textContent = 'Crie turmas, adicione alunos e registre as presenças.';
-            
+
             const canManage = ['admin', 'pedagogico', 'ap'].includes(currentUserRole);
             let itemsToDisplay = turmas;
             if (currentUserRole === 'teacher') {
@@ -1250,12 +1260,20 @@
                         ${canManage ? `<button class="primary-btn w-auto" data-action="add-turma">+ Adicionar Turma</button>` : ''}
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        ${itemsToDisplay.map(t => `
+                        ${itemsToDisplay.map(t => {
+                            // Count only TURMA modality students in the class
+                            const turmaStudents = students.filter(s => 
+                                (t.studentIds || []).includes(s.id) && s.modalidade === 'TURMA'
+                            );
+                            return `
                         <div class="base-card flex flex-col">
                             <div class="flex-1">
                                 <div class="flex justify-between items-start mb-2">
-                                    <h3 class="text-xl font-bold text-stone-800">${t.name}</h3>
-                                    <span class="text-sm font-semibold text-stone-600">${(t.studentIds || []).length} aluno(s)</span>
+                                    <div>
+                                        <h3 class="text-xl font-bold text-stone-800">${t.name}</h3>
+                                        <span class="status-tag status-turma text-xs">TURMA</span>
+                                    </div>
+                                    <span class="text-sm font-semibold text-stone-600">${turmaStudents.length} aluno(s)</span>
                                 </div>
                                 <p class="text-sm text-stone-500 mb-2">Professor: ${t.teacherName}</p>
                                 <p class="text-sm text-stone-600"><strong>Nível:</strong> ${t.level}</p>
@@ -1265,19 +1283,27 @@
                                 ${canManage ? `<button class="secondary-btn !text-sm flex-1" data-action="edit-turma" data-id="${t.id}">Editar</button>` : ''}
                                 <button class="primary-btn !text-sm flex-1" data-action="open-turma-pef" data-id="${t.id}">PEF</button>
                             </div>
-                        </div>`).join('') || '<p class="col-span-full text-center py-10 text-stone-500">Nenhuma turma encontrada.</p>'}
+                        </div>`}).join('') || '<p class="col-span-full text-center py-10 text-stone-500">Nenhuma turma encontrada.</p>'}
                     </div>
                 </div>`;
         }
 
         function renderVipsSection() {
-            document.getElementById('main-title').textContent = 'Gestão de VIPs';
+            document.getElementById('main-title').textContent = 'Alunos VIP';
             document.getElementById('main-description').textContent = 'Gerencie alunos VIP e registre suas presenças.';
-            
+
             const canManage = ['admin', 'pedagogico', 'ap'].includes(currentUserRole);
-            let itemsToDisplay = vips;
+            
+            // Filter only students with VIP modality
+            const vipStudents = students.filter(s => s.modalidade === 'VIP');
+            let itemsToDisplay = vipStudents;
+            
             if (currentUserRole === 'teacher') {
-                itemsToDisplay = vips.filter(v => v.teacherName === currentUserName);
+                // For teachers, filter VIP students who have matching VIP records with their name
+                itemsToDisplay = vipStudents.filter(student => {
+                    const vipRecord = vips.find(v => v.studentId === student.id);
+                    return vipRecord && vipRecord.teacherName === currentUserName;
+                });
             }
 
             contentArea.innerHTML = `
@@ -1286,22 +1312,33 @@
                         ${canManage ? `<button class="primary-btn w-auto" data-action="add-vip">+ Adicionar VIP</button>` : ''}
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        ${itemsToDisplay.map(v => `
+                        ${itemsToDisplay.map(student => {
+                            const vipRecord = vips.find(v => v.studentId === student.id);
+                            const teacher = vipRecord ? collaborators.find(c => c.id === vipRecord.teacherId) : null;
+                            return `
                         <div class="base-card flex flex-col">
                             <div class="flex-1">
                                 <div class="flex justify-between items-start mb-2">
-                                    <h3 class="text-xl font-bold text-stone-800">${v.studentName}</h3>
-                                    <span class="status-tag tag-vip !text-white">VIP</span>
+                                    <div>
+                                        <h3 class="text-xl font-bold text-stone-800">${student.name}</h3>
+                                        <span class="status-tag status-vip text-xs">VIP</span>
+                                    </div>
+                                    ${canManage ? `
+                                    <div class="flex gap-1">
+                                        <button class="secondary-btn text-xs px-2 py-1" data-action="view-aluno" data-id="${student.id}" title="Ver Perfil">👤</button>
+                                        ${vipRecord ? `<button class="secondary-btn text-xs px-2 py-1" data-action="edit-vip" data-id="${vipRecord.id}" title="Editar VIP">✏️</button>` : ''}
+                                    </div>
+                                    ` : ''}
                                 </div>
-                                <p class="text-sm text-stone-500 mb-2">Professor: ${v.teacherName}</p>
-                                <p class="text-sm text-stone-600"><strong>Nível:</strong> ${v.level}</p>
-                                <p class="text-sm text-stone-600"><strong>Semestre:</strong> ${v.semestre || 'N/A'}</p>
+                                <p class="text-sm text-stone-600 mb-2"><strong>Status:</strong> <span class="status-tag status-${(student.status || 'pendente').toLowerCase()}">${student.status || 'Pendente'}</span></p>
+                                ${vipRecord ? `<p class="text-sm text-stone-500 mb-2">Professor: ${teacher?.name || 'N/A'}</p>` : ''}
+                                ${vipRecord ? `<p class="text-sm text-stone-600"><strong>Nível:</strong> ${vipRecord.level || 'N/A'}</p>` : ''}
+                                ${student.indicacao ? `<p class="text-sm text-stone-600"><strong>Indicação:</strong> ${student.indicacao}</p>` : ''}
                             </div>
                             <div class="mt-auto pt-4 border-t border-stone-100 flex gap-2">
-                                ${canManage ? `<button class="secondary-btn !text-sm flex-1" data-action="edit-vip" data-id="${v.id}">Editar</button>` : ''}
-                                <button class="primary-btn !text-sm flex-1" data-action="open-vip-pef" data-id="${v.id}">PEF</button>
+                                ${vipRecord ? `<button class="primary-btn !text-sm flex-1" data-action="open-vip-pef" data-id="${vipRecord.id}">PEF</button>` : ''}
                             </div>
-                        </div>`).join('') || '<p class="col-span-full text-center py-10 text-stone-500">Nenhum aluno VIP encontrado.</p>'}
+                        </div>`}).join('') || '<p class="col-span-full text-center py-10 text-stone-500">Nenhum aluno VIP encontrado.</p>'}
                     </div>
                 </div>`;
         }
@@ -1329,11 +1366,11 @@
         }
 
         function renderOrcamentosSection() { document.getElementById('main-title').textContent = 'Gestor de Orçamentos'; document.getElementById('main-description').textContent = 'Registre e acompanhe todas as propostas e orçamentos.'; contentArea.innerHTML = `<div id="budgets-section"><div class="text-right mb-6"><button class="primary-btn w-auto" data-action="add-budget">+ Adicionar Orçamento</button></div><div class="space-y-4">${budgets.map(b => `<div class="base-card flex flex-wrap justify-between items-center gap-4 cursor-pointer" data-action="view-budget" data-id="${b.id}"><div class="flex-1"><h3 class="text-lg font-bold text-stone-800">${b.titulo}</h3><p class="text-sm text-stone-500">Feito por: ${b.criadoPor || 'N/A'} em ${b.dataCriacao ? new Date(b.dataCriacao).toLocaleDateString('pt-BR') : 'N/A'}</p></div><div class="text-right"><p class="text-xl font-bold text-stone-800">R$ ${parseFloat(b.valor || 0).toFixed(2)}</p><span class="status-tag status-${b.status.toLowerCase()}">${b.status}</span></div></div>`).join('') || '<p class="text-center py-10 text-stone-500">Nenhum orçamento encontrado.</p>'}</div></div>`; }
-        
+
         function renderTarefasSection() { 
             document.getElementById('main-title').textContent = 'Lista de Tarefas'; 
             document.getElementById('main-description').textContent = 'Gerencie e acompanhe as tarefas da equipe.'; 
-            
+
             const collaboratorOptions = collaborators.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
 
             contentArea.innerHTML = `
@@ -1359,7 +1396,7 @@
         function updateTaskList() { 
             const container = document.getElementById('task-list-container'); 
             if (!container) return; 
-            
+
             const filterValue = document.getElementById('task-filter')?.value || 'all';
             let filteredTasks = [...tasks]; 
 
@@ -1377,14 +1414,14 @@
                 return `<div class="task-card flex items-start gap-4 ${task.completed ? 'completed' : ''}"><input type="checkbox" data-action="toggle-task" data-id="${task.id}" class="mt-1.5 h-5 w-5 rounded border-gray-300 text-yellow-500 focus:ring-yellow-400" ${task.completed ? 'checked' : ''}><div class="flex-1"><p class="text-stone-800 font-medium">${task.description}</p><div class="mt-3 flex flex-wrap justify-between items-center gap-4"><div class="flex items-center gap-2 flex-wrap"><span class="text-xs text-stone-500">Para:</span>${(task.assignedTo || []).map(name => `<span class="user-tag" style="background-color: #e5e7eb; color: #374151;">${name}</span>`).join('')}</div><div class="text-right"><span class="text-xs text-stone-500">Prazo</span><p class="deadline-text ${deadlineClass}">${formattedDate}</p></div></div></div><button class="task-delete-btn" data-action="delete-item" data-collection="tasks" data-id="${task.id}"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button></div>`; 
             }).join(''); 
         }
-        
+
         function renderGradeSection() {
             document.getElementById('main-title').textContent = 'Grade de Horários';
             document.getElementById('main-description').textContent = 'Visualize e gerencie a grade de aulas da equipe.';
-            
+
             const isTeacher = currentUserRole === 'teacher';
             let filterHtml = '';
-            
+
             if (!isTeacher) {
                 const teacherOptions = collaborators.filter(c => c.sectors && c.sectors.includes('professor')).map(c => `<option value="${c.name}">${c.name}</option>`).join('');
                 filterHtml = `
@@ -1425,10 +1462,10 @@
                     (c.name === currentUserName || c.email === currentUserName || c.id === userId)
                 );
                 const originalTeacherName = teacherCollaborator ? teacherCollaborator.name : currentUserName;
-                
+
                 // Use smart name matching to find the actual teacher name in schedules
                 const teacherNameToFilter = findTeacherByName(originalTeacherName) || originalTeacherName;
-                
+
                 // Show debug info if teacher has no schedules
                 const teacherSchedules = schedules.filter(s => s.teacher === teacherNameToFilter);
                 if (teacherSchedules.length === 0) {
@@ -1440,7 +1477,7 @@
                         collaboratorTeachers: collaborators.filter(c => c.sectors && c.sectors.includes('professor')).map(c => c.name),
                         smartMappingResult: findTeacherByName(originalTeacherName)
                     });
-                    
+
                     // Show helper message for teachers
                     const availableTeachers = [...new Set(schedules.map(s => s.teacher))];
                     if (availableTeachers.length > 0) {
@@ -1464,7 +1501,7 @@
                         return;
                     }
                 }
-                
+
                 renderScheduleGrid(teacherNameToFilter);
             } else {
                 const teacherFilter = document.getElementById('teacher-filter');
@@ -1478,33 +1515,33 @@
         // Helper function to find teacher by first name matching
         function findTeacherByName(searchName) {
             if (!searchName) return null;
-            
+
             // First try exact match
             const exactMatch = schedules.find(s => s.teacher === searchName);
             if (exactMatch) return searchName;
-            
+
             // Then try first name matching
             const searchFirstName = searchName.trim().split(' ')[0].toLowerCase();
             const teachers = [...new Set(schedules.map(s => s.teacher))];
-            
+
             const firstNameMatch = teachers.find(teacher => {
                 const teacherFirstName = teacher.trim().split(' ')[0].toLowerCase();
                 return teacherFirstName === searchFirstName;
             });
-            
+
             return firstNameMatch || null;
         }
 
         function calculateWeeklyHours(teacherName) {
             const actualTeacherName = findTeacherByName(teacherName) || teacherName;
             const teacherSchedules = schedules.filter(s => s.teacher === actualTeacherName && s.type !== 'break');
-            
+
             let totalHours = 0;
             teacherSchedules.forEach(schedule => {
                 const duration = calculateClassDuration(schedule.startTime, schedule.endTime);
                 totalHours += duration;
             });
-            
+
             return totalHours;
         }
 
@@ -1512,14 +1549,14 @@
             // Convert time strings (HH:MM) to minutes
             const [startHour, startMinute] = startTime.split(':').map(Number);
             const [endHour, endMinute] = endTime.split(':').map(Number);
-            
+
             const startTotalMinutes = startHour * 60 + startMinute;
             const endTotalMinutes = endHour * 60 + endMinute;
-            
+
             // Calculate duration in hours
             const durationMinutes = endTotalMinutes - startTotalMinutes;
             const durationHours = durationMinutes / 60;
-            
+
             return durationHours;
         }
 
@@ -1546,7 +1583,7 @@
                 const actualTeacherName = findTeacherByName(teacherFilter) || teacherFilter;
                 filteredSchedules = filteredSchedules.filter(s => s.teacher === actualTeacherName);
             }
-            
+
             // Debug log for teachers to help identify mapping issues
             if (currentUserRole === 'teacher' && teacherFilter !== 'all') {
                 console.log('DEBUG: Grade filtering for teacher', {
@@ -1561,7 +1598,7 @@
 
             // Show weekly hours for specific teacher or all teachers summary
             const canViewAllHours = ['admin', 'pedagogico', 'ap'].includes(currentUserRole);
-            
+
             if (teacherFilter !== 'all' && hoursContainer) {
                 const weeklyHours = calculateWeeklyHours(teacherFilter);
                 hoursContainer.innerHTML = `
@@ -1575,13 +1612,13 @@
                 // Show summary of all teachers' hours
                 const teacherHours = {};
                 const teachers = collaborators.filter(c => c.sectors && c.sectors.includes('professor'));
-                
+
                 teachers.forEach(teacher => {
                     teacherHours[teacher.name] = calculateWeeklyHours(teacher.name);
                 });
-                
+
                 const totalHours = Object.values(teacherHours).reduce((sum, hours) => sum + hours, 0);
-                
+
                 hoursContainer.innerHTML = `
                     <div class="rounded-lg p-4 border" style="background-color: #F1D24B20; border-color: #F1D24B40;">
                         <div class="text-sm font-medium text-stone-700 uppercase tracking-wide mb-3 text-center">Resumo da Carga Horária Semanal</div>
@@ -1603,7 +1640,7 @@
             } else if (hoursContainer) {
                 hoursContainer.innerHTML = '';
             }
-            
+
             // Show message if no schedules found for teacher role
             if (currentUserRole === 'teacher' && filteredSchedules.length === 0) {
                 return; // Already handled above
@@ -1626,12 +1663,12 @@
                             tagClass = 'tag-turma';
                             tagText = 'TURMA';
                         }
-                        
+
                         const teacherName = teacherFilter === 'all' ? `<p class="text-xs text-stone-500"><em>(${c.teacher})</em></p>` : '';
                         const studentInfo = c.type === 'break' ? 
                             `<p class="font-bold text-stone-600">Intervalo</p>` : 
                             `<p class="font-bold text-stone-800">${c.student}</p><p class="text-sm text-stone-700">${c.level}</p>`;
-                        
+
                         gridHtml += `
                             <div class="class-entry" data-action="view-schedule" data-id="${c.id}">
                                 <span class="class-tag ${tagClass}">${tagText}</span>
@@ -1652,7 +1689,7 @@
         function renderFolhaPagamentoSection() {
             document.getElementById('main-title').textContent = 'Folha de Pagamento';
             document.getElementById('main-description').textContent = 'Gerencie as despesas e contas a pagar do mês.';
-            
+
             const now = new Date();
             const currentMonth = now.getMonth();
             const currentYear = now.getFullYear();
@@ -1721,12 +1758,12 @@
                 </section>
             `;
         }
-        
+
         function renderCancelamentosSection() {
             document.getElementById('main-title').textContent = 'Registro de Cancelamentos';
             document.getElementById('main-description').textContent = 'Gerencie todos os cancelamentos de matrículas.';
             const canAdd = ['admin', 'financeiro'].includes(currentUserRole);
-            
+
             contentArea.innerHTML = `
                 <section id="cancellations-section" class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
                      <div class="text-right mb-6">
@@ -1757,7 +1794,7 @@
                 </section>
             `;
         }
-        
+
         function renderColaboradoresSection() {
             document.getElementById('main-title').textContent = 'Gestão de Colaboradores';
             document.getElementById('main-description').textContent = 'Adicione, edite e defina os setores de cada colaborador.';
@@ -1848,7 +1885,7 @@
                 </section>
             `;
         }
-        
+
         function renderDojoSection() {
             document.getElementById('main-title').textContent = 'SLAP Dojo';
             document.getElementById('main-description').textContent = 'Gerencie a pontuação dos competidores e as missões ativas.';
@@ -1960,12 +1997,12 @@
         function showSuccessMessage(title, message) { clearModalHeaderButtons(); const modalTitle = document.getElementById('form-modal-title'); const modalContentArea = document.getElementById('form-modal-content-area'); modalTitle.textContent = title; modalContentArea.innerHTML = `<div class="text-center"><svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-12 w-12 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg><p class="mt-4 text-stone-600">${message}</p><button data-action="close-modal" class="primary-btn mt-6 w-auto px-8">OK</button></div>`; document.getElementById('form-modal').classList.add('visible'); }
         function showErrorMessage(title, message) { clearModalHeaderButtons(); const modalTitle = document.getElementById('form-modal-title'); const modalContentArea = document.getElementById('form-modal-content-area'); modalTitle.textContent = title; modalContentArea.innerHTML = `<div class="text-center"><svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-12 w-12 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg><p class="mt-4 text-stone-600">${message}</p><button data-action="close-modal" class="primary-btn mt-6 w-auto px-8">OK</button></div>`; document.getElementById('form-modal').classList.add('visible'); }
         function showConfirmationModal(title, message, onConfirm) { clearModalHeaderButtons(); const modalTitle = document.getElementById('form-modal-title'); const modalContentArea = document.getElementById('form-modal-content-area'); modalTitle.textContent = title; modalContentArea.innerHTML = `<p class="text-stone-600">${message}</p><div class="mt-6 flex justify-end gap-4"><button class="secondary-btn" data-action="close-modal">Cancelar</button><button id="confirm-action-btn" class="danger-btn w-auto">Confirmar</button></div>`; document.getElementById('form-modal').classList.add('visible'); document.getElementById('confirm-action-btn').onclick = () => { onConfirm(); closeFormModal(); }; }
-        
+
         function openSignUpModal() {
             clearModalHeaderButtons();
             const modalTitle = document.getElementById('form-modal-title');
             const modalContentArea = document.getElementById('form-modal-content-area');
-            
+
             modalTitle.textContent = "Criar Nova Conta";
             modalContentArea.innerHTML = `
                 <form id="signup-form" class="space-y-4">
@@ -1983,20 +2020,22 @@
             clearModalHeaderButtons();
             const aluno = alunoId ? students.find(s => s.id === alunoId) : null;
             document.getElementById('form-modal-title').textContent = aluno ? "Editar Aluno" : "Adicionar Novo Aluno";
-            
+
             const statusOptions = ['Ativo', 'Inativo', 'Cancelado', 'Pendente'].map(s => `<option value="${s}" ${aluno?.status === s ? 'selected' : ''}>${s}</option>`).join('');
             const paymentTypeOptions = ['Cartão', 'Boleto', 'Permuta', 'Bolsa'].map(p => `<option value="${p}" ${aluno?.paymentType === p ? 'selected' : ''}>${p}</option>`).join('');
 
             document.getElementById('form-modal-content-area').innerHTML = `
                 <form id="form-modal-body" class="space-y-4">
                     <input type="hidden" id="aluno-id" value="${alunoId || ''}">
-                    
+
                     <h4 class="text-lg font-semibold text-stone-700 border-b pb-2">Informações Básicas</h4>
                     <div><label class="font-medium text-sm">Nome Completo do Aluno</label><input type="text" id="aluno-name" class="form-input" required value="${aluno?.name || ''}"></div>
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-3 gap-4">
                         <div><label class="font-medium text-sm">Status</label><select id="aluno-status" class="form-input">${statusOptions}</select></div>
+                        <div><label class="font-medium text-sm">Modalidade</label><select id="aluno-modalidade" class="form-input" required><option value="VIP" ${aluno?.modalidade === 'VIP' ? 'selected' : ''}>VIP</option><option value="TURMA" ${aluno?.modalidade === 'TURMA' ? 'selected' : ''}>TURMA</option></select></div>
                         <div><label class="font-medium text-sm">Data de Início</label><input type="date" id="aluno-startDate" class="form-input" value="${aluno?.startDate || ''}"></div>
                     </div>
+                    <div><label class="font-medium text-sm">Indicação</label><input type="text" id="aluno-indicacao" class="form-input" placeholder="Pessoa que indicou ou cupom utilizado" value="${aluno?.indicacao || ''}"></div>
                     <div>
                         <label class="font-medium text-sm">Níveis Cursados</label>
                         <div id="aluno-levels-checkboxes" class="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-y-2 gap-x-4 max-h-40 overflow-y-auto p-2 border rounded-md">
@@ -2008,7 +2047,7 @@
                             `).join('')}
                         </div>
                     </div>
-                    
+
                     <h4 class="text-lg font-semibold text-stone-700 border-b pb-2 pt-4">Informações Financeiras</h4>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div><label class="font-medium text-sm">Tipo de Pagamento</label><select id="aluno-paymentType" class="form-input">${paymentTypeOptions}</select></div>
@@ -2025,10 +2064,10 @@
                         <div><label class="font-medium text-sm">Nome do Responsável</label><input type="text" id="aluno-responsibleName" class="form-input" value="${aluno?.responsibleName || ''}"></div>
                         <div><label class="font-medium text-sm">Telefone do Responsável</label><input type="tel" id="aluno-responsiblePhone" class="form-input" value="${aluno?.responsiblePhone || ''}"></div>
                     </div>
-                    
+
                     <h4 class="text-lg font-semibold text-stone-700 border-b pb-2 pt-4">Outras Informações</h4>
                     <div><label class="font-medium text-sm">Observações</label><textarea id="aluno-notes" rows="3" class="form-input">${aluno?.notes || ''}</textarea></div>
-                    
+
                     <div class="text-right pt-4"><button type="submit" class="primary-btn w-auto">Salvar Aluno</button></div>
                 </form>
             `;
@@ -2045,12 +2084,14 @@
             event.preventDefault();
             const alunoId = document.getElementById('aluno-id').value;
             const isMinor = document.getElementById('aluno-isMinor').checked;
-            
+
             const completedLevels = Array.from(document.querySelectorAll('input[name="completedLevels"]:checked')).map(cb => cb.value);
 
             const data = {
                 name: document.getElementById('aluno-name').value,
                 status: document.getElementById('aluno-status').value,
+                modalidade: document.getElementById('aluno-modalidade').value,
+                indicacao: document.getElementById('aluno-indicacao').value,
                 startDate: document.getElementById('aluno-startDate').value,
                 completedLevels: completedLevels,
                 paymentType: document.getElementById('aluno-paymentType').value,
@@ -2062,6 +2103,7 @@
                 responsiblePhone: isMinor ? document.getElementById('aluno-responsiblePhone').value : '',
             };
             if (!data.name) { showErrorMessage("Erro", "O nome do aluno é obrigatório."); return; }
+            if (!data.modalidade) { showErrorMessage("Erro", "A modalidade é obrigatória."); return; }
 
             try {
                 if (alunoId) {
@@ -2084,7 +2126,7 @@
             if (!aluno) return;
             document.getElementById('form-modal-title').textContent = `Perfil de ${aluno.name}`;
             const canEdit = ['admin', 'financeiro', 'pedagogico', 'ap'].includes(currentUserRole);
-            
+
             let responsibleHtml = '';
             if (aluno.isMinor && aluno.responsibleName) {
                 responsibleHtml = `
@@ -2104,8 +2146,10 @@
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2 text-sm text-stone-600">
+                        <p><strong>Modalidade:</strong> <span class="status-tag status-${(aluno.modalidade || 'turma').toLowerCase()}">${aluno.modalidade || 'TURMA'}</span></p>
                         <p><strong>Início:</strong> ${aluno.startDate ? new Date(aluno.startDate + 'T00:00:00').toLocaleDateString('pt-BR') : 'N/A'}</p>
                         <p><strong>Pagamento:</strong> ${aluno.paymentType || 'N/A'}</p>
+                        <p><strong>Indicação:</strong> ${aluno.indicacao || 'Não informado'}</p>
                         <p><strong>Valor Pago:</strong> R$ ${parseFloat(aluno.amountPaid || 0).toFixed(2)}</p>
                         <p><strong>Valor Recebido:</strong> R$ ${parseFloat(aluno.amountReceived || 0).toFixed(2)}</p>
                     </div>
@@ -2116,11 +2160,11 @@
                             ${(aluno.completedLevels && aluno.completedLevels.length > 0) ? aluno.completedLevels.map(level => `<span class="keyword-tag !m-0">${level}</span>`).join('') : '<span class="text-sm text-stone-500">Nenhum</span>'}
                         </div>
                     </div>
-                    
+
                     ${responsibleHtml}
 
                     ${aluno.notes ? `<div class="mt-4 pt-4 border-t"><strong>Observações:</strong><p class="mt-1 p-3 bg-stone-50 rounded-md whitespace-pre-wrap text-sm">${aluno.notes}</p></div>` : ''}
-                    
+
                     <div class="border-t pt-4 flex justify-end gap-2">
                         ${canEdit ? `<button class="secondary-btn" data-action="edit-aluno" data-id="${aluno.id}">Editar</button>
                         <button class="danger-btn" data-action="delete-item" data-collection="students" data-id="${aluno.id}">Apagar</button>` : ''}
@@ -2136,14 +2180,14 @@
 
             const teacherOptions = collaborators.filter(c => c.sectors?.includes('professor')).map(c => `<option value="${c.id}" data-name="${c.name}" ${turma?.teacherId === c.id ? 'selected' : ''}>${c.name}</option>`).join('');
             const levelOptions = cps.map(cp => `<option value="${cp.title}" ${turma?.level === cp.title ? 'selected' : ''}>${cp.title}</option>`).join('') + `<option value="outro">Outro (especificar)</option>`;
-            
+
             const studentCheckboxes = students
-                .filter(s => s.status === 'Ativo')
+                .filter(s => s.status === 'Ativo' && s.modalidade === 'TURMA')
                 .sort((a, b) => a.name.localeCompare(b.name))
                 .map(s => `
                     <div class="flex items-center">
                         <input type="checkbox" id="student-${s.id}" value="${s.id}" name="turma-students" class="h-4 w-4 rounded" ${(turma?.studentIds || []).includes(s.id) ? 'checked' : ''}>
-                        <label for="student-${s.id}" class="ml-2 text-sm">${s.name}</label>
+                        <label for="student-${s.id}" class="ml-2 text-sm">${s.name} <span class="text-xs text-stone-400">(TURMA)</span></label>
                     </div>
                 `).join('');
 
@@ -2232,7 +2276,7 @@
 
             const teacherOptions = collaborators.filter(c => c.sectors?.includes('professor')).map(c => `<option value="${c.id}" data-name="${c.name}" ${vip?.teacherId === c.id ? 'selected' : ''}>${c.name}</option>`).join('');
             const levelOptions = cps.map(cp => `<option value="${cp.title}" ${vip?.level === cp.title ? 'selected' : ''}>${cp.title}</option>`).join('') + `<option value="outro">Outro (especificar)</option>`;
-            const studentOptions = students.filter(s => s.status === 'Ativo').map(s => `<option value="${s.id}" data-name="${s.name}" ${vip?.studentId === s.id ? 'selected' : ''}>${s.name}</option>`).join('');
+            const studentOptions = students.filter(s => s.status === 'Ativo' && s.modalidade === 'VIP').map(s => `<option value="${s.id}" data-name="${s.name}" ${vip?.studentId === s.id ? 'selected' : ''}>${s.name} (VIP)</option>`).join('');
 
             document.getElementById('form-modal-content-area').innerHTML = `
                 <form id="form-modal-body" class="space-y-4">
@@ -2316,7 +2360,7 @@
             modal.dataset.pefModal = "true";
             modal.dataset.unitId = turmaId;
             modal.dataset.pefType = "turma";
-            
+
             clearModalHeaderButtons();
             const modalHeader = document.getElementById('modal-header-container');
             const modalTitle = document.getElementById('form-modal-title');
@@ -2328,7 +2372,7 @@
             exportButton.dataset.action = 'export-turma-pef';
             exportButton.dataset.id = turmaId;
             modalHeader.insertBefore(exportButton, modalHeader.querySelector('.modal-close-btn'));
-            
+
             modalTitle.textContent = `PEF: ${turma.name}`;
 
             const turmaStudents = (turma.studentIds || []).map(id => students.find(s => s.id === id)).filter(Boolean);
@@ -2338,7 +2382,7 @@
             for (let i = 1; i <= 40; i++) {
                 const lessonData = unitAttendance?.lessons?.[i];
                 const lessonDate = lessonData?.date || '';
-                
+
                 const studentsHtml = turmaStudents.map(student => {
                     const studentStatus = lessonData?.students?.[student.id] || '';
                     return `
@@ -2368,7 +2412,7 @@
                     </div>
                 `;
             }
-            
+
             modalContentArea.innerHTML = `<div>${lessonsHtml}</div>`;
             modal.classList.add('visible');
         }
@@ -2388,14 +2432,14 @@
             const modalHeader = document.getElementById('modal-header-container');
             const modalTitle = document.getElementById('form-modal-title');
             const modalContentArea = document.getElementById('form-modal-content-area');
-            
+
             const exportButton = document.createElement('button');
             exportButton.className = 'secondary-btn w-auto';
             exportButton.textContent = 'Exportar PEF';
             exportButton.dataset.action = 'export-vip-pef';
             exportButton.dataset.id = vipId;
             modalHeader.insertBefore(exportButton, modalHeader.querySelector('.modal-close-btn'));
-            
+
             modalTitle.textContent = `PEF (VIP): ${vip.studentName}`;
 
             const unitAttendance = attendance.find(a => a.id === vipId);
@@ -2434,7 +2478,7 @@
                     </div>
                 `;
             }
-            
+
             modalContentArea.innerHTML = `<div>${lessonsHtml}</div>`;
             modal.classList.add('visible');
         }
@@ -2467,7 +2511,7 @@
             }
 
             const attendanceRef = doc(db, `artifacts/${appId}/public/data/attendance`, unitId);
-            
+
             const lessonData = {
                 date: date,
                 students: studentAttendance,
@@ -2482,7 +2526,7 @@
                         [lessonNumber]: lessonData
                     }
                 }, { merge: true });
-                
+
                 showSuccessMessage("Sucesso!", `Presença da Aula ${lessonNumber} foi salva.`);
             } catch (error) {
                 console.error("Error saving attendance: ", error);
@@ -2538,15 +2582,15 @@
 
         function openEventModal(eventId) {
             clearModalHeaderButtons();
-            
+
             // Look for event in both arrays
             let event = events.find(e => e.id === eventId);
             if (!event) {
                 event = calendarEvents.find(e => e.id === eventId);
             }
-            
+
             if (!event) return;
-            
+
             // Handle different event structure formats
             const eventTitle = event.nome || event.title || 'Evento';
             const eventDate = event.data || event.date || '';
@@ -2554,10 +2598,10 @@
             const eventLocation = event.local || event.location || '';
             const eventSector = event.setor || event.sector || '';
             const eventDescription = event.descricao || event.description || '';
-            
+
             // Check if user can edit/delete events (teachers cannot)
             const canEditEvents = currentUserRole !== 'teacher';
-            
+
             document.getElementById('form-modal-title').textContent = eventTitle;
             document.getElementById('form-modal-content-area').innerHTML = `
                 <div class="space-y-4">
@@ -2677,15 +2721,15 @@
                 showSuccessMessage("Sucesso!", "Tarefa adicionada.");
             } catch (error) { console.error("Error saving task:", error); showErrorMessage("Erro", "Falha ao salvar a tarefa."); }
         }
-        
+
         function openCollaboratorForm(collaboratorId = null) {
             clearModalHeaderButtons();
             const collaborator = collaboratorId ? collaborators.find(c => c.id === collaboratorId) : null;
             document.getElementById('form-modal-title').textContent = collaborator ? "Editar Colaborador" : "Adicionar Novo Colaborador";
-            
+
             const sectors = ['professor', 'tarefas', 'cancelamentos', 'orcamentos', 'banco de fotos'];
             const sectorLabels = { professor: 'Professor (Grade)', tarefas: 'Tarefas', cancelamentos: 'Cancelamentos', orcamentos: 'Orçamentos', 'banco de fotos': 'Banco de Fotos' };
-            
+
             const sectorCheckboxes = sectors.map(sector => {
                 const isChecked = collaborator?.sectors?.includes(sector) ? 'checked' : '';
                 return `
@@ -2718,7 +2762,7 @@
             event.preventDefault();
             const collaboratorId = document.getElementById('collaborator-id').value;
             const selectedSectors = Array.from(document.querySelectorAll('input[name="sectors"]:checked')).map(cb => cb.value);
-            
+
             const data = {
                 name: document.getElementById('collaborator-name').value,
                 shiftStart: document.getElementById('collaborator-shift-start').value,
@@ -2728,7 +2772,7 @@
 
             if (!data.name) { showErrorMessage("Erro", "O nome do colaborador é obrigatório."); return; }
             if (!db) { console.warn("Offline mode."); closeFormModal(); return; }
-            
+
             const oldCollaborator = collaboratorId ? collaborators.find(c => c.id === collaboratorId) : null;
             const hadFolderSector = oldCollaborator?.sectors?.includes('banco de fotos');
             const hasFolderSector = data.sectors.includes('banco de fotos');
@@ -2741,7 +2785,7 @@
                     await addDoc(collection(db, `artifacts/${appId}/public/data/collaborators`), data);
                     showSuccessMessage("Sucesso!", "Colaborador adicionado.");
                 }
-                
+
                 if(hasFolderSector && !hadFolderSector) {
                     const folderExists = photoFolders.some(f => f.name === data.name);
                     if (!folderExists) {
@@ -2755,10 +2799,10 @@
         function openBreakForm() {
             clearModalHeaderButtons();
             document.getElementById('form-modal-title').textContent = "Adicionar Break";
-            
+
             const teacherOptions = collaborators.filter(c => c.sectors && c.sectors.includes('professor')).map(c => `<option value="${c.name}">${c.name}</option>`).join('');
             const dayOptions = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta"].map(d => `<option value="${d}">${d}</option>`).join('');
-            
+
             document.getElementById('form-modal-content-area').innerHTML = `
                 <form id="form-modal-body" class="space-y-4">
                     <div><label class="font-medium text-sm">Professor</label><select id="break-teacher" class="form-input" required>${teacherOptions}</select></div>
@@ -2773,55 +2817,55 @@
                     </div>
                     <div class="text-right"><button type="submit" class="primary-btn w-auto">Adicionar Break</button></div>
                 </form>`;
-            
+
             // Add conflict checking
             const teacherSelect = document.getElementById('break-teacher');
             const daySelect = document.getElementById('break-day');
             const startInput = document.getElementById('break-start');
             const endInput = document.getElementById('break-end');
             const conflictWarning = document.getElementById('break-conflict-warning');
-            
+
             function checkBreakConflicts() {
                 const teacher = teacherSelect.value;
                 const day = daySelect.value;
                 const startTime = startInput.value;
                 const endTime = endInput.value;
-                
+
                 if (teacher && day && startTime && endTime) {
                     const hasConflict = checkTimeConflict(teacher, day, startTime, endTime);
                     conflictWarning.classList.toggle('hidden', !hasConflict);
                 }
             }
-            
+
             [teacherSelect, daySelect, startInput, endInput].forEach(element => {
                 element.addEventListener('change', checkBreakConflicts);
             });
-            
+
             document.getElementById('form-modal-body').onsubmit = saveBreak;
             document.getElementById('form-modal').classList.add('visible');
         }
 
         async function saveBreak(event) {
             event.preventDefault();
-            
+
             const teacher = document.getElementById('break-teacher').value;
             const day = document.getElementById('break-day').value;
             const startTime = document.getElementById('break-start').value;
             const endTime = document.getElementById('break-end').value;
-            
+
             // Validate time
             if (startTime >= endTime) {
                 showErrorMessage("Erro de Validação", "O horário de início deve ser anterior ao horário de fim.");
                 return;
             }
-            
+
             // Check for conflicts
             const hasConflict = checkTimeConflict(teacher, day, startTime, endTime);
             if (hasConflict) {
                 showErrorMessage("Conflito de Horário", "Já existe uma aula ou break agendado para este professor neste horário.");
                 return;
             }
-            
+
             const data = {
                 teacher: teacher,
                 day: day,
@@ -2832,13 +2876,13 @@
                 level: 'N/A',
                 createdAt: serverTimestamp()
             };
-            
+
             if (!db) { 
                 console.warn("Offline mode."); 
                 closeFormModal(); 
                 return; 
             }
-            
+
             try {
                 await addDoc(collection(db, `artifacts/${appId}/public/data/schedules`), data);
                 showSuccessMessage("Sucesso!", "Break adicionado à grade.");
@@ -2859,7 +2903,7 @@
             const dayOptions = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Seg/Qua", "Ter/Qui"].map(d => `<option value="${d}" ${schedule?.day === d ? 'selected' : ''}>${d}</option>`).join('');
             const typeOptions = ["vip", "turma", "break"].map(t => `<option value="${t}" ${schedule?.type === t ? 'selected' : ''}>${t === 'break' ? 'BREAK' : t.toUpperCase()}</option>`).join('');
             const levelOptions = cps.map(cp => `<option value="${cp.title}" ${schedule?.level === cp.title ? 'selected' : ''}>${cp.title}</option>`).join('') + `<option value="outro">Outro (especificar)</option>`;
-            
+
             let formHtml = `<form id="form-modal-body" class="space-y-4">
                 <input type="hidden" id="schedule-id" value="${scheduleId || ''}">
                 <div class="schedule-student-field"><label class="font-medium text-sm">Aluno/Turma</label><input type="text" id="schedule-student" class="form-input" required value="${schedule?.student || ''}" ${isTeacher ? 'disabled' : ''}></div>
@@ -2898,7 +2942,7 @@
                 const levelField = document.querySelector('.schedule-level-field');
                 const studentInput = document.getElementById('schedule-student');
                 const levelSelect = document.getElementById('schedule-level');
-                
+
                 if (type === 'break') {
                     studentField.style.display = 'none';
                     levelField.style.display = 'none';
@@ -2920,7 +2964,7 @@
                 const endTime = document.getElementById('schedule-end').value;
                 const scheduleId = document.getElementById('schedule-id').value;
                 const warning = document.getElementById('conflict-warning');
-                
+
                 if (teacher && day && startTime && endTime) {
                     const hasConflict = checkTimeConflict(teacher, day, startTime, endTime, scheduleId);
                     if (hasConflict) {
@@ -2930,13 +2974,13 @@
                     }
                 }
             }
-            
+
             document.getElementById('schedule-type').addEventListener('change', updateFormFields);
             document.getElementById('schedule-teacher').addEventListener('change', checkConflicts);
             document.getElementById('schedule-day').addEventListener('change', checkConflicts);
             document.getElementById('schedule-start').addEventListener('change', checkConflicts);
             document.getElementById('schedule-end').addEventListener('change', checkConflicts);
-            
+
             updateFormFields();
 
             document.getElementById('form-modal-body').onsubmit = saveScheduleEntry;
@@ -2947,7 +2991,7 @@
             event.preventDefault();
             const teacherName = document.getElementById('schedule-teacher').value;
             const startTime = document.getElementById('schedule-start').value;
-            
+
             const teacher = collaborators.find(c => c.name === teacherName);
             if (teacher && teacher.shiftStart && teacher.shiftEnd) {
                 if (startTime < teacher.shiftStart || startTime > teacher.shiftEnd) {
@@ -2984,7 +3028,7 @@
                 startTime: document.getElementById('schedule-start').value, 
                 endTime: document.getElementById('schedule-end').value 
             };
-            
+
             if (!db) { console.warn("Offline mode."); closeFormModal(); return; }
             try {
                 if (scheduleId) { 
@@ -3009,24 +3053,24 @@
                 <form id="form-modal-body" class="space-y-4">
                     <input type="hidden" id="expense-id" value="${expenseId || ''}">
                     <div><label class="font-medium text-sm">Descrição</label><input type="text" id="expense-description" class="form-input" required value="${expense?.description || ''}"></div>
-                    
+
                     <div id="due-date-container" class="${expense?.isFixedSalary ? 'hidden' : ''}">
                         <label class="font-medium text-sm">Vencimento</label>
                         <input type="date" id="expense-dueDate" class="form-input" value="${expense?.dueDate || ''}">
                     </div>
-                    
+
                     <div id="due-day-container" class="${expense?.isFixedSalary ? '' : 'hidden'}">
                         <label class="font-medium text-sm">Dia do Vencimento</label>
                         <input type="number" min="1" max="31" id="expense-dueDay" class="form-input" value="${expense?.dueDay || ''}">
                     </div>
 
                     <div><label class="font-medium text-sm">Valor (R$)</label><input type="number" step="0.01" id="expense-amount" class="form-input" required value="${expense?.amount || ''}"></div>
-                    
+
                     <div class="flex items-center gap-2"><input type="checkbox" id="expense-isFixedSalary" class="h-4 w-4 rounded" ${expense?.isFixedSalary ? 'checked' : ''}><label for="expense-isFixedSalary" class="text-sm">É salário fixo?</label></div>
                     <div id="employee-role-container" class="${expense?.isFixedSalary ? '' : 'hidden'}"><label class="font-medium text-sm">Cargo</label><input type="text" id="expense-employeeRole" class="form-input" value="${expense?.employeeRole || ''}"></div>
                     <div class="pt-4 flex justify-end gap-2">${expenseId ? `<button type="button" class="danger-btn" data-action="delete-item" data-collection="expenses" data-id="${expenseId}">Apagar</button>` : ''}<button type="submit" class="primary-btn w-auto">Salvar</button></div>
                 </form>`;
-            
+
             const isFixedSalaryCheckbox = document.getElementById('expense-isFixedSalary');
             isFixedSalaryCheckbox.onchange = () => {
                 const isChecked = isFixedSalaryCheckbox.checked;
@@ -3034,7 +3078,7 @@
                 document.getElementById('due-date-container').classList.toggle('hidden', isChecked);
                 document.getElementById('due-day-container').classList.toggle('hidden', !isChecked);
             };
-            
+
             document.getElementById('form-modal-body').onsubmit = saveExpense;
             document.getElementById('form-modal').classList.add('visible');
         }
@@ -3077,7 +3121,7 @@
             clearModalHeaderButtons();
             const cancelamento = cancelamentoId ? cancellations.find(c => c.id === cancelamentoId) : null;
             const collaboratorOptions = collaborators.filter(c => c.sectors && c.sectors.includes('cancelamentos')).map(c => `<option value="${c.name}" ${cancelamento?.processedBy === c.name ? 'selected' : ''}>${c.name}</option>`).join('');
-            
+
             let studentFieldHtml = '';
             if (cancelamentoId) {
                 studentFieldHtml = `<div><label class="font-medium text-sm">Aluno</label><p class="form-input bg-stone-100">${cancelamento.studentName}</p></div>`;
@@ -3137,7 +3181,7 @@
 
                     // 1. Add cancellation record
                     await addDoc(collection(db, `artifacts/${appId}/public/data/cancellations`), data);
-                    
+
                     // 2. Update student status
                     const studentRef = doc(db, `artifacts/${appId}/public/data/students`, studentId);
                     await updateDoc(studentRef, { status: 'Cancelado' });
@@ -3168,7 +3212,7 @@
                 </div>`;
             document.getElementById('form-modal').classList.add('visible');
         }
-        
+
 
 
         function openNivelForm(nivelId = null) {
@@ -3185,13 +3229,13 @@
             document.getElementById('form-modal-body').onsubmit = saveNivel;
             document.getElementById('form-modal').classList.add('visible');
         }
-        
+
         async function saveNivel(event) {
             event.preventDefault();
             const nivelId = document.getElementById('nivel-id').value;
             const title = document.getElementById('nivel-title').value;
             if (!title) { showErrorMessage("Erro", "O título é obrigatório."); return; }
-            
+
             try {
                 if (nivelId) {
                     await updateDoc(doc(db, `artifacts/${appId}/public/data/cps`, nivelId), { title });
@@ -3202,7 +3246,7 @@
                 }
             } catch(e) { console.error(e); showErrorMessage("Erro", "Não foi possível salvar o nível."); }
         }
-        
+
         function openAulaForm(nivelId, aulaIndex = null) {
             clearModalHeaderButtons();
             const nivel = cps.find(n => n.id === nivelId);
@@ -3227,7 +3271,7 @@
             const nivelId = document.getElementById('aula-nivel-id').value;
             const aulaIndex = document.getElementById('aula-index').value;
             const nivelRef = doc(db, `artifacts/${appId}/public/data/cps`, nivelId);
-            
+
             const keywordsString = document.getElementById('aula-keywords').value;
             const keywords = keywordsString.split(',').map(k => k.trim()).filter(Boolean);
 
@@ -3259,7 +3303,7 @@
                 showSuccessMessage("Sucesso", "Aula removida.");
             } catch (e) { console.error(e); showErrorMessage("Erro", "Não foi possível remover a aula."); }
         }
-        
+
         async function reorderCPLevel(levelId, direction) {
             const currentIndex = cps.findIndex(c => c.id === levelId);
             if (currentIndex === -1) return;
@@ -3284,7 +3328,7 @@
                 showErrorMessage("Erro", "Falha ao reordenar os níveis.");
             }
         }
-        
+
         function openDojoCompetitorForm(competitorId = null) {
             clearModalHeaderButtons();
             const competitor = competitorId ? dojoRanking.find(c => c.id === competitorId) : null;
@@ -3394,7 +3438,7 @@
                 }
             );
         }
-        
+
         // --- EXPORT FUNCTIONS ---
         function openHtmlInNewWindow(title, htmlContent) {
             const newWindow = window.open();
@@ -3402,7 +3446,7 @@
             newWindow.document.title = title;
             newWindow.document.close();
         }
-        
+
 
 
         function exportVipPef(vipId) {
@@ -3468,14 +3512,14 @@
                 </body>
                 </html>
             `;
-            
+
             openHtmlInNewWindow(`PEF - ${student.name}`, docHtml);
         }
-        
+
         function exportTurmaPef(turmaId) {
             const turma = turmas.find(t => t.id === turmaId);
             if (!turma) { showErrorMessage("Erro", "Turma não encontrada."); return; }
-            
+
             const turmaStudents = (turma.studentIds || []).map(id => students.find(s => s.id === id)).filter(Boolean);
             const unitAttendance = attendance.find(a => a.id === turmaId);
             if (!turmaStudents.length) { showErrorMessage("Erro", "Nenhum aluno na turma para exportar."); return; }
@@ -3585,14 +3629,14 @@
                 </body>
                 </html>
             `;
-            
+
             openHtmlInNewWindow("Cronogramas Pedagógicos (CPs)", docHtml);
         }
 
         // --- Debug Functions ---
         function debugSyncStatus() {
             if (currentUserRole !== 'admin') return;
-            
+
             const syncInfo = {
                 isDevelopmentMode: window.isDevelopmentMode,
                 hasFirebase: !!db,
@@ -3602,7 +3646,7 @@
                 localStorage: localStorage.getItem('slap-challenge-content'),
                 timestamp: new Date().toISOString()
             };
-            
+
             document.getElementById('form-modal-title').textContent = 'Debug: Status de Sincronização';
             document.getElementById('form-modal-content-area').innerHTML = `
                 <div class="space-y-6">
@@ -3624,7 +3668,7 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div class="bg-green-50 border border-green-200 rounded-lg p-4">
                             <h4 class="font-semibold text-green-800 mb-2">Usuário Atual</h4>
                             <div class="text-sm">
@@ -3639,7 +3683,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <div>
                         <h4 class="font-semibold text-stone-800 mb-3">Conteúdo Atual do Desafio</h4>
                         <div class="bg-stone-50 border border-stone-200 rounded-lg p-4">
@@ -3659,7 +3703,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                         <h5 class="font-medium text-yellow-800 mb-2">Diagnóstico:</h5>
                         <div class="text-sm text-yellow-700 space-y-1">
@@ -3673,19 +3717,19 @@
                             <p>🔄 <strong>Sincronização:</strong> ${window.isDevelopmentMode ? 'Desabilitada (modo local)' : 'Ativa para todos os usuários'}</p>
                         </div>
                     </div>
-                    
+
                     <div class="text-right">
                         <button type="button" data-action="close-form-modal" class="secondary-btn">Fechar</button>
                     </div>
                 </div>
             `;
             document.getElementById('form-modal').classList.add('visible');
-            
+
             console.log('SYNC DEBUG INFO:', syncInfo);
         }
-        
 
-        
+
+
         // --- Calendar Functions ---
         async function deleteCalendarEvent(eventId) {
             // Check if user has permission to delete events
@@ -3693,16 +3737,16 @@
                 showErrorMessage("Acesso Negado", "Usuários com role 'teacher' não podem apagar eventos.");
                 return;
             }
-            
+
             if (!confirm('Tem certeza que deseja apagar este evento?')) {
                 return;
             }
-            
+
             if (window.isDevelopmentMode) {
                 // Remove from local array and localStorage
                 events = events.filter(e => e.id !== eventId);
                 localStorage.setItem('demo-events', JSON.stringify(events));
-                
+
                 // Close modal and refresh calendar
                 document.getElementById('form-modal').classList.remove('visible');
                 renderCalendarioSection();
@@ -3718,11 +3762,11 @@
                 }
             }
         }
-        
+
         function renderCalendarioSection() {
             document.getElementById('main-title').textContent = 'Calendário de Eventos';
             const contentArea = document.getElementById('content-area');
-            
+
             contentArea.innerHTML = `
                 <div class="calendar-container">
                     <div class="calendar-header">
@@ -3744,7 +3788,7 @@
                         <!-- Calendar will be rendered here -->
                     </div>
                 </div>
-                
+
                 <!-- Event Modal -->
                 <div id="calendar-event-modal" class="modal-overlay">
                     <div class="modal-content max-w-md">
@@ -3790,7 +3834,7 @@
                     </div>
                 </div>
             `;
-            
+
             initializeCalendar();
         }
 
@@ -3810,28 +3854,28 @@
         function renderCalendar() {
             const monthYear = document.getElementById('calendar-month-year');
             const calendarGrid = document.getElementById('calendar-grid');
-            
+
             const months = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 
                            'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
             const days = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-            
+
             monthYear.textContent = `${months[currentCalendarDate.getMonth()]} ${currentCalendarDate.getFullYear()}`;
-            
+
             const firstDay = new Date(currentCalendarDate.getFullYear(), currentCalendarDate.getMonth(), 1);
             const lastDay = new Date(currentCalendarDate.getFullYear(), currentCalendarDate.getMonth() + 1, 0);
             const startDate = new Date(firstDay);
             startDate.setDate(startDate.getDate() - firstDay.getDay());
-            
+
             let html = days.map(day => `<div class="calendar-day-header">${day}</div>`).join('');
-            
+
             for (let i = 0; i < 42; i++) {
                 const currentDay = new Date(startDate);
                 currentDay.setDate(startDate.getDate() + i);
-                
+
                 const isCurrentMonth = currentDay.getMonth() === currentCalendarDate.getMonth();
                 const isToday = currentDay.toDateString() === new Date().toDateString();
                 const dayEvents = getEventsForDate(currentDay);
-                
+
                 html += `
                     <div class="calendar-day ${!isCurrentMonth ? 'other-month' : ''} ${isToday ? 'today' : ''}" 
                          data-date="${currentDay.toISOString().split('T')[0]}">
@@ -3842,7 +3886,7 @@
                     </div>
                 `;
             }
-            
+
             calendarGrid.innerHTML = html;
         }
 
@@ -3874,7 +3918,7 @@
         function renderDesafioPedagogicoSection() {
             document.getElementById('main-title').textContent = 'Desafio Pedagógico';
             const contentArea = document.getElementById('content-area');
-            
+
             contentArea.innerHTML = `
                 <div class="bg-[#F1D24B] p-6 rounded-xl shadow-lg mb-8">
                     <div class="flex flex-wrap items-center justify-between gap-4">
@@ -3895,7 +3939,7 @@
                         ` : ''}
 
                     </div>
-                    
+
                     <div class="mt-6 bg-stone-800 text-white p-6 rounded-lg shadow-lg">
                         <div class="flex flex-col md:flex-row items-center justify-center md:justify-around gap-6 md:gap-12">
                             <div class="text-center">
@@ -3964,7 +4008,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Challenge Content Edit Modal -->
                 <div id="challenge-edit-modal" class="modal-overlay">
                     <div class="modal-content max-w-2xl">
@@ -4009,7 +4053,7 @@
                     </div>
                 </div>
             `;
-            
+
             initializePedagogicalChallenge().catch(console.error);
         }
 
@@ -4057,7 +4101,7 @@
             { q: "Which of the following best describes Dogme's view on input?", o: ["Authentic input must always come from native speakers", "All input should be teacher-generated", "Learners themselves generate the most relevant input*", "Input should be controlled and limited"], a: 2, e: "In Dogme, learners' own language production becomes the primary source of meaningful and relevant input for further learning." },
             { q: "Which mindset should a teacher adopt for emergent language teaching?", o: ["Control and delivery", "Observation and responsiveness*", "Correction and drilling", "Silence and monitoring"], a: 1, e: "Emergent language teaching requires teachers to be observant and responsive to learning opportunities as they arise naturally." },
             { q: "Which of the following best reflects Thornbury's philosophy?", o: ["Language is best acquired through repeated testing", "Learning occurs most effectively through structured tasks", "Language awareness must be developed through active engagement*", "Students need more input than output"], a: 2, e: "Thornbury believes that conscious engagement with language, particularly through noticing and reflection, is key to language development." },
-            
+
             // Michael Lewis Lexical Approach Questions (25 questions)
             { q: "According to Michael Lewis, what is the primary component of language?", o: ["Grammar rules", "Phonological systems", "Lexical chunks*", "Discrete vocabulary words"], a: 2, e: "Lewis argues that language is primarily made up of prefabricated chunks or collocations rather than individual words and grammar rules." },
             { q: "What does Lewis mean by 'language consists of grammaticalized lexis'?", o: ["Grammar should be taught before vocabulary", "Vocabulary should be organized by parts of speech", "Grammar emerges from lexical patterns*", "Lexis must be learned through grammar"], a: 2, e: "Lewis believes that grammar patterns emerge naturally from how words combine in chunks, rather than being separate rules to memorize." },
@@ -4091,7 +4135,7 @@
             renderChallengeContent();
             initializeCountdown();
             showQuizWelcome();
-            
+
             // Set up real-time listener for Firebase updates
             if (!window.isDevelopmentMode && db) {
                 const docRef = doc(db, `artifacts/${appId}/public/data/challenge-content`, 'current');
@@ -4106,18 +4150,18 @@
                             subtitle: data.subtitle || 'A new topic every month to sharpen your skills.',
                             deadline: data.deadline || null
                         };
-                        
+
                         // Only update if content changed to avoid infinite loops
                         if (JSON.stringify(newContent) !== JSON.stringify(challengeContent)) {
                             challengeContent = newContent;
                             renderChallengeContent();
-                            
+
                             // Restart countdown with new deadline
                             if (countdownInterval) {
                                 clearInterval(countdownInterval);
                             }
                             initializeCountdown();
-                            
+
                             // Show notification that content was updated
                             if (data.updatedBy && data.updatedBy !== currentUserName) {
                                 showSuccessMessage("Atualização!", `Conteúdo atualizado por ${data.updatedBy}`);
@@ -4144,7 +4188,7 @@
                 try {
                     const docRef = doc(db, `artifacts/${appId}/public/data/challenge-content`, 'current');
                     const docSnap = await getDoc(docRef);
-                    
+
                     if (docSnap.exists()) {
                         const data = docSnap.data();
                         challengeContent = {
@@ -4178,11 +4222,11 @@
                 }
             }
         }
-        
+
         function setDefaultChallengeContent() {
             const now = new Date();
             const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
-            
+
             challengeContent = {
                 videoUrl: 'https://res.cloudinary.com/dqfi22uz0/video/upload/v1751160446/Vygotksy_s_Zone_of_Proximal_Development_Explained_in_4_minutes_n3dmpt.mp4',
                 audio1Url: 'https://res.cloudinary.com/dqfi22uz0/video/upload/v1751161824/zdp1_yldo65.mp3',
@@ -4227,11 +4271,11 @@
         function updateChallengeHeader() {
             const monthDisplay = document.getElementById('challenge-month-display');
             const subtitleDisplay = document.getElementById('challenge-subtitle-display');
-            
+
             if (monthDisplay && challengeContent.month) {
                 monthDisplay.textContent = challengeContent.month;
             }
-            
+
             if (subtitleDisplay && challengeContent.subtitle) {
                 subtitleDisplay.textContent = challengeContent.subtitle;
             }
@@ -4300,7 +4344,7 @@
             }
 
             container.innerHTML = audioHtml;
-            
+
             // Use setTimeout to ensure DOM is ready before initializing players
             setTimeout(() => {
                 initializeAudioPlayers();
@@ -4310,7 +4354,7 @@
         function createAudioPlayer(audioUrl, playerId) {
             // Add timestamp to avoid cache issues with Cloudinary
             const cacheBustedUrl = audioUrl.includes('?') ? `${audioUrl}&t=${Date.now()}` : `${audioUrl}?t=${Date.now()}`;
-            
+
             return `
                 <div class="audio-player-container" data-player="${playerId}">
                     <button class="play-pause-button">
@@ -4343,10 +4387,10 @@
         function initializeAudioPlayers() {
             // Clean up any existing audio players first
             cleanupAudioPlayers();
-            
+
             const players = document.querySelectorAll('.audio-player-container');
             console.log('Initializing audio players. Found:', players.length, 'players');
-            
+
             players.forEach((container, index) => {
                 const audio = container.querySelector('.audio-element');
                 const playButton = container.querySelector('.play-pause-button');
@@ -4354,18 +4398,18 @@
                 const pauseIcon = container.querySelector('.pause-icon');
                 const progressBar = container.querySelector('.progress-bar');
                 const timeDisplay = container.querySelector('.time-display');
-                
+
                 if (!audio || !playButton || !playIcon || !pauseIcon || !progressBar || !timeDisplay) {
                     console.error('Missing audio player elements for player', index);
                     return;
                 }
-                
+
                 console.log('Setting up audio player', index, 'for:', audio.src);
-                
+
                 // Ensure audio element is properly configured
                 audio.preload = 'metadata';
                 audio.crossOrigin = 'anonymous';
-                
+
                 // Force reload audio element to clear cache
                 if (audio.src) {
                     audio.load();
@@ -4424,7 +4468,7 @@
                                 }
                             }
                         });
-                        
+
                         audio.play().then(() => {
                             playIcon.classList.add('hidden');
                             pauseIcon.classList.remove('hidden');
@@ -4459,7 +4503,7 @@
                     const secs = Math.floor(seconds % 60);
                     return `${minutes}:${secs.toString().padStart(2, '0')}`;
                 }
-                
+
                 // Initialize display
                 updateTimeDisplay();
             });
@@ -4468,14 +4512,14 @@
         function openChallengeContentForm() {
             const modal = document.getElementById('challenge-edit-modal');
             const form = document.getElementById('challenge-content-form');
-            
+
             // Pre-fill form
             document.getElementById('challenge-video-url').value = challengeContent.videoUrl || '';
             document.getElementById('challenge-audio1-url').value = challengeContent.audio1Url || '';
             document.getElementById('challenge-audio2-url').value = challengeContent.audio2Url || '';
             document.getElementById('challenge-month').value = challengeContent.month || '';
             document.getElementById('challenge-subtitle').value = challengeContent.subtitle || '';
-            
+
             // Pre-fill deadline
             if (challengeContent.deadline) {
                 let date;
@@ -4484,16 +4528,16 @@
                 } else {
                     date = new Date(challengeContent.deadline);
                 }
-                
+
                 // Ensure the date is valid before formatting
                 if (!isNaN(date.getTime())) {
                     const formattedDate = date.toISOString().slice(0, 16);
                     document.getElementById('challenge-deadline').value = formattedDate;
                 }
             }
-            
+
             modal.classList.add('visible');
-            
+
             form.onsubmit = (e) => {
                 e.preventDefault();
                 saveChallengeContentForm();
@@ -4503,7 +4547,7 @@
 
         async function saveChallengeContentForm() {
             const deadlineValue = document.getElementById('challenge-deadline').value;
-            
+
             let deadline = null;
             if (deadlineValue) {
                 const deadlineDate = new Date(deadlineValue);
@@ -4511,7 +4555,7 @@
                     deadline = deadlineDate.toISOString(); // Store as ISO string for consistency
                 }
             }
-            
+
             challengeContent = {
                 videoUrl: document.getElementById('challenge-video-url').value.trim(),
                 audio1Url: document.getElementById('challenge-audio1-url').value.trim(),
@@ -4520,16 +4564,16 @@
                 subtitle: document.getElementById('challenge-subtitle').value.trim() || 'A new topic every month to sharpen your skills.',
                 deadline: deadline
             };
-            
+
             await saveChallengeContent();
             renderChallengeContent();
-            
+
             // Restart countdown with new deadline
             if (countdownInterval) {
                 clearInterval(countdownInterval);
             }
             initializeCountdown();
-            
+
             // Reset form safely
             const form = document.getElementById('challenge-content-form');
             if (form) {
@@ -4553,22 +4597,22 @@
                 const now = new Date();
                 deadline = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
             }
-            
+
             function updateCountdown() {
                 const now = new Date().getTime();
                 const distance = deadline.getTime() - now;
-                
+
                 const daysEl = document.getElementById('days');
                 const hoursEl = document.getElementById('hours');
                 const minutesEl = document.getElementById('minutes');
                 const secondsEl = document.getElementById('seconds');
-                
+
                 if (distance > 0) {
                     const days = Math.floor(distance / (1000 * 60 * 60 * 24));
                     const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
                     const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
                     const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-                    
+
                     if (daysEl) daysEl.textContent = days.toString().padStart(2, '0');
                     if (hoursEl) hoursEl.textContent = hours.toString().padStart(2, '0');
                     if (minutesEl) minutesEl.textContent = minutes.toString().padStart(2, '0');
@@ -4580,7 +4624,7 @@
                     if (secondsEl) secondsEl.textContent = '00';
                 }
             }
-            
+
             updateCountdown();
             countdownInterval = setInterval(updateCountdown, 1000);
         }
@@ -4611,7 +4655,7 @@
             correctStreak = 0;
             totalAttempts = 0;
             currentQuestionIndex = 0;
-            
+
             // Shuffle all questions to ensure randomness every time
             const shuffled = [...fullQuizData].sort(() => Math.random() - 0.5);
             quizQuestions = shuffled.map(question => {
@@ -4624,31 +4668,31 @@
                     }
                     return option;
                 });
-                
+
                 // If no asterisk found, use the original 'a' property
                 if (correctIndex === -1) {
                     correctIndex = question.a;
                 }
-                
+
                 // Create shuffled options with correct answer tracking
                 const optionsWithIndices = cleanedOptions.map((option, index) => ({
                     text: option,
                     originalIndex: index
                 }));
-                
+
                 // Shuffle the options
                 const shuffledOptions = optionsWithIndices.sort(() => Math.random() - 0.5);
-                
+
                 // Find new correct answer index after shuffling
                 const newCorrectIndex = shuffledOptions.findIndex(opt => opt.originalIndex === correctIndex);
-                
+
                 return {
                     ...question,
                     o: shuffledOptions.map(opt => opt.text),
                     a: newCorrectIndex
                 };
             });
-            
+
             showNameInput();
         }
 
@@ -4671,7 +4715,7 @@
         window.submitName = function() {
             const nameInput = document.getElementById('teacher-name-input');
             teacherName = nameInput.value.trim();
-            
+
             if (teacherName) {
                 showQuestion();
             } else {
@@ -4693,19 +4737,19 @@
                         }
                         return option;
                     });
-                    
+
                     if (correctIndex === -1) {
                         correctIndex = question.a;
                     }
-                    
+
                     const optionsWithIndices = cleanedOptions.map((option, index) => ({
                         text: option,
                         originalIndex: index
                     }));
-                    
+
                     const shuffledOptions = optionsWithIndices.sort(() => Math.random() - 0.5);
                     const newCorrectIndex = shuffledOptions.findIndex(opt => opt.originalIndex === correctIndex);
-                    
+
                     return {
                         ...question,
                         o: shuffledOptions.map(opt => opt.text),
@@ -4714,15 +4758,15 @@
                 });
                 currentQuestionIndex = 0;
             }
-            
+
             const question = quizQuestions[currentQuestionIndex];
             if (!question) {
                 console.error('Question not found at index:', currentQuestionIndex);
                 return;
             }
-            
+
             const quizContainer = document.getElementById('quiz-container');
-            
+
             quizContainer.innerHTML = `
                 <div class="h-full flex flex-col">
                     <div class="mb-4">
@@ -4737,7 +4781,7 @@
                             ${correctStreak === 0 ? 'Comece seu streak!' : `${questionsNeededForSuccess - correctStreak} restantes para completar!`}
                         </p>
                     </div>
-                    
+
                     <div class="flex-grow flex flex-col justify-center">
                         <h3 class="text-lg font-semibold mb-6">${question.q}</h3>
                         <div id="quiz-options" class="space-y-2">
@@ -4748,11 +4792,11 @@
                             `).join('')}
                         </div>
                     </div>
-                    
+
                     <div id="explanation" class="hidden mt-4 p-4 rounded-lg">
                         <p class="text-sm"></p>
                     </div>
-                    
+
                     <div class="mt-6 flex justify-center">
                         <button id="next-btn" onclick="window.nextQuestion()" class="primary-btn w-auto hidden">Próxima Pergunta</button>
                     </div>
@@ -4766,16 +4810,16 @@
                 console.error('Question not found at index:', currentQuestionIndex);
                 return;
             }
-            
+
             const options = document.querySelectorAll('.pedagogical-quiz-option');
             const explanation = document.getElementById('explanation');
             const nextBtn = document.getElementById('next-btn');
-            
+
             // Disable all options
             options.forEach(option => option.disabled = true);
-            
+
             const isCorrect = selectedIndex === question.a;
-            
+
             // Show correct/incorrect
             options.forEach((option, index) => {
                 if (index === question.a) {
@@ -4784,14 +4828,14 @@
                     option.classList.add('incorrect');
                 }
             });
-            
+
             // Update streak logic
             if (isCorrect) {
                 correctStreak++;
                 explanation.className = 'mt-4 p-4 bg-green-50 border border-green-200 rounded-lg';
                 explanation.querySelector('p').className = 'text-sm text-green-800';
                 explanation.querySelector('p').innerHTML = `<strong>✅ Correto!</strong> ${question.e}`;
-                
+
                 // Check if challenge is completed
                 if (correctStreak >= questionsNeededForSuccess) {
                     setTimeout(() => {
@@ -4807,7 +4851,7 @@
                 explanation.className = 'mt-4 p-4 bg-red-50 border border-red-200 rounded-lg';
                 explanation.querySelector('p').className = 'text-sm text-red-800';
                 explanation.querySelector('p').innerHTML = `<strong>❌ Incorreto!</strong> Seu streak reiniciou. ${question.e}`;
-                
+
                 // Show restart message
                 setTimeout(() => {
                     showRestartMessage();
@@ -4815,11 +4859,11 @@
                 explanation.classList.remove('hidden');
                 return;
             }
-            
+
             // Show explanation and next button
             explanation.classList.remove('hidden');
             nextBtn.classList.remove('hidden');
-            
+
             // Track answer
             quizQuestions[currentQuestionIndex].userAnswer = selectedIndex;
         }
@@ -4847,7 +4891,7 @@
                             </p>
                         </div>
                     </div>
-                    
+
                     <div class="space-y-2">
                         <button onclick="window.startQuiz()" class="primary-btn w-auto mx-auto">🔄 Tentar Novamente</button>
                         <button onclick="showQuizWelcome()" class="secondary-btn w-auto mx-auto">📚 Voltar ao Início</button>
@@ -4878,7 +4922,7 @@
                             Você demonstrou excelente conhecimento sobre Dogme ELT e Lexical Approach!
                         </p>
                     </div>
-                    
+
                     <div class="space-y-2">
                         <button onclick="showQuizWelcome()" class="primary-btn w-auto mx-auto">🏠 Voltar ao Início</button>
                         <button onclick="window.startQuiz()" class="secondary-btn w-auto mx-auto">🔄 Fazer Novamente</button>
@@ -4893,7 +4937,7 @@
         function renderDiretrizesSection() {
             document.getElementById('main-title').textContent = 'Diretrizes SLAP';
             const contentArea = document.getElementById('content-area');
-            
+
             contentArea.innerHTML = `
                 <div class="max-w-6xl mx-auto">
                     <div class="mb-6 flex justify-between items-center">
@@ -4909,7 +4953,7 @@
                         </button>
                         ` : ''}
                     </div>
-                    
+
                     <div class="grid md:grid-cols-2 gap-6">
                         <div>
                             <h2 class="text-xl font-bold text-green-600 mb-4 flex items-center">
@@ -4925,7 +4969,7 @@
                                 <!-- Pagination controls will be rendered here -->
                             </div>
                         </div>
-                        
+
                         <div>
                             <h2 class="text-xl font-bold text-red-600 mb-4 flex items-center">
                                 <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -4941,7 +4985,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <!-- Guideline Modal -->
                     <div id="guideline-modal" class="modal-overlay">
                         <div class="modal-content max-w-md">
@@ -4975,10 +5019,10 @@
                         </div>
                     </div>
                 </div>
-                
+
 
             `;
-            
+
             loadGuidelines();
         }
 
@@ -5021,23 +5065,23 @@
         function renderGuidelines(filter = '') {
             const goodPracticesContainer = document.getElementById('good-practices-container');
             const prohibitedItemsContainer = document.getElementById('prohibited-items-container');
-            
+
             const filteredGoodPractices = guidelines.goodPractices.filter(item => 
                 item.title.toLowerCase().includes(filter.toLowerCase()) || 
                 item.description.toLowerCase().includes(filter.toLowerCase())
             );
-            
+
             const filteredProhibitedItems = guidelines.prohibitedItems.filter(item => 
                 item.title.toLowerCase().includes(filter.toLowerCase()) || 
                 item.description.toLowerCase().includes(filter.toLowerCase())
             );
-            
+
             // When filtering, reset pagination to page 1
             if (filter) {
                 guidelinesPagination.goodPractices.currentPage = 1;
                 guidelinesPagination.prohibitedItems.currentPage = 1;
             }
-            
+
             // Render Good Practices with pagination
             renderGuidelineSection(
                 'goodPractices', 
@@ -5047,7 +5091,7 @@
                 'good-practice',
                 'text-green-600'
             );
-            
+
             // Render Prohibited Items with pagination
             renderGuidelineSection(
                 'prohibitedItems', 
@@ -5057,17 +5101,17 @@
                 'prohibited',
                 'text-red-600'
             );
-            
+
             // Show/hide sections based on search results
             const goodPracticesSection = document.querySelector('.grid > div:first-child');
             const prohibitedSection = document.querySelector('.grid > div:last-child');
-            
+
             if (filter && filteredGoodPractices.length === 0) {
                 goodPracticesSection.style.display = 'none';
             } else {
                 goodPracticesSection.style.display = 'block';
             }
-            
+
             if (filter && filteredProhibitedItems.length === 0) {
                 prohibitedSection.style.display = 'none';
             } else {
@@ -5081,12 +5125,12 @@
             const endIndex = startIndex + pagination.itemsPerPage;
             const itemsToShow = items.slice(startIndex, endIndex);
             const totalPages = Math.ceil(items.length / pagination.itemsPerPage);
-            
+
             // Render items
             container.innerHTML = itemsToShow.map((item, index) => {
                 const realIndex = startIndex + index;
                 const iconPath = type === 'goodPractices' ? 'M5 13l4 4L19 7' : 'M6 18L18 6M6 6l12 12';
-                
+
                 return `
                     <div class="guideline-card ${cardClass}">
                         <div class="guideline-header">
@@ -5108,7 +5152,7 @@
                     </div>
                 `;
             }).join('');
-            
+
             // Render pagination controls
             if (totalPages > 1) {
                 paginationContainer.innerHTML = `
@@ -5121,7 +5165,7 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
                             </svg>
                         </button>
-                        
+
                         <div class="flex gap-1">
                             ${Array.from({length: totalPages}, (_, i) => i + 1).map(page => `
                                 <button 
@@ -5131,7 +5175,7 @@
                                 </button>
                             `).join('')}
                         </div>
-                        
+
                         <button 
                             class="pagination-btn ${pagination.currentPage === totalPages ? 'disabled' : ''}" 
                             onclick="changeGuidelinePage('${type}', ${pagination.currentPage + 1})"
@@ -5161,9 +5205,9 @@
                     item.title.toLowerCase().includes(document.getElementById('guidelines-search').value.toLowerCase()) || 
                     item.description.toLowerCase().includes(document.getElementById('guidelines-search').value.toLowerCase())
                 );
-            
+
             const totalPages = Math.ceil(filteredItems.length / pagination.itemsPerPage);
-            
+
             if (newPage >= 1 && newPage <= totalPages) {
                 pagination.currentPage = newPage;
                 renderGuidelines(document.getElementById('guidelines-search').value);
@@ -5172,18 +5216,18 @@
 
         function deleteGuidelineItem(type, realIndex) {
             const itemTitle = guidelines[type][realIndex].title;
-            
+
             if (confirm(`Tem certeza que deseja excluir "${itemTitle}"?`)) {
                 guidelines[type].splice(realIndex, 1);
                 saveGuidelines();
-                
+
                 // Adjust current page if necessary
                 const pagination = guidelinesPagination[type];
                 const totalPages = Math.ceil(guidelines[type].length / pagination.itemsPerPage);
                 if (pagination.currentPage > totalPages && totalPages > 0) {
                     pagination.currentPage = totalPages;
                 }
-                
+
                 renderGuidelines(document.getElementById('guidelines-search').value);
             }
         }
@@ -5191,17 +5235,17 @@
         function filterGuidelines(searchTerm) {
             renderGuidelines(searchTerm);
         }
-        
+
         function openGuidelineForm() {
             const modal = document.getElementById('guideline-modal');
             const form = document.getElementById('guideline-form');
-            
+
             // Add submit event listener
             form.onsubmit = (e) => {
                 e.preventDefault();
                 saveGuideline(e);
             };
-            
+
             modal.classList.add('visible');
         }
 
@@ -5277,7 +5321,7 @@
         function loadCard(index) {
             currentCardIndex = index;
             isFlipped = false;
-            
+
             const flashcard = document.getElementById('flashcard');
             const front = document.getElementById('flashcard-front');
             const back = document.getElementById('flashcard-back');
@@ -5287,14 +5331,14 @@
 
             // Reset flip state
             flashcard.classList.remove('flipped');
-            
+
             // Load content
             front.textContent = flashcardsData[index].front;
             back.textContent = flashcardsData[index].back;
-            
+
             // Update counter
             counter.textContent = `${index + 1} / ${flashcardsData.length}`;
-            
+
             // Update button states
             prevBtn.disabled = index === 0;
             nextBtn.disabled = index === flashcardsData.length - 1;
@@ -5317,29 +5361,29 @@
                 loadCard(currentCardIndex - 1);
             }
         }
-        
+
         function saveGuideline(event) {
             event.preventDefault();
-            
+
             const type = document.getElementById('guideline-type').value;
             const title = document.getElementById('guideline-title').value;
             const description = document.getElementById('guideline-description').value;
-            
+
             const newGuideline = {
                 id: Date.now().toString(),
                 title: title,
                 description: description
             };
-            
+
             if (type === 'good-practice') {
                 guidelines.goodPractices.push(newGuideline);
             } else {
                 guidelines.prohibitedItems.push(newGuideline);
             }
-            
+
             saveGuidelines();
             renderGuidelines();
-            
+
             // Close modal and reset form
             document.getElementById('guideline-modal').classList.remove('visible');
             document.getElementById('guideline-form').reset();
@@ -5364,9 +5408,9 @@
                     <td>${s.observations || 'N/A'}</td>
                 </tr>
             `).join('');
-            
+
             if (!studentsList) { studentsList = '<tr><td colspan="12">Nenhum aluno ativo encontrado.</td></tr>'; }
-            
+
             const docHtml = `
                 <!DOCTYPE html>
                 <html lang="pt-br">
@@ -5422,7 +5466,7 @@
                 </body>
                 </html>
             `;
-            
+
             openHtmlInNewWindow("Lista Completa de Alunos", docHtml);
         }
 
@@ -5456,7 +5500,7 @@
         function renderMonthlyHighlight() {
             const container = document.getElementById('monthly-highlight-content');
             const savedHighlight = localStorage.getItem('slap-monthly-highlight');
-            
+
             if (savedHighlight) {
                 monthlyHighlight = JSON.parse(savedHighlight);
             }
@@ -5488,19 +5532,19 @@
         function openMonthlyHighlightForm() {
             const modal = document.getElementById('monthly-highlight-modal');
             const form = document.getElementById('monthly-highlight-form');
-            
+
             if (!modal) {
                 console.error('Modal monthly-highlight-modal not found');
                 return;
             }
-            
+
             // Pre-fill form if there's existing data
             if (monthlyHighlight) {
                 const nameField = document.getElementById('highlight-name');
                 const photoField = document.getElementById('highlight-photo-url');
                 const descField = document.getElementById('highlight-description');
                 const awardField = document.getElementById('highlight-award');
-                
+
                 if (nameField) nameField.value = monthlyHighlight.name || '';
                 if (photoField) photoField.value = monthlyHighlight.photoUrl || '';
                 if (descField) descField.value = monthlyHighlight.description || '';
@@ -5508,9 +5552,9 @@
             } else if (form) {
                 form.reset();
             }
-            
+
             modal.classList.add('visible');
-            
+
             if (form) {
                 form.onsubmit = (e) => {
                     e.preventDefault();
@@ -5525,7 +5569,7 @@
             const photoUrl = document.getElementById('highlight-photo-url').value;
             const description = document.getElementById('highlight-description').value;
             const award = document.getElementById('highlight-award').value;
-            
+
             monthlyHighlight = {
                 name: name,
                 photoUrl: photoUrl,
@@ -5533,10 +5577,10 @@
                 award: award,
                 updatedAt: new Date().toISOString()
             };
-            
+
             localStorage.setItem('slap-monthly-highlight', JSON.stringify(monthlyHighlight));
             renderMonthlyHighlight();
-            
+
             // Reset form safely
             const form = document.getElementById('monthly-highlight-form');
             if (form) {
@@ -5567,7 +5611,7 @@
                     `;
                 }
             }
-            
+
             if (document.readyState === 'loading') {
                 document.addEventListener('DOMContentLoaded', tryUpdate);
             } else {
@@ -5582,13 +5626,13 @@
                 showErrorMessage("Acesso Negado", "Usuários com role 'teacher' não podem criar ou editar eventos.");
                 return;
             }
-            
+
             const modal = document.getElementById('calendar-event-modal');
             const form = document.getElementById('calendar-event-form');
             const title = document.getElementById('event-modal-title');
-            
+
             title.textContent = eventId ? 'Editar Evento' : 'Novo Evento';
-            
+
             if (eventId) {
                 const event = calendarEvents.find(e => e.id === eventId);
                 if (event) {
@@ -5601,9 +5645,9 @@
             } else {
                 form.reset();
             }
-            
+
             modal.classList.add('visible');
-            
+
             form.onsubmit = (e) => {
                 e.preventDefault();
                 saveCalendarEvent(eventId);
@@ -5617,7 +5661,7 @@
             const time = document.getElementById('event-time').value;
             const type = document.getElementById('event-type').value;
             const description = document.getElementById('event-description').value;
-            
+
             if (eventId) {
                 const eventIndex = calendarEvents.findIndex(e => e.id === eventId);
                 if (eventIndex !== -1) {
@@ -5634,7 +5678,7 @@
                 };
                 calendarEvents.push(newEvent);
             }
-            
+
             saveCalendarEvents();
             renderCalendar();
         }
@@ -5645,7 +5689,7 @@
             if (!event) {
                 event = events.find(e => e.id === eventId);
             }
-            
+
             if (event) {
                 // Use openEventModal to show view with delete option
                 openEventModal(eventId);
@@ -5678,13 +5722,13 @@
                 .filter(item => !item.roles || item.roles.includes(currentUserRole))
                 .map(item => `<button data-target="${item.key}" class="nav-item w-full text-left px-4 py-2.5 rounded-lg flex items-center font-semibold">${item.icon}${item.label}</button>`)
                 .join('');
-            
+
             mainNav.innerHTML = menuItemsHTML;
         }
 
         document.addEventListener('DOMContentLoaded', () => {
             const pageRenderers = { 'inicio': renderInicioSection, 'alunos': renderAlunosSection, 'turmas': renderTurmasSection, 'vips': renderVipsSection, 'eventos': renderEventosSection, 'orcamentos': renderOrcamentosSection, 'tarefas': renderTarefasSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection, 'cancelamentos': renderCancelamentosSection, 'colaboradores': renderColaboradoresSection, 'cps': renderCPsSection, 'dojo': renderDojoSection, 'calendario': renderCalendarioSection, 'desafio-pedagogico': renderDesafioPedagogicoSection, 'diretrizes': renderDiretrizesSection };
-            
+
             document.body.addEventListener('click', (event) => {
                 // Close modals when clicking overlay or close button
                 if (event.target.matches('.modal-overlay') || event.target.matches('[data-action="close-calendar-modal"]')) {
@@ -5699,7 +5743,7 @@
                 if (event.target.matches('.modal-overlay') || event.target.matches('[data-action="close-challenge-modal"]')) {
                     document.getElementById('challenge-edit-modal').classList.remove('visible');
                 }
-                
+
                 const navTarget = event.target.closest('.nav-item');
                 if (navTarget && !navTarget.disabled) {
                     const pageKey = navTarget.dataset.target;
@@ -5709,11 +5753,11 @@
                         setActiveNavItem(navTarget);
                     }
                 }
-                
+
                 const actionTarget = event.target.closest('[data-action]');
                 if (actionTarget) {
                     if(actionTarget.closest('.modal-content') && !['close-modal', 'export-vip-pef', 'export-turma-pef'].includes(actionTarget.dataset.action)) event.stopPropagation();
-                    
+
                     const { action, id, collection, folderName, nivelId, aulaIndex, direction, unitId, lessonNumber, status } = actionTarget.dataset;
                     const actionHandlers = {
                         'open-signup': openSignUpModal,
