@@ -2949,8 +2949,8 @@
                         <div><label class="font-medium text-sm">Data de Finalização</label><input type="date" id="vip-endDate" class="form-input" value="${vip?.endDate || ''}"></div>
                     </div>
                     <div class="flex justify-end gap-2">
-                        ${vipId ? `<button type="button" class="danger-btn" data-action="delete-item" data-collection="vips" data-id="${vipId}">Excluir</button>` : ''}
-                        <button type="submit" class="primary-btn w-auto">Salvar VIP</button>
+                        ${vipId ? `<button type="button" class="danger-btn" data-action="delete-vip" data-id="${vipId}">Excluir VIP</button>` : ''}
+                        <button type="submit" class="primary-btn w-auto">${vipId ? 'Salvar' : 'Criar VIP'}</button>
                     </div>
                 </form>
             `;
@@ -3004,6 +3004,20 @@
             } catch (error) {
                 console.error("Error saving VIP:", error);
                 showErrorMessage("Erro", "Não foi possível salvar o VIP.");
+            }
+        }
+
+        async function deleteVip(vipId) {
+            if (!confirm('Tem certeza que deseja excluir este VIP?')) return;
+
+            try {
+                await deleteDoc(doc(db, `artifacts/${appId}/public/data/vips`, vipId));
+                showSuccessMessage("Sucesso!", "VIP excluído com sucesso.");
+                closeModal();
+                renderVipsSection();
+            } catch (error) {
+                console.error("Error deleting VIP:", error);
+                showErrorMessage("Erro", "Não foi possível excluir o VIP.");
             }
         }
 
@@ -7491,6 +7505,7 @@
                         'open-turma-pef': () => openTurmaPefModal(id),
                         'edit-turma': () => openTurmaForm(id),
 
+                        'add-vip': () => openVipForm(),
                         'edit-vip': () => openVipForm(id),
                         'open-vip-pef': () => openVipPefModal(id),
                         'mark-attendance': () => {
@@ -7577,6 +7592,7 @@
                                 showErrorMessage("Erro", "ID do evento não encontrado.");
                             }
                         },
+                        'delete-vip': () => deleteVip(id),
 
                         'debug-sync-status': debugSyncStatus,
                     };
