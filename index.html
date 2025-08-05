@@ -3417,8 +3417,11 @@
                     ${campanha.estrategia ? `<div><h4 class="font-semibold text-stone-700">Estratégia</h4><p class="mt-1 p-3 bg-stone-50 rounded-md text-sm">${campanha.estrategia}</p></div>` : ''}
                     
                     <div class="border-t pt-4 flex justify-end gap-2">
+                        ${['admin', 'am', 'marketing'].includes(currentUserRole) ? `
                         <button class="secondary-btn" data-action="edit-campanha" data-id="${campanha.id}">Editar</button>
                         <button class="danger-btn" data-action="delete-item" data-collection="events" data-id="${campanha.id}">Apagar</button>
+                        ` : ''}
+                        <button class="primary-btn" data-action="close-modal">Fechar</button>
                     </div>
                 </div>
             `;
