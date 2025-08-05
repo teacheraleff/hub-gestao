@@ -2726,6 +2726,7 @@
             if (!aluno) return;
             document.getElementById('form-modal-title').textContent = `Perfil de ${aluno.name}`;
             const canEdit = ['admin', 'financeiro', 'pedagogico', 'ap'].includes(currentUserRole);
+            const canViewFinancialInfo = !['teacher', 'pedagogico', 'ap', 'am'].includes(currentUserRole);
 
             let responsibleHtml = '';
             if (aluno.isMinor && aluno.responsibleName) {
