@@ -395,7 +395,14 @@
         <div id="app-container" class="min-h-screen md:flex bg-stone-50">
             <aside class="md:w-64 bg-white md:border-r border-b border-stone-200 p-4 md:p-6 flex flex-col h-screen md:h-auto">
                 <div class="mb-4 text-center">
-                    <img id="profile-picture" src="https://res.cloudinary.com/dqfi22uz0/image/upload/v1749349751/DBB440C2-684E-4DCF-9CD3-B2DDC18F1E53_3_vgocga.jpg" alt="Foto de Perfil" class="w-24 h-24 mx-auto rounded-full object-cover border-4 border-stone-200">
+                    <div class="relative">
+                        <img id="profile-picture" src="https://res.cloudinary.com/dqfi22uz0/image/upload/v1749349751/DBB440C2-684E-4DCF-9CD3-B2DDC18F1E53_3_vgocga.jpg" alt="Foto de Perfil" class="w-24 h-24 mx-auto rounded-full object-cover border-4 border-stone-200 cursor-pointer" data-action="edit-profile-photo">
+                        <div class="absolute bottom-0 right-1/2 transform translate-x-1/2 translate-y-1/2 bg-stone-600 hover:bg-stone-700 text-white rounded-full w-6 h-6 flex items-center justify-center cursor-pointer transition-colors" data-action="edit-profile-photo" title="Alterar foto de perfil">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 14.66V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h6M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                            </svg>
+                        </div>
+                    </div>
                 </div>
                 <h1 class="text-xl font-bold text-stone-800 text-center">Hub SLAP</h1>
                 <p id="welcome-message" class="text-center text-sm text-stone-600 mb-6"></p>
@@ -459,7 +466,14 @@
         const pendingView = document.getElementById('pending-view');
 
         let db, auth, storage, userId, currentUserName, currentUserRole;
-        let usersData = [], students = [], turmas = [], vips = [], attendance = [], tasks = [], events = [], budgets = [], collaborators = [], schedules = [], expenses = [], cancellations = [], cps = [], dojoRanking = [], dojoMissions = [];
+        let usersData = [], students = [], turmas = [], vips = [], attendance = [], tasks = [], events = [], budgets = [], collaborators = [], schedules = [], expenses = [], cancellations = [], cps = [], dojoRanking = [], dojoMissions = [], ideias = [];
+        let userProfiles = {};
+        let monthlyHighlight = {
+            name: 'João Silva',
+            photo: 'https://res.cloudinary.com/dqfi22uz0/image/upload/v1749349751/DBB440C2-684E-4DCF-9CD3-B2DDC18F1E53_3_vgocga.jpg',
+            description: 'Parabéns ao João pelo excelente desempenho este mês! Destaque em dedicação e resultados excepcionais.',
+            award: 'Voucher de R$ 200 para compras'
+        };
         let allUnsubscribers = [];
         const appId = 'hub-gestao-slap';
 
@@ -484,6 +498,7 @@
             showHubView();
             renderInicioSection();
             renderMenu();
+            loadUserProfilePhoto();
         }
 
         function loadDemoData() {
@@ -640,6 +655,34 @@
             }, (ref) => query(ref, orderBy("order")));
             getCollectionListener('dojo_ranking', dojoRanking, renderDojoSection);
             getCollectionListener('dojo_missions', dojoMissions, renderDojoSection, (ref) => query(ref, orderBy("points", "desc")));
+            getCollectionListener('ideias', ideias, () => {
+                const activePageId = contentArea.firstElementChild?.id;
+                if (activePageId === 'mural-ideias-section') renderMuralIdeiasSection();
+            }, (ref) => query(ref, orderBy("likes", "desc"), orderBy("createdAt", "desc")));
+            
+            // Load monthly highlight with real-time updates
+            if (db) {
+                const highlightRef = doc(db, `artifacts/${appId}/public/data/monthly-highlight`, 'current');
+                const unsubscribeHighlight = onSnapshot(highlightRef, (docSnap) => {
+                    console.log('Monthly highlight snapshot received:', docSnap.exists());
+                    if (docSnap.exists()) {
+                        const data = docSnap.data();
+                        console.log('Monthly highlight data:', data);
+                        monthlyHighlight = data;
+                        
+                        // Re-render if we're on the dashboard
+                        const activePageId = contentArea.firstElementChild?.id;
+                        if (activePageId === 'inicio-section') {
+                            renderMonthlyHighlight();
+                        }
+                    } else {
+                        console.log('No monthly highlight document found');
+                    }
+                }, (error) => {
+                    console.error('Error listening to monthly highlight:', error);
+                });
+                allUnsubscribers.push(unsubscribeHighlight);
+            }
         }
 
         // --- AUTH, VIEW, and MENU FUNCTIONS ---
@@ -689,7 +732,8 @@
             document.getElementById('welcome-message').textContent = `Bem-vindo(a), ${firstName}`;
             renderMenu(); 
             renderInicioSection(); 
-            setActiveNavItem(document.querySelector('[data-target="inicio"]')); 
+            setActiveNavItem(document.querySelector('[data-target="inicio"]'));
+            loadUserProfilePhoto(); 
         }
         function showPendingView() { 
             hubView.classList.add('hidden'); 
@@ -828,41 +872,529 @@
                         </div>
                     </div>` : ''}
 
-                    <!-- Redes SLAP -->
-                    <div class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
-                        <h4 class="text-lg font-bold text-stone-800 mb-4">Redes SLAP</h4>
-                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                            <a href="https://instagram.com/speakinglikeapro" target="_blank" class="p-3 rounded-lg text-center transition-colors" style="background-color: #FF5C3D20; color: #FF5C3D">
-                                <svg class="w-6 h-6 mx-auto mb-1" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
-                                </svg>
-                                <p class="text-xs font-medium">Instagram</p>
-                            </a>
-                            <a href="https://youtube.com/@speakinglikeapro" target="_blank" class="p-3 rounded-lg text-center transition-colors" style="background-color: #84C7DF20; color: #84C7DF">
-                                <svg class="w-6 h-6 mx-auto mb-1" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
-                                </svg>
-                                <p class="text-xs font-medium">YouTube</p>
-                            </a>
-                            <a href="https://tiktok.com/@speakinglikeapro" target="_blank" class="p-3 rounded-lg text-center transition-colors" style="background-color: #8671D120; color: #8671D1">
-                                <svg class="w-6 h-6 mx-auto mb-1" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/>
-                                </svg>
-                                <p class="text-xs font-medium">TikTok</p>
-                            </a>
-                            <a href="https://linkedin.com/company/speaking-like-a-pro" target="_blank" class="p-3 rounded-lg text-center transition-colors" style="background-color: #F1D24B20; color: #F1D24B">
-                                <svg class="w-6 h-6 mx-auto mb-1" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
-                                </svg>
-                                <p class="text-xs font-medium">LinkedIn</p>
-                            </a>
+                    <!-- Redes SLAP & Destaque do Mês -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Redes SLAP -->
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
+                            <h4 class="text-lg font-bold text-black mb-4">Redes SLAP</h4>
+                            <div class="grid grid-cols-2 gap-3">
+                                <a href="https://instagram.com/speakinglikeapro" target="_blank" class="p-3 rounded-lg text-center transition-colors text-black" style="background-color: #F1D24B;">
+                                    <svg class="w-6 h-6 mx-auto mb-1" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                                    </svg>
+                                    <p class="text-xs font-medium">Instagram</p>
+                                </a>
+                                <a href="https://youtube.com/@speakinglikeapro" target="_blank" class="p-3 rounded-lg text-center transition-colors text-black" style="background-color: #F1D24B;">
+                                    <svg class="w-6 h-6 mx-auto mb-1" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                                    </svg>
+                                    <p class="text-xs font-medium">YouTube</p>
+                                </a>
+                                <a href="https://tiktok.com/@speakinglikeapro" target="_blank" class="p-3 rounded-lg text-center transition-colors text-black" style="background-color: #F1D24B;">
+                                    <svg class="w-6 h-6 mx-auto mb-1" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/>
+                                    </svg>
+                                    <p class="text-xs font-medium">TikTok</p>
+                                </a>
+                                <a href="https://linkedin.com/company/speaking-like-a-pro" target="_blank" class="p-3 rounded-lg text-center transition-colors text-black" style="background-color: #F1D24B;">
+                                    <svg class="w-6 h-6 mx-auto mb-1" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                                    </svg>
+                                    <p class="text-xs font-medium">LinkedIn</p>
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Destaque do Mês -->
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
+                            <div class="flex justify-between items-center mb-4">
+                                <h4 class="text-lg font-bold text-stone-800">Destaque do Mês</h4>
+                                ${currentUserRole === 'admin' ? `
+                                    <button class="text-sm" style="color: #F1D24B;" data-action="edit-monthly-highlight">
+                                        <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                        </svg>
+                                        Editar
+                                    </button>
+                                ` : ''}
+                            </div>
+                            <div id="monthly-highlight-content">
+                                <!-- Monthly highlight content will be rendered here -->
+                            </div>
                         </div>
                     </div>
                 </div>
             `;
 
-            // Initialize monthly highlight
+            // Initialize monthly highlight and fortune cookie
+            renderMonthlyHighlight();
             renderFortuneCookie();
+        }
+
+        // Monthly Highlight functions
+        function renderMonthlyHighlight() {
+            const content = document.getElementById('monthly-highlight-content');
+            if (!content) return;
+
+            content.innerHTML = `
+                <div class="flex items-center space-x-4">
+                    <img src="${monthlyHighlight.photo}" alt="${monthlyHighlight.name}" class="w-16 h-16 rounded-full object-cover border-2 border-stone-200">
+                    <div class="flex-1">
+                        <h5 class="font-semibold text-stone-800 text-lg">${monthlyHighlight.name}</h5>
+                        <p class="text-sm text-stone-600 mt-1 leading-relaxed">${monthlyHighlight.description}</p>
+                        ${monthlyHighlight.award ? `<div class="mt-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium" style="background-color: #F1D24B20; color: #B45309;">
+                            <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                            </svg>
+                            ${monthlyHighlight.award}
+                        </div>` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        function openMonthlyHighlightForm() {
+            clearModalHeaderButtons();
+            document.getElementById('form-modal-title').textContent = "Editar Destaque do Mês";
+            
+            document.getElementById('form-modal-content-area').innerHTML = `
+                <form id="monthly-highlight-form" class="space-y-4">
+                    <div>
+                        <label class="font-medium text-sm">Nome do Funcionário</label>
+                        <input type="text" id="highlight-name" class="form-input" required value="${monthlyHighlight.name}">
+                    </div>
+                    
+                    <div>
+                        <label class="font-medium text-sm">Link da Foto (Cloudinary)</label>
+                        <input type="url" id="highlight-photo" class="form-input" required value="${monthlyHighlight.photo}" placeholder="https://res.cloudinary.com/...">
+                    </div>
+                    
+                    <div>
+                        <label class="font-medium text-sm">Descrição</label>
+                        <textarea id="highlight-description" class="form-input" rows="4" required placeholder="Descreva os motivos do destaque...">${monthlyHighlight.description}</textarea>
+                    </div>
+                    
+                    <div>
+                        <label class="font-medium text-sm">Premiação (Opcional)</label>
+                        <input type="text" id="highlight-award" class="form-input" value="${monthlyHighlight.award || ''}" placeholder="Ex: Voucher de R$ 200, Dia de folga, etc.">
+                    </div>
+                    
+                    <div class="flex justify-end gap-2">
+                        <button type="button" data-action="close-modal" class="secondary-btn">Cancelar</button>
+                        <button type="submit" class="primary-btn w-auto">Salvar Destaque</button>
+                    </div>
+                </form>
+            `;
+
+            document.getElementById('monthly-highlight-form').onsubmit = saveMonthlyHighlight;
+            document.getElementById('form-modal').classList.add('visible');
+        }
+
+        async function saveMonthlyHighlight(event) {
+            event.preventDefault();
+            
+            const data = {
+                name: document.getElementById('highlight-name').value,
+                photo: document.getElementById('highlight-photo').value,
+                description: document.getElementById('highlight-description').value,
+                award: document.getElementById('highlight-award').value
+            };
+
+            if (!data.name || !data.photo || !data.description) {
+                showErrorMessage("Erro", "Todos os campos são obrigatórios.");
+                return;
+            }
+
+            try {
+                if (!db) {
+                    // Development mode - update local variable only
+                    console.log('Development mode: updating local monthly highlight');
+                    monthlyHighlight = data;
+                    renderMonthlyHighlight();
+                    document.getElementById('form-modal').classList.remove('visible');
+                    showSuccessMessage("Sucesso!", "Destaque do mês atualizado localmente (modo desenvolvimento).");
+                    return;
+                }
+
+                console.log('Saving monthly highlight to Firebase:', data);
+                const highlightRef = doc(db, `artifacts/${appId}/public/data/monthly-highlight`, 'current');
+                
+                // Add timestamp for better tracking
+                const dataWithTimestamp = {
+                    ...data,
+                    updatedAt: serverTimestamp(),
+                    updatedBy: currentUserName || 'Admin'
+                };
+                
+                await setDoc(highlightRef, dataWithTimestamp);
+                console.log('Monthly highlight saved successfully to Firebase');
+                
+                document.getElementById('form-modal').classList.remove('visible');
+                showSuccessMessage("Sucesso!", "Destaque do mês atualizado para todos os usuários!");
+                
+                // Note: renderMonthlyHighlight will be called automatically by the onSnapshot listener
+            } catch (error) {
+                console.error("Error saving monthly highlight:", error);
+                showErrorMessage("Erro", "Erro ao salvar destaque: " + error.message);
+            }
+        }
+
+        // Mural de Ideias Functions
+        function renderMuralIdeiasSection() {
+            document.getElementById('main-title').textContent = 'Mural de Ideias';
+            document.getElementById('main-description').textContent = 'Compartilhe suas ideias geniais e vote nas melhores! As ideias mais curtidas podem ganhar premiações.';
+
+            // Sort ideas by likes (desc) then by date (desc)
+            const sortedIdeias = [...ideias].sort((a, b) => {
+                const likesA = a.likes || 0;
+                const likesB = b.likes || 0;
+                if (likesA !== likesB) return likesB - likesA;
+                return new Date(b.createdAt) - new Date(a.createdAt);
+            });
+
+            contentArea.innerHTML = `
+                <div id="mural-ideias-section" class="space-y-6">
+                    <!-- Header with Add Button -->
+                    <div style="background-color: #84C7DF;" class="p-6 rounded-xl shadow-lg text-white">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h3 class="text-2xl font-bold mb-2">Espaço da Criatividade</h3>
+                                <p class="opacity-90">Sua próxima ideia genial pode transformar a SLAP!</p>
+                            </div>
+                            <button class="bg-white px-6 py-3 rounded-lg font-bold transition-colors hover:bg-gray-50" style="color: #84C7DF;" data-action="add-ideia">
+                                Compartilhar Ideia
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Ideas Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        ${sortedIdeias.map((ideia, index) => {
+                            const userLiked = ideia.likedBy && ideia.likedBy.includes(currentUserName);
+                            const likesCount = ideia.likes || 0;
+                            const isTop3 = index < 3 && likesCount > 0;
+                            
+                            return `
+                            <div class="relative bg-white rounded-xl shadow-sm border-2 transition-all duration-200 hover:shadow-lg ${isTop3 ? 'border-yellow-400 bg-gradient-to-br from-yellow-50 to-orange-50' : 'border-stone-200 hover:border-yellow-300'}">
+                                ${isTop3 ? `<div class="absolute -top-3 -right-3 bg-gradient-to-r from-yellow-400 to-orange-400 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold text-sm shadow-lg">
+                                    ${index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}
+                                </div>` : ''}
+                                
+                                <div class="p-6">
+                                    <div class="flex justify-between items-start mb-3">
+                                        <div>
+                                            <p class="font-semibold text-stone-800">Ideia de ${ideia.authorName}</p>
+                                            <p class="text-xs text-stone-500">${new Date(ideia.createdAt).toLocaleDateString('pt-BR')}</p>
+                                        </div>
+                                        ${ideia.status === 'implementada' ? `<span class="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-medium">✅ Implementada</span>` : 
+                                          ideia.status === 'em-analise' ? `<span class="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs font-medium">🔍 Em Análise</span>` : 
+                                          `<span class="bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs font-medium">💭 Nova</span>`}
+                                    </div>
+                                    
+                                    <h4 class="font-bold text-lg text-stone-800 mb-2">${ideia.titulo}</h4>
+                                    <p class="text-stone-600 text-sm mb-4 line-clamp-3">${ideia.descricao}</p>
+                                    
+                                    ${ideia.categoria ? `<div class="mb-4">
+                                        <span class="inline-block bg-stone-100 text-stone-700 px-2 py-1 rounded text-xs font-medium">${ideia.categoria}</span>
+                                    </div>` : ''}
+                                    
+                                    <div class="flex justify-between items-center pt-3 border-t border-stone-100">
+                                        <button 
+                                            class="flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${userLiked ? 'bg-red-100 text-red-600' : 'bg-stone-100 text-stone-600 hover:bg-red-100 hover:text-red-600'}"
+                                            data-action="like-ideia" 
+                                            data-id="${ideia.id}"
+                                        >
+                                            ${userLiked ? '❤️' : '🤍'} ${likesCount}
+                                        </button>
+                                        
+                                        ${ideia.premiacao ? `<div class="flex items-center gap-1 text-yellow-600 text-sm font-medium">
+                                            🏆 ${ideia.premiacao}
+                                        </div>` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                            `;
+                        }).join('') || `
+                        <div class="col-span-full text-center py-12">
+                            <h3 class="text-xl font-bold text-stone-600 mb-2">Seja o primeiro a compartilhar uma ideia!</h3>
+                            <p class="text-stone-500">O mural está esperando pela sua criatividade.</p>
+                        </div>
+                        `}
+                    </div>
+                </div>
+            `;
+        }
+
+        function openIdeiaForm(ideiaId = null) {
+            const isEdit = !!ideiaId;
+            const ideia = isEdit ? ideias.find(i => i.id === ideiaId) : {};
+            
+            document.getElementById('form-modal-title').textContent = isEdit ? 'Editar Ideia' : 'Nova Ideia Genial';
+            document.getElementById('form-modal-content-area').innerHTML = `
+                <form id="ideia-form" class="space-y-4">
+                    <div>
+                        <label class="font-medium text-sm">Título da Ideia *</label>
+                        <input type="text" id="ideia-titulo" class="form-input" required value="${ideia.titulo || ''}" placeholder="Ex: Sistema de gamificação para aulas">
+                    </div>
+                    
+                    <div>
+                        <label class="font-medium text-sm">Descrição Completa *</label>
+                        <textarea id="ideia-descricao" class="form-input" rows="5" required placeholder="Descreva sua ideia em detalhes...">${ideia.descricao || ''}</textarea>
+                    </div>
+                    
+                    <div>
+                        <label class="font-medium text-sm">Categoria</label>
+                        <select id="ideia-categoria" class="form-input">
+                            <option value="">Selecione uma categoria</option>
+                            <option value="Ensino & Pedagogia" ${ideia.categoria === 'Ensino & Pedagogia' ? 'selected' : ''}>Ensino & Pedagogia</option>
+                            <option value="Marketing & Vendas" ${ideia.categoria === 'Marketing & Vendas' ? 'selected' : ''}>Marketing & Vendas</option>
+                            <option value="Tecnologia & Sistemas" ${ideia.categoria === 'Tecnologia & Sistemas' ? 'selected' : ''}>Tecnologia & Sistemas</option>
+                            <option value="Experiência do Aluno" ${ideia.categoria === 'Experiência do Aluno' ? 'selected' : ''}>Experiência do Aluno</option>
+                            <option value="Processos Internos" ${ideia.categoria === 'Processos Internos' ? 'selected' : ''}>Processos Internos</option>
+                            <option value="Eventos & Atividades" ${ideia.categoria === 'Eventos & Atividades' ? 'selected' : ''}>Eventos & Atividades</option>
+                            <option value="Outras" ${ideia.categoria === 'Outras' ? 'selected' : ''}>Outras</option>
+                        </select>
+                    </div>
+                    
+                    <div class="flex justify-end gap-2">
+                        <button type="button" data-action="close-modal" class="secondary-btn">Cancelar</button>
+                        <button type="submit" class="primary-btn w-auto">${isEdit ? 'Salvar Alterações' : 'Compartilhar Ideia'}</button>
+                    </div>
+                </form>
+            `;
+
+            document.getElementById('ideia-form').onsubmit = (e) => saveIdeia(e, ideiaId);
+            document.getElementById('form-modal').classList.add('visible');
+        }
+
+        async function saveIdeia(event, ideiaId = null) {
+            event.preventDefault();
+            
+            const data = {
+                titulo: document.getElementById('ideia-titulo').value,
+                descricao: document.getElementById('ideia-descricao').value,
+                categoria: document.getElementById('ideia-categoria').value,
+                authorName: currentUserName,
+                authorId: userId,
+                likes: ideiaId ? ideias.find(i => i.id === ideiaId)?.likes || 0 : 0,
+                likedBy: ideiaId ? ideias.find(i => i.id === ideiaId)?.likedBy || [] : [],
+                status: ideiaId ? ideias.find(i => i.id === ideiaId)?.status || 'nova' : 'nova',
+                createdAt: ideiaId ? ideias.find(i => i.id === ideiaId)?.createdAt : new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+
+            if (!data.titulo || !data.descricao) {
+                showErrorMessage("Erro", "Título e descrição são obrigatórios.");
+                return;
+            }
+
+            try {
+                if (!db) {
+                    // Development mode
+                    if (ideiaId) {
+                        const index = ideias.findIndex(i => i.id === ideiaId);
+                        if (index !== -1) {
+                            ideias[index] = { ...ideias[index], ...data };
+                        }
+                    } else {
+                        const newIdeia = { ...data, id: Date.now().toString() };
+                        ideias.push(newIdeia);
+                    }
+                    renderMuralIdeiasSection();
+                    document.getElementById('form-modal').classList.remove('visible');
+                    showSuccessMessage("Sucesso!", ideiaId ? "Ideia atualizada!" : "Ideia compartilhada! Agora aguarde os likes da equipe.");
+                    return;
+                }
+
+                if (ideiaId) {
+                    const ideiaRef = doc(db, `artifacts/${appId}/public/data/ideias`, ideiaId);
+                    await updateDoc(ideiaRef, data);
+                } else {
+                    const ideiasRef = collection(db, `artifacts/${appId}/public/data/ideias`);
+                    await addDoc(ideiasRef, data);
+                }
+                
+                document.getElementById('form-modal').classList.remove('visible');
+                showSuccessMessage("Sucesso!", ideiaId ? "Ideia atualizada!" : "Ideia compartilhada! Agora aguarde os likes da equipe.");
+            } catch (error) {
+                console.error("Error saving ideia:", error);
+                showErrorMessage("Erro", "Erro ao salvar ideia: " + error.message);
+            }
+        }
+
+        async function toggleLikeIdeia(ideiaId) {
+            try {
+                const ideia = ideias.find(i => i.id === ideiaId);
+                if (!ideia) return;
+
+                const userLiked = ideia.likedBy && ideia.likedBy.includes(currentUserName);
+                let newLikedBy = ideia.likedBy || [];
+                let newLikes = ideia.likes || 0;
+
+                if (userLiked) {
+                    newLikedBy = newLikedBy.filter(name => name !== currentUserName);
+                    newLikes = Math.max(0, newLikes - 1);
+                } else {
+                    newLikedBy.push(currentUserName);
+                    newLikes += 1;
+                }
+
+                if (!db) {
+                    // Development mode
+                    const index = ideias.findIndex(i => i.id === ideiaId);
+                    if (index !== -1) {
+                        ideias[index].likes = newLikes;
+                        ideias[index].likedBy = newLikedBy;
+                        renderMuralIdeiasSection();
+                    }
+                    return;
+                }
+
+                const ideiaRef = doc(db, `artifacts/${appId}/public/data/ideias`, ideiaId);
+                await updateDoc(ideiaRef, {
+                    likes: newLikes,
+                    likedBy: newLikedBy
+                });
+            } catch (error) {
+                console.error("Error toggling like:", error);
+                showErrorMessage("Erro", "Erro ao curtir ideia: " + error.message);
+            }
+        }
+
+        // Profile Photo Functions
+        function openProfilePhotoForm() {
+            const currentPhotoUrl = document.getElementById('profile-picture').src;
+            
+            document.getElementById('form-modal-title').textContent = 'Alterar Foto de Perfil';
+            document.getElementById('form-modal-content-area').innerHTML = `
+                <form id="profile-photo-form" class="space-y-4">
+                    <div class="text-center mb-4">
+                        <img id="preview-profile-photo" src="${currentPhotoUrl}" alt="Preview" class="w-32 h-32 mx-auto rounded-full object-cover border-4 border-stone-200">
+                    </div>
+                    
+                    <div>
+                        <label class="font-medium text-sm">URL da Foto de Perfil *</label>
+                        <input type="url" id="profile-photo-url" class="form-input" required value="${currentPhotoUrl}" 
+                               placeholder="https://exemplo.com/minha-foto.jpg">
+                        <p class="text-xs text-stone-500 mt-1">Cole aqui o link direto da sua foto (jpg, png, gif)</p>
+                    </div>
+                    
+                    <div class="bg-blue-50 p-3 rounded-lg text-sm text-blue-700">
+                        <p class="font-medium mb-1">Dicas para conseguir o link da foto:</p>
+                        <ul class="text-xs space-y-1">
+                            <li>• WhatsApp Web: clique na foto > três pontos > copiar link</li>
+                            <li>• Google Drive: compartilhar > qualquer pessoa com o link > copiar</li>
+                            <li>• Instagram: use sites como "instadp.com" para pegar o link</li>
+                            <li>• Cloudinary, Imgur ou similar: copie o link direto da imagem</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="flex justify-end gap-2">
+                        <button type="button" data-action="close-modal" class="secondary-btn">Cancelar</button>
+                        <button type="submit" class="primary-btn w-auto">Salvar Foto</button>
+                    </div>
+                </form>
+            `;
+
+            // Add real-time preview
+            document.getElementById('profile-photo-url').addEventListener('input', (e) => {
+                const url = e.target.value;
+                if (url) {
+                    const preview = document.getElementById('preview-profile-photo');
+                    preview.src = url;
+                    preview.onerror = () => {
+                        preview.src = 'https://res.cloudinary.com/dqfi22uz0/image/upload/v1749349751/DBB440C2-684E-4DCF-9CD3-B2DDC18F1E53_3_vgocga.jpg';
+                    };
+                }
+            });
+
+            document.getElementById('profile-photo-form').onsubmit = (e) => saveProfilePhoto(e);
+            document.getElementById('form-modal').classList.add('visible');
+        }
+
+        async function saveProfilePhoto(event) {
+            event.preventDefault();
+            
+            const photoUrl = document.getElementById('profile-photo-url').value;
+            
+            if (!photoUrl) {
+                showErrorMessage("Erro", "URL da foto é obrigatória.");
+                return;
+            }
+
+            try {
+                // Test if the image loads before saving
+                const testImg = new Image();
+                testImg.onload = async () => {
+                    // Image loads successfully, save it
+                    await saveUserProfilePhoto(photoUrl);
+                    document.getElementById('profile-picture').src = photoUrl;
+                    document.getElementById('form-modal').classList.remove('visible');
+                    showSuccessMessage("Sucesso!", "Foto de perfil atualizada!");
+                };
+                testImg.onerror = () => {
+                    showErrorMessage("Erro", "Não foi possível carregar a imagem. Verifique se o link está correto e aponta para uma imagem válida.");
+                };
+                testImg.src = photoUrl;
+                
+            } catch (error) {
+                console.error("Error saving profile photo:", error);
+                showErrorMessage("Erro", "Erro ao salvar foto: " + error.message);
+            }
+        }
+
+        async function saveUserProfilePhoto(photoUrl) {
+            try {
+                if (!db) {
+                    // Development mode - save to local storage
+                    userProfiles[currentUserName] = { photoUrl, updatedAt: new Date().toISOString() };
+                    localStorage.setItem('slap-user-profiles', JSON.stringify(userProfiles));
+                    return;
+                }
+
+                // Save to Firebase
+                const userProfileRef = doc(db, `artifacts/${appId}/user-profiles`, currentUserName);
+                await setDoc(userProfileRef, {
+                    photoUrl,
+                    updatedAt: new Date().toISOString(),
+                    userId: userId
+                }, { merge: true });
+                
+            } catch (error) {
+                console.error("Error saving user profile photo:", error);
+                throw error;
+            }
+        }
+
+        async function loadUserProfilePhoto() {
+            try {
+                if (!db) {
+                    // Development mode - load from local storage
+                    const savedProfiles = localStorage.getItem('slap-user-profiles');
+                    if (savedProfiles) {
+                        userProfiles = JSON.parse(savedProfiles);
+                        const userProfile = userProfiles[currentUserName];
+                        if (userProfile && userProfile.photoUrl) {
+                            document.getElementById('profile-picture').src = userProfile.photoUrl;
+                        }
+                    }
+                    return;
+                }
+
+                // Load from Firebase
+                const userProfileRef = doc(db, `artifacts/${appId}/user-profiles`, currentUserName);
+                const userProfileDoc = await getDoc(userProfileRef);
+                
+                if (userProfileDoc.exists()) {
+                    const profileData = userProfileDoc.data();
+                    if (profileData.photoUrl) {
+                        document.getElementById('profile-picture').src = profileData.photoUrl;
+                    }
+                }
+                
+            } catch (error) {
+                console.error("Error loading user profile photo:", error);
+            }
         }
 
         // Dashboard helper functions
@@ -1395,9 +1927,9 @@
             }
             
             contentArea.innerHTML = `
-                <div id="campanhas-section" class="bg-gradient-to-br from-yellow-50 to-orange-50 p-6 rounded-xl shadow-sm border border-yellow-200">
+                <div id="campanhas-section" class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
                     <div class="text-right mb-6">
-                        <button class="primary-btn w-auto shadow-md hover:shadow-lg transition-shadow" data-action="add-campanha">+ Adicionar Campanha</button>
+                        <button class="primary-btn w-auto" data-action="add-campanha">+ Adicionar Campanha</button>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         ${events.map(c => `
@@ -2042,11 +2574,16 @@
         // --- MODAL & FORM FUNCTIONS ---
         function clearModalHeaderButtons() {
             const header = document.getElementById('modal-header-container');
+            if (!header) return;
+            
             const title = header.querySelector('#form-modal-title');
             const closeBtn = header.querySelector('.modal-close-btn');
-            header.innerHTML = '';
-            header.appendChild(title);
-            header.appendChild(closeBtn);
+            
+            if (title && closeBtn) {
+                header.innerHTML = '';
+                header.appendChild(title);
+                header.appendChild(closeBtn);
+            }
         }
         function closeFormModal() { 
             const modal = document.getElementById('form-modal');
@@ -3992,18 +4529,29 @@
                 return;
             }
 
-            if (!confirm('Tem certeza que deseja apagar este evento?')) {
+            if (!confirm('Tem certeza que deseja excluir este evento?')) {
                 return;
             }
 
-            // Remove from calendarEvents array and localStorage
-            calendarEvents = calendarEvents.filter(e => e.id !== eventId);
-            saveCalendarEvents();
+            if (!db) {
+                calendarEvents = calendarEvents.filter(e => e.id !== eventId);
+                renderCalendar();
+                document.getElementById('form-modal').classList.remove('visible');
+                showSuccessMessage("Sucesso!", "Evento excluído com sucesso.");
+                return;
+            }
 
-            // Close modal and refresh calendar
-            document.getElementById('form-modal').classList.remove('visible');
-            renderCalendar();
-            showSuccessMessage("Sucesso!", "Evento apagado com sucesso.");
+            try {
+                const eventDoc = doc(db, `artifacts/${appId}/public/data/calendar-events`, eventId);
+                await deleteDoc(eventDoc);
+                
+                // Close modal and show success message
+                document.getElementById('form-modal').classList.remove('visible');
+                showSuccessMessage("Sucesso!", "Evento excluído com sucesso.");
+            } catch (error) {
+                console.error("Error deleting calendar event:", error);
+                showErrorMessage("Erro", "Erro ao excluir evento: " + error.message);
+            }
         }
 
         function renderCalendarioPedagogicoSection() {
@@ -4524,48 +5072,46 @@
             if (!event) return;
 
             const tiposText = event.tipos && event.tipos.length > 0 ? event.tipos.join(', ') : 'Não especificado';
-            const linkText = event.link ? `<a href="${event.link}" target="_blank" class="text-blue-600 hover:underline">Abrir Link</a>` : 'Não informado';
+            const linkText = event.linkUtil ? `<a href="${event.linkUtil}" target="_blank" class="text-blue-600 hover:underline">Abrir Link Útil</a>` : 'Não informado';
+            const referencesText = event.linkReferencia1 || event.linkReferencia2 ? 
+                `${event.linkReferencia1 ? `<a href="${event.linkReferencia1}" target="_blank" class="text-blue-600 hover:underline block">Referência 1</a>` : ''}
+                 ${event.linkReferencia2 ? `<a href="${event.linkReferencia2}" target="_blank" class="text-blue-600 hover:underline block">Referência 2</a>` : ''}` : 'Nenhuma referência';
 
             const modal = document.getElementById('form-modal');
             modal.innerHTML = `
                 <div class="modal-content max-w-lg">
                     <div class="modal-header">
-                        <h4>Detalhes do Evento Marketing</h4>
-                        <button data-action="close-calendar-modal" class="modal-close-btn">&times;</button>
+                        <h4>Detalhes do Evento de Marketing</h4>
+                        <button class="modal-close-btn" data-action="close-modal">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                        </button>
                     </div>
-                    <div class="space-y-4">
+                    <div class="p-6 space-y-4">
                         <div>
-                            <h5 class="font-semibold">Título:</h5>
-                            <p>${event.title}</p>
+                            <h3 class="text-xl font-semibold text-stone-800 mb-4">${event.title}</h3>
                         </div>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <h5 class="font-semibold">Data:</h5>
-                                <p>${new Date(event.date + 'T00:00:00').toLocaleDateString('pt-BR')}</p>
+                        <div class="grid grid-cols-1 gap-3 text-sm">
+                            <div><strong>Data:</strong> ${new Date(event.date + 'T00:00:00').toLocaleDateString('pt-BR')}</div>
+                            ${event.time ? `<div><strong>Horário:</strong> ${event.time}</div>` : ''}
+                            <div><strong>País:</strong> <span class="inline-block px-2 py-1 rounded text-xs bg-blue-100 text-blue-700">${event.country || 'Brasil'}</span></div>
+                            <div><strong>Tipos de Conteúdo:</strong> 
+                                <div class="flex flex-wrap gap-1 mt-1">
+                                    ${event.tipos ? event.tipos.map(tipo => `<span class="inline-block px-2 py-1 rounded text-xs bg-purple-100 text-purple-700">${tipo}</span>`).join('') : '<span class="text-gray-500">Não especificado</span>'}
+                                </div>
                             </div>
-                            <div>
-                                <h5 class="font-semibold">Horário:</h5>
-                                <p>${event.time || 'Não especificado'}</p>
-                            </div>
+                            ${event.description ? `<div><strong>Descrição:</strong> <p class="mt-1 text-stone-600">${event.description}</p></div>` : ''}
+                            <div><strong>Link Útil:</strong> ${linkText}</div>
+                            <div><strong>Links de Referência:</strong> <div class="mt-1">${referencesText}</div></div>
                         </div>
-                        <div>
-                            <h5 class="font-semibold">Tipos de Conteúdo:</h5>
-                            <p>${tiposText}</p>
+                        <div class="flex justify-end gap-2 pt-4 border-t">
+                            ${['admin', 'am'].includes(currentUserRole) ? `
+                                <button class="danger-btn" onclick="deleteMarketingEvent('${event.id}')">Excluir</button>
+                                <button class="secondary-btn" onclick="openMarketingEventForm('${event.id}')">Editar</button>
+                            ` : ''}
+                            <button class="primary-btn w-auto" data-action="close-modal">Fechar</button>
                         </div>
-                        <div>
-                            <h5 class="font-semibold">Link Útil:</h5>
-                            <p>${linkText}</p>
-                        </div>
-                        <div>
-                            <h5 class="font-semibold">Descrição:</h5>
-                            <p>${event.description || 'Sem descrição'}</p>
-                        </div>
-                        ${['admin', 'am'].includes(currentUserRole) ? `
-                        <div class="flex justify-end gap-2 pt-4">
-                            <button data-action="edit-marketing-event" data-id="${event.id}" class="primary-btn w-auto">Editar</button>
-                            <button onclick="deleteMarketingEvent('${event.id}')" class="danger-btn w-auto">Excluir</button>
-                        </div>
-                        ` : ''}
                     </div>
                 </div>
             `;
@@ -6061,12 +6607,16 @@
 
         function exportAlunosDoc() {
             let studentsList = '';
-            const activeStudents = students.filter(s => s.status === 'Ativo');
-            studentsList = activeStudents.map(s => `
+            // Export all students (not just active ones) to have complete data
+            const allStudents = students.sort((a, b) => a.name.localeCompare(b.name));
+            studentsList = allStudents.map(s => `
                 <tr>
-                    <td>${s.name}</td>
-                    <td>${s.status}</td>
+                    <td class="student-name">${s.name}</td>
+                    <td>${s.status || 'N/A'}</td>
+                    <td>${s.modalidade || 'TURMA'}</td>
                     <td>R$ ${parseFloat(s.amountPaid || 0).toFixed(2)}</td>
+                    <td>${s.tipoAssinatura || 'N/A'}</td>
+                    <td>${s.quantidadeParcelas || 'N/A'}</td>
                     <td>${s.responsibleName || 'N/A'}</td>
                     <td>${s.responsibleEmail || 'N/A'}</td>
                     <td>${s.responsiblePhone || 'N/A'}</td>
@@ -6075,11 +6625,12 @@
                     <td>${s.level || 'N/A'}</td>
                     <td>${s.birthDate || 'N/A'}</td>
                     <td>${s.address || 'N/A'}</td>
+                    <td>${s.indicacao || 'N/A'}</td>
                     <td>${s.observations || 'N/A'}</td>
                 </tr>
             `).join('');
 
-            if (!studentsList) { studentsList = '<tr><td colspan="12">Nenhum aluno ativo encontrado.</td></tr>'; }
+            if (!studentsList) { studentsList = '<tr><td colspan="16">Nenhum aluno encontrado.</td></tr>'; }
 
             const docHtml = `
                 <!DOCTYPE html>
@@ -6104,17 +6655,21 @@
                     </style>
                 </head>
                 <body>
-                    <h1>Lista Completa de Alunos Ativos - SLAP</h1>
+                    <h1>Lista Completa de Alunos - SLAP</h1>
                     <div class="header-info">
                         <p>Data de Exportação: ${new Date().toLocaleDateString('pt-BR')}</p>
-                        <p>Total de Alunos Ativos: ${activeStudents.length}</p>
+                        <p>Total de Alunos: ${allStudents.length}</p>
+                        <p>Ativos: ${allStudents.filter(s => s.status === 'Ativo').length} | Cancelados: ${allStudents.filter(s => s.status === 'Cancelado').length} | Outros: ${allStudents.filter(s => s.status !== 'Ativo' && s.status !== 'Cancelado').length}</p>
                     </div>
                     <table>
                         <thead>
                             <tr>
                                 <th>Nome do Aluno</th>
                                 <th>Status</th>
+                                <th>Modalidade</th>
                                 <th>Valor Pago</th>
+                                <th>Tipo Assinatura</th>
+                                <th>Qtd. Parcelas</th>
                                 <th>Responsável</th>
                                 <th>Email Responsável</th>
                                 <th>Telefone Responsável</th>
@@ -6123,6 +6678,7 @@
                                 <th>Nível</th>
                                 <th>Data Nascimento</th>
                                 <th>Endereço</th>
+                                <th>Indicação</th>
                                 <th>Observações</th>
                             </tr>
                         </thead>
@@ -6237,7 +6793,7 @@
             return fortuneCookiePhrases[phraseIndex];
         }
 
-        let monthlyHighlight = null;
+
 
         function renderFortuneCookie() {
             const container = document.getElementById('fortune-cookie-content');
@@ -6266,154 +6822,9 @@
             `;
         }
 
-        async function renderMonthlyHighlight() {
-            const container = document.getElementById('monthly-highlight-content');
-            if (!container) return;
 
-            try {
-                // Fetch from PostgreSQL
-                const response = await fetch('/api/monthly-highlight');
-                if (response.ok) {
-                    const data = await response.json();
-                    // Map database fields to frontend expected format
-                    if (data) {
-                        monthlyHighlight = {
-                            name: data.name,
-                            photoUrl: data.photo_url,
-                            description: data.description,
-                            award: data.award,
-                            updatedAt: data.updated_at
-                        };
-                    } else {
-                        monthlyHighlight = null;
-                    }
-                } else {
-                    monthlyHighlight = null;
-                }
-            } catch (error) {
-                console.error('Error fetching monthly highlight:', error);
-                monthlyHighlight = null;
-            }
 
-            if (monthlyHighlight && monthlyHighlight.name) {
-                container.innerHTML = `
-                    <div class="highlight-card">
-                        <img src="${monthlyHighlight.photoUrl}" alt="${monthlyHighlight.name}" class="highlight-photo" onerror="this.src='https://via.placeholder.com/80x80/F1D24B/44403c?text=${monthlyHighlight.name.charAt(0)}'">
-                        <div class="highlight-info">
-                            <h5>${monthlyHighlight.name}</h5>
-                            <p>${monthlyHighlight.description}</p>
-                            ${monthlyHighlight.award ? `<div class="highlight-award"><strong>Premiação:</strong> ${monthlyHighlight.award}</div>` : ''}
-                        </div>
-                    </div>
-                `;
-            } else {
-                container.innerHTML = `
-                    <div class="highlight-empty">
-                        <svg class="w-12 h-12 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                        </svg>
-                        <p>Nenhum funcionário em destaque este mês</p>
-                        ${currentUserRole === 'admin' ? '<p class="text-xs mt-1">Clique em "Editar" para adicionar</p>' : ''}
-                    </div>
-                `;
-            }
-        }
 
-        function openMonthlyHighlightForm() {
-            const modal = document.getElementById('monthly-highlight-modal');
-            const form = document.getElementById('monthly-highlight-form');
-
-            if (!modal) {
-                console.error('Modal monthly-highlight-modal not found');
-                return;
-            }
-
-            // Pre-fill form if there's existing data
-            if (monthlyHighlight) {
-                const nameField = document.getElementById('highlight-name');
-                const photoField = document.getElementById('highlight-photo-url');
-                const descField = document.getElementById('highlight-description');
-                const awardField = document.getElementById('highlight-award');
-
-                if (nameField) nameField.value = monthlyHighlight.name || '';
-                if (photoField) photoField.value = monthlyHighlight.photoUrl || '';
-                if (descField) descField.value = monthlyHighlight.description || '';
-                if (awardField) awardField.value = monthlyHighlight.award || '';
-            } else if (form) {
-                form.reset();
-            }
-
-            modal.classList.add('visible');
-
-            if (form) {
-                form.onsubmit = async (e) => {
-                    e.preventDefault();
-                    await saveMonthlyHighlight();
-                };
-            }
-        }
-
-        async function saveMonthlyHighlight() {
-            const name = document.getElementById('highlight-name').value;
-            const photoUrl = document.getElementById('highlight-photo-url').value;
-            const description = document.getElementById('highlight-description').value;
-            const award = document.getElementById('highlight-award').value;
-
-            const highlightData = {
-                name: name,
-                photoUrl: photoUrl,
-                description: description,
-                award: award,
-                updatedAt: new Date().toISOString()
-            };
-
-            try {
-                console.log('Sending highlight data:', highlightData);
-                
-                const response = await fetch('/api/monthly-highlight', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(highlightData)
-                });
-
-                console.log('Response status:', response.status);
-                console.log('Response headers:', [...response.headers.entries()]);
-
-                if (response.ok) {
-                    const responseData = await response.json();
-                    console.log('Response data:', responseData);
-                    
-                    // Force re-fetch to get the latest data with correct field mapping
-                    await renderMonthlyHighlight();
-                    showSuccessMessage("Sucesso!", "Destaque do mês atualizado com sucesso.");
-                    
-                    // Reset form safely
-                    const form = document.getElementById('monthly-highlight-form');
-                    if (form) {
-                        form.reset();
-                    }
-                    
-                    // Close modal
-                    const modal = document.getElementById('monthly-highlight-modal');
-                    if (modal) {
-                        modal.classList.remove('visible');
-                    }
-                } else {
-                    const errorText = await response.text();
-                    console.error('Server response error:', response.status, errorText);
-                    throw new Error(`Server error ${response.status}: ${errorText}`);
-                }
-            } catch (error) {
-                console.error('Full error details:', error);
-                if (error.name === 'TypeError' && error.message.includes('fetch')) {
-                    showErrorMessage("Erro de Conexão", "Não foi possível conectar ao servidor. Verifique sua conexão.");
-                } else {
-                    showErrorMessage("Erro", "Falha ao salvar o destaque do mês: " + error.message);
-                }
-            }
-        }
 
         // --- Welcome Message Functions ---
         function extractNameFromEmail(email) {
@@ -6580,16 +6991,71 @@
         }
 
         function viewCalendarEvent(eventId) {
-            // First check calendarEvents, then check events array
-            let event = calendarEvents.find(e => e.id === eventId);
-            if (!event) {
-                event = events.find(e => e.id === eventId);
-            }
+            const event = calendarEvents.find(e => e.id === eventId);
+            if (!event) return;
 
-            if (event) {
-                // Use openEventModal to show view with delete option
-                openEventModal(eventId);
-            }
+            const timeText = event.time ? `<strong>Horário:</strong> ${event.time}` : '';
+            const descriptionText = event.description ? `<strong>Descrição:</strong> ${event.description}` : 'Nenhuma descrição disponível';
+            const typeText = getEventTypeLabel(event.type);
+
+            const modal = document.getElementById('form-modal');
+            modal.innerHTML = `
+                <div class="modal-content max-w-lg">
+                    <div class="modal-header">
+                        <h4>Detalhes do Evento</h4>
+                        <button class="modal-close-btn" data-action="close-modal">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="p-6 space-y-4">
+                        <div>
+                            <h3 class="text-xl font-semibold text-stone-800 mb-4">${event.title}</h3>
+                        </div>
+                        <div class="grid grid-cols-1 gap-3 text-sm">
+                            <div><strong>Data:</strong> ${new Date(event.date + 'T00:00:00').toLocaleDateString('pt-BR')}</div>
+                            ${timeText ? `<div>${timeText}</div>` : ''}
+                            <div><strong>Tipo:</strong> <span class="inline-block px-2 py-1 rounded text-xs bg-${getEventTypeColor(event.type)}-100 text-${getEventTypeColor(event.type)}-700">${typeText}</span></div>
+                            <div class="mt-4">
+                                <div>${descriptionText}</div>
+                            </div>
+                        </div>
+                        <div class="flex justify-end gap-2 pt-4 border-t">
+                            ${['admin', 'pedagogico'].includes(currentUserRole) ? `
+                                <button class="danger-btn" onclick="deleteCalendarEvent('${event.id}')">Excluir</button>
+                                <button class="secondary-btn" onclick="openCalendarEventForm('${event.id}')">Editar</button>
+                            ` : ''}
+                            <button class="primary-btn w-auto" data-action="close-modal">Fechar</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            modal.classList.add('visible');
+        }
+
+        function getEventTypeLabel(type) {
+            const types = {
+                'evento': 'Evento Geral',
+                'gravacao': 'Gravação',
+                'lembrete': 'Lembrete',
+                'aula-extra': 'Aula Extra',
+                'data-comemorativa': 'Data Comemorativa',
+                'reuniao': 'Reunião'
+            };
+            return types[type] || type;
+        }
+
+        function getEventTypeColor(type) {
+            const colors = {
+                'evento': 'purple',
+                'gravacao': 'green',
+                'lembrete': 'yellow',
+                'aula-extra': 'red',
+                'data-comemorativa': 'blue',
+                'reuniao': 'gray'
+            };
+            return colors[type] || 'gray';
         }
 
         function renderMenu() {
@@ -6597,6 +7063,7 @@
             const menuItems = [
                 { key: 'inicio', label: 'Início', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>', roles: null },
                 { key: 'dojo', label: 'Dojo', icon: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-3"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>', roles: null },
+                { key: 'mural-ideias', label: 'Mural de Ideias', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>', roles: null },
                 { key: 'alunos', label: 'Alunos', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>', roles: ['admin', 'pedagogico', 'financeiro', 'ap'] },
                 { key: 'turmas', label: 'Turmas', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>', roles: ['admin', 'pedagogico', 'teacher', 'ap'] },
                 { key: 'vips', label: 'VIPs', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20a6 6 0 0 0-12 0"/><circle cx="12" cy="10" r="4"/><circle cx="12" cy="12" r="10"/></svg>', roles: ['admin', 'pedagogico', 'teacher', 'ap'] },
@@ -6623,7 +7090,7 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            const pageRenderers = { 'inicio': renderInicioSection, 'alunos': renderAlunosSection, 'turmas': renderTurmasSection, 'vips': renderVipsSection, 'campanhas': () => renderCampanhasSection(), 'orcamentos': renderOrcamentosSection, 'tarefas': renderTarefasSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection, 'cancelamentos': renderCancelamentosSection, 'colaboradores': renderColaboradoresSection, 'cps': renderCPsSection, 'dojo': renderDojoSection, 'calendario-pedagogico': renderCalendarioPedagogicoSection, 'calendario-marketing': renderCalendarioMarketingSection, 'desafio-pedagogico': renderDesafioPedagogicoSection, 'diretrizes': renderDiretrizesSection };
+            const pageRenderers = { 'inicio': renderInicioSection, 'alunos': renderAlunosSection, 'turmas': renderTurmasSection, 'vips': renderVipsSection, 'campanhas': () => renderCampanhasSection(), 'orcamentos': renderOrcamentosSection, 'tarefas': renderTarefasSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection, 'cancelamentos': renderCancelamentosSection, 'colaboradores': renderColaboradoresSection, 'cps': renderCPsSection, 'dojo': renderDojoSection, 'calendario-pedagogico': renderCalendarioPedagogicoSection, 'calendario-marketing': renderCalendarioMarketingSection, 'desafio-pedagogico': renderDesafioPedagogicoSection, 'diretrizes': renderDiretrizesSection, 'mural-ideias': renderMuralIdeiasSection };
 
             document.body.addEventListener('click', (event) => {
                 // Close modals when clicking overlay or close button
@@ -6688,6 +7155,10 @@
                         'add-task': openTaskForm,
                         'add-collaborator': () => openCollaboratorForm(),
                         'edit-collaborator': () => openCollaboratorForm(id),
+                        'edit-monthly-highlight': openMonthlyHighlightForm,
+                        'add-ideia': openIdeiaForm,
+                        'like-ideia': () => toggleLikeIdeia(id),
+                        'edit-profile-photo': openProfilePhotoForm,
                         'add-schedule': openScheduleForm,
                         'add-break': openBreakForm,
                         'view-schedule': () => openScheduleForm(id),
