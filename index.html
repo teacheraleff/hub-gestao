@@ -2722,6 +2722,13 @@
                     await addDoc(collection(db, `artifacts/${appId}/public/data/students`), data);
                     showSuccessMessage("Sucesso!", "Novo aluno cadastrado.");
                 }
+                
+                closeModal();
+                // Re-render the current section if needed
+                const activePageId = contentArea.firstElementChild?.id;
+                if (activePageId === 'alunos-section') {
+                    renderAlunosSection();
+                }
             } catch (error) {
                 console.error("Error saving student:", error);
                 showErrorMessage("Erro", "Falha ao salvar os dados do aluno.");
@@ -5137,9 +5144,9 @@
                             <div><strong>Link:</strong> ${linkText}</div>
                         </div>
                         <div class="flex justify-end gap-2 pt-4 border-t">
-                            ${['admin', 'am'].includes(currentUserRole) ? `
+                            ${['admin', 'am', 'pedagogico', 'financeiro'].includes(currentUserRole) ? `
                                 <button class="danger-btn" onclick="deleteMarketingEvent('${event.id}')">Excluir</button>
-                                <button class="secondary-btn" onclick="openMarketingEventForm('${event.id}')">Editar</button>
+                                <button class="secondary-btn" data-action="edit-marketing-event" data-id="${event.id}">Editar</button>
                             ` : ''}
                             <button class="primary-btn w-auto" data-action="close-modal">Fechar</button>
                         </div>
