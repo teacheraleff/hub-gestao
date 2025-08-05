@@ -2079,8 +2079,8 @@
                                     <input type="checkbox" id="finalizada-${c.id}" ${c.finalizada ? 'checked' : ''} 
                                            class="h-4 w-4 rounded finalizada-checkbox" 
                                            data-campanha-id="${c.id}"
-                                           onclick="event.stopPropagation(); toggleCampanhaFinalizada('${c.id}', this.checked)">
-                                    <label for="finalizada-${c.id}" class="ml-2 text-sm ${c.finalizada ? 'text-gray-500 font-medium' : 'text-stone-600'}">
+                                           onchange="event.stopPropagation(); console.log('Checkbox changed for campaign:', '${c.id}', this.checked); toggleCampanhaFinalizada('${c.id}', this.checked);">
+                                    <label for="finalizada-${c.id}" class="ml-2 text-sm ${c.finalizada ? 'text-gray-500 font-medium' : 'text-stone-600'} cursor-pointer">
                                         ${c.finalizada ? 'Finalizada' : 'Marcar como finalizada'}
                                     </label>
                                 </div>
@@ -3521,6 +3521,7 @@
         }
 
         async function toggleCampanhaFinalizada(campanhaId, finalizada) {
+            console.log('toggleCampanhaFinalizada called with:', { campanhaId, finalizada });
             try {
                 const data = { finalizada: finalizada, updatedAt: serverTimestamp() };
                 
@@ -6900,6 +6901,7 @@
         window.nextQuestion = nextQuestion;
         window.startQuiz = startQuiz;
         window.checkTimeConflict = checkTimeConflict;
+        window.toggleCampanhaFinalizada = toggleCampanhaFinalizada;
         window.showSection = function(sectionName) {
             const navItem = document.querySelector(`[data-target="${sectionName}"]`);
             if (navItem) navItem.click();
