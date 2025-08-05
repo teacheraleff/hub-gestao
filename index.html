@@ -428,7 +428,7 @@
                             </div>
                         </header>
                         <div class="flex items-center space-x-2">
-                            <button data-action="export-backup" class="text-green-700 hover:text-green-900 p-2 rounded-lg transition-colors bg-white/20 hover:bg-white/30" title="Backup dos Dados do Firebase - Segurança Total">
+                            <button id="backup-button" data-action="export-backup" class="hidden text-green-700 hover:text-green-900 p-2 rounded-lg transition-colors bg-white/20 hover:bg-white/30" title="Backup dos Dados do Firebase - Segurança Total">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"/>
                                 </svg>
@@ -581,6 +581,16 @@
                     setupFirestoreListeners();
                     updateWelcomeMessages(currentUserName);
                     showHubView();
+                    
+                    // Show/hide backup button based on user role
+                    const backupButton = document.getElementById('backup-button');
+                    if (backupButton) {
+                        if (['admin', 'pedagogico', 'financeiro'].includes(currentUserRole)) {
+                            backupButton.classList.remove('hidden');
+                        } else {
+                            backupButton.classList.add('hidden');
+                        }
+                    }
                 } else {
                     showPendingView();
                 }
@@ -4647,59 +4657,57 @@
             setTimeout(createDataBackup, 60 * 1000);
         }
         
-        async function createDataBackup() {
+        function createDataBackup() {
             try {
-                // Get fresh data from Firebase if available
-                if (db && !window.isDevelopmentMode) {
-                    await Promise.all([
-                        loadStudents(),
-                        loadTurmas(),
-                        loadVips(),
-                        loadCollaborators(),
-                        loadCampanhas(),
-                        loadBudgets(),
-                        loadTasks(),
-                        loadSchedules(),
-                        loadExpenses(),
-                        loadCancellations(),
-                        loadCPs(),
-                        loadIdeias()
-                    ]);
-                }
+                // Ensure arrays exist
+                const studentsArray = students || [];
+                const turmasArray = turmas || [];
+                const vipsArray = vips || [];
+                const collaboratorsArray = collaborators || [];
+                const eventsArray = events || [];
+                const budgetsArray = budgets || [];
+                const tasksArray = tasks || [];
+                const schedulesArray = schedules || [];
+                const expensesArray = expenses || [];
+                const cancellationsArray = cancellations || [];
+                const cpsArray = cps || [];
+                const ideiasArray = ideias || [];
+
+                const totalRecordsObj = {
+                    students: studentsArray.length,
+                    turmas: turmasArray.length,
+                    vips: vipsArray.length,
+                    collaborators: collaboratorsArray.length,
+                    events: eventsArray.length,
+                    budgets: budgetsArray.length,
+                    tasks: tasksArray.length,
+                    schedules: schedulesArray.length,
+                    expenses: expensesArray.length,
+                    cancellations: cancellationsArray.length,
+                    cps: cpsArray.length,
+                    ideias: ideiasArray.length
+                };
 
                 const backupData = {
                     timestamp: new Date().toISOString(),
                     projectName: "SLAP Hub - Sistema de Gestão",
                     version: "2.0",
-                    totalRecords: {
-                        students: students.length,
-                        turmas: turmas.length,
-                        vips: vips.length,
-                        collaborators: collaborators.length,
-                        events: events.length,
-                        budgets: budgets.length,
-                        tasks: tasks.length,
-                        schedules: schedules.length,
-                        expenses: expenses.length,
-                        cancellations: cancellations.length,
-                        cps: cps.length,
-                        ideias: ideias.length
-                    },
+                    totalRecords: totalRecordsObj,
                     data: {
-                        students: students,
-                        turmas: turmas,
-                        vips: vips,
-                        collaborators: collaborators,
-                        events: events,
-                        budgets: budgets,
-                        tasks: tasks,
-                        schedules: schedules,
-                        expenses: expenses,
-                        cancellations: cancellations,
-                        cps: cps,
-                        ideias: ideias,
-                        userProfiles: userProfiles,
-                        monthlyHighlight: monthlyHighlight
+                        students: studentsArray,
+                        turmas: turmasArray,
+                        vips: vipsArray,
+                        collaborators: collaboratorsArray,
+                        events: eventsArray,
+                        budgets: budgetsArray,
+                        tasks: tasksArray,
+                        schedules: schedulesArray,
+                        expenses: expensesArray,
+                        cancellations: cancellationsArray,
+                        cps: cpsArray,
+                        ideias: ideiasArray,
+                        userProfiles: userProfiles || {},
+                        monthlyHighlight: monthlyHighlight || {}
                     }
                 };
                 
@@ -4710,7 +4718,8 @@
                 // Keep only last 7 days of backups
                 cleanOldBackups();
                 
-                console.log('Backup Firebase automático criado:', backupKey, `- ${Object.values(backupData.totalRecords).reduce((a,b) => a+b, 0)} registros`);
+                const totalCount = Object.values(totalRecordsObj).reduce((a,b) => a+b, 0);
+                console.log('Backup Firebase automático criado:', backupKey, `- ${totalCount} registros`);
             } catch (error) {
                 console.warn('Erro ao criar backup do Firebase:', error);
             }
@@ -4725,29 +4734,28 @@
             }
         }
         
-        async function exportDataBackup() {
+        function exportDataBackup() {
             try {
-                // Get fresh data from Firebase if available
-                if (db && !window.isDevelopmentMode) {
-                    await Promise.all([
-                        loadStudents(),
-                        loadTurmas(),
-                        loadVips(),
-                        loadCollaborators(),
-                        loadCampanhas(),
-                        loadBudgets(),
-                        loadTasks(),
-                        loadSchedules(),
-                        loadExpenses(),
-                        loadCancellations(),
-                        loadCPs(),
-                        loadIdeias()
-                    ]);
-                }
+                console.log('Iniciando backup manual...');
+                
+                // Ensure arrays exist
+                const studentsArray = students || [];
+                const turmasArray = turmas || [];
+                const vipsArray = vips || [];
+                const collaboratorsArray = collaborators || [];
+                const eventsArray = events || [];
+                const budgetsArray = budgets || [];
+                const tasksArray = tasks || [];
+                const schedulesArray = schedules || [];
+                const expensesArray = expenses || [];
+                const cancellationsArray = cancellations || [];
+                const cpsArray = cps || [];
+                const ideiasArray = ideias || [];
 
-                const totalRecords = students.length + turmas.length + vips.length + collaborators.length + 
-                                   events.length + budgets.length + tasks.length + schedules.length + 
-                                   expenses.length + cancellations.length + cps.length + ideias.length;
+                const totalRecords = studentsArray.length + turmasArray.length + vipsArray.length + 
+                                   collaboratorsArray.length + eventsArray.length + budgetsArray.length + 
+                                   tasksArray.length + schedulesArray.length + expensesArray.length + 
+                                   cancellationsArray.length + cpsArray.length + ideiasArray.length;
 
                 const backupData = {
                     exportInfo: {
@@ -4758,37 +4766,39 @@
                         description: "Backup completo dos dados do Firebase - SLAP Speaking Like a Pro",
                         totalRecords: totalRecords,
                         recordCount: {
-                            students: students.length,
-                            turmas: turmas.length,
-                            vips: vips.length,
-                            collaborators: collaborators.length,
-                            campanhas: events.length,
-                            budgets: budgets.length,
-                            tasks: tasks.length,
-                            schedules: schedules.length,
-                            expenses: expenses.length,
-                            cancellations: cancellations.length,
-                            cps: cps.length,
-                            ideias: ideias.length
+                            students: studentsArray.length,
+                            turmas: turmasArray.length,
+                            vips: vipsArray.length,
+                            collaborators: collaboratorsArray.length,
+                            campanhas: eventsArray.length,
+                            budgets: budgetsArray.length,
+                            tasks: tasksArray.length,
+                            schedules: schedulesArray.length,
+                            expenses: expensesArray.length,
+                            cancellations: cancellationsArray.length,
+                            cps: cpsArray.length,
+                            ideias: ideiasArray.length
                         }
                     },
                     firebaseData: {
-                        students: students,
-                        turmas: turmas,
-                        vips: vips,
-                        collaborators: collaborators,
-                        events: events,
-                        budgets: budgets,
-                        tasks: tasks,
-                        schedules: schedules,
-                        expenses: expenses,
-                        cancellations: cancellations,
-                        cps: cps,
-                        ideias: ideias,
-                        userProfiles: userProfiles,
-                        monthlyHighlight: monthlyHighlight
+                        students: studentsArray,
+                        turmas: turmasArray,
+                        vips: vipsArray,
+                        collaborators: collaboratorsArray,
+                        events: eventsArray,
+                        budgets: budgetsArray,
+                        tasks: tasksArray,
+                        schedules: schedulesArray,
+                        expenses: expensesArray,
+                        cancellations: cancellationsArray,
+                        cps: cpsArray,
+                        ideias: ideiasArray,
+                        userProfiles: userProfiles || {},
+                        monthlyHighlight: monthlyHighlight || {}
                     }
                 };
+                
+                console.log(`Preparando backup com ${totalRecords} registros...`);
                 
                 const dataStr = JSON.stringify(backupData, null, 2);
                 const dataBlob = new Blob([dataStr], {type: 'application/json'});
@@ -4796,12 +4806,16 @@
                 const link = document.createElement('a');
                 link.href = URL.createObjectURL(dataBlob);
                 link.download = `SLAP-Firebase-Backup-${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(link);
                 link.click();
+                document.body.removeChild(link);
                 
                 showSuccessMessage("Backup Firebase Exportado", `Arquivo com ${totalRecords} registros baixado com sucesso!`);
+                console.log('Backup manual concluído com sucesso!');
+                
             } catch (error) {
-                console.error('Erro ao exportar backup:', error);
-                showErrorMessage("Erro no Backup", "Falha ao criar arquivo de backup. Tente novamente.");
+                console.error('Erro detalhado ao exportar backup:', error);
+                showErrorMessage("Erro no Backup", `Falha ao criar arquivo: ${error.message}`);
             }
         }
         
@@ -7226,6 +7240,16 @@
                         <div class="text-sm font-medium">Bem-vindo(a),</div>
                         <div class="text-lg font-bold">${firstName}</div>
                     `;
+                }
+                
+                // Show/hide backup button based on user role
+                const backupButton = document.getElementById('backup-button');
+                if (backupButton && currentUserRole) {
+                    if (['admin', 'pedagogico', 'financeiro'].includes(currentUserRole)) {
+                        backupButton.classList.remove('hidden');
+                    } else {
+                        backupButton.classList.add('hidden');
+                    }
                 }
             }
 
