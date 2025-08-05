@@ -1497,7 +1497,11 @@
         function getFilteredVips() {
             const searchTerm = document.getElementById('vip-search')?.value.toLowerCase() || '';
             const teacherFilter = document.getElementById('vip-teacher-filter')?.value || '';
-            const vipStudents = students.filter(s => s.modalidade === 'VIP');
+            // Only show students who have actual VIP records, not just VIP modality
+            const vipStudents = students.filter(s => {
+                const hasVipRecord = vips.find(v => v.studentId === s.id);
+                return s.modalidade === 'VIP' && hasVipRecord;
+            });
             let filteredVips = vipStudents;
 
             if (currentUserRole === 'teacher') {
