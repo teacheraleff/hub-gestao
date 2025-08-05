@@ -5083,10 +5083,7 @@
             if (!event) return;
 
             const tiposText = event.tipos && event.tipos.length > 0 ? event.tipos.join(', ') : 'Não especificado';
-            const linkText = event.linkUtil ? `<a href="${event.linkUtil}" target="_blank" class="text-blue-600 hover:underline">Abrir Link Útil</a>` : 'Não informado';
-            const referencesText = event.linkReferencia1 || event.linkReferencia2 ? 
-                `${event.linkReferencia1 ? `<a href="${event.linkReferencia1}" target="_blank" class="text-blue-600 hover:underline block">Referência 1</a>` : ''}
-                 ${event.linkReferencia2 ? `<a href="${event.linkReferencia2}" target="_blank" class="text-blue-600 hover:underline block">Referência 2</a>` : ''}` : 'Nenhuma referência';
+            const linkText = event.link ? `<a href="${event.link}" target="_blank" class="text-blue-600 hover:underline">Abrir Link</a>` : 'Não informado';
 
             const modal = document.getElementById('form-modal');
             modal.innerHTML = `
@@ -5113,8 +5110,7 @@
                                 </div>
                             </div>
                             ${event.description ? `<div><strong>Descrição:</strong> <p class="mt-1 text-stone-600">${event.description}</p></div>` : ''}
-                            <div><strong>Link Útil:</strong> ${linkText}</div>
-                            <div><strong>Links de Referência:</strong> <div class="mt-1">${referencesText}</div></div>
+                            <div><strong>Link:</strong> ${linkText}</div>
                         </div>
                         <div class="flex justify-end gap-2 pt-4 border-t">
                             ${['admin', 'am'].includes(currentUserRole) ? `
@@ -7259,7 +7255,7 @@
                 { key: 'vips', label: 'VIPs', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20a6 6 0 0 0-12 0"/><circle cx="12" cy="10" r="4"/><circle cx="12" cy="12" r="10"/></svg>', roles: ['admin', 'pedagogico', 'teacher', 'ap'] },
                 { key: 'grade', label: 'Grade', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" x2="16" y1="2" y2="6"></line><line x1="8" x2="8" y1="2" y2="6"></line><line x1="3" x2="21" y1="10" y2="10"></line></svg>', roles: ['admin', 'ap', 'pedagogico', 'financeiro', 'teacher'] },
                 { key: 'calendario-pedagogico', label: 'Calendário Pedagógico', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>', roles: ['admin', 'ap', 'pedagogico', 'financeiro', 'teacher', 'am'] },
-                { key: 'calendario-marketing', label: 'Calendário Marketing', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>', roles: ['admin', 'ap', 'am', 'financeiro'] },
+                { key: 'calendario-marketing', label: 'Calendário Marketing', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>', roles: ['admin', 'ap', 'am', 'financeiro', 'pedagogico'] },
                 { key: 'desafio-pedagogico', label: 'Desafio Pedagógico', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>', roles: ['admin', 'pedagogico', 'teacher', 'ap'] },
                 { key: 'diretrizes', label: 'Diretrizes', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14,2 14,8 20,8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10,9 9,9 8,9"></polyline></svg>', roles: ['admin', 'teacher', 'pedagogico'] },
                 { key: 'tarefas', label: 'Tarefas', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>', roles: ['admin', 'am', 'ap', 'pedagogico', 'financeiro', 'teacher'] },
