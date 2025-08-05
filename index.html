@@ -1476,6 +1476,7 @@
                 }
                 
                 teacherNameToFilter = teacherNameToFilter || originalTeacherName;
+                // For teachers, only show turmas assigned to them
                 filteredTurmas = turmas.filter(t => t.teacherName === teacherNameToFilter);
             } else if (teacherFilter) {
                 // Apply teacher filter for non-teacher users
@@ -1524,7 +1525,7 @@
                 
                 teacherNameToFilter = teacherNameToFilter || originalTeacherName;
                 
-                // For teachers, filter VIP students who have matching VIP records with their name
+                // For teachers, only show VIPs assigned to them
                 filteredVips = vipStudents.filter(student => {
                     const vipRecord = vips.find(v => v.studentId === student.id);
                     return vipRecord && vipRecord.teacherName === teacherNameToFilter;
@@ -1622,12 +1623,9 @@
                             <div>
                                 <h3 class="text-xl font-bold text-stone-800">${student.name}</h3>
                             </div>
-                            ${canManage ? `
                             <div class="flex gap-1">
                                 <button class="secondary-btn text-xs px-2 py-1" data-action="view-aluno" data-id="${student.id}" title="Ver Perfil">👤</button>
-                                ${vipRecord ? `<button class="secondary-btn text-xs px-2 py-1" data-action="edit-vip" data-id="${vipRecord.id}" title="Editar VIP">✏️</button>` : ''}
                             </div>
-                            ` : ''}
                         </div>
                         <p class="text-sm text-stone-600 mb-2"><strong>Status:</strong> <span class="status-tag status-${(student.status || 'pendente').toLowerCase()}">${student.status || 'Pendente'}</span></p>
                         ${vipRecord ? `<p class="text-sm text-stone-500 mb-2">Professor: ${teacher?.name || 'N/A'}</p>` : ''}
@@ -1635,7 +1633,10 @@
                         ${student.indicacao ? `<p class="text-sm text-stone-600"><strong>Indicação:</strong> ${student.indicacao}</p>` : ''}
                     </div>
                     <div class="mt-auto pt-4 border-t border-stone-100 flex gap-2">
-                        ${vipRecord && canShowPef ? `<button class="primary-btn !text-sm flex-1" data-action="open-vip-pef" data-id="${vipRecord.id}">PEF</button>` : ''}
+                        ${vipRecord ? `
+                            <button class="primary-btn !text-sm flex-1" data-action="open-vip-pef" data-id="${vipRecord.id}">PEF</button>
+                            ${canManage ? `<button class="secondary-btn !text-sm flex-1" data-action="edit-vip" data-id="${vipRecord.id}">Configurar</button>` : ''}
+                        ` : ''}
                     </div>
                 </div>`}).join('') || '<p class="col-span-full text-center py-10 text-stone-500">Nenhum aluno VIP encontrado.</p>';
         }
@@ -1868,12 +1869,9 @@
                                     <div>
                                         <h3 class="text-xl font-bold text-stone-800">${student.name}</h3>
                                     </div>
-                                    ${canManage ? `
                                     <div class="flex gap-1">
                                         <button class="secondary-btn text-xs px-2 py-1" data-action="view-aluno" data-id="${student.id}" title="Ver Perfil">👤</button>
-                                        ${vipRecord ? `<button class="secondary-btn text-xs px-2 py-1" data-action="edit-vip" data-id="${vipRecord.id}" title="Editar VIP">✏️</button>` : ''}
                                     </div>
-                                    ` : ''}
                                 </div>
                                 <p class="text-sm text-stone-600 mb-2"><strong>Status:</strong> <span class="status-tag status-${(student.status || 'pendente').toLowerCase()}">${student.status || 'Pendente'}</span></p>
                                 ${vipRecord ? `<p class="text-sm text-stone-500 mb-2">Professor: ${teacher?.name || 'N/A'}</p>` : ''}
@@ -1881,7 +1879,10 @@
                                 ${student.indicacao ? `<p class="text-sm text-stone-600"><strong>Indicação:</strong> ${student.indicacao}</p>` : ''}
                             </div>
                             <div class="mt-auto pt-4 border-t border-stone-100 flex gap-2">
-                                ${vipRecord && canShowPef ? `<button class="primary-btn !text-sm flex-1" data-action="open-vip-pef" data-id="${vipRecord.id}">PEF</button>` : ''}
+                                ${vipRecord ? `
+                                    <button class="primary-btn !text-sm flex-1" data-action="open-vip-pef" data-id="${vipRecord.id}">PEF</button>
+                                    ${canManage ? `<button class="secondary-btn !text-sm flex-1" data-action="edit-vip" data-id="${vipRecord.id}">Configurar</button>` : ''}
+                                ` : ''}
                             </div>
                         </div>`}).join('') || '<p class="col-span-full text-center py-10 text-stone-500">Nenhum aluno VIP encontrado.</p>'}
                     </div>
@@ -2717,12 +2718,43 @@
             }
 
             try {
+                let studentDocRef;
                 if (alunoId) {
                     await updateDoc(doc(db, `artifacts/${appId}/public/data/students`, alunoId), data);
+                    
+                    // Check if modalidade changed to VIP and create VIP record if needed
+                    const existingStudent = students.find(s => s.id === alunoId);
+                    if (data.modalidade === 'VIP' && existingStudent?.modalidade !== 'VIP') {
+                        const existingVipRecord = vips.find(v => v.studentId === alunoId);
+                        if (!existingVipRecord) {
+                            await addDoc(collection(db, `artifacts/${appId}/public/data/vips`), {
+                                studentId: alunoId,
+                                studentName: data.name,
+                                teacherId: null,
+                                teacherName: null,
+                                level: null,
+                                createdAt: serverTimestamp()
+                            });
+                        }
+                    }
+                    
                     showSuccessMessage("Sucesso!", "Dados do aluno atualizados.");
                 } else {
                     data.createdAt = serverTimestamp();
-                    await addDoc(collection(db, `artifacts/${appId}/public/data/students`), data);
+                    studentDocRef = await addDoc(collection(db, `artifacts/${appId}/public/data/students`), data);
+                    
+                    // If new student is VIP, create VIP record automatically
+                    if (data.modalidade === 'VIP') {
+                        await addDoc(collection(db, `artifacts/${appId}/public/data/vips`), {
+                            studentId: studentDocRef.id,
+                            studentName: data.name,
+                            teacherId: null,
+                            teacherName: null,
+                            level: null,
+                            createdAt: serverTimestamp()
+                        });
+                    }
+                    
                     showSuccessMessage("Sucesso!", "Novo aluno cadastrado.");
                 }
             } catch (error) {
