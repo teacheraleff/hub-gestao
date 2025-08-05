@@ -639,7 +639,8 @@
 
                 if (activePageId === 'inicio-section') renderInicioSection();
             });
-            getCollectionListener('events', events, renderCampanhasSection);
+            // Disabled automatic campanhas refresh to fix navigation issues
+            // getCollectionListener('events', events, renderCampanhasSection);
             getCollectionListener('schedules', schedules, () => {
                  if (contentArea.firstElementChild?.id === 'grade-section') renderGradeSection();
             });
@@ -2911,6 +2912,24 @@
             document.getElementById('form-modal').classList.add('visible');
         }
 
+        // Helper function to get students already allocated to other classes
+        function getStudentsAllocatedToOtherTurmas(excludeTurmaId = null) {
+            const allocatedStudentIds = new Set();
+            
+            turmas.forEach(turma => {
+                // Skip the current turma being edited
+                if (excludeTurmaId && turma.id === excludeTurmaId) return;
+                
+                if (turma.studentIds && Array.isArray(turma.studentIds)) {
+                    turma.studentIds.forEach(studentId => {
+                        allocatedStudentIds.add(studentId);
+                    });
+                }
+            });
+            
+            return allocatedStudentIds;
+        }
+
         function openTurmaForm(turmaId = null) {
             clearModalHeaderButtons();
             const turma = turmaId ? turmas.find(t => t.id === turmaId) : null;
@@ -2919,15 +2938,31 @@
             const teacherOptions = collaborators.filter(c => c.sectors?.includes('professor')).map(c => `<option value="${c.id}" data-name="${c.name}" ${turma?.teacherId === c.id ? 'selected' : ''}>${c.name}</option>`).join('');
             const levelOptions = cps.map(cp => `<option value="${cp.title}" ${turma?.level === cp.title ? 'selected' : ''}>${cp.title}</option>`).join('') + `<option value="outro">Outro (especificar)</option>`;
 
+            // Get students already allocated to other classes (excluding current class if editing)
+            const allocatedStudentIds = getStudentsAllocatedToOtherTurmas(turmaId);
+
             const studentCheckboxes = students
                 .filter(s => s.status === 'Ativo' && s.modalidade === 'TURMA')
                 .sort((a, b) => a.name.localeCompare(b.name))
-                .map(s => `
-                    <div class="flex items-center">
-                        <input type="checkbox" id="student-${s.id}" value="${s.id}" name="turma-students" class="h-4 w-4 rounded" ${(turma?.studentIds || []).includes(s.id) ? 'checked' : ''}>
-                        <label for="student-${s.id}" class="ml-2 text-sm">${s.name} <span class="text-xs text-stone-400">(TURMA)</span></label>
+                .map(s => {
+                    const isCurrentlyInThisTurma = (turma?.studentIds || []).includes(s.id);
+                    const isAllocatedToOtherTurma = allocatedStudentIds.has(s.id);
+                    const isDisabled = isAllocatedToOtherTurma && !isCurrentlyInThisTurma;
+                    const otherTurma = isAllocatedToOtherTurma ? turmas.find(t => t.id !== turmaId && (t.studentIds || []).includes(s.id)) : null;
+                    
+                    return `
+                    <div class="flex items-center ${isDisabled ? 'opacity-50' : ''}">
+                        <input type="checkbox" id="student-${s.id}" value="${s.id}" name="turma-students" 
+                               class="h-4 w-4 rounded" 
+                               ${isCurrentlyInThisTurma ? 'checked' : ''} 
+                               ${isDisabled ? 'disabled' : ''}>
+                        <label for="student-${s.id}" class="ml-2 text-sm ${isDisabled ? 'cursor-not-allowed text-stone-400' : 'cursor-pointer'}">
+                            ${s.name} 
+                            <span class="text-xs text-stone-400">(TURMA)</span>
+                            ${isDisabled ? `<span class="text-xs text-red-500"> - Já alocado em: ${otherTurma?.name || 'Outra turma'}</span>` : ''}
+                        </label>
                     </div>
-                `).join('');
+                `}).join('');
 
             document.getElementById('form-modal-content-area').innerHTML = `
                 <form id="form-modal-body" class="space-y-4">
@@ -2946,7 +2981,8 @@
                     </div>
                     <div>
                         <label class="font-medium text-sm">Alunos</label>
-                        <div id="turma-students-checkboxes" class="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-y-2 gap-x-4 max-h-48 overflow-y-auto p-3 border rounded-md bg-stone-50">
+                        <p class="text-xs text-stone-500 mt-1">Alunos já alocados em outras turmas aparecem desabilitados</p>
+                        <div id="turma-students-checkboxes" class="mt-2 grid grid-cols-1 gap-y-2 max-h-48 overflow-y-auto p-3 border rounded-md bg-stone-50">
                             ${studentCheckboxes}
                         </div>
                     </div>
@@ -3472,10 +3508,6 @@
                     showSuccessMessage("Sucesso!", "Nova campanha criada com sucesso.");
                 }
                 closeFormModal();
-                // Auto-refresh campanhas section if currently active
-                if (document.getElementById('campanhas-section')) {
-                    setTimeout(() => renderCampanhasSection(), 500);
-                }
             } catch (error) {
                 console.error("Error saving campanha:", error);
                 showErrorMessage("Erro", "Falha ao salvar a campanha.");
@@ -3530,7 +3562,7 @@
                     const campanhaIndex = events.findIndex(c => c.id === campanhaId);
                     if (campanhaIndex !== -1) {
                         events[campanhaIndex].finalizada = finalizada;
-                        renderCampanhasSection(); // Re-render to show changes
+                        // Removed auto re-render to fix navigation issues
                     }
                     showSuccessMessage("Sucesso!", `Campanha ${finalizada ? 'marcada como finalizada' : 'desmarcada'} (modo offline).`);
                     return; 
@@ -5086,14 +5118,8 @@
                 const campanhasSnapshot = await getDocs(campanhasCollection);
                 events = campanhasSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 
-                // Set up real-time listener for campanhas
-                onSnapshot(campanhasCollection, (snapshot) => {
-                    events = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    // Update UI if currently on campanhas section
-                    if (document.getElementById('campanhas-section')) {
-                        renderCampanhasSection();
-                    }
-                });
+                // Load campanhas data without real-time updates to prevent navigation interference
+                // Removed onSnapshot to fix navigation issues
                 
             } catch (error) {
                 console.error("Error loading campanhas:", error);
@@ -7289,14 +7315,27 @@
                 if (navTarget && !navTarget.disabled) {
                     const pageKey = navTarget.dataset.target;
                     if (pageKey && pageRenderers[pageKey]) {
+                        // Clear any existing timeouts or intervals that might interfere
+                        clearTimeout(window.navigationTimeout);
+                        
+                        // Reset pagination and render the new section
                         resetPagination();
                         pageRenderers[pageKey]();
                         setActiveNavItem(navTarget);
+                        
+                        // Prevent any further event bubbling
+                        event.stopPropagation();
+                        event.preventDefault();
                     }
                 }
 
                 const actionTarget = event.target.closest('[data-action]');
                 if (actionTarget) {
+                    // Don't interfere with navigation clicks
+                    if (actionTarget.closest('.nav-item')) {
+                        return;
+                    }
+                    
                     if(actionTarget.closest('.modal-content') && !['close-modal', 'export-vip-pef', 'export-turma-pef'].includes(actionTarget.dataset.action)) event.stopPropagation();
 
                     const { action, id, collection, folderName, nivelId, aulaIndex, direction, unitId, lessonNumber, status } = actionTarget.dataset;
@@ -7423,7 +7462,7 @@
             document.getElementById('pending-logout').addEventListener('click', handleLogout);
             
             // Always load dashboard on startup
-            setTimeout(() => {
+            window.navigationTimeout = setTimeout(() => {
                 const dashboardButton = document.querySelector('[data-target="inicio"]');
                 if (dashboardButton) {
                     dashboardButton.click();
