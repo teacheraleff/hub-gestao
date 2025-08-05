@@ -39,6 +39,7 @@
         .status-pendente, .status-em-espera { background-color: #FEF3C7; color: #92400E; }
         .status-vip { background-color: #F1D24B; color: #1f2937; font-weight: 700; }
         .status-turma { background-color: #84C7DF; color: #1f2937; font-weight: 700; }
+        .status-dupla { background-color: #8671D1; color: #ffffff; font-weight: 700; }
         .status-rejeitado, .status-cancelado { background-color: #FEE2E2; color: #991B1B; }
 
         .status-financeiro { background-color: #D1FAE5; color: #065F46; }
@@ -84,6 +85,7 @@
         .class-tag { font-size: 0.625rem; font-weight: 700; padding: 2px 8px; border-radius: 9999px; color: white; margin-bottom: 4px; display: inline-block; text-transform: uppercase; }
         .tag-turma { background-color: #FF5C3D; }
         .tag-vip { background-color: #8671D1; }
+        .tag-dupla { background-color: #F1D24B; color: #1f2937; }
 
         .data-table { width: 100%; border-collapse: collapse; }
         .data-table th, .data-table td { padding: 0.75rem 1rem; text-align: left; border-bottom: 1px solid #e5e7eb; }
@@ -466,7 +468,7 @@
         const pendingView = document.getElementById('pending-view');
 
         let db, auth, storage, userId, currentUserName, currentUserRole;
-        let usersData = [], students = [], turmas = [], vips = [], attendance = [], tasks = [], events = [], collaborators = [], schedules = [], expenses = [], cps = [], dojoRanking = [], dojoMissions = [], ideias = [];
+        let usersData = [], students = [], turmas = [], vips = [], attendance = [], tasks = [], events = [], collaborators = [], schedules = [], expenses = [], cps = [], dojoRanking = [], dojoMissions = [];
         let userProfiles = {};
         let monthlyHighlight = {
             name: 'João Silva',
@@ -504,7 +506,7 @@
         function loadDemoData() {
             // Load demo data from localStorage or create default data
             students = JSON.parse(localStorage.getItem('demo-students') || '[]');
-            ideias = JSON.parse(localStorage.getItem('slap-ideias') || '[]');
+
             turmas = JSON.parse(localStorage.getItem('demo-turmas') || '[]');
             vips = JSON.parse(localStorage.getItem('demo-vips') || '[]');
             tasks = JSON.parse(localStorage.getItem('demo-tasks') || '[]');
@@ -658,10 +660,7 @@
             }, (ref) => query(ref, orderBy("order")));
             getCollectionListener('dojo_ranking', dojoRanking, renderDojoSection);
             getCollectionListener('dojo_missions', dojoMissions, renderDojoSection, (ref) => query(ref, orderBy("points", "desc")));
-            getCollectionListener('ideias', ideias, () => {
-                const activePageId = contentArea.firstElementChild?.id;
 
-            }, (ref) => query(ref, orderBy("likes", "desc"), orderBy("createdAt", "desc")));
             
             // Load monthly highlight with real-time updates
             if (db) {
@@ -772,7 +771,7 @@
             const totalStudents = students.length;
             const activeStudents = students.filter(s => s.status === 'Ativo').length;
             const totalTurmas = turmas.length;
-            const totalRevenue = students.reduce((sum, s) => sum + (parseFloat(s.amountPaid) || 0), 0);
+            const totalRevenue = students.reduce((sum, s) => sum + (parseFloat(s.amountReceived || s.amountPaid) || 0), 0);
 
             // Check if user can see financial information
             const canViewFinancialInfo = !['teacher', 'pedagogico', 'ap', 'am'].includes(currentUserRole);
@@ -1042,231 +1041,9 @@
             }
         }
 
-        // Mural de Ideias Functions
-        function renderMuralIdeiasSection() {
-            document.getElementById('main-title').textContent = 'Mural de Ideias';
-            document.getElementById('main-description').textContent = 'Compartilhe suas ideias geniais e vote nas melhores! As ideias mais curtidas podem ganhar premiações.';
 
-            // Sort ideas by likes (desc) then by date (desc)
-            const sortedIdeias = [...ideias].sort((a, b) => {
-                const likesA = a.likes || 0;
-                const likesB = b.likes || 0;
-                if (likesA !== likesB) return likesB - likesA;
-                return new Date(b.createdAt) - new Date(a.createdAt);
-            });
 
-            contentArea.innerHTML = `
-                <div id="mural-ideias-section" class="space-y-6">
-                    <!-- Header with Add Button -->
-                    <div style="background-color: #84C7DF;" class="p-6 rounded-xl shadow-lg text-white">
-                        <div class="flex justify-between items-center">
-                            <div>
-                                <h3 class="text-2xl font-bold mb-2">Espaço da Criatividade</h3>
-                                <p class="opacity-90">Sua próxima ideia genial pode transformar a SLAP!</p>
-                            </div>
-                            <button class="bg-white px-6 py-3 rounded-lg font-bold transition-colors hover:bg-gray-50" style="color: #84C7DF;" data-action="add-ideia">
-                                Compartilhar Ideia
-                            </button>
-                        </div>
-                    </div>
 
-                    <!-- Ideas Grid -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        ${sortedIdeias.map((ideia, index) => {
-                            const userLiked = ideia.likedBy && ideia.likedBy.includes(currentUserName);
-                            const likesCount = ideia.likes || 0;
-                            const isTop3 = index < 3 && likesCount > 0;
-                            
-                            return `
-                            <div class="relative bg-white rounded-xl shadow-sm border-2 transition-all duration-200 hover:shadow-lg ${isTop3 ? 'border-yellow-400 bg-gradient-to-br from-yellow-50 to-orange-50' : 'border-stone-200 hover:border-yellow-300'}">
-                                ${isTop3 ? `<div class="absolute -top-3 -right-3 bg-gradient-to-r from-yellow-400 to-orange-400 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold text-sm shadow-lg">
-                                    ${index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}
-                                </div>` : ''}
-                                
-                                <div class="p-6">
-                                    <div class="flex justify-between items-start mb-3">
-                                        <div>
-                                            <p class="font-semibold text-stone-800">Ideia de ${ideia.authorName}</p>
-                                            <p class="text-xs text-stone-500">${new Date(ideia.createdAt).toLocaleDateString('pt-BR')}</p>
-                                        </div>
-                                        ${ideia.status === 'implementada' ? `<span class="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-medium">✅ Implementada</span>` : 
-                                          ideia.status === 'em-analise' ? `<span class="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs font-medium">🔍 Em Análise</span>` : 
-                                          `<span class="bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs font-medium">💭 Nova</span>`}
-                                    </div>
-                                    
-                                    <h4 class="font-bold text-lg text-stone-800 mb-2">${ideia.titulo}</h4>
-                                    <p class="text-stone-600 text-sm mb-4 line-clamp-3">${ideia.descricao}</p>
-                                    
-                                    ${ideia.categoria ? `<div class="mb-4">
-                                        <span class="inline-block bg-stone-100 text-stone-700 px-2 py-1 rounded text-xs font-medium">${ideia.categoria}</span>
-                                    </div>` : ''}
-                                    
-                                    <div class="flex justify-between items-center pt-3 border-t border-stone-100">
-                                        <button 
-                                            class="flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${userLiked ? 'bg-red-100 text-red-600' : 'bg-stone-100 text-stone-600 hover:bg-red-100 hover:text-red-600'}"
-                                            data-action="like-ideia" 
-                                            data-id="${ideia.id}"
-                                        >
-                                            ${userLiked ? '❤️' : '🤍'} ${likesCount}
-                                        </button>
-                                        
-                                        ${ideia.premiacao ? `<div class="flex items-center gap-1 text-yellow-600 text-sm font-medium">
-                                            🏆 ${ideia.premiacao}
-                                        </div>` : ''}
-                                    </div>
-                                </div>
-                            </div>
-                            `;
-                        }).join('') || `
-                        <div class="col-span-full text-center py-12">
-                            <h3 class="text-xl font-bold text-stone-600 mb-2">Seja o primeiro a compartilhar uma ideia!</h3>
-                            <p class="text-stone-500">O mural está esperando pela sua criatividade.</p>
-                        </div>
-                        `}
-                    </div>
-                </div>
-            `;
-        }
-
-        function openIdeiaForm(ideiaId = null) {
-            const isEdit = !!ideiaId;
-            const ideia = isEdit ? ideias.find(i => i.id === ideiaId) : {};
-            
-            document.getElementById('form-modal-title').textContent = isEdit ? 'Editar Ideia' : 'Nova Ideia Genial';
-            document.getElementById('form-modal-content-area').innerHTML = `
-                <form id="ideia-form" class="space-y-4">
-                    <div>
-                        <label class="font-medium text-sm">Título da Ideia *</label>
-                        <input type="text" id="ideia-titulo" class="form-input" required value="${ideia.titulo || ''}" placeholder="Ex: Sistema de gamificação para aulas">
-                    </div>
-                    
-                    <div>
-                        <label class="font-medium text-sm">Descrição Completa *</label>
-                        <textarea id="ideia-descricao" class="form-input" rows="5" required placeholder="Descreva sua ideia em detalhes...">${ideia.descricao || ''}</textarea>
-                    </div>
-                    
-                    <div>
-                        <label class="font-medium text-sm">Categoria</label>
-                        <select id="ideia-categoria" class="form-input">
-                            <option value="">Selecione uma categoria</option>
-                            <option value="Ensino & Pedagogia" ${ideia.categoria === 'Ensino & Pedagogia' ? 'selected' : ''}>Ensino & Pedagogia</option>
-                            <option value="Marketing & Vendas" ${ideia.categoria === 'Marketing & Vendas' ? 'selected' : ''}>Marketing & Vendas</option>
-                            <option value="Tecnologia & Sistemas" ${ideia.categoria === 'Tecnologia & Sistemas' ? 'selected' : ''}>Tecnologia & Sistemas</option>
-                            <option value="Experiência do Aluno" ${ideia.categoria === 'Experiência do Aluno' ? 'selected' : ''}>Experiência do Aluno</option>
-                            <option value="Processos Internos" ${ideia.categoria === 'Processos Internos' ? 'selected' : ''}>Processos Internos</option>
-                            <option value="Eventos & Atividades" ${ideia.categoria === 'Eventos & Atividades' ? 'selected' : ''}>Eventos & Atividades</option>
-                            <option value="Outras" ${ideia.categoria === 'Outras' ? 'selected' : ''}>Outras</option>
-                        </select>
-                    </div>
-                    
-                    <div class="flex justify-end gap-2">
-                        <button type="button" data-action="close-modal" class="secondary-btn">Cancelar</button>
-                        <button type="submit" class="primary-btn w-auto">${isEdit ? 'Salvar Alterações' : 'Compartilhar Ideia'}</button>
-                    </div>
-                </form>
-            `;
-
-            document.getElementById('ideia-form').onsubmit = (e) => saveIdeia(e, ideiaId);
-            document.getElementById('form-modal').classList.add('visible');
-        }
-
-        async function saveIdeia(event, ideiaId = null) {
-            event.preventDefault();
-            
-            const data = {
-                titulo: document.getElementById('ideia-titulo').value,
-                descricao: document.getElementById('ideia-descricao').value,
-                categoria: document.getElementById('ideia-categoria').value,
-                authorName: currentUserName,
-                authorId: userId,
-                likes: ideiaId ? ideias.find(i => i.id === ideiaId)?.likes || 0 : 0,
-                likedBy: ideiaId ? ideias.find(i => i.id === ideiaId)?.likedBy || [] : [],
-                status: ideiaId ? ideias.find(i => i.id === ideiaId)?.status || 'nova' : 'nova',
-                createdAt: ideiaId ? ideias.find(i => i.id === ideiaId)?.createdAt : new Date().toISOString(),
-                updatedAt: new Date().toISOString()
-            };
-
-            if (!data.titulo || !data.descricao) {
-                showErrorMessage("Erro", "Título e descrição são obrigatórios.");
-                return;
-            }
-
-            try {
-                if (!db) {
-                    // Development mode
-                    if (ideiaId) {
-                        const index = ideias.findIndex(i => i.id === ideiaId);
-                        if (index !== -1) {
-                            ideias[index] = { ...ideias[index], ...data };
-                        }
-                    } else {
-                        const newIdeia = { ...data, id: Date.now().toString() };
-                        ideias.push(newIdeia);
-                    }
-                    // Save to localStorage in development mode
-                    localStorage.setItem('slap-ideias', JSON.stringify(ideias));
-                    renderMuralIdeiasSection();
-                    document.getElementById('form-modal').classList.remove('visible');
-                    showSuccessMessage("Sucesso!", ideiaId ? "Ideia atualizada!" : "Ideia compartilhada! Agora aguarde os likes da equipe.");
-                    return;
-                }
-
-                if (ideiaId) {
-                    const ideiaRef = doc(db, `artifacts/${appId}/public/data/ideias`, ideiaId);
-                    await updateDoc(ideiaRef, data);
-                } else {
-                    const ideiasRef = collection(db, `artifacts/${appId}/public/data/ideias`);
-                    await addDoc(ideiasRef, data);
-                }
-                
-                document.getElementById('form-modal').classList.remove('visible');
-                showSuccessMessage("Sucesso!", ideiaId ? "Ideia atualizada!" : "Ideia compartilhada! Agora aguarde os likes da equipe.");
-            } catch (error) {
-                console.error("Error saving ideia:", error);
-                showErrorMessage("Erro", "Erro ao salvar ideia: " + error.message);
-            }
-        }
-
-        async function toggleLikeIdeia(ideiaId) {
-            try {
-                const ideia = ideias.find(i => i.id === ideiaId);
-                if (!ideia) return;
-
-                const userLiked = ideia.likedBy && ideia.likedBy.includes(currentUserName);
-                let newLikedBy = ideia.likedBy || [];
-                let newLikes = ideia.likes || 0;
-
-                if (userLiked) {
-                    newLikedBy = newLikedBy.filter(name => name !== currentUserName);
-                    newLikes = Math.max(0, newLikes - 1);
-                } else {
-                    newLikedBy.push(currentUserName);
-                    newLikes += 1;
-                }
-
-                if (!db) {
-                    // Development mode
-                    const index = ideias.findIndex(i => i.id === ideiaId);
-                    if (index !== -1) {
-                        ideias[index].likes = newLikes;
-                        ideias[index].likedBy = newLikedBy;
-                        // Save to localStorage in development mode
-                        localStorage.setItem('slap-ideias', JSON.stringify(ideias));
-                        renderMuralIdeiasSection();
-                    }
-                    return;
-                }
-
-                const ideiaRef = doc(db, `artifacts/${appId}/public/data/ideias`, ideiaId);
-                await updateDoc(ideiaRef, {
-                    likes: newLikes,
-                    likedBy: newLikedBy
-                });
-            } catch (error) {
-                console.error("Error toggling like:", error);
-                showErrorMessage("Erro", "Erro ao curtir ideia: " + error.message);
-            }
-        }
 
         // Profile Photo Functions
         function openProfilePhotoForm() {
@@ -1519,10 +1296,13 @@
             const totalCount = students.length;
             const activeCount = students.filter(s => s.status === 'Ativo').length;
             const cancelledCount = students.filter(s => s.status === 'Cancelado').length;
+            const totalRevenue = students.reduce((sum, student) => {
+                return sum + parseFloat(student.amountReceived || student.amountPaid || 0);
+            }, 0);
 
             contentArea.innerHTML = `
                 <section id="alunos-section" class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                         <div class="bg-stone-100 p-4 rounded-lg text-center">
                             <p class="text-2xl font-bold text-stone-800">${totalCount}</p>
                             <p class="text-sm text-stone-600">Total de Alunos</p>
@@ -1535,6 +1315,12 @@
                             <p class="text-2xl font-bold text-red-700">${cancelledCount}</p>
                             <p class="text-sm text-red-600">Alunos Cancelados</p>
                         </div>
+                        ${canViewFinancialInfo ? `
+                        <div class="p-4 rounded-lg text-center" style="background-color: #FEF3C7;">
+                            <p class="text-2xl font-bold font-mono" style="color: #92400E;">R$ ${totalRevenue.toFixed(2)}</p>
+                            <p class="text-sm" style="color: #B45309;">Receita Total</p>
+                        </div>
+                        ` : ''}
                     </div>
 
                     <div class="mb-6">
@@ -1559,7 +1345,7 @@
                                     <th>Nome do Aluno</th>
                                     <th>Status</th>
                                     ${canViewFinancialInfo ? '<th>Valor Pago</th>' : ''}
-                                    <th>Responsável</th>
+                                    ${canViewFinancialInfo ? '<th>Valor Recebido</th>' : '<th>Responsável</th>'}
                                     <th class="text-center">Ações</th>
                                 </tr>
                             </thead>
@@ -1771,10 +1557,14 @@
             if (!turmasGrid) return;
 
             turmasGrid.innerHTML = filteredTurmas.map(t => {
-                // Count only TURMA modality students in the class
+                // Count TURMA and DUPLA modality students in the class
                 const turmaStudents = students.filter(s => 
-                    (t.studentIds || []).includes(s.id) && s.modalidade === 'TURMA'
+                    (t.studentIds || []).includes(s.id) && (s.modalidade === 'TURMA' || s.modalidade === 'DUPLA')
                 );
+                // Separate students by modality
+                const turmaOnlyStudents = turmaStudents.filter(s => s.modalidade === 'TURMA');
+                const duplaStudents = turmaStudents.filter(s => s.modalidade === 'DUPLA');
+                
                 const canManage = ['admin', 'pedagogico', 'ap'].includes(currentUserRole);
                 return `
                 <div class="base-card flex flex-col">
@@ -1786,6 +1576,23 @@
                         <p class="text-sm text-stone-500 mb-2">Professor: ${t.teacherName}</p>
                         <p class="text-sm text-stone-600"><strong>Nível:</strong> ${t.level}</p>
                         <p class="text-sm text-stone-600"><strong>Semestre:</strong> ${t.semestre || 'N/A'}</p>
+                        
+                        ${turmaStudents.length > 0 ? `
+                        <div class="mt-3 pt-3 border-t border-stone-100">
+                            <p class="text-xs font-medium text-stone-500 mb-2">Alunos:</p>
+                            <div class="space-y-1">
+                                ${turmaOnlyStudents.map(s => `
+                                    <div class="text-xs text-stone-700">${s.name}</div>
+                                `).join('')}
+                                ${duplaStudents.map(s => `
+                                    <div class="flex items-center justify-between text-xs">
+                                        <span class="text-stone-700">${s.name}</span>
+                                        <span class="status-tag status-dupla !text-xs !py-1 !px-2">DUPLA</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                        ` : ''}
                     </div>
                     <div class="mt-auto pt-4 border-t border-stone-100 flex gap-2">
                         ${canManage ? `<button class="secondary-btn !text-sm flex-1" data-action="edit-turma" data-id="${t.id}">Editar</button>` : ''}
@@ -1869,7 +1676,7 @@
                     </td>
                     <td><span class="status-tag status-${(student.status || 'pendente').toLowerCase()}">${student.status || 'Pendente'}</span></td>
                     ${canViewFinancialInfo ? `<td class="font-mono">R$ ${parseFloat(student.amountPaid || 0).toFixed(2)}</td>` : ''}
-                    <td>${student.responsibleName || 'N/A'}</td>
+                    ${canViewFinancialInfo ? `<td class="font-mono">R$ ${parseFloat(student.amountReceived || student.amountPaid || 0).toFixed(2)}</td>` : `<td>${student.responsibleName || 'N/A'}</td>`}
                     <td class="text-center">
                          ${canEdit ? `<button class="secondary-btn" data-action="edit-aluno" data-id="${student.id}" onclick="event.stopPropagation()">Editar</button>` : `<button class="secondary-btn" data-action="view-aluno" data-id="${student.id}" onclick="event.stopPropagation()">Ver</button>`}
                     </td>
@@ -1964,10 +1771,14 @@
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="turmas-grid">
                         ${itemsToDisplay.map(t => {
-                            // Count only TURMA modality students in the class
+                            // Count TURMA and DUPLA modality students in the class
                             const turmaStudents = students.filter(s => 
-                                (t.studentIds || []).includes(s.id) && s.modalidade === 'TURMA'
+                                (t.studentIds || []).includes(s.id) && (s.modalidade === 'TURMA' || s.modalidade === 'DUPLA')
                             );
+                            // Separate students by modality
+                            const turmaOnlyStudents = turmaStudents.filter(s => s.modalidade === 'TURMA');
+                            const duplaStudents = turmaStudents.filter(s => s.modalidade === 'DUPLA');
+                            
                             return `
                         <div class="base-card flex flex-col">
                             <div class="flex-1">
@@ -1978,6 +1789,23 @@
                                 <p class="text-sm text-stone-500 mb-2">Professor: ${t.teacherName}</p>
                                 <p class="text-sm text-stone-600"><strong>Nível:</strong> ${t.level}</p>
                                 <p class="text-sm text-stone-600"><strong>Semestre:</strong> ${t.semestre || 'N/A'}</p>
+                                
+                                ${turmaStudents.length > 0 ? `
+                                <div class="mt-3 pt-3 border-t border-stone-100">
+                                    <p class="text-xs font-medium text-stone-500 mb-2">Alunos:</p>
+                                    <div class="space-y-1">
+                                        ${turmaOnlyStudents.map(s => `
+                                            <div class="text-xs text-stone-700">${s.name}</div>
+                                        `).join('')}
+                                        ${duplaStudents.map(s => `
+                                            <div class="flex items-center justify-between text-xs">
+                                                <span class="text-stone-700">${s.name}</span>
+                                                <span class="status-tag status-dupla !text-xs !py-1 !px-2">DUPLA</span>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                                ` : ''}
                             </div>
                             <div class="mt-auto pt-4 border-t border-stone-100 flex gap-2">
                                 ${canManage ? `<button class="secondary-btn !text-sm flex-1" data-action="edit-turma" data-id="${t.id}">Editar</button>` : ''}
@@ -2753,7 +2581,7 @@
                     <div><label class="font-medium text-sm">Nome Completo do Aluno</label><input type="text" id="aluno-name" class="form-input" required value="${aluno?.name || ''}"></div>
                     <div class="grid grid-cols-3 gap-4">
                         <div><label class="font-medium text-sm">Status</label><select id="aluno-status" class="form-input">${statusOptions}</select></div>
-                        <div><label class="font-medium text-sm">Modalidade</label><select id="aluno-modalidade" class="form-input" required><option value="VIP" ${aluno?.modalidade === 'VIP' ? 'selected' : ''}>VIP</option><option value="TURMA" ${aluno?.modalidade === 'TURMA' ? 'selected' : ''}>TURMA</option></select></div>
+                        <div><label class="font-medium text-sm">Modalidade</label><select id="aluno-modalidade" class="form-input" required><option value="VIP" ${aluno?.modalidade === 'VIP' ? 'selected' : ''}>VIP</option><option value="TURMA" ${aluno?.modalidade === 'TURMA' ? 'selected' : ''}>TURMA</option><option value="DUPLA" ${aluno?.modalidade === 'DUPLA' ? 'selected' : ''}>DUPLA</option></select></div>
                         <div><label class="font-medium text-sm">Data de Início</label><input type="date" id="aluno-startDate" class="form-input" value="${aluno?.startDate || ''}"></div>
                     </div>
                     <div><label class="font-medium text-sm">Indicação</label><input type="text" id="aluno-indicacao" class="form-input" placeholder="Pessoa que indicou ou cupom utilizado" value="${aluno?.indicacao || ''}"></div>
@@ -2769,6 +2597,7 @@
                         </div>
                     </div>
 
+                    ${canViewFinancialInfo ? `
                     <h4 class="text-lg font-semibold text-stone-700 border-b pb-2 pt-4">Informações Financeiras</h4>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div><label class="font-medium text-sm">Tipo de Pagamento</label><select id="aluno-paymentType" class="form-input">${paymentTypeOptions}</select></div>
@@ -2778,6 +2607,7 @@
                         <div><label class="font-medium text-sm">Valor Pago (R$)</label><input type="number" step="0.01" id="aluno-amountPaid" class="form-input" value="${aluno?.amountPaid || ''}"></div>
                         <div><label class="font-medium text-sm">Valor Recebido (R$)</label><input type="number" step="0.01" id="aluno-amountReceived" class="form-input" value="${aluno?.amountReceived || ''}"></div>
                     </div>
+                    ` : ''}
 
                     <h4 class="text-lg font-semibold text-stone-700 border-b pb-2 pt-4">Responsável</h4>
                     <div class="flex items-center gap-2">
@@ -2833,6 +2663,7 @@
             event.preventDefault();
             const alunoId = document.getElementById('aluno-id').value;
             const isMinor = document.getElementById('aluno-isMinor').checked;
+            const canViewFinancialInfo = !['teacher', 'pedagogico', 'ap', 'am'].includes(currentUserRole);
 
             const completedLevels = Array.from(document.querySelectorAll('input[name="completedLevels"]:checked')).map(cb => cb.value);
 
@@ -2846,10 +2677,6 @@
                 indicacao: document.getElementById('aluno-indicacao').value,
                 startDate: document.getElementById('aluno-startDate').value,
                 completedLevels: completedLevels,
-                paymentType: document.getElementById('aluno-paymentType').value,
-                parcelas: document.getElementById('aluno-parcelas').value,
-                amountPaid: document.getElementById('aluno-amountPaid').value,
-                amountReceived: document.getElementById('aluno-amountReceived').value,
                 notes: document.getElementById('aluno-notes').value,
                 isMinor: isMinor,
                 responsibleName: isMinor ? document.getElementById('aluno-responsibleName').value : '',
@@ -2859,6 +2686,14 @@
                 cancellationReason: isCancelled ? document.getElementById('aluno-cancellationReason').value : '',
                 processedBy: isCancelled ? document.getElementById('aluno-processedBy').value : '',
             };
+
+            // Only add financial fields if user has permission
+            if (canViewFinancialInfo) {
+                data.paymentType = document.getElementById('aluno-paymentType').value;
+                data.parcelas = document.getElementById('aluno-parcelas').value;
+                data.amountPaid = document.getElementById('aluno-amountPaid').value;
+                data.amountReceived = document.getElementById('aluno-amountReceived').value;
+            }
             if (!data.name) { showErrorMessage("Erro", "O nome do aluno é obrigatório."); return; }
             if (!data.modalidade) { showErrorMessage("Erro", "A modalidade é obrigatória."); return; }
             
@@ -2912,11 +2747,11 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2 text-sm text-stone-600">
                         <p><strong>Modalidade:</strong> <span class="status-tag status-${(aluno.modalidade || 'turma').toLowerCase()}">${aluno.modalidade || 'TURMA'}</span></p>
                         <p><strong>Início:</strong> ${aluno.startDate ? new Date(aluno.startDate + 'T00:00:00').toLocaleDateString('pt-BR') : 'N/A'}</p>
-                        <p><strong>Pagamento:</strong> ${aluno.paymentType || 'N/A'}</p>
-                        <p><strong>Parcelas:</strong> ${aluno.parcelas ? `${aluno.parcelas}x` : 'Não informado'}</p>
+                        ${canViewFinancialInfo ? `<p><strong>Pagamento:</strong> ${aluno.paymentType || 'N/A'}</p>` : ''}
+                        ${canViewFinancialInfo ? `<p><strong>Parcelas:</strong> ${aluno.parcelas ? `${aluno.parcelas}x` : 'Não informado'}</p>` : ''}
                         <p><strong>Indicação:</strong> ${aluno.indicacao || 'Não informado'}</p>
-                        <p><strong>Valor Pago:</strong> R$ ${parseFloat(aluno.amountPaid || 0).toFixed(2)}</p>
-                        <p><strong>Valor Recebido:</strong> R$ ${parseFloat(aluno.amountReceived || 0).toFixed(2)}</p>
+                        ${canViewFinancialInfo ? `<p><strong>Valor Pago:</strong> R$ ${parseFloat(aluno.amountPaid || 0).toFixed(2)}</p>` : ''}
+                        ${canViewFinancialInfo ? `<p><strong>Valor Recebido:</strong> R$ ${parseFloat(aluno.amountReceived || 0).toFixed(2)}</p>` : ''}
                     </div>
 
                     <div class="pt-2">
@@ -6838,31 +6673,53 @@
         }
 
         function exportAlunosDoc() {
+            const canViewFinancialInfo = !['teacher', 'pedagogico', 'ap', 'am'].includes(currentUserRole);
             let studentsList = '';
             // Export all students (not just active ones) to have complete data
             const allStudents = students.sort((a, b) => a.name.localeCompare(b.name));
-            studentsList = allStudents.map(s => `
-                <tr>
-                    <td class="student-name">${s.name}</td>
-                    <td>${s.status || 'N/A'}</td>
-                    <td>${s.modalidade || 'TURMA'}</td>
-                    <td>R$ ${parseFloat(s.amountPaid || 0).toFixed(2)}</td>
-                    <td>${s.tipoAssinatura || 'N/A'}</td>
-                    <td>${s.quantidadeParcelas || 'N/A'}</td>
-                    <td>${s.responsibleName || 'N/A'}</td>
-                    <td>${s.responsibleEmail || 'N/A'}</td>
-                    <td>${s.responsiblePhone || 'N/A'}</td>
-                    <td>${s.emergencyContact || 'N/A'}</td>
-                    <td>${s.emergencyPhone || 'N/A'}</td>
-                    <td>${s.level || 'N/A'}</td>
-                    <td>${s.birthDate || 'N/A'}</td>
-                    <td>${s.address || 'N/A'}</td>
-                    <td>${s.indicacao || 'N/A'}</td>
-                    <td>${s.observations || 'N/A'}</td>
-                </tr>
-            `).join('');
-
-            if (!studentsList) { studentsList = '<tr><td colspan="16">Nenhum aluno encontrado.</td></tr>'; }
+            
+            if (canViewFinancialInfo) {
+                studentsList = allStudents.map(s => `
+                    <tr>
+                        <td class="student-name">${s.name}</td>
+                        <td>${s.status || 'N/A'}</td>
+                        <td>${s.modalidade || 'TURMA'}</td>
+                        <td>R$ ${parseFloat(s.amountPaid || 0).toFixed(2)}</td>
+                        <td>${s.tipoAssinatura || 'N/A'}</td>
+                        <td>${s.quantidadeParcelas || 'N/A'}</td>
+                        <td>${s.responsibleName || 'N/A'}</td>
+                        <td>${s.responsibleEmail || 'N/A'}</td>
+                        <td>${s.responsiblePhone || 'N/A'}</td>
+                        <td>${s.emergencyContact || 'N/A'}</td>
+                        <td>${s.emergencyPhone || 'N/A'}</td>
+                        <td>${s.level || 'N/A'}</td>
+                        <td>${s.birthDate || 'N/A'}</td>
+                        <td>${s.address || 'N/A'}</td>
+                        <td>${s.indicacao || 'N/A'}</td>
+                        <td>${s.observations || 'N/A'}</td>
+                    </tr>
+                `).join('');
+                if (!studentsList) { studentsList = '<tr><td colspan="16">Nenhum aluno encontrado.</td></tr>'; }
+            } else {
+                studentsList = allStudents.map(s => `
+                    <tr>
+                        <td class="student-name">${s.name}</td>
+                        <td>${s.status || 'N/A'}</td>
+                        <td>${s.modalidade || 'TURMA'}</td>
+                        <td>${s.responsibleName || 'N/A'}</td>
+                        <td>${s.responsibleEmail || 'N/A'}</td>
+                        <td>${s.responsiblePhone || 'N/A'}</td>
+                        <td>${s.emergencyContact || 'N/A'}</td>
+                        <td>${s.emergencyPhone || 'N/A'}</td>
+                        <td>${s.level || 'N/A'}</td>
+                        <td>${s.birthDate || 'N/A'}</td>
+                        <td>${s.address || 'N/A'}</td>
+                        <td>${s.indicacao || 'N/A'}</td>
+                        <td>${s.observations || 'N/A'}</td>
+                    </tr>
+                `).join('');
+                if (!studentsList) { studentsList = '<tr><td colspan="13">Nenhum aluno encontrado.</td></tr>'; }
+            }
 
             const docHtml = `
                 <!DOCTYPE html>
@@ -6899,9 +6756,9 @@
                                 <th>Nome do Aluno</th>
                                 <th>Status</th>
                                 <th>Modalidade</th>
-                                <th>Valor Pago</th>
-                                <th>Tipo Assinatura</th>
-                                <th>Qtd. Parcelas</th>
+                                ${canViewFinancialInfo ? '<th>Valor Pago</th>' : ''}
+                                ${canViewFinancialInfo ? '<th>Tipo Assinatura</th>' : ''}
+                                ${canViewFinancialInfo ? '<th>Qtd. Parcelas</th>' : ''}
                                 <th>Responsável</th>
                                 <th>Email Responsável</th>
                                 <th>Telefone Responsável</th>
@@ -7652,8 +7509,7 @@
                         'add-collaborator': () => openCollaboratorForm(),
                         'edit-collaborator': () => openCollaboratorForm(id),
                         'edit-monthly-highlight': openMonthlyHighlightForm,
-                        'add-ideia': openIdeiaForm,
-                        'like-ideia': () => toggleLikeIdeia(id),
+
                         'edit-profile-photo': openProfilePhotoForm,
                         'add-schedule': openScheduleForm,
                         'add-break': openBreakForm,
