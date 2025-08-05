@@ -1632,7 +1632,7 @@
                     <div class="mt-auto pt-4 border-t border-stone-100 flex gap-2">
                         ${vipRecord ? `
                             <button class="primary-btn !text-sm flex-1" data-action="open-vip-pef" data-id="${vipRecord.id}">PEF</button>
-                            ${canManage ? `<button class="secondary-btn !text-sm flex-1" data-action="edit-vip" data-id="${vipRecord.id}">Configurar</button>` : ''}
+                            <button class="secondary-btn !text-sm flex-1" data-action="edit-vip" data-id="${vipRecord.id}">Configurar</button>
                         ` : ''}
                     </div>
                 </div>`}).join('') || '<p class="col-span-full text-center py-10 text-stone-500">Nenhum aluno VIP encontrado.</p>';
@@ -1878,7 +1878,7 @@
                             <div class="mt-auto pt-4 border-t border-stone-100 flex gap-2">
                                 ${vipRecord ? `
                                     <button class="primary-btn !text-sm flex-1" data-action="open-vip-pef" data-id="${vipRecord.id}">PEF</button>
-                                    ${canManage ? `<button class="secondary-btn !text-sm flex-1" data-action="edit-vip" data-id="${vipRecord.id}">Configurar</button>` : ''}
+                                    <button class="secondary-btn !text-sm flex-1" data-action="edit-vip" data-id="${vipRecord.id}">Configurar</button>
                                 ` : ''}
                             </div>
                         </div>`}).join('') || '<p class="col-span-full text-center py-10 text-stone-500">Nenhum aluno VIP encontrado.</p>'}
@@ -3025,14 +3025,23 @@
         }
 
         async function cleanupEmptyVips() {
-            const emptyVips = vips.filter(vip => !vip.teacherId && !vip.level && !vip.semestre && !vip.startDate && !vip.endDate);
+            // VIPs criados automaticamente geralmente têm apenas studentId e studentName, sem outras configurações
+            const emptyVips = vips.filter(vip => 
+                vip.studentId && vip.studentName && 
+                (!vip.teacherId || vip.teacherId === '') && 
+                (!vip.level || vip.level === '') && 
+                (!vip.semestre || vip.semestre === '') && 
+                (!vip.startDate || vip.startDate === '') && 
+                (!vip.endDate || vip.endDate === '')
+            );
             
             if (emptyVips.length === 0) {
                 showSuccessMessage("Info", "Não há VIPs vazios para limpar.");
                 return;
             }
 
-            const confirmMessage = `Encontrados ${emptyVips.length} VIPs vazios (sem professor, nível, semestre ou datas configurados).\n\nDeseja excluí-los?`;
+            let vipList = emptyVips.map(vip => `• ${vip.studentName}`).join('\n');
+            const confirmMessage = `Encontrados ${emptyVips.length} VIPs criados automaticamente sem configuração:\n\n${vipList}\n\nDeseja excluí-los?`;
             if (!confirm(confirmMessage)) return;
 
             try {
