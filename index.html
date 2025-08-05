@@ -2063,28 +2063,28 @@
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         ${events.map(c => `
-                        <div class="base-card ${c.finalizada ? 'bg-gray-100 hover:bg-gray-200 border-l-gray-400' : 'bg-white hover:bg-yellow-50 border-l-yellow-400'} border-l-4 shadow-md hover:shadow-lg transition-all duration-200 ${c.finalizada ? 'opacity-70' : ''}" data-action="view-campanha" data-id="${c.id}">
+                        <div class="base-card bg-white hover:bg-yellow-50 border-l-yellow-400 border-l-4 shadow-md hover:shadow-lg transition-all duration-200" data-action="view-campanha" data-id="${c.id}">
                             <div class="flex justify-between items-start mb-2">
-                                <h3 class="text-xl font-bold ${c.finalizada ? 'text-gray-500 line-through' : 'text-stone-800'}">${c.nome || c.title}</h3>
-                                ${c.setores && c.setores.length > 0 ? c.setores.map(setor => `<span class="status-tag status-${setor.toLowerCase()} text-xs mr-1 ${c.finalizada ? 'opacity-60' : ''}">${setor}</span>`).join('') : ''}
+                                <h3 class="text-xl font-bold text-stone-800">${c.nome || c.title}</h3>
+                                ${c.setores && c.setores.length > 0 ? c.setores.map(setor => `<span class="status-tag status-${setor.toLowerCase()} text-xs mr-1">${setor}</span>`).join('') : ''}
                             </div>
-                            <p class="text-sm ${c.finalizada ? 'text-gray-500' : 'text-stone-500'} mb-2"><strong>Responsável:</strong> ${c.responsavel || 'N/A'}</p>
-                            <p class="text-sm ${c.finalizada ? 'text-gray-400' : 'text-stone-600'} mb-2"><strong>Plataforma:</strong> ${c.plataforma && c.plataforma.length > 0 ? c.plataforma.join(', ') : (c.foco && c.foco.length > 0 ? c.foco.join(', ') : 'N/A')}</p>
-                            <p class="text-sm ${c.finalizada ? 'text-gray-400' : 'text-stone-600'} mb-2"><strong>Foco:</strong> ${c.focoObjetivo && c.focoObjetivo.length > 0 ? c.focoObjetivo.join(', ') : 'N/A'}</p>
-                            ${c.referencia1 || c.referencia2 ? `<p class="text-sm ${c.finalizada ? 'text-gray-400' : 'text-stone-600'} mb-2"><strong>Referências:</strong> ${[c.referencia1, c.referencia2].filter(Boolean).length} link(s)</p>` : ''}
-                            ${c.local ? `<p class="text-sm ${c.finalizada ? 'text-gray-400' : 'text-stone-600'} mb-2"><strong>Local:</strong> ${c.local}</p>` : ''}
-                            ${c.horario ? `<p class="text-sm ${c.finalizada ? 'text-gray-400' : 'text-stone-600'} mb-2"><strong>Horário:</strong> ${c.horario}</p>` : ''}
-                            <div class="flex items-center justify-between mt-3 pt-2 ${c.finalizada ? 'border-gray-300' : 'border-t'}">
+                            <p class="text-sm text-stone-500 mb-2"><strong>Responsável:</strong> ${c.responsavel || 'N/A'}</p>
+                            <p class="text-sm text-stone-600 mb-2"><strong>Plataforma:</strong> ${c.plataforma && c.plataforma.length > 0 ? c.plataforma.join(', ') : (c.foco && c.foco.length > 0 ? c.foco.join(', ') : 'N/A')}</p>
+                            <p class="text-sm text-stone-600 mb-2"><strong>Foco:</strong> ${c.focoObjetivo && c.focoObjetivo.length > 0 ? c.focoObjetivo.join(', ') : 'N/A'}</p>
+                            ${c.referencia1 || c.referencia2 ? `<p class="text-sm text-stone-600 mb-2"><strong>Referências:</strong> ${[c.referencia1, c.referencia2].filter(Boolean).length} link(s)</p>` : ''}
+                            ${c.local ? `<p class="text-sm text-stone-600 mb-2"><strong>Local:</strong> ${c.local}</p>` : ''}
+                            ${c.horario ? `<p class="text-sm text-stone-600 mb-2"><strong>Horário:</strong> ${c.horario}</p>` : ''}
+                            <div class="flex items-center justify-between mt-3 pt-2 border-t">
                                 <div class="flex items-center">
                                     <input type="checkbox" id="finalizada-${c.id}" ${c.finalizada ? 'checked' : ''} 
                                            class="h-4 w-4 rounded finalizada-checkbox" 
                                            data-campanha-id="${c.id}"
                                            onchange="event.stopPropagation(); console.log('Checkbox changed for campaign:', '${c.id}', this.checked); toggleCampanhaFinalizada('${c.id}', this.checked);">
-                                    <label for="finalizada-${c.id}" class="ml-2 text-sm ${c.finalizada ? 'text-gray-500 font-medium' : 'text-stone-600'} cursor-pointer">
+                                    <label for="finalizada-${c.id}" class="ml-2 text-sm text-stone-600 cursor-pointer">
                                         ${c.finalizada ? 'Finalizada' : 'Marcar como finalizada'}
                                     </label>
                                 </div>
-                                ${c.finalizada ? `<span class="text-xs text-gray-500">✓ Concluída</span>` : ''}
+                                ${c.finalizada ? `<span class="text-xs text-green-600 font-medium">✓ Finalizada</span>` : ''}
                             </div>
                         </div>`).join('') || '<p class="col-span-full text-center py-10 text-stone-500">Nenhuma campanha encontrada.</p>'}
                     </div>
@@ -3521,7 +3521,6 @@
         }
 
         async function toggleCampanhaFinalizada(campanhaId, finalizada) {
-            console.log('toggleCampanhaFinalizada called with:', { campanhaId, finalizada });
             try {
                 const data = { finalizada: finalizada, updatedAt: serverTimestamp() };
                 
@@ -3538,10 +3537,6 @@
                 } else {
                     await updateDoc(doc(db, `artifacts/${appId}/public/data/events`, campanhaId), data);
                     showSuccessMessage("Sucesso!", `Campanha ${finalizada ? 'marcada como finalizada' : 'desmarcada'} com sucesso.`);
-                    // Auto-refresh campanhas section if currently active
-                    if (document.getElementById('campanhas-section')) {
-                        setTimeout(() => renderCampanhasSection(), 300);
-                    }
                 }
             } catch (error) {
                 console.error("Error updating campanha status:", error);
@@ -3600,10 +3595,6 @@
                     showSuccessMessage("Sucesso!", "Novo orçamento adicionado.");
                 }
                 closeFormModal();
-                // Auto-refresh orçamentos section if currently active
-                if (document.getElementById('budgets-section')) {
-                    setTimeout(() => renderOrcamentosSection(), 300);
-                }
             } catch (error) { console.error("Error saving budget:", error); showErrorMessage("Erro", "Falha ao salvar o orçamento."); }
         }
 
@@ -3659,10 +3650,6 @@
                 await addDoc(collection(db, `artifacts/${appId}/public/data/tasks`), data);
                 showSuccessMessage("Sucesso!", "Tarefa adicionada.");
                 closeFormModal();
-                // Auto-refresh tarefas section if currently active
-                if (document.getElementById('tasks-section')) {
-                    setTimeout(() => renderTarefasSection(), 300);
-                }
             } catch (error) { console.error("Error saving task:", error); showErrorMessage("Erro", "Falha ao salvar a tarefa."); }
         }
 
