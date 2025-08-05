@@ -21,7 +21,7 @@
             color: #F1D24B;
             font-weight: 600;
         }
-        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s; }
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; z-index: 9999; opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s; }
         .modal-overlay.visible { opacity: 1; visibility: visible; }
         .modal-content { background-color: white; padding: 2rem; border-radius: 0.75rem; width: 90%; max-width: 800px; max-height: 90vh; overflow-y: auto; transform: scale(0.95); transition: transform 0.3s; }
         .modal-overlay.visible .modal-content { transform: scale(1); }
@@ -2664,7 +2664,12 @@
                 }
             });
 
-            document.getElementById('form-modal-body').onsubmit = saveAluno;
+            const form = document.getElementById('form-modal-body');
+            if (form) {
+                form.onsubmit = saveAluno;
+            } else {
+                console.error('Form element not found!');
+            }
             document.getElementById('form-modal').classList.add('visible');
         }
 
@@ -2714,16 +2719,35 @@
             }
 
             try {
-                if (alunoId) {
-                    await updateDoc(doc(db, `artifacts/${appId}/public/data/students`, alunoId), data);
-                    showSuccessMessage("Sucesso!", "Dados do aluno atualizados.");
+                if (window.isDevelopmentMode) {
+                    // Development mode - save to localStorage
+                    if (alunoId) {
+                        const index = students.findIndex(s => s.id === alunoId);
+                        if (index !== -1) {
+                            students[index] = { ...students[index], ...data, id: alunoId };
+                        }
+                        showSuccessMessage("Sucesso!", "Dados do aluno atualizados.");
+                    } else {
+                        data.id = 'student_' + Date.now();
+                        data.createdAt = new Date();
+                        students.push(data);
+                        showSuccessMessage("Sucesso!", "Novo aluno cadastrado.");
+                    }
+                    localStorage.setItem('students', JSON.stringify(students));
                 } else {
-                    data.createdAt = serverTimestamp();
-                    await addDoc(collection(db, `artifacts/${appId}/public/data/students`), data);
-                    showSuccessMessage("Sucesso!", "Novo aluno cadastrado.");
+                    // Firebase mode
+                    if (alunoId) {
+                        await updateDoc(doc(db, `artifacts/${appId}/public/data/students`, alunoId), data);
+                        showSuccessMessage("Sucesso!", "Dados do aluno atualizados.");
+                    } else {
+                        data.createdAt = serverTimestamp();
+                        await addDoc(collection(db, `artifacts/${appId}/public/data/students`), data);
+                        showSuccessMessage("Sucesso!", "Novo aluno cadastrado.");
+                    }
                 }
                 
                 closeModal();
+                
                 // Re-render the current section if needed
                 const activePageId = contentArea.firstElementChild?.id;
                 if (activePageId === 'alunos-section') {
@@ -3020,13 +3044,55 @@
             if (!confirm('Tem certeza que deseja excluir este VIP?')) return;
 
             try {
-                await deleteDoc(doc(db, `artifacts/${appId}/public/data/vips`, vipId));
+                if (window.isDevelopmentMode) {
+                    vips = vips.filter(v => v.id !== vipId);
+                    localStorage.setItem('vips', JSON.stringify(vips));
+                } else {
+                    await deleteDoc(doc(db, `artifacts/${appId}/public/data/vips`, vipId));
+                }
                 showSuccessMessage("Sucesso!", "VIP excluído com sucesso.");
                 closeModal();
                 renderVipsSection();
             } catch (error) {
                 console.error("Error deleting VIP:", error);
                 showErrorMessage("Erro", "Não foi possível excluir o VIP.");
+            }
+        }
+
+        // Function to delete all VIPs from the VIP section (not affecting students)
+        async function deleteAllVips() {
+            if (!confirm('Tem certeza que deseja excluir TODOS os VIPs cadastrados? Esta ação não pode ser desfeita.')) return;
+            if (!confirm('Esta ação irá excluir todos os registros VIP, mas não afetará os dados dos alunos. Continuar?')) return;
+            
+            try {
+                const vipCount = vips.length;
+                
+                if (window.isDevelopmentMode) {
+                    // Clear local storage VIPs
+                    vips.length = 0;
+                    localStorage.setItem('vips', JSON.stringify(vips));
+                } else {
+                    // Delete all VIPs from Firebase
+                    const vipCollection = collection(db, `artifacts/${appId}/public/data/vips`);
+                    const snapshot = await getDocs(vipCollection);
+                    const batch = writeBatch(db);
+                    
+                    snapshot.docs.forEach(doc => {
+                        batch.delete(doc.ref);
+                    });
+                    
+                    await batch.commit();
+                }
+                
+                showSuccessMessage("Sucesso!", `${vipCount} VIPs foram excluídos com sucesso. Os dados dos alunos não foram afetados.`);
+                
+                // Refresh the VIPs section if currently viewing it
+                if (contentArea.firstElementChild?.id === 'vips-section') {
+                    renderVipsSection();
+                }
+            } catch (error) {
+                console.error("Error deleting all VIPs:", error);
+                showErrorMessage("Erro", "Falha ao excluir todos os VIPs.");
             }
         }
 
@@ -7585,7 +7651,12 @@
                                 showErrorMessage("Acesso Negado", "Apenas admins, marketing managers, pedagógico e financeiro podem editar eventos de marketing.");
                                 return;
                             }
-                            openMarketingEventForm(id);
+                            // Close any existing modal first
+                            document.getElementById('form-modal').classList.remove('visible');
+                            // Wait a moment for the closing animation
+                            setTimeout(() => {
+                                openMarketingEventForm(id);
+                            }, 300);
                         },
                         'change-marketing-month': () => changeMarketingMonth(parseInt(direction) || 0),
                         'close-marketing-modal': () => {
@@ -7604,7 +7675,7 @@
                             }
                         },
                         'delete-vip': () => deleteVip(id),
-
+                        'delete-all-vips': deleteAllVips,
 
                         'debug-sync-status': debugSyncStatus,
                     };
