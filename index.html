@@ -2696,8 +2696,24 @@
             modal.removeAttribute('data-pef-type');
             modal.removeAttribute('data-student-name');
         }
-        function showSuccessMessage(title, message) { clearModalHeaderButtons(); const modalTitle = document.getElementById('form-modal-title'); const modalContentArea = document.getElementById('form-modal-content-area'); modalTitle.textContent = title; modalContentArea.innerHTML = `<div class="text-center"><svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-12 w-12 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg><p class="mt-4 text-stone-600">${message}</p><button data-action="close-modal" class="primary-btn mt-6 w-auto px-8">OK</button></div>`; document.getElementById('form-modal').classList.add('visible'); }
-        function showErrorMessage(title, message) { clearModalHeaderButtons(); const modalTitle = document.getElementById('form-modal-title'); const modalContentArea = document.getElementById('form-modal-content-area'); modalTitle.textContent = title; modalContentArea.innerHTML = `<div class="text-center"><svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-12 w-12 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg><p class="mt-4 text-stone-600">${message}</p><button data-action="close-modal" class="primary-btn mt-6 w-auto px-8">OK</button></div>`; document.getElementById('form-modal').classList.add('visible'); }
+        function showSuccessMessage(title, message) { 
+            playSuccessSound(); // Play success sound
+            clearModalHeaderButtons(); 
+            const modalTitle = document.getElementById('form-modal-title'); 
+            const modalContentArea = document.getElementById('form-modal-content-area'); 
+            modalTitle.textContent = title; 
+            modalContentArea.innerHTML = `<div class="text-center"><svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-12 w-12 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg><p class="mt-4 text-stone-600">${message}</p><button data-action="close-modal" class="primary-btn mt-6 w-auto px-8">OK</button></div>`; 
+            document.getElementById('form-modal').classList.add('visible'); 
+        }
+        function showErrorMessage(title, message) { 
+            playErrorSound(); // Play error sound
+            clearModalHeaderButtons(); 
+            const modalTitle = document.getElementById('form-modal-title'); 
+            const modalContentArea = document.getElementById('form-modal-content-area'); 
+            modalTitle.textContent = title; 
+            modalContentArea.innerHTML = `<div class="text-center"><svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-12 w-12 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg><p class="mt-4 text-stone-600">${message}</p><button data-action="close-modal" class="primary-btn mt-6 w-auto px-8">OK</button></div>`; 
+            document.getElementById('form-modal').classList.add('visible'); 
+        }
         function showConfirmationModal(title, message, onConfirm) { clearModalHeaderButtons(); const modalTitle = document.getElementById('form-modal-title'); const modalContentArea = document.getElementById('form-modal-content-area'); modalTitle.textContent = title; modalContentArea.innerHTML = `<p class="text-stone-600">${message}</p><div class="mt-6 flex justify-end gap-4"><button class="secondary-btn" data-action="close-modal">Cancelar</button><button id="confirm-action-btn" class="danger-btn w-auto">Confirmar</button></div>`; document.getElementById('form-modal').classList.add('visible'); document.getElementById('confirm-action-btn').onclick = () => { onConfirm(); closeFormModal(); }; }
 
         function openSignUpModal() {
@@ -7399,7 +7415,7 @@
             mainNav.innerHTML = menuItemsHTML;
         }
 
-        // --- CLICK SOUND SYSTEM ---
+        // --- SUBTLE MOUSE CLICK SOUND SYSTEM ---
         let audioContext;
         let clickSoundEnabled = true;
 
@@ -7413,7 +7429,7 @@
             }
         }
 
-        // Generate click sound using Web Audio API
+        // Generate subtle mouse click sound using Web Audio API
         function playClickSound() {
             if (!clickSoundEnabled || !audioContext) return;
 
@@ -7423,7 +7439,7 @@
                     audioContext.resume();
                 }
 
-                // Create oscillator for click sound
+                // Create a very short, subtle click sound like a mouse click
                 const oscillator = audioContext.createOscillator();
                 const gainNode = audioContext.createGain();
 
@@ -7431,18 +7447,77 @@
                 oscillator.connect(gainNode);
                 gainNode.connect(audioContext.destination);
 
-                // Configure sound - short, subtle click
-                oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
-                oscillator.frequency.exponentialRampToValueAtTime(400, audioContext.currentTime + 0.1);
+                // Configure sound - very short, low volume mouse-like click
+                oscillator.frequency.setValueAtTime(1000, audioContext.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(100, audioContext.currentTime + 0.02);
                 
-                gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+                // Very low volume and very short duration
+                gainNode.gain.setValueAtTime(0.03, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.02);
 
-                // Play sound
+                // Play very short sound (20ms)
                 oscillator.start(audioContext.currentTime);
-                oscillator.stop(audioContext.currentTime + 0.1);
+                oscillator.stop(audioContext.currentTime + 0.02);
             } catch (error) {
                 console.log('Error playing click sound:', error);
+            }
+        }
+
+        // Generate error sound - low frequency, descending tone
+        function playErrorSound() {
+            if (!clickSoundEnabled || !audioContext) return;
+
+            try {
+                if (audioContext.state === 'suspended') {
+                    audioContext.resume();
+                }
+
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+
+                // Error sound - descending low tone
+                oscillator.frequency.setValueAtTime(400, audioContext.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(200, audioContext.currentTime + 0.3);
+                
+                gainNode.gain.setValueAtTime(0.05, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.3);
+
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.3);
+            } catch (error) {
+                console.log('Error playing error sound:', error);
+            }
+        }
+
+        // Generate success sound - ascending tone, pleasant
+        function playSuccessSound() {
+            if (!clickSoundEnabled || !audioContext) return;
+
+            try {
+                if (audioContext.state === 'suspended') {
+                    audioContext.resume();
+                }
+
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+
+                // Success sound - ascending pleasant tone
+                oscillator.frequency.setValueAtTime(600, audioContext.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(900, audioContext.currentTime + 0.2);
+                
+                gainNode.gain.setValueAtTime(0.04, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.2);
+
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.2);
+            } catch (error) {
+                console.log('Error playing success sound:', error);
             }
         }
 
@@ -7454,16 +7529,14 @@
             }
         }
 
-        // Add click sounds to all interactive elements
+        // Add click sounds only to specific button elements (more selective)
         function initializeClickSounds() {
             const selectors = [
-                'button',
-                '.nav-item',
-                '[data-action]',
-                'input[type="checkbox"]',
-                'input[type="radio"]',
-                '.clickable',
-                'a[href]'
+                'button:not(input)',  // Buttons but not input buttons
+                '.nav-item',          // Navigation items
+                '.primary-btn',       // Primary buttons
+                '.secondary-btn',     // Secondary buttons
+                '.danger-btn'         // Danger buttons
             ];
 
             selectors.forEach(selector => {
