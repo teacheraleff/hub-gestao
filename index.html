@@ -154,6 +154,9 @@
         .calendar-event.aula-extra { background-color: #FF5C3D; color: white; }
         .calendar-event.data-comemorativa { background-color: #84C7DF; color: white; }
         .calendar-event.reuniao { background-color: #6B7280; color: white; }
+        .marketing-event { background-color: #84C7DF !important; color: white !important; }
+        .marketing-event:hover { background-color: #6ba3c7 !important; }
+        .marketing-event .event-tipos { display: block; font-size: 0.65rem; opacity: 0.9; margin-top: 2px; }
 
         /* --- Monthly Highlight Styles --- */
         .highlight-card { display: flex; gap: 1rem; align-items: center; }
@@ -633,7 +636,7 @@
 
                 if (activePageId === 'inicio-section') renderInicioSection();
             });
-            getCollectionListener('events', events, renderEventosSection);
+            getCollectionListener('events', events, renderCampanhasSection);
             getCollectionListener('schedules', schedules, () => {
                  if (contentArea.firstElementChild?.id === 'grade-section') renderGradeSection();
             });
@@ -1402,24 +1405,38 @@
                 </div>`;
         }
 
-        function renderEventosSection() {
-            document.getElementById('main-title').textContent = 'Gestor de Eventos';
-            document.getElementById('main-description').textContent = 'Planeje e gerencie todos os eventos da marca.';
+        function renderCampanhasSection() {
+            document.getElementById('main-title').textContent = 'Gestor de Campanhas';
+            document.getElementById('main-description').textContent = 'Planeje e gerencie todas as campanhas de marketing da marca.';
             contentArea.innerHTML = `
-                <div id="events-section">
+                <div id="campanhas-section">
                     <div class="text-right mb-6">
-                        <button class="primary-btn w-auto" data-action="add-event">+ Adicionar Evento</button>
+                        <button class="primary-btn w-auto" data-action="add-campanha">+ Adicionar Campanha</button>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        ${events.map(e => `
-                        <div class="base-card cursor-pointer" data-action="view-event" data-id="${e.id}">
+                        ${events.map(c => `
+                        <div class="base-card ${c.finalizada ? 'opacity-60' : ''}" data-action="view-campanha" data-id="${c.id}">
                             <div class="flex justify-between items-start mb-2">
-                                <h3 class="text-xl font-bold text-stone-800">${e.nome}</h3>
-                                ${e.setor ? `<span class="status-tag status-${e.setor.toLowerCase()}">${e.setor}</span>` : ''}
+                                <h3 class="text-xl font-bold text-stone-800 ${c.finalizada ? 'line-through' : ''}">${c.nome || c.title}</h3>
+                                ${c.setores && c.setores.length > 0 ? c.setores.map(setor => `<span class="status-tag status-${setor.toLowerCase()} text-xs mr-1">${setor}</span>`).join('') : ''}
                             </div>
-                            <p class="text-sm text-stone-500 mb-4">Data: ${new Date(e.data + 'T00:00:00').toLocaleDateString('pt-BR')} ${e.time ? `às ${e.time}`: ''}</p>
-                            <p class="text-sm text-stone-600 truncate"><strong>Local:</strong> ${e.local}</p>
-                        </div>`).join('') || '<p class="col-span-full text-center py-10 text-stone-500">Nenhum evento encontrado.</p>'}
+                            <p class="text-sm text-stone-500 mb-2"><strong>Responsável:</strong> ${c.responsavel || 'N/A'}</p>
+                            <p class="text-sm text-stone-600 mb-2"><strong>Foco:</strong> ${c.foco && c.foco.length > 0 ? c.foco.join(', ') : 'N/A'}</p>
+                            ${c.local ? `<p class="text-sm text-stone-600 mb-2"><strong>Local:</strong> ${c.local}</p>` : ''}
+                            ${c.horario ? `<p class="text-sm text-stone-600 mb-2"><strong>Horário:</strong> ${c.horario}</p>` : ''}
+                            <div class="flex items-center justify-between mt-3 pt-2 border-t">
+                                <div class="flex items-center">
+                                    <input type="checkbox" id="finalizada-${c.id}" ${c.finalizada ? 'checked' : ''} 
+                                           class="h-4 w-4 rounded finalizada-checkbox" 
+                                           data-campanha-id="${c.id}"
+                                           onclick="event.stopPropagation(); toggleCampanhaFinalizada('${c.id}', this.checked)">
+                                    <label for="finalizada-${c.id}" class="ml-2 text-sm ${c.finalizada ? 'text-green-600 font-medium' : 'text-stone-600'}">
+                                        ${c.finalizada ? 'Finalizada' : 'Marcar como finalizada'}
+                                    </label>
+                                </div>
+                                ${c.finalizada ? `<span class="text-xs text-green-600">✓ Concluída</span>` : ''}
+                            </div>
+                        </div>`).join('') || '<p class="col-span-full text-center py-10 text-stone-500">Nenhuma campanha encontrada.</p>'}
                     </div>
                 </div>`;
         }
@@ -2598,88 +2615,246 @@
             }
         }
 
-        function openEventForm(eventId = null) {
+        function openCampanhaForm(campanhaId = null) {
             clearModalHeaderButtons();
-            const event = eventId ? events.find(e => e.id === eventId) : null;
-            document.getElementById('form-modal-title').textContent = event ? "Editar Evento" : "Adicionar Novo Evento";
-            const sectorOptions = ["Financeiro", "Pedagógico", "Comercial", "Marketing"].map(s => `<option value="${s}" ${event?.setor === s ? 'selected' : ''}>${s}</option>`).join('');
+            const campanha = campanhaId ? events.find(c => c.id === campanhaId) : null;
+            document.getElementById('form-modal-title').textContent = campanha ? "Editar Campanha" : "Adicionar Nova Campanha";
+
+            const colaboradorOptions = collaborators.map(c => `<option value="${c.name}" ${campanha?.responsavel === c.name ? 'selected' : ''}>${c.name}</option>`).join('');
+            const setoresOptions = ['Marketing', 'Pedagógico', 'Comercial', 'Financeiro', 'Administrativo'].map(setor => 
+                `<div class="flex items-center">
+                    <input type="checkbox" id="setor-${setor}" name="setores" value="${setor}" class="h-4 w-4 rounded" ${campanha?.setores?.includes(setor) ? 'checked' : ''}>
+                    <label for="setor-${setor}" class="ml-2 text-sm">${setor}</label>
+                </div>`
+            ).join('');
+            
+            const focoOptions = ['Reels', 'Story', 'Destaque', 'TikTok', 'YouTube', 'YouTube Shorts', 'Presencial'].map(foco => 
+                `<div class="flex items-center">
+                    <input type="checkbox" id="foco-${foco.replace(/\s+/g, '')}" name="foco" value="${foco}" class="h-4 w-4 rounded foco-checkbox" ${campanha?.foco?.includes(foco) ? 'checked' : ''}>
+                    <label for="foco-${foco.replace(/\s+/g, '')}" class="ml-2 text-sm">${foco}</label>
+                </div>`
+            ).join('');
+
             document.getElementById('form-modal-content-area').innerHTML = `
                 <form id="form-modal-body" class="space-y-4">
-                    <input type="hidden" id="event-id" value="${eventId || ''}">
-                    <div><label class="font-medium text-sm">Nome do Evento</label><input type="text" id="event-name" class="form-input" required value="${event?.nome || ''}"></div>
-                    <div><label class="font-medium text-sm">Setor</label><select id="event-sector" class="form-input" required>${sectorOptions}</select></div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div><label class="font-medium text-sm">Data</label><input type="date" id="event-date" class="form-input" required value="${event?.data || ''}"></div>
-                        <div><label class="font-medium text-sm">Horário</label><input type="time" id="event-time" class="form-input" value="${event?.time || ''}"></div>
+                    <input type="hidden" id="campanha-id" value="${campanhaId || ''}">
+                    
+                    <h4 class="text-lg font-semibold text-stone-700 border-b pb-2">Informações Básicas</h4>
+                    <div><label class="font-medium text-sm">Nome da Campanha</label><input type="text" id="campanha-nome" class="form-input" required value="${campanha?.nome || campanha?.title || ''}"></div>
+                    
+                    <div><label class="font-medium text-sm">Responsável Principal</label><select id="campanha-responsavel" class="form-input" required><option value="">Selecione um responsável</option>${colaboradorOptions}</select></div>
+                    
+                    <div>
+                        <label class="font-medium text-sm">Setores Envolvidos</label>
+                        <div class="mt-2 grid grid-cols-2 gap-2 p-3 border rounded-md">
+                            ${setoresOptions}
+                        </div>
                     </div>
-                    <div><label class="font-medium text-sm">Local</label><input type="text" id="event-location" class="form-input" required value="${event?.local || ''}"></div>
-                    <div><label class="font-medium text-sm">Descrição</label><textarea id="event-description" rows="4" class="form-input">${event?.descricao || ''}</textarea></div>
-                    <div class="text-right"><button type="submit" class="primary-btn w-auto">Salvar</button></div>
-                </form>`;
-            document.getElementById('form-modal-body').onsubmit = saveEvent;
+                    
+                    <div><label class="font-medium text-sm">Briefing</label><textarea id="campanha-briefing" rows="3" class="form-input" placeholder="Descreva o objetivo e contexto da campanha...">${campanha?.briefing || ''}</textarea></div>
+                    
+                    <div><label class="font-medium text-sm">Estratégia</label><textarea id="campanha-estrategia" rows="3" class="form-input" placeholder="Descreva a estratégia de execução...">${campanha?.estrategia || ''}</textarea></div>
+                    
+                    <div><label class="font-medium text-sm">Link Útil</label><input type="url" id="campanha-link" class="form-input" placeholder="https://exemplo.com" value="${campanha?.linkUtil || ''}"></div>
+                    
+                    <div>
+                        <label class="font-medium text-sm">Foco da Campanha</label>
+                        <div class="mt-2 grid grid-cols-2 gap-2 p-3 border rounded-md">
+                            ${focoOptions}
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <div class="flex items-center">
+                            <input type="checkbox" id="add-horario" name="add-horario" class="h-4 w-4 rounded" ${campanha?.horario ? 'checked' : ''}>
+                            <label for="add-horario" class="ml-2 text-sm font-medium">Adicionar horário?</label>
+                        </div>
+                    </div>
+                    
+                    <div id="horario-field" class="hidden">
+                        <label class="font-medium text-sm">Horário</label>
+                        <input type="time" id="campanha-horario" class="form-input" value="${campanha?.horario || ''}">
+                    </div>
+                    
+                    <div id="local-field" class="hidden">
+                        <label class="font-medium text-sm">Local do Evento Presencial</label>
+                        <input type="text" id="campanha-local" class="form-input" placeholder="Endereço do local" value="${campanha?.local || ''}">
+                    </div>
+                    
+                    <div>
+                        <div class="flex items-center">
+                            <input type="checkbox" id="campanha-finalizada" name="finalizada" class="h-4 w-4 rounded" ${campanha?.finalizada ? 'checked' : ''}>
+                            <label for="campanha-finalizada" class="ml-2 text-sm font-medium">Campanha finalizada</label>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-end gap-2">
+                        <button type="button" data-action="close-modal" class="secondary-btn">Cancelar</button>
+                        <button type="submit" class="primary-btn w-auto">${campanha ? 'Atualizar' : 'Criar'} Campanha</button>
+                    </div>
+                </form>
+            `;
+            
+            // Add event listeners for conditional fields
+            setTimeout(() => {
+                const presencialCheckbox = document.getElementById('foco-Presencial');
+                const horarioCheckbox = document.getElementById('add-horario');
+                
+                if (presencialCheckbox) {
+                    presencialCheckbox.addEventListener('change', function() {
+                        const localField = document.getElementById('local-field');
+                        if (this.checked) {
+                            localField.classList.remove('hidden');
+                        } else {
+                            localField.classList.add('hidden');
+                            document.getElementById('campanha-local').value = '';
+                        }
+                    });
+                    
+                    // Check if presencial is already selected
+                    if (campanha?.foco?.includes('Presencial')) {
+                        document.getElementById('local-field').classList.remove('hidden');
+                    }
+                }
+                
+                if (horarioCheckbox) {
+                    horarioCheckbox.addEventListener('change', function() {
+                        const horarioField = document.getElementById('horario-field');
+                        if (this.checked) {
+                            horarioField.classList.remove('hidden');
+                        } else {
+                            horarioField.classList.add('hidden');
+                            document.getElementById('campanha-horario').value = '';
+                        }
+                    });
+                    
+                    // Check if horario is already set
+                    if (campanha?.horario) {
+                        document.getElementById('horario-field').classList.remove('hidden');
+                    }
+                }
+            }, 100);
+            
+            document.getElementById('form-modal-body').onsubmit = saveCampanha;
             document.getElementById('form-modal').classList.add('visible');
         }
 
-        async function saveEvent(event) {
+        async function saveCampanha(event) {
             event.preventDefault();
-            const eventId = document.getElementById('event-id').value;
+            const campanhaId = document.getElementById('campanha-id').value;
+            
+            const setoresSelecionados = Array.from(document.querySelectorAll('input[name="setores"]:checked')).map(cb => cb.value);
+            const focoSelecionado = Array.from(document.querySelectorAll('input[name="foco"]:checked')).map(cb => cb.value);
+            
             const data = {
-                nome: document.getElementById('event-name').value,
-                setor: document.getElementById('event-sector').value,
-                data: document.getElementById('event-date').value,
-                time: document.getElementById('event-time').value,
-                local: document.getElementById('event-location').value,
-                descricao: document.getElementById('event-description').value,
+                nome: document.getElementById('campanha-nome').value,
+                responsavel: document.getElementById('campanha-responsavel').value,
+                setores: setoresSelecionados,
+                briefing: document.getElementById('campanha-briefing').value,
+                estrategia: document.getElementById('campanha-estrategia').value,
+                linkUtil: document.getElementById('campanha-link').value,
+                foco: focoSelecionado,
+                local: document.getElementById('campanha-local').value,
+                horario: document.getElementById('campanha-horario').value,
+                finalizada: document.getElementById('campanha-finalizada').checked,
+                updatedAt: serverTimestamp()
             };
-            if (!db) { console.warn("Offline mode."); closeFormModal(); return; }
+
+            if (!data.nome) { showErrorMessage("Erro", "O nome da campanha é obrigatório."); return; }
+            if (!data.responsavel) { showErrorMessage("Erro", "O responsável é obrigatório."); return; }
+            if (setoresSelecionados.length === 0) { showErrorMessage("Erro", "Selecione pelo menos um setor."); return; }
+            if (focoSelecionado.length === 0) { showErrorMessage("Erro", "Selecione pelo menos um foco."); return; }
+
+            if (!db) { 
+                console.warn("Offline mode."); 
+                closeFormModal(); 
+                showSuccessMessage("Sucesso!", "Campanha salva localmente (modo offline)."); 
+                return; 
+            }
+            
             try {
-                if (eventId) {
-                    await updateDoc(doc(db, `artifacts/${appId}/public/data/events`, eventId), data);
-                    showSuccessMessage("Sucesso!", "Evento atualizado.");
+                if (campanhaId) {
+                    await updateDoc(doc(db, `artifacts/${appId}/public/data/events`, campanhaId), data);
+                    showSuccessMessage("Sucesso!", "Campanha atualizada com sucesso.");
                 } else {
                     data.createdAt = serverTimestamp();
                     await addDoc(collection(db, `artifacts/${appId}/public/data/events`), data);
-                    showSuccessMessage("Sucesso!", "Novo evento adicionado.");
+                    showSuccessMessage("Sucesso!", "Nova campanha criada com sucesso.");
                 }
-            } catch (error) { console.error("Error saving event:", error); showErrorMessage("Erro", "Falha ao salvar o evento."); }
+                closeFormModal();
+            } catch (error) {
+                console.error("Error saving campanha:", error);
+                showErrorMessage("Erro", "Falha ao salvar a campanha.");
+            }
         }
 
-        function openEventModal(eventId) {
+        function openCampanhaModal(campanhaId) {
             clearModalHeaderButtons();
-
-            // Look for event in both arrays
-            let event = calendarEvents.find(e => e.id === eventId);
-
-            if (!event) return;
-
-            // Handle different event structure formats
-            const eventTitle = event.nome || event.title || 'Evento';
-            const eventDate = event.data || event.date || '';
-            const eventTime = event.time || '';
-            const eventLocation = event.local || event.location || '';
-            const eventSector = event.setor || event.sector || '';
-            const eventDescription = event.descricao || event.description || '';
-
-            // Check if user can edit/delete events (teachers cannot)
-            const canEditEvents = currentUserRole !== 'teacher';
-
-            document.getElementById('form-modal-title').textContent = eventTitle;
+            const campanha = events.find(c => c.id === campanhaId);
+            if (!campanha) return;
+            
+            document.getElementById('form-modal-title').textContent = campanha.nome || campanha.title;
+            
             document.getElementById('form-modal-content-area').innerHTML = `
                 <div class="space-y-4">
-                    <p><strong>Data:</strong> ${eventDate ? new Date(eventDate + 'T00:00:00').toLocaleDateString('pt-BR') : 'Não informada'} ${eventTime ? `às ${eventTime}`: ''}</p>
-                    <p><strong>Local:</strong> ${eventLocation || 'Não informado'}</p>
-                    ${eventSector ? `<p><strong>Setor:</strong> <span class="status-tag status-${eventSector.toLowerCase()}">${eventSector}</span></p>` : ''}
-                    ${eventDescription ? `<div><strong>Descrição:</strong><p class="mt-1 p-3 bg-stone-50 rounded-md whitespace-pre-wrap">${eventDescription}</p></div>` : ''}
-                    <div class="border-t pt-4 flex justify-end gap-2">
-                        ${canEditEvents ? `
-                            <button class="secondary-btn" data-action="edit-calendar-event" data-id="${event.id}">Editar</button>
-                            <button class="danger-btn" data-action="delete-calendar-event" data-id="${event.id}">Apagar</button>
-                        ` : `
-                            <button class="secondary-btn" data-action="close-form-modal">Fechar</button>
-                        `}
+                    <div class="flex justify-between items-start">
+                        <h3 class="text-xl font-bold text-stone-800">${campanha.nome || campanha.title}</h3>
+                        <div class="flex gap-1">
+                            ${campanha.setores ? campanha.setores.map(setor => `<span class="status-tag status-${setor.toLowerCase()} text-xs">${setor}</span>`).join('') : ''}
+                        </div>
                     </div>
-                </div>`;
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-stone-600">
+                        <p><strong>Responsável:</strong> ${campanha.responsavel || 'N/A'}</p>
+                        <p><strong>Foco:</strong> ${campanha.foco ? campanha.foco.join(', ') : 'N/A'}</p>
+                        ${campanha.horario ? `<p><strong>Horário:</strong> ${campanha.horario}</p>` : ''}
+                        <p><strong>Status:</strong> <span class="${campanha.finalizada ? 'text-green-600 font-medium' : 'text-orange-600'}">${campanha.finalizada ? 'Finalizada' : 'Em andamento'}</span></p>
+                        ${campanha.local ? `<p class="col-span-full"><strong>Local:</strong> ${campanha.local}</p>` : ''}
+                        ${campanha.linkUtil ? `<p class="col-span-full"><strong>Link Útil:</strong> <a href="${campanha.linkUtil}" target="_blank" class="text-blue-600 hover:underline">${campanha.linkUtil}</a></p>` : ''}
+                    </div>
+                    
+                    ${campanha.briefing ? `<div><h4 class="font-semibold text-stone-700">Briefing</h4><p class="mt-1 p-3 bg-stone-50 rounded-md text-sm">${campanha.briefing}</p></div>` : ''}
+                    
+                    ${campanha.estrategia ? `<div><h4 class="font-semibold text-stone-700">Estratégia</h4><p class="mt-1 p-3 bg-stone-50 rounded-md text-sm">${campanha.estrategia}</p></div>` : ''}
+                    
+                    <div class="border-t pt-4 flex justify-end gap-2">
+                        <button class="secondary-btn" data-action="edit-campanha" data-id="${campanha.id}">Editar</button>
+                        <button class="danger-btn" data-action="delete-item" data-collection="events" data-id="${campanha.id}">Apagar</button>
+                    </div>
+                </div>
+            `;
             document.getElementById('form-modal').classList.add('visible');
+        }
+
+        async function toggleCampanhaFinalizada(campanhaId, finalizada) {
+            try {
+                const data = { finalizada: finalizada, updatedAt: serverTimestamp() };
+                
+                if (!db) { 
+                    console.warn("Offline mode."); 
+                    // Update local events array for immediate UI feedback
+                    const campanhaIndex = events.findIndex(c => c.id === campanhaId);
+                    if (campanhaIndex !== -1) {
+                        events[campanhaIndex].finalizada = finalizada;
+                        renderCampanhasSection(); // Re-render to show changes
+                    }
+                    showSuccessMessage("Sucesso!", `Campanha ${finalizada ? 'marcada como finalizada' : 'desmarcada'} (modo offline).`);
+                    return; 
+                }
+                
+                await updateDoc(doc(db, `artifacts/${appId}/public/data/events`, campanhaId), data);
+                
+                showSuccessMessage("Sucesso!", `Campanha ${finalizada ? 'marcada como finalizada' : 'desmarcada'} com sucesso.`);
+            } catch (error) {
+                console.error("Error updating campanha status:", error);
+                showErrorMessage("Erro", "Falha ao atualizar o status da campanha.");
+                
+                // Revert checkbox state on error
+                const checkbox = document.getElementById(`finalizada-${campanhaId}`);
+                if (checkbox) {
+                    checkbox.checked = !finalizada;
+                }
+            }
         }
 
         function openBudgetForm(budgetId = null) {
@@ -3813,8 +3988,8 @@
             showSuccessMessage("Sucesso!", "Evento apagado com sucesso.");
         }
 
-        function renderCalendarioSection() {
-            document.getElementById('main-title').textContent = 'Calendário de Eventos';
+        function renderCalendarioPedagogicoSection() {
+            document.getElementById('main-title').textContent = 'Calendário Pedagógico';
             const contentArea = document.getElementById('content-area');
 
             contentArea.innerHTML = `
@@ -3888,8 +4063,119 @@
             initializeCalendar();
         }
 
+        function renderCalendarioMarketingSection() {
+            document.getElementById('main-title').textContent = 'Calendário Marketing';
+            const contentArea = document.getElementById('content-area');
+
+            contentArea.innerHTML = `
+                <div class="calendar-container">
+                    <div class="calendar-header">
+                        <div class="flex items-center gap-4">
+                            <button class="calendar-nav-btn" onclick="changeMarketingMonth(-1)">« Anterior</button>
+                            <h2 id="marketing-calendar-month-year" class="text-2xl font-bold text-stone-800"></h2>
+                            <button class="calendar-nav-btn" onclick="changeMarketingMonth(1)">Próximo »</button>
+                        </div>
+                        ${['admin', 'am'].includes(currentUserRole) ? `
+                        <button class="primary-btn w-auto" data-action="add-marketing-event">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                            </svg>
+                            Adicionar Evento Marketing
+                        </button>
+                        ` : ''}
+                    </div>
+                    <div class="calendar-grid" id="marketing-calendar-grid">
+                        <!-- Marketing Calendar will be rendered here -->
+                    </div>
+                </div>
+
+                <!-- Marketing Event Modal -->
+                <div id="marketing-event-modal" class="modal-overlay">
+                    <div class="modal-content max-w-lg">
+                        <div class="modal-header">
+                            <h4 id="marketing-event-modal-title">Evento Marketing</h4>
+                            <button data-action="close-marketing-modal" class="modal-close-btn">&times;</button>
+                        </div>
+                        <form id="marketing-event-form">
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="font-medium text-sm">Título</label>
+                                    <input type="text" id="marketing-event-title" class="form-input" required>
+                                </div>
+                                <div>
+                                    <label class="font-medium text-sm">Data</label>
+                                    <input type="date" id="marketing-event-date" class="form-input" required>
+                                </div>
+                                <div>
+                                    <label class="font-medium text-sm">Horário</label>
+                                    <input type="time" id="marketing-event-time" class="form-input">
+                                </div>
+                                <div>
+                                    <label class="font-medium text-sm">Tipo de Conteúdo</label>
+                                    <div class="mt-2 grid grid-cols-2 gap-2 p-3 border rounded-md">
+                                        <div class="flex items-center">
+                                            <input type="checkbox" id="tipo-campanha" name="tipos" value="Campanha" class="h-4 w-4 rounded">
+                                            <label for="tipo-campanha" class="ml-2 text-sm">Campanha</label>
+                                        </div>
+                                        <div class="flex items-center">
+                                            <input type="checkbox" id="tipo-reel" name="tipos" value="Reel" class="h-4 w-4 rounded">
+                                            <label for="tipo-reel" class="ml-2 text-sm">Reel</label>
+                                        </div>
+                                        <div class="flex items-center">
+                                            <input type="checkbox" id="tipo-carrossel" name="tipos" value="Carrossel" class="h-4 w-4 rounded">
+                                            <label for="tipo-carrossel" class="ml-2 text-sm">Carrossel</label>
+                                        </div>
+                                        <div class="flex items-center">
+                                            <input type="checkbox" id="tipo-story" name="tipos" value="Story" class="h-4 w-4 rounded">
+                                            <label for="tipo-story" class="ml-2 text-sm">Story</label>
+                                        </div>
+                                        <div class="flex items-center">
+                                            <input type="checkbox" id="tipo-destaque" name="tipos" value="Destaque" class="h-4 w-4 rounded">
+                                            <label for="tipo-destaque" class="ml-2 text-sm">Destaque</label>
+                                        </div>
+                                        <div class="flex items-center">
+                                            <input type="checkbox" id="tipo-tiktok" name="tipos" value="TikTok" class="h-4 w-4 rounded">
+                                            <label for="tipo-tiktok" class="ml-2 text-sm">TikTok</label>
+                                        </div>
+                                        <div class="flex items-center">
+                                            <input type="checkbox" id="tipo-youtube" name="tipos" value="YouTube" class="h-4 w-4 rounded">
+                                            <label for="tipo-youtube" class="ml-2 text-sm">YouTube</label>
+                                        </div>
+                                        <div class="flex items-center">
+                                            <input type="checkbox" id="tipo-youtube-shorts" name="tipos" value="YouTube Shorts" class="h-4 w-4 rounded">
+                                            <label for="tipo-youtube-shorts" class="ml-2 text-sm">YouTube Shorts</label>
+                                        </div>
+                                        <div class="flex items-center">
+                                            <input type="checkbox" id="tipo-gravacao" name="tipos" value="Gravação" class="h-4 w-4 rounded">
+                                            <label for="tipo-gravacao" class="ml-2 text-sm">Gravação</label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="font-medium text-sm">Link Útil</label>
+                                    <input type="url" id="marketing-event-link" class="form-input" placeholder="https://exemplo.com">
+                                </div>
+                                <div>
+                                    <label class="font-medium text-sm">Descrição</label>
+                                    <textarea id="marketing-event-description" rows="3" class="form-input" placeholder="Descrição detalhada do evento..."></textarea>
+                                </div>
+                                <div class="flex justify-end gap-2 pt-4">
+                                    <button type="button" data-action="close-marketing-modal" class="secondary-btn">Cancelar</button>
+                                    <button type="submit" class="primary-btn w-auto">Salvar Evento</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `;
+
+            initializeMarketingCalendar();
+        }
+
         let currentCalendarDate = new Date();
         let calendarEvents = [];
+        let currentMarketingDate = new Date();
+        let marketingEvents = [];
 
         function initializeCalendar() {
             renderCalendar();
@@ -3962,6 +4248,201 @@
 
         function saveCalendarEvents() {
             localStorage.setItem('calendar-events', JSON.stringify(calendarEvents));
+        }
+
+        // Marketing Calendar Functions
+        function initializeMarketingCalendar() {
+            renderMarketingCalendar();
+            loadMarketingEvents();
+        }
+
+        function changeMarketingMonth(direction) {
+            currentMarketingDate.setMonth(currentMarketingDate.getMonth() + direction);
+            renderMarketingCalendar();
+        }
+
+        function renderMarketingCalendar() {
+            const monthYear = document.getElementById('marketing-calendar-month-year');
+            const calendarGrid = document.getElementById('marketing-calendar-grid');
+
+            const months = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 
+                           'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+            const days = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+
+            monthYear.textContent = `${months[currentMarketingDate.getMonth()]} ${currentMarketingDate.getFullYear()}`;
+
+            const firstDay = new Date(currentMarketingDate.getFullYear(), currentMarketingDate.getMonth(), 1);
+            const lastDay = new Date(currentMarketingDate.getFullYear(), currentMarketingDate.getMonth() + 1, 0);
+            const startDate = new Date(firstDay);
+            startDate.setDate(startDate.getDate() - firstDay.getDay());
+
+            let html = days.map(day => `<div class="calendar-day-header">${day}</div>`).join('');
+
+            for (let i = 0; i < 42; i++) {
+                const currentDay = new Date(startDate);
+                currentDay.setDate(startDate.getDate() + i);
+
+                const isCurrentMonth = currentDay.getMonth() === currentMarketingDate.getMonth();
+                const isToday = currentDay.toDateString() === new Date().toDateString();
+                const dayEvents = getMarketingEventsForDate(currentDay);
+
+                html += `
+                    <div class="calendar-day ${!isCurrentMonth ? 'other-month' : ''} ${isToday ? 'today' : ''}" 
+                         data-date="${currentDay.toISOString().split('T')[0]}">
+                        <div class="calendar-day-number">${currentDay.getDate()}</div>
+                        ${dayEvents.map(event =>
+                            `<div class="calendar-event marketing-event" onclick="viewMarketingEvent('${event.id}')">
+                                <span class="event-title">${event.title}</span>
+                                ${event.time ? `<span class="event-time">${event.time}</span>` : ''}
+                                ${event.tipos && event.tipos.length > 0 ? 
+                                    `<span class="event-tipos">${event.tipos.slice(0, 2).join(', ')}${event.tipos.length > 2 ? '...' : ''}</span>` : ''}
+                            </div>`
+                        ).join('')}
+                    </div>
+                `;
+            }
+
+            calendarGrid.innerHTML = html;
+        }
+
+        function getMarketingEventsForDate(date) {
+            const dateStr = date.toISOString().split('T')[0];
+            return marketingEvents.filter(event => event.date === dateStr);
+        }
+
+        function loadMarketingEvents() {
+            const saved = localStorage.getItem('marketing-events');
+            if (saved) {
+                marketingEvents = JSON.parse(saved);
+            } else {
+                // Initialize with sample marketing events
+                marketingEvents = [
+                    { 
+                        id: '1', 
+                        title: 'Campanha Back to School', 
+                        date: '2025-01-20', 
+                        time: '10:00', 
+                        tipos: ['Campanha', 'Reel'], 
+                        link: 'https://exemplo.com',
+                        description: 'Campanha de volta às aulas com foco em reels no Instagram' 
+                    },
+                    { 
+                        id: '2', 
+                        title: 'YouTube Shorts - Dicas Rápidas', 
+                        date: '2025-01-25', 
+                        time: '14:00', 
+                        tipos: ['YouTube Shorts', 'Gravação'], 
+                        link: '',
+                        description: 'Série de vídeos curtos com dicas de inglês' 
+                    }
+                ];
+                saveMarketingEvents();
+            }
+            renderMarketingCalendar();
+        }
+
+        function saveMarketingEvents() {
+            localStorage.setItem('marketing-events', JSON.stringify(marketingEvents));
+        }
+
+        function openMarketingEventForm(eventId = null) {
+            const modal = document.getElementById('marketing-event-modal');
+            const title = document.getElementById('marketing-event-modal-title');
+            const form = document.getElementById('marketing-event-form');
+
+            if (eventId) {
+                const event = marketingEvents.find(e => e.id === eventId);
+                if (event) {
+                    title.textContent = 'Editar Evento Marketing';
+                    document.getElementById('marketing-event-title').value = event.title;
+                    document.getElementById('marketing-event-date').value = event.date;
+                    document.getElementById('marketing-event-time').value = event.time || '';
+                    document.getElementById('marketing-event-link').value = event.link || '';
+                    document.getElementById('marketing-event-description').value = event.description || '';
+                    
+                    // Clear and set checkboxes
+                    document.querySelectorAll('#marketing-event-form input[name="tipos"]').forEach(cb => cb.checked = false);
+                    if (event.tipos) {
+                        event.tipos.forEach(tipo => {
+                            const checkbox = document.querySelector(`#marketing-event-form input[value="${tipo}"]`);
+                            if (checkbox) checkbox.checked = true;
+                        });
+                    }
+                    
+                    form.dataset.eventId = eventId;
+                }
+            } else {
+                title.textContent = 'Novo Evento Marketing';
+                form.reset();
+                delete form.dataset.eventId;
+            }
+
+            modal.classList.add('visible');
+        }
+
+        function viewMarketingEvent(eventId) {
+            const event = marketingEvents.find(e => e.id === eventId);
+            if (!event) return;
+
+            const tiposText = event.tipos && event.tipos.length > 0 ? event.tipos.join(', ') : 'Não especificado';
+            const linkText = event.link ? `<a href="${event.link}" target="_blank" class="text-blue-600 hover:underline">Abrir Link</a>` : 'Não informado';
+
+            const modal = document.getElementById('form-modal');
+            modal.innerHTML = `
+                <div class="modal-content max-w-lg">
+                    <div class="modal-header">
+                        <h4>Detalhes do Evento Marketing</h4>
+                        <button data-action="close-calendar-modal" class="modal-close-btn">&times;</button>
+                    </div>
+                    <div class="space-y-4">
+                        <div>
+                            <h5 class="font-semibold">Título:</h5>
+                            <p>${event.title}</p>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <h5 class="font-semibold">Data:</h5>
+                                <p>${new Date(event.date + 'T00:00:00').toLocaleDateString('pt-BR')}</p>
+                            </div>
+                            <div>
+                                <h5 class="font-semibold">Horário:</h5>
+                                <p>${event.time || 'Não especificado'}</p>
+                            </div>
+                        </div>
+                        <div>
+                            <h5 class="font-semibold">Tipos de Conteúdo:</h5>
+                            <p>${tiposText}</p>
+                        </div>
+                        <div>
+                            <h5 class="font-semibold">Link Útil:</h5>
+                            <p>${linkText}</p>
+                        </div>
+                        <div>
+                            <h5 class="font-semibold">Descrição:</h5>
+                            <p>${event.description || 'Sem descrição'}</p>
+                        </div>
+                        ${['admin', 'am'].includes(currentUserRole) ? `
+                        <div class="flex justify-end gap-2 pt-4">
+                            <button data-action="edit-marketing-event" data-id="${event.id}" class="primary-btn w-auto">Editar</button>
+                            <button onclick="deleteMarketingEvent('${event.id}')" class="danger-btn w-auto">Excluir</button>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+            modal.classList.add('visible');
+        }
+
+        function deleteMarketingEvent(eventId) {
+            if (!confirm('Tem certeza que deseja excluir este evento?')) return;
+
+            marketingEvents = marketingEvents.filter(e => e.id !== eventId);
+            saveMarketingEvents();
+
+            // Close modal and refresh calendar
+            document.getElementById('form-modal').classList.remove('visible');
+            renderMarketingCalendar();
+            showSuccessMessage("Sucesso!", "Evento excluído com sucesso.");
         }
 
         // --- Pedagogical Challenge Functions ---
@@ -5763,6 +6244,75 @@
             };
         }
 
+        // Initialize marketing form handler when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if marketing event form exists and add handler
+            const setupMarketingFormHandler = () => {
+                const marketingForm = document.getElementById('marketing-event-form');
+                if (marketingForm && !marketingForm.dataset.handlerAdded) {
+                    marketingForm.addEventListener('submit', function(e) {
+                        e.preventDefault();
+                        
+                        const title = document.getElementById('marketing-event-title').value;
+                        const date = document.getElementById('marketing-event-date').value;
+                        const time = document.getElementById('marketing-event-time').value;
+                        const link = document.getElementById('marketing-event-link').value;
+                        const description = document.getElementById('marketing-event-description').value;
+                        
+                        // Get selected tipos
+                        const checkedTipos = Array.from(document.querySelectorAll('#marketing-event-form input[name="tipos"]:checked'))
+                            .map(cb => cb.value);
+                        
+                        const eventId = this.dataset.eventId;
+                        if (eventId) {
+                            // Update existing event
+                            const eventIndex = marketingEvents.findIndex(e => e.id === eventId);
+                            if (eventIndex !== -1) {
+                                marketingEvents[eventIndex] = { 
+                                    id: eventId, 
+                                    title, 
+                                    date, 
+                                    time, 
+                                    tipos: checkedTipos, 
+                                    link, 
+                                    description 
+                                };
+                            }
+                        } else {
+                            // Create new event
+                            const newEvent = {
+                                id: Date.now().toString(),
+                                title,
+                                date,
+                                time,
+                                tipos: checkedTipos,
+                                link,
+                                description
+                            };
+                            marketingEvents.push(newEvent);
+                        }
+                        
+                        saveMarketingEvents();
+                        renderMarketingCalendar();
+                        
+                        document.getElementById('marketing-event-modal').classList.remove('visible');
+                        showSuccessMessage("Sucesso!", "Evento de marketing salvo com sucesso.");
+                    });
+                    marketingForm.dataset.handlerAdded = 'true';
+                }
+            };
+
+            // Setup handler when page loads
+            setupMarketingFormHandler();
+            
+            // Also setup handler whenever calendar marketing section is rendered
+            const originalRenderMarketingSection = renderCalendarioMarketingSection;
+            renderCalendarioMarketingSection = function() {
+                originalRenderMarketingSection.apply(this, arguments);
+                setTimeout(setupMarketingFormHandler, 100);
+            };
+        });
+
         function saveCalendarEvent(eventId = null) {
             const title = document.getElementById('event-title').value;
             const date = document.getElementById('event-date').value;
@@ -5813,14 +6363,14 @@
                 { key: 'turmas', label: 'Turmas', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>', roles: ['admin', 'pedagogico', 'teacher', 'ap'] },
                 { key: 'vips', label: 'VIPs', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20a6 6 0 0 0-12 0"/><circle cx="12" cy="10" r="4"/><circle cx="12" cy="12" r="10"/></svg>', roles: ['admin', 'pedagogico', 'teacher', 'ap'] },
                 { key: 'grade', label: 'Grade', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" x2="16" y1="2" y2="6"></line><line x1="8" x2="8" y1="2" y2="6"></line><line x1="3" x2="21" y1="10" y2="10"></line></svg>', roles: ['admin', 'ap', 'pedagogico', 'financeiro', 'teacher'] },
-                { key: 'calendario', label: 'Calendário', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>', roles: ['admin', 'ap', 'pedagogico', 'financeiro', 'teacher', 'am'] },
+                { key: 'calendario-pedagogico', label: 'Calendário Pedagógico', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>', roles: ['admin', 'ap', 'pedagogico', 'financeiro', 'teacher', 'am'] },
+                { key: 'calendario-marketing', label: 'Calendário Marketing', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line><circle cx="9" cy="16" r="2"/><path d="m15 13 3 3 3-3"/></svg>', roles: ['admin', 'ap', 'am', 'financeiro'] },
                 { key: 'desafio-pedagogico', label: 'Desafio Pedagógico', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>', roles: ['admin', 'pedagogico', 'teacher', 'ap'] },
                 { key: 'diretrizes', label: 'Diretrizes', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14,2 14,8 20,8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10,9 9,9 8,9"></polyline></svg>', roles: ['admin', 'teacher', 'pedagogico'] },
                 { key: 'tarefas', label: 'Tarefas', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>', roles: ['admin', 'am', 'ap', 'pedagogico', 'financeiro', 'teacher'] },
                 { key: 'cps', label: 'CPs', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>', roles: ['admin', 'pedagogico', 'ap'] },
-                { key: 'eventos', label: 'Eventos', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3z"/><path d="M12.44 8.917a4 4 0 0 0-4.88 0C4.965 10.685 3 13.982 3 17.5V22h18v-4.5c0-3.518-1.965-6.815-4.56-8.583z"/></svg>', roles: ['admin', 'am', 'ap', 'pedagogico'] },
+                { key: 'campanhas', label: 'Campanhas', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>', roles: ['admin', 'am', 'ap', 'pedagogico'] },
                 { key: 'orcamentos', label: 'Orçamentos', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>', roles: ['admin', 'am', 'financeiro'] },
-                { key: 'banco-de-fotos', label: 'Banco de Fotos', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>', roles: ['admin', 'am'] },
                 { key: 'colaboradores', label: 'Colaboradores', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>', roles: ['admin', 'pedagogico', 'financeiro'] },
                 { key: 'cancelamentos', label: 'Cancelamentos', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="23" y1="18" x2="17" y2="12"/><line x1="17" y1="18" x2="23" y2="12"/></svg>', roles: ['admin', 'pedagogico', 'financeiro'] },
                 { key: 'folha-pagamento', label: 'Folha de Pag.', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>', roles: ['admin', 'financeiro'] }
@@ -5835,7 +6385,7 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            const pageRenderers = { 'inicio': renderInicioSection, 'alunos': renderAlunosSection, 'turmas': renderTurmasSection, 'vips': renderVipsSection, 'eventos': renderEventosSection, 'orcamentos': renderOrcamentosSection, 'tarefas': renderTarefasSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection, 'cancelamentos': renderCancelamentosSection, 'colaboradores': renderColaboradoresSection, 'cps': renderCPsSection, 'dojo': renderDojoSection, 'calendario': renderCalendarioSection, 'desafio-pedagogico': renderDesafioPedagogicoSection, 'diretrizes': renderDiretrizesSection };
+            const pageRenderers = { 'inicio': renderInicioSection, 'alunos': renderAlunosSection, 'turmas': renderTurmasSection, 'vips': renderVipsSection, 'campanhas': renderCampanhasSection, 'orcamentos': renderOrcamentosSection, 'tarefas': renderTarefasSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection, 'cancelamentos': renderCancelamentosSection, 'colaboradores': renderColaboradoresSection, 'cps': renderCPsSection, 'dojo': renderDojoSection, 'calendario-pedagogico': renderCalendarioPedagogicoSection, 'calendario-marketing': renderCalendarioMarketingSection, 'desafio-pedagogico': renderDesafioPedagogicoSection, 'diretrizes': renderDiretrizesSection };
 
             document.body.addEventListener('click', (event) => {
                 // Close modals when clicking overlay or close button
@@ -5891,9 +6441,9 @@
                             }
                         },
                         'save-pef-lesson': () => savePefLesson(unitId, lessonNumber),
-                        'add-event': openEventForm,
-                        'view-event': () => openEventModal(id),
-                        'edit-event': () => openEventForm(id),
+                        'add-campanha': openCampanhaForm,
+                        'view-campanha': () => openCampanhaModal(id),
+                        'edit-campanha': () => openCampanhaForm(id),
                         'add-budget': openBudgetForm,
                         'view-budget': () => openBudgetModal(id),
                         'edit-budget': () => openBudgetForm(id),
@@ -5933,6 +6483,18 @@
                                 return;
                             }
                             openCalendarEventForm(id);
+                        },
+                        'add-marketing-event': openMarketingEventForm,
+                        'view-marketing-event': () => viewMarketingEvent(id),
+                        'edit-marketing-event': () => {
+                            if (!['admin', 'am'].includes(currentUserRole)) {
+                                showErrorMessage("Acesso Negado", "Apenas admins e marketing managers podem editar eventos de marketing.");
+                                return;
+                            }
+                            openMarketingEventForm(id);
+                        },
+                        'close-marketing-modal': () => {
+                            document.getElementById('marketing-event-modal').classList.remove('visible');
                         },
                         'add-guideline': openGuidelineForm,
                         'edit-monthly-highlight': openMonthlyHighlightForm,
