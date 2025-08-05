@@ -427,8 +427,15 @@
                                 <p id="main-description" class="mt-1 text-stone-700"></p>
                             </div>
                         </header>
-                        <div id="header-welcome-message" class="text-right text-stone-800">
-                            <!-- Welcome message will be inserted here -->
+                        <div class="flex items-center space-x-2">
+                            <button data-action="export-backup" class="text-green-700 hover:text-green-900 p-2 rounded-lg transition-colors bg-white/20 hover:bg-white/30" title="Backup dos Dados do Firebase - Segurança Total">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"/>
+                                </svg>
+                            </button>
+                            <div id="header-welcome-message" class="text-right text-stone-800">
+                                <!-- Welcome message will be inserted here -->
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -4631,6 +4638,173 @@
         }
 
         // --- Debug Functions ---
+        // Automatic backup system for data protection
+        function setupAutomaticBackup() {
+            // Create backup every 24 hours
+            setInterval(createDataBackup, 24 * 60 * 60 * 1000);
+            
+            // Create initial backup after 1 minute
+            setTimeout(createDataBackup, 60 * 1000);
+        }
+        
+        async function createDataBackup() {
+            try {
+                // Get fresh data from Firebase if available
+                if (db && !window.isDevelopmentMode) {
+                    await Promise.all([
+                        loadStudents(),
+                        loadTurmas(),
+                        loadVips(),
+                        loadCollaborators(),
+                        loadCampanhas(),
+                        loadBudgets(),
+                        loadTasks(),
+                        loadSchedules(),
+                        loadExpenses(),
+                        loadCancellations(),
+                        loadCPs(),
+                        loadIdeias()
+                    ]);
+                }
+
+                const backupData = {
+                    timestamp: new Date().toISOString(),
+                    projectName: "SLAP Hub - Sistema de Gestão",
+                    version: "2.0",
+                    totalRecords: {
+                        students: students.length,
+                        turmas: turmas.length,
+                        vips: vips.length,
+                        collaborators: collaborators.length,
+                        events: events.length,
+                        budgets: budgets.length,
+                        tasks: tasks.length,
+                        schedules: schedules.length,
+                        expenses: expenses.length,
+                        cancellations: cancellations.length,
+                        cps: cps.length,
+                        ideias: ideias.length
+                    },
+                    data: {
+                        students: students,
+                        turmas: turmas,
+                        vips: vips,
+                        collaborators: collaborators,
+                        events: events,
+                        budgets: budgets,
+                        tasks: tasks,
+                        schedules: schedules,
+                        expenses: expenses,
+                        cancellations: cancellations,
+                        cps: cps,
+                        ideias: ideias,
+                        userProfiles: userProfiles,
+                        monthlyHighlight: monthlyHighlight
+                    }
+                };
+                
+                // Store backup in localStorage with timestamp
+                const backupKey = `slap-firebase-backup-${new Date().toISOString().split('T')[0]}`;
+                localStorage.setItem(backupKey, JSON.stringify(backupData));
+                
+                // Keep only last 7 days of backups
+                cleanOldBackups();
+                
+                console.log('Backup Firebase automático criado:', backupKey, `- ${Object.values(backupData.totalRecords).reduce((a,b) => a+b, 0)} registros`);
+            } catch (error) {
+                console.warn('Erro ao criar backup do Firebase:', error);
+            }
+        }
+        
+        function cleanOldBackups() {
+            const keys = Object.keys(localStorage).filter(key => key.startsWith('slap-firebase-backup-'));
+            if (keys.length > 7) {
+                keys.sort().slice(0, keys.length - 7).forEach(key => {
+                    localStorage.removeItem(key);
+                });
+            }
+        }
+        
+        async function exportDataBackup() {
+            try {
+                // Get fresh data from Firebase if available
+                if (db && !window.isDevelopmentMode) {
+                    await Promise.all([
+                        loadStudents(),
+                        loadTurmas(),
+                        loadVips(),
+                        loadCollaborators(),
+                        loadCampanhas(),
+                        loadBudgets(),
+                        loadTasks(),
+                        loadSchedules(),
+                        loadExpenses(),
+                        loadCancellations(),
+                        loadCPs(),
+                        loadIdeias()
+                    ]);
+                }
+
+                const totalRecords = students.length + turmas.length + vips.length + collaborators.length + 
+                                   events.length + budgets.length + tasks.length + schedules.length + 
+                                   expenses.length + cancellations.length + cps.length + ideias.length;
+
+                const backupData = {
+                    exportInfo: {
+                        timestamp: new Date().toISOString(),
+                        exportedBy: currentUserName || 'Sistema',
+                        projectName: "SLAP Hub - Sistema de Gestão Educacional",
+                        version: "2.0",
+                        description: "Backup completo dos dados do Firebase - SLAP Speaking Like a Pro",
+                        totalRecords: totalRecords,
+                        recordCount: {
+                            students: students.length,
+                            turmas: turmas.length,
+                            vips: vips.length,
+                            collaborators: collaborators.length,
+                            campanhas: events.length,
+                            budgets: budgets.length,
+                            tasks: tasks.length,
+                            schedules: schedules.length,
+                            expenses: expenses.length,
+                            cancellations: cancellations.length,
+                            cps: cps.length,
+                            ideias: ideias.length
+                        }
+                    },
+                    firebaseData: {
+                        students: students,
+                        turmas: turmas,
+                        vips: vips,
+                        collaborators: collaborators,
+                        events: events,
+                        budgets: budgets,
+                        tasks: tasks,
+                        schedules: schedules,
+                        expenses: expenses,
+                        cancellations: cancellations,
+                        cps: cps,
+                        ideias: ideias,
+                        userProfiles: userProfiles,
+                        monthlyHighlight: monthlyHighlight
+                    }
+                };
+                
+                const dataStr = JSON.stringify(backupData, null, 2);
+                const dataBlob = new Blob([dataStr], {type: 'application/json'});
+                
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(dataBlob);
+                link.download = `SLAP-Firebase-Backup-${new Date().toISOString().split('T')[0]}.json`;
+                link.click();
+                
+                showSuccessMessage("Backup Firebase Exportado", `Arquivo com ${totalRecords} registros baixado com sucesso!`);
+            } catch (error) {
+                console.error('Erro ao exportar backup:', error);
+                showErrorMessage("Erro no Backup", "Falha ao criar arquivo de backup. Tente novamente.");
+            }
+        }
+        
         function debugSyncStatus() {
             if (currentUserRole !== 'admin') return;
 
@@ -5141,6 +5315,7 @@
         // Expose function globally for onclick handlers
         window.changeMarketingMonth = changeMarketingMonth;
         window.viewMarketingEvent = viewMarketingEvent;
+        window.deleteMarketingEvent = deleteMarketingEvent;
         window.updateTurmasList = updateTurmasList;
         window.updateVipsList = updateVipsList;
 
@@ -7440,6 +7615,7 @@
                         },
 
                         'debug-sync-status': debugSyncStatus,
+                        'export-backup': exportDataBackup,
                     };
                     if (actionHandlers[action]) {
                         actionHandlers[action]();
@@ -7470,6 +7646,9 @@
             }, 100);
             
             initializeFirebase();
+            
+            // Set up automatic daily data backup
+            setupAutomaticBackup();
         });
     </script>
 </body>
