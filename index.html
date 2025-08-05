@@ -2568,6 +2568,7 @@
         function openAlunoForm(alunoId = null) {
             clearModalHeaderButtons();
             const aluno = alunoId ? students.find(s => s.id === alunoId) : null;
+            const canViewFinancialInfo = !['teacher', 'pedagogico', 'ap', 'am'].includes(currentUserRole);
             document.getElementById('form-modal-title').textContent = aluno ? "Editar Aluno" : "Adicionar Novo Aluno";
 
             const statusOptions = ['Ativo', 'Inativo', 'Cancelado', 'Pendente'].map(s => `<option value="${s}" ${aluno?.status === s ? 'selected' : ''}>${s}</option>`).join('');
