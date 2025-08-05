@@ -1881,7 +1881,6 @@
                                 ${vipRecord ? `
                                     <button class="primary-btn !text-sm flex-1" data-action="open-vip-pef" data-id="${vipRecord.id}">PEF</button>
                                     <button class="secondary-btn !text-sm flex-1" data-action="edit-vip" data-id="${vipRecord.id}">Configurar</button>
-                                    <button class="danger-btn !text-sm" data-action="delete-vip" data-id="${vipRecord.id}">🗑️</button>
                                 ` : ''}
                             </div>
                         </div>`}).join('') || '<p class="col-span-full text-center py-10 text-stone-500">Nenhum aluno VIP encontrado.</p>'}
@@ -2730,27 +2729,26 @@
                         if (index !== -1) {
                             students[index] = { ...students[index], ...data, id: alunoId };
                         }
-                        showSuccessMessage("Sucesso!", "Dados do aluno atualizados.");
                     } else {
                         data.id = 'student_' + Date.now();
                         data.createdAt = new Date();
                         students.push(data);
-                        showSuccessMessage("Sucesso!", "Novo aluno cadastrado.");
                     }
                     localStorage.setItem('students', JSON.stringify(students));
                 } else {
                     // Firebase mode
                     if (alunoId) {
                         await updateDoc(doc(db, `artifacts/${appId}/public/data/students`, alunoId), data);
-                        showSuccessMessage("Sucesso!", "Dados do aluno atualizados.");
                     } else {
                         data.createdAt = serverTimestamp();
                         await addDoc(collection(db, `artifacts/${appId}/public/data/students`), data);
-                        showSuccessMessage("Sucesso!", "Novo aluno cadastrado.");
                     }
                 }
                 
-                closeModal();
+                // Show success message and close modal
+                const successMsg = alunoId ? "Dados do aluno atualizados." : "Novo aluno cadastrado.";
+                showSuccessMessage("Sucesso!", successMsg);
+                closeFormModal();
                 
                 // Re-render the current section if needed
                 const activePageId = contentArea.firstElementChild?.id;
@@ -3055,7 +3053,7 @@
                     await deleteDoc(doc(db, `artifacts/${appId}/public/data/vips`, vipId));
                 }
                 showSuccessMessage("Sucesso!", "VIP excluído com sucesso.");
-                closeModal();
+                closeFormModal();
                 renderVipsSection();
             } catch (error) {
                 console.error("Error deleting VIP:", error);
