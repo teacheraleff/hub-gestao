@@ -1850,8 +1850,11 @@
                                 </select>
                             </div>
                         </div>
-                        <div class="text-right">
-                            ${canManage ? `<button class="primary-btn w-auto" data-action="add-vip">+ Adicionar VIP</button>` : ''}
+                        <div class="text-right flex gap-2">
+                            ${canManage ? `
+                                <button class="secondary-btn w-auto" data-action="cleanup-empty-vips">🧹 Limpar VIPs Vazios</button>
+                                <button class="primary-btn w-auto" data-action="add-vip">+ Adicionar VIP</button>
+                            ` : ''}
                         </div>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="vips-grid">
@@ -3018,6 +3021,33 @@
             } catch (error) {
                 console.error("Error deleting VIP:", error);
                 showErrorMessage("Erro", "Não foi possível excluir o VIP.");
+            }
+        }
+
+        async function cleanupEmptyVips() {
+            const emptyVips = vips.filter(vip => !vip.teacherId && !vip.level && !vip.semestre && !vip.startDate && !vip.endDate);
+            
+            if (emptyVips.length === 0) {
+                showSuccessMessage("Info", "Não há VIPs vazios para limpar.");
+                return;
+            }
+
+            const confirmMessage = `Encontrados ${emptyVips.length} VIPs vazios (sem professor, nível, semestre ou datas configurados).\n\nDeseja excluí-los?`;
+            if (!confirm(confirmMessage)) return;
+
+            try {
+                const batch = writeBatch(db);
+                emptyVips.forEach(vip => {
+                    const vipRef = doc(db, `artifacts/${appId}/public/data/vips`, vip.id);
+                    batch.delete(vipRef);
+                });
+                
+                await batch.commit();
+                showSuccessMessage("Sucesso!", `${emptyVips.length} VIPs vazios foram excluídos.`);
+                renderVipsSection();
+            } catch (error) {
+                console.error("Error cleaning up empty VIPs:", error);
+                showErrorMessage("Erro", "Não foi possível limpar os VIPs vazios.");
             }
         }
 
@@ -7593,6 +7623,7 @@
                             }
                         },
                         'delete-vip': () => deleteVip(id),
+                        'cleanup-empty-vips': () => cleanupEmptyVips(),
 
                         'debug-sync-status': debugSyncStatus,
                     };
