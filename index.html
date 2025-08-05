@@ -427,15 +427,8 @@
                                 <p id="main-description" class="mt-1 text-stone-700"></p>
                             </div>
                         </header>
-                        <div class="flex items-center space-x-2">
-                            <button id="backup-button" data-action="export-backup" class="hidden text-green-700 hover:text-green-900 p-2 rounded-lg transition-colors bg-white/20 hover:bg-white/30" title="Backup dos Dados do Firebase - Segurança Total">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"/>
-                                </svg>
-                            </button>
-                            <div id="header-welcome-message" class="text-right text-stone-800">
-                                <!-- Welcome message will be inserted here -->
-                            </div>
+                        <div id="header-welcome-message" class="text-right text-stone-800">
+                            <!-- Welcome message will be inserted here -->
                         </div>
                     </div>
                 </div>
@@ -473,7 +466,7 @@
         const pendingView = document.getElementById('pending-view');
 
         let db, auth, storage, userId, currentUserName, currentUserRole;
-        let usersData = [], students = [], turmas = [], vips = [], attendance = [], tasks = [], events = [], budgets = [], collaborators = [], schedules = [], expenses = [], cancellations = [], cps = [], dojoRanking = [], dojoMissions = [], ideias = [];
+        let usersData = [], students = [], turmas = [], vips = [], attendance = [], tasks = [], events = [], collaborators = [], schedules = [], expenses = [], cancellations = [], cps = [], dojoRanking = [], dojoMissions = [], ideias = [];
         let userProfiles = {};
         let monthlyHighlight = {
             name: 'João Silva',
@@ -517,7 +510,7 @@
             tasks = JSON.parse(localStorage.getItem('demo-tasks') || '[]');
             events = JSON.parse(localStorage.getItem('demo-events') || '[]');
             calendarEvents = JSON.parse(localStorage.getItem('demo-calendar-events') || '[]');
-            budgets = JSON.parse(localStorage.getItem('demo-budgets') || '[]');
+
             collaborators = JSON.parse(localStorage.getItem('demo-collaborators') || '[]');
             expenses = JSON.parse(localStorage.getItem('demo-expenses') || '[]');
             cancellations = JSON.parse(localStorage.getItem('demo-cancellations') || '[]');
@@ -581,16 +574,6 @@
                     setupFirestoreListeners();
                     updateWelcomeMessages(currentUserName);
                     showHubView();
-                    
-                    // Show/hide backup button based on user role
-                    const backupButton = document.getElementById('backup-button');
-                    if (backupButton) {
-                        if (['admin', 'pedagogico', 'financeiro'].includes(currentUserRole)) {
-                            backupButton.classList.remove('hidden');
-                        } else {
-                            backupButton.classList.add('hidden');
-                        }
-                    }
                 } else {
                     showPendingView();
                 }
@@ -647,7 +630,7 @@
                 }
             });
             getCollectionListener('tasks', tasks, renderTarefasSection);
-            getCollectionListener('budgets', budgets, renderOrcamentosSection);
+
             getCollectionListener('collaborators', collaborators, () => {
                 const activePageId = contentArea.firstElementChild?.id;
                 if (activePageId === 'grade-section') renderGradeSection();
@@ -656,8 +639,10 @@
 
                 if (activePageId === 'inicio-section') renderInicioSection();
             });
-            // Disabled automatic campanhas refresh to fix navigation issues
-            // getCollectionListener('events', events, renderCampanhasSection);
+            getCollectionListener('events', events, () => {
+                const activePageId = contentArea.firstElementChild?.id;
+                if (activePageId === 'campanhas-section') renderCampanhasSection();
+            });
             getCollectionListener('schedules', schedules, () => {
                  if (contentArea.firstElementChild?.id === 'grade-section') renderGradeSection();
             });
@@ -2109,7 +2094,7 @@
                 </div>`;
         }
 
-        function renderOrcamentosSection() { document.getElementById('main-title').textContent = 'Gestor de Orçamentos'; document.getElementById('main-description').textContent = 'Registre e acompanhe todas as propostas e orçamentos.'; contentArea.innerHTML = `<div id="budgets-section"><div class="text-right mb-6"><button class="primary-btn w-auto" data-action="add-budget">+ Adicionar Orçamento</button></div><div class="space-y-4">${budgets.map(b => `<div class="base-card flex flex-wrap justify-between items-center gap-4 cursor-pointer" data-action="view-budget" data-id="${b.id}"><div class="flex-1"><h3 class="text-lg font-bold text-stone-800">${b.titulo}</h3><p class="text-sm text-stone-500">Feito por: ${b.criadoPor || 'N/A'} em ${b.dataCriacao ? new Date(b.dataCriacao).toLocaleDateString('pt-BR') : 'N/A'}</p></div><div class="text-right"><p class="text-xl font-bold text-stone-800">R$ ${parseFloat(b.valor || 0).toFixed(2)}</p><span class="status-tag status-${b.status.toLowerCase()}">${b.status}</span></div></div>`).join('') || '<p class="text-center py-10 text-stone-500">Nenhum orçamento encontrado.</p>'}</div></div>`; }
+
 
         function renderTarefasSection() { 
             document.getElementById('main-title').textContent = 'Lista de Tarefas'; 
@@ -3599,74 +3584,7 @@
             }
         }
 
-        function openBudgetForm(budgetId = null) {
-            clearModalHeaderButtons();
-            const budget = budgetId ? budgets.find(b => b.id === budgetId) : null;
-            const collaboratorOptions = collaborators.filter(c => c.sectors && c.sectors.includes('orcamentos')).map(c => `<option value="${c.name}" ${budget?.criadoPor === c.name ? 'selected' : ''}>${c.name}</option>`).join('');
-            document.getElementById('form-modal-title').textContent = budget ? "Editar Orçamento" : "Adicionar Novo Orçamento";
-            document.getElementById('form-modal-content-area').innerHTML = `
-                <form id="form-modal-body" class="space-y-4">
-                    <input type="hidden" id="budget-id" value="${budgetId || ''}">
-                    <div><label class="font-medium text-sm">Título</label><input type="text" id="budget-title" class="form-input" required value="${budget?.titulo || ''}"></div>
-                    <div><label class="font-medium text-sm">Fornecedor</label><input type="text" id="budget-provider" class="form-input" required value="${budget?.fornecedor || ''}"></div>
-                    <div><label class="font-medium text-sm">Data do Orçamento</label><input type="date" id="budget-date" class="form-input" required value="${budget?.dataCriacao || ''}"></div>
-                    <div><label class="font-medium text-sm">Criado por</label><select id="budget-owner" class="form-input" required>${collaboratorOptions}</select></div>
-                    <div><label class="font-medium text-sm">Valor (R$)</label><input type="number" step="0.01" id="budget-value" class="form-input" required value="${budget?.valor || ''}"></div>
-                    <div><label class="font-medium text-sm">Status</label><select id="budget-status" class="form-input" required><option>Pendente</option><option>Aprovado</option><option>Rejeitado</option></select></div>
-                    <div><label class="font-medium text-sm">Descrição</label><textarea id="budget-description" rows="3" class="form-input">${budget?.descricao || ''}</textarea></div>
-                    <div class="text-right"><button type="submit" class="primary-btn w-auto">Salvar</button></div>
-                </form>`;
-            if (budget) document.getElementById('budget-status').value = budget.status;
-            document.getElementById('form-modal-body').onsubmit = saveBudget;
-            document.getElementById('form-modal').classList.add('visible');
-        }
 
-        async function saveBudget(event) {
-            event.preventDefault();
-            const budgetId = document.getElementById('budget-id').value;
-            const data = {
-                titulo: document.getElementById('budget-title').value,
-                fornecedor: document.getElementById('budget-provider').value,
-                dataCriacao: document.getElementById('budget-date').value,
-                criadoPor: document.getElementById('budget-owner').value,
-                valor: document.getElementById('budget-value').value,
-                status: document.getElementById('budget-status').value,
-                descricao: document.getElementById('budget-description').value,
-            };
-            if (!db) { console.warn("Offline mode."); closeFormModal(); return; }
-            try {
-                if (budgetId) {
-                    await updateDoc(doc(db, `artifacts/${appId}/public/data/budgets`, budgetId), data);
-                    showSuccessMessage("Sucesso!", "Orçamento atualizado.");
-                } else {
-                    data.createdAt = serverTimestamp();
-                    await addDoc(collection(db, `artifacts/${appId}/public/data/budgets`), data);
-                    showSuccessMessage("Sucesso!", "Novo orçamento adicionado.");
-                }
-                closeFormModal();
-            } catch (error) { console.error("Error saving budget:", error); showErrorMessage("Erro", "Falha ao salvar o orçamento."); }
-        }
-
-        function openBudgetModal(budgetId) {
-            clearModalHeaderButtons();
-            const budget = budgets.find(b => b.id === budgetId);
-            if (!budget) return;
-            document.getElementById('form-modal-title').textContent = budget.titulo;
-            document.getElementById('form-modal-content-area').innerHTML = `
-                <div class="space-y-4">
-                    <p><strong>Fornecedor:</strong> ${budget.fornecedor}</p>
-                    <p><strong>Data:</strong> ${budget.dataCriacao ? new Date(budget.dataCriacao + 'T00:00:00').toLocaleDateString('pt-BR') : 'N/A'}</p>
-                    <p><strong>Criado por:</strong> ${budget.criadoPor || 'N/A'}</p>
-                    <p><strong>Valor:</strong> R$ ${parseFloat(budget.valor || 0).toFixed(2)}</p>
-                    <p><strong>Status:</strong> <span class="status-tag status-${budget.status.toLowerCase()}">${budget.status}</span></p>
-                    ${budget.descricao ? `<div><strong>Descrição:</strong><p class="mt-1 p-3 bg-stone-50 rounded-md">${budget.descricao}</p></div>` : ''}
-                    <div class="border-t pt-4 flex justify-end gap-2">
-                        <button class="secondary-btn" data-action="edit-budget" data-id="${budget.id}">Editar</button>
-                        <button class="danger-btn" data-action="delete-item" data-collection="budgets" data-id="${budget.id}">Apagar</button>
-                    </div>
-                </div>`;
-            document.getElementById('form-modal').classList.add('visible');
-        }
 
         function openTaskForm() {
             clearModalHeaderButtons();
@@ -4648,177 +4566,6 @@
         }
 
         // --- Debug Functions ---
-        // Automatic backup system for data protection
-        function setupAutomaticBackup() {
-            // Create backup every 24 hours
-            setInterval(createDataBackup, 24 * 60 * 60 * 1000);
-            
-            // Create initial backup after 1 minute
-            setTimeout(createDataBackup, 60 * 1000);
-        }
-        
-        function createDataBackup() {
-            try {
-                // Ensure arrays exist
-                const studentsArray = students || [];
-                const turmasArray = turmas || [];
-                const vipsArray = vips || [];
-                const collaboratorsArray = collaborators || [];
-                const eventsArray = events || [];
-                const budgetsArray = budgets || [];
-                const tasksArray = tasks || [];
-                const schedulesArray = schedules || [];
-                const expensesArray = expenses || [];
-                const cancellationsArray = cancellations || [];
-                const cpsArray = cps || [];
-                const ideiasArray = ideias || [];
-
-                const totalRecordsObj = {
-                    students: studentsArray.length,
-                    turmas: turmasArray.length,
-                    vips: vipsArray.length,
-                    collaborators: collaboratorsArray.length,
-                    events: eventsArray.length,
-                    budgets: budgetsArray.length,
-                    tasks: tasksArray.length,
-                    schedules: schedulesArray.length,
-                    expenses: expensesArray.length,
-                    cancellations: cancellationsArray.length,
-                    cps: cpsArray.length,
-                    ideias: ideiasArray.length
-                };
-
-                const backupData = {
-                    timestamp: new Date().toISOString(),
-                    projectName: "SLAP Hub - Sistema de Gestão",
-                    version: "2.0",
-                    totalRecords: totalRecordsObj,
-                    data: {
-                        students: studentsArray,
-                        turmas: turmasArray,
-                        vips: vipsArray,
-                        collaborators: collaboratorsArray,
-                        events: eventsArray,
-                        budgets: budgetsArray,
-                        tasks: tasksArray,
-                        schedules: schedulesArray,
-                        expenses: expensesArray,
-                        cancellations: cancellationsArray,
-                        cps: cpsArray,
-                        ideias: ideiasArray,
-                        userProfiles: userProfiles || {},
-                        monthlyHighlight: monthlyHighlight || {}
-                    }
-                };
-                
-                // Store backup in localStorage with timestamp
-                const backupKey = `slap-firebase-backup-${new Date().toISOString().split('T')[0]}`;
-                localStorage.setItem(backupKey, JSON.stringify(backupData));
-                
-                // Keep only last 7 days of backups
-                cleanOldBackups();
-                
-                const totalCount = Object.values(totalRecordsObj).reduce((a,b) => a+b, 0);
-                console.log('Backup Firebase automático criado:', backupKey, `- ${totalCount} registros`);
-            } catch (error) {
-                console.warn('Erro ao criar backup do Firebase:', error);
-            }
-        }
-        
-        function cleanOldBackups() {
-            const keys = Object.keys(localStorage).filter(key => key.startsWith('slap-firebase-backup-'));
-            if (keys.length > 7) {
-                keys.sort().slice(0, keys.length - 7).forEach(key => {
-                    localStorage.removeItem(key);
-                });
-            }
-        }
-        
-        function exportDataBackup() {
-            try {
-                console.log('Iniciando backup manual...');
-                
-                // Ensure arrays exist
-                const studentsArray = students || [];
-                const turmasArray = turmas || [];
-                const vipsArray = vips || [];
-                const collaboratorsArray = collaborators || [];
-                const eventsArray = events || [];
-                const budgetsArray = budgets || [];
-                const tasksArray = tasks || [];
-                const schedulesArray = schedules || [];
-                const expensesArray = expenses || [];
-                const cancellationsArray = cancellations || [];
-                const cpsArray = cps || [];
-                const ideiasArray = ideias || [];
-
-                const totalRecords = studentsArray.length + turmasArray.length + vipsArray.length + 
-                                   collaboratorsArray.length + eventsArray.length + budgetsArray.length + 
-                                   tasksArray.length + schedulesArray.length + expensesArray.length + 
-                                   cancellationsArray.length + cpsArray.length + ideiasArray.length;
-
-                const backupData = {
-                    exportInfo: {
-                        timestamp: new Date().toISOString(),
-                        exportedBy: currentUserName || 'Sistema',
-                        projectName: "SLAP Hub - Sistema de Gestão Educacional",
-                        version: "2.0",
-                        description: "Backup completo dos dados do Firebase - SLAP Speaking Like a Pro",
-                        totalRecords: totalRecords,
-                        recordCount: {
-                            students: studentsArray.length,
-                            turmas: turmasArray.length,
-                            vips: vipsArray.length,
-                            collaborators: collaboratorsArray.length,
-                            campanhas: eventsArray.length,
-                            budgets: budgetsArray.length,
-                            tasks: tasksArray.length,
-                            schedules: schedulesArray.length,
-                            expenses: expensesArray.length,
-                            cancellations: cancellationsArray.length,
-                            cps: cpsArray.length,
-                            ideias: ideiasArray.length
-                        }
-                    },
-                    firebaseData: {
-                        students: studentsArray,
-                        turmas: turmasArray,
-                        vips: vipsArray,
-                        collaborators: collaboratorsArray,
-                        events: eventsArray,
-                        budgets: budgetsArray,
-                        tasks: tasksArray,
-                        schedules: schedulesArray,
-                        expenses: expensesArray,
-                        cancellations: cancellationsArray,
-                        cps: cpsArray,
-                        ideias: ideiasArray,
-                        userProfiles: userProfiles || {},
-                        monthlyHighlight: monthlyHighlight || {}
-                    }
-                };
-                
-                console.log(`Preparando backup com ${totalRecords} registros...`);
-                
-                const dataStr = JSON.stringify(backupData, null, 2);
-                const dataBlob = new Blob([dataStr], {type: 'application/json'});
-                
-                const link = document.createElement('a');
-                link.href = URL.createObjectURL(dataBlob);
-                link.download = `SLAP-Firebase-Backup-${new Date().toISOString().split('T')[0]}.json`;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                
-                showSuccessMessage("Backup Firebase Exportado", `Arquivo com ${totalRecords} registros baixado com sucesso!`);
-                console.log('Backup manual concluído com sucesso!');
-                
-            } catch (error) {
-                console.error('Erro detalhado ao exportar backup:', error);
-                showErrorMessage("Erro no Backup", `Falha ao criar arquivo: ${error.message}`);
-            }
-        }
-        
         function debugSyncStatus() {
             if (currentUserRole !== 'admin') return;
 
@@ -5330,6 +5077,7 @@
         window.changeMarketingMonth = changeMarketingMonth;
         window.viewMarketingEvent = viewMarketingEvent;
         window.deleteMarketingEvent = deleteMarketingEvent;
+        window.deleteCalendarEvent = deleteCalendarEvent;
         window.updateTurmasList = updateTurmasList;
         window.updateVipsList = updateVipsList;
 
@@ -6542,6 +6290,60 @@
 
 
         // --- Guidelines Functions ---
+        
+        // Bulk import function for guidelines
+        async function bulkImportGuidelines(guidelinesArray) {
+            if (!Array.isArray(guidelinesArray)) {
+                showErrorMessage("Erro", "Dados inválidos para importação.");
+                return;
+            }
+
+            let successCount = 0;
+            let errorCount = 0;
+
+            for (const guidelineData of guidelinesArray) {
+                try {
+                    const guideline = {
+                        id: generateId(),
+                        title: guidelineData.title || 'Sem título',
+                        content: guidelineData.content || '',
+                        category: guidelineData.category || 'geral',
+                        createdAt: new Date().toISOString(),
+                        createdBy: currentUser
+                    };
+
+                    if (!db) {
+                        // Local storage mode
+                        let guidelines = JSON.parse(localStorage.getItem('guidelines') || '[]');
+                        guidelines.push(guideline);
+                        localStorage.setItem('guidelines', JSON.stringify(guidelines));
+                    } else {
+                        // Firebase mode
+                        const docRef = doc(db, `artifacts/${appId}/public/data/guidelines`, guideline.id);
+                        await setDoc(docRef, guideline);
+                    }
+                    
+                    successCount++;
+                } catch (error) {
+                    console.error('Error importing guideline:', guidelineData.title, error);
+                    errorCount++;
+                }
+            }
+
+            // Reload guidelines after import
+            await loadGuidelines();
+            
+            // Show results
+            if (errorCount === 0) {
+                showSuccessMessage("Importação Concluída", `${successCount} diretrizes importadas com sucesso!`);
+            } else {
+                showErrorMessage("Importação Parcial", `${successCount} diretrizes importadas. ${errorCount} falharam.`);
+            }
+        }
+
+        // Make it globally accessible for console usage
+        window.bulkImportGuidelines = bulkImportGuidelines;
+
         function renderDiretrizesSection() {
             document.getElementById('main-title').textContent = 'Diretrizes SLAP';
             const contentArea = document.getElementById('content-area');
@@ -7241,16 +7043,6 @@
                         <div class="text-lg font-bold">${firstName}</div>
                     `;
                 }
-                
-                // Show/hide backup button based on user role
-                const backupButton = document.getElementById('backup-button');
-                if (backupButton && currentUserRole) {
-                    if (['admin', 'pedagogico', 'financeiro'].includes(currentUserRole)) {
-                        backupButton.classList.remove('hidden');
-                    } else {
-                        backupButton.classList.add('hidden');
-                    }
-                }
             }
 
             if (document.readyState === 'loading') {
@@ -7426,8 +7218,8 @@
                         </div>
                         <div class="flex justify-end gap-2 pt-4 border-t">
                             ${['admin', 'pedagogico'].includes(currentUserRole) ? `
-                                <button class="danger-btn" onclick="deleteCalendarEvent('${event.id}')">Excluir</button>
-                                <button class="secondary-btn" onclick="openCalendarEventForm('${event.id}')">Editar</button>
+                                <button class="danger-btn" data-action="delete-calendar-event" data-id="${event.id}">Excluir</button>
+                                <button class="secondary-btn" data-action="edit-calendar-event" data-id="${event.id}">Editar</button>
                             ` : ''}
                             <button class="primary-btn w-auto" data-action="close-modal">Fechar</button>
                         </div>
@@ -7465,23 +7257,23 @@
             const mainNav = document.getElementById('main-navigation');
             const menuItems = [
                 { key: 'inicio', label: 'Início', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>', roles: null },
-                { key: 'dojo', label: 'Dojo', icon: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-3"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>', roles: null },
+                { key: 'dojo', label: 'Dojo', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 12a6 6 0 0 0 12 0c0-1-.2-2-.6-2.8L12 3L6.6 9.2c-.4.8-.6 1.8-.6 2.8z"/><path d="M8 12h.01"/><path d="M16 12h.01"/><path d="M12 17h.01"/><path d="M21 12c.6 0 1-.4 1-1s-.4-1-1-1"/><path d="M3 12c-.6 0-1-.4-1-1s.4-1 1-1"/><path d="M12 21c0 .6-.4 1-1 1s-1-.4-1-1"/><path d="M12 3c0-.6.4-1 1-1s1 .4 1 1"/></svg>', roles: null },
                 { key: 'mural-ideias', label: 'Mural de Ideias', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>', roles: null },
                 { key: 'alunos', label: 'Alunos', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>', roles: ['admin', 'pedagogico', 'financeiro', 'ap'] },
                 { key: 'turmas', label: 'Turmas', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>', roles: ['admin', 'pedagogico', 'teacher', 'ap'] },
                 { key: 'vips', label: 'VIPs', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20a6 6 0 0 0-12 0"/><circle cx="12" cy="10" r="4"/><circle cx="12" cy="12" r="10"/></svg>', roles: ['admin', 'pedagogico', 'teacher', 'ap'] },
                 { key: 'grade', label: 'Grade', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" x2="16" y1="2" y2="6"></line><line x1="8" x2="8" y1="2" y2="6"></line><line x1="3" x2="21" y1="10" y2="10"></line></svg>', roles: ['admin', 'ap', 'pedagogico', 'financeiro', 'teacher'] },
                 { key: 'calendario-pedagogico', label: 'Calendário Pedagógico', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>', roles: ['admin', 'ap', 'pedagogico', 'financeiro', 'teacher', 'am'] },
-                { key: 'calendario-marketing', label: 'Calendário Marketing', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line><circle cx="9" cy="16" r="2"/><path d="m15 13 3 3 3-3"/></svg>', roles: ['admin', 'ap', 'am', 'financeiro'] },
+                { key: 'calendario-marketing', label: 'Calendário Marketing', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>', roles: ['admin', 'ap', 'am', 'financeiro'] },
                 { key: 'desafio-pedagogico', label: 'Desafio Pedagógico', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>', roles: ['admin', 'pedagogico', 'teacher', 'ap'] },
                 { key: 'diretrizes', label: 'Diretrizes', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14,2 14,8 20,8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10,9 9,9 8,9"></polyline></svg>', roles: ['admin', 'teacher', 'pedagogico'] },
                 { key: 'tarefas', label: 'Tarefas', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>', roles: ['admin', 'am', 'ap', 'pedagogico', 'financeiro', 'teacher'] },
                 { key: 'cps', label: 'CPs', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>', roles: ['admin', 'pedagogico', 'ap'] },
                 { key: 'campanhas', label: 'Campanhas', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>', roles: ['admin', 'am', 'ap', 'pedagogico'] },
-                { key: 'orcamentos', label: 'Orçamentos', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>', roles: ['admin', 'am', 'financeiro'] },
+
                 { key: 'colaboradores', label: 'Colaboradores', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>', roles: ['admin', 'pedagogico', 'financeiro'] },
                 { key: 'cancelamentos', label: 'Cancelamentos', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="23" y1="18" x2="17" y2="12"/><line x1="17" y1="18" x2="23" y2="12"/></svg>', roles: ['admin', 'pedagogico', 'financeiro'] },
-                { key: 'folha-pagamento', label: 'Folha de Pag.', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>', roles: ['admin', 'financeiro'] }
+                { key: 'folha-pagamento', label: 'Despesas', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>', roles: ['admin', 'financeiro'] }
             ];
 
             const menuItemsHTML = menuItems
@@ -7493,7 +7285,7 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            const pageRenderers = { 'inicio': renderInicioSection, 'alunos': renderAlunosSection, 'turmas': renderTurmasSection, 'vips': renderVipsSection, 'campanhas': () => renderCampanhasSection(), 'orcamentos': renderOrcamentosSection, 'tarefas': renderTarefasSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection, 'cancelamentos': renderCancelamentosSection, 'colaboradores': renderColaboradoresSection, 'cps': renderCPsSection, 'dojo': renderDojoSection, 'calendario-pedagogico': renderCalendarioPedagogicoSection, 'calendario-marketing': renderCalendarioMarketingSection, 'desafio-pedagogico': renderDesafioPedagogicoSection, 'diretrizes': renderDiretrizesSection, 'mural-ideias': renderMuralIdeiasSection };
+            const pageRenderers = { 'inicio': renderInicioSection, 'alunos': renderAlunosSection, 'turmas': renderTurmasSection, 'vips': renderVipsSection, 'campanhas': renderCampanhasSection, 'tarefas': renderTarefasSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection, 'cancelamentos': renderCancelamentosSection, 'colaboradores': renderColaboradoresSection, 'cps': renderCPsSection, 'dojo': renderDojoSection, 'calendario-pedagogico': renderCalendarioPedagogicoSection, 'calendario-marketing': renderCalendarioMarketingSection, 'desafio-pedagogico': renderDesafioPedagogicoSection, 'diretrizes': renderDiretrizesSection, 'mural-ideias': renderMuralIdeiasSection };
 
             document.body.addEventListener('click', (event) => {
                 // Close modals when clicking overlay or close button
@@ -7530,8 +7322,8 @@
 
                 const actionTarget = event.target.closest('[data-action]');
                 if (actionTarget) {
-                    // Don't interfere with navigation clicks
-                    if (actionTarget.closest('.nav-item')) {
+                    // Don't interfere with navigation clicks that don't have data-action
+                    if (actionTarget.closest('.nav-item') && !actionTarget.dataset.action) {
                         return;
                     }
                     
@@ -7568,9 +7360,7 @@
                         },
                         'view-campanha': () => openCampanhaModal(id),
                         'edit-campanha': () => openCampanhaForm(id),
-                        'add-budget': openBudgetForm,
-                        'view-budget': () => openBudgetModal(id),
-                        'edit-budget': () => openBudgetForm(id),
+
                         'add-task': openTaskForm,
                         'add-collaborator': () => openCollaboratorForm(),
                         'edit-collaborator': () => openCollaboratorForm(id),
@@ -7639,7 +7429,6 @@
                         },
 
                         'debug-sync-status': debugSyncStatus,
-                        'export-backup': exportDataBackup,
                     };
                     if (actionHandlers[action]) {
                         actionHandlers[action]();
@@ -7670,9 +7459,6 @@
             }, 100);
             
             initializeFirebase();
-            
-            // Set up automatic daily data backup
-            setupAutomaticBackup();
         });
     </script>
 </body>
