@@ -2063,28 +2063,28 @@
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         ${events.map(c => `
-                        <div class="base-card bg-white hover:bg-yellow-50 border-l-4 border-l-yellow-400 shadow-md hover:shadow-lg transition-all duration-200 ${c.finalizada ? 'opacity-60' : ''}" data-action="view-campanha" data-id="${c.id}">
+                        <div class="base-card ${c.finalizada ? 'bg-gray-100 hover:bg-gray-200 border-l-gray-400' : 'bg-white hover:bg-yellow-50 border-l-yellow-400'} border-l-4 shadow-md hover:shadow-lg transition-all duration-200 ${c.finalizada ? 'opacity-70' : ''}" data-action="view-campanha" data-id="${c.id}">
                             <div class="flex justify-between items-start mb-2">
-                                <h3 class="text-xl font-bold text-stone-800 ${c.finalizada ? 'line-through' : ''}">${c.nome || c.title}</h3>
-                                ${c.setores && c.setores.length > 0 ? c.setores.map(setor => `<span class="status-tag status-${setor.toLowerCase()} text-xs mr-1">${setor}</span>`).join('') : ''}
+                                <h3 class="text-xl font-bold ${c.finalizada ? 'text-gray-500 line-through' : 'text-stone-800'}">${c.nome || c.title}</h3>
+                                ${c.setores && c.setores.length > 0 ? c.setores.map(setor => `<span class="status-tag status-${setor.toLowerCase()} text-xs mr-1 ${c.finalizada ? 'opacity-60' : ''}">${setor}</span>`).join('') : ''}
                             </div>
-                            <p class="text-sm text-stone-500 mb-2"><strong>Responsável:</strong> ${c.responsavel || 'N/A'}</p>
-                            <p class="text-sm text-stone-600 mb-2"><strong>Plataforma:</strong> ${c.plataforma && c.plataforma.length > 0 ? c.plataforma.join(', ') : (c.foco && c.foco.length > 0 ? c.foco.join(', ') : 'N/A')}</p>
-                            <p class="text-sm text-stone-600 mb-2"><strong>Foco:</strong> ${c.focoObjetivo && c.focoObjetivo.length > 0 ? c.focoObjetivo.join(', ') : 'N/A'}</p>
-                            ${c.referencia1 || c.referencia2 ? `<p class="text-sm text-stone-600 mb-2"><strong>Referências:</strong> ${[c.referencia1, c.referencia2].filter(Boolean).length} link(s)</p>` : ''}
-                            ${c.local ? `<p class="text-sm text-stone-600 mb-2"><strong>Local:</strong> ${c.local}</p>` : ''}
-                            ${c.horario ? `<p class="text-sm text-stone-600 mb-2"><strong>Horário:</strong> ${c.horario}</p>` : ''}
-                            <div class="flex items-center justify-between mt-3 pt-2 border-t">
+                            <p class="text-sm ${c.finalizada ? 'text-gray-500' : 'text-stone-500'} mb-2"><strong>Responsável:</strong> ${c.responsavel || 'N/A'}</p>
+                            <p class="text-sm ${c.finalizada ? 'text-gray-400' : 'text-stone-600'} mb-2"><strong>Plataforma:</strong> ${c.plataforma && c.plataforma.length > 0 ? c.plataforma.join(', ') : (c.foco && c.foco.length > 0 ? c.foco.join(', ') : 'N/A')}</p>
+                            <p class="text-sm ${c.finalizada ? 'text-gray-400' : 'text-stone-600'} mb-2"><strong>Foco:</strong> ${c.focoObjetivo && c.focoObjetivo.length > 0 ? c.focoObjetivo.join(', ') : 'N/A'}</p>
+                            ${c.referencia1 || c.referencia2 ? `<p class="text-sm ${c.finalizada ? 'text-gray-400' : 'text-stone-600'} mb-2"><strong>Referências:</strong> ${[c.referencia1, c.referencia2].filter(Boolean).length} link(s)</p>` : ''}
+                            ${c.local ? `<p class="text-sm ${c.finalizada ? 'text-gray-400' : 'text-stone-600'} mb-2"><strong>Local:</strong> ${c.local}</p>` : ''}
+                            ${c.horario ? `<p class="text-sm ${c.finalizada ? 'text-gray-400' : 'text-stone-600'} mb-2"><strong>Horário:</strong> ${c.horario}</p>` : ''}
+                            <div class="flex items-center justify-between mt-3 pt-2 ${c.finalizada ? 'border-gray-300' : 'border-t'}">
                                 <div class="flex items-center">
                                     <input type="checkbox" id="finalizada-${c.id}" ${c.finalizada ? 'checked' : ''} 
                                            class="h-4 w-4 rounded finalizada-checkbox" 
                                            data-campanha-id="${c.id}"
                                            onclick="event.stopPropagation(); toggleCampanhaFinalizada('${c.id}', this.checked)">
-                                    <label for="finalizada-${c.id}" class="ml-2 text-sm ${c.finalizada ? 'text-green-600 font-medium' : 'text-stone-600'}">
+                                    <label for="finalizada-${c.id}" class="ml-2 text-sm ${c.finalizada ? 'text-gray-500 font-medium' : 'text-stone-600'}">
                                         ${c.finalizada ? 'Finalizada' : 'Marcar como finalizada'}
                                     </label>
                                 </div>
-                                ${c.finalizada ? `<span class="text-xs text-green-600">✓ Concluída</span>` : ''}
+                                ${c.finalizada ? `<span class="text-xs text-gray-500">✓ Concluída</span>` : ''}
                             </div>
                         </div>`).join('') || '<p class="col-span-full text-center py-10 text-stone-500">Nenhuma campanha encontrada.</p>'}
                     </div>
@@ -3273,8 +3273,10 @@
         }
 
         function openCampanhaForm(campanhaId = null) {
+            console.log('openCampanhaForm called with campanhaId:', campanhaId);
             clearModalHeaderButtons();
             const campanha = campanhaId ? events.find(c => c.id === campanhaId) : null;
+            console.log('Found campanha:', campanha);
             document.getElementById('form-modal-title').textContent = campanha ? "Editar Campanha" : "Adicionar Nova Campanha";
 
             const colaboradorOptions = collaborators
@@ -3418,6 +3420,7 @@
             
             document.getElementById('form-modal-body').onsubmit = saveCampanha;
             document.getElementById('form-modal').classList.add('visible');
+            console.log('Modal should be visible now');
         }
 
         async function saveCampanha(event) {
@@ -3469,6 +3472,10 @@
                     showSuccessMessage("Sucesso!", "Nova campanha criada com sucesso.");
                 }
                 closeFormModal();
+                // Auto-refresh campanhas section if currently active
+                if (document.getElementById('campanhas-section')) {
+                    setTimeout(() => renderCampanhasSection(), 500);
+                }
             } catch (error) {
                 console.error("Error saving campanha:", error);
                 showErrorMessage("Erro", "Falha ao salvar a campanha.");
@@ -3527,11 +3534,14 @@
                     }
                     showSuccessMessage("Sucesso!", `Campanha ${finalizada ? 'marcada como finalizada' : 'desmarcada'} (modo offline).`);
                     return; 
+                } else {
+                    await updateDoc(doc(db, `artifacts/${appId}/public/data/events`, campanhaId), data);
+                    showSuccessMessage("Sucesso!", `Campanha ${finalizada ? 'marcada como finalizada' : 'desmarcada'} com sucesso.`);
+                    // Auto-refresh campanhas section if currently active
+                    if (document.getElementById('campanhas-section')) {
+                        setTimeout(() => renderCampanhasSection(), 300);
+                    }
                 }
-                
-                await updateDoc(doc(db, `artifacts/${appId}/public/data/events`, campanhaId), data);
-                
-                showSuccessMessage("Sucesso!", `Campanha ${finalizada ? 'marcada como finalizada' : 'desmarcada'} com sucesso.`);
             } catch (error) {
                 console.error("Error updating campanha status:", error);
                 showErrorMessage("Erro", "Falha ao atualizar o status da campanha.");
@@ -3588,6 +3598,11 @@
                     await addDoc(collection(db, `artifacts/${appId}/public/data/budgets`), data);
                     showSuccessMessage("Sucesso!", "Novo orçamento adicionado.");
                 }
+                closeFormModal();
+                // Auto-refresh orçamentos section if currently active
+                if (document.getElementById('budgets-section')) {
+                    setTimeout(() => renderOrcamentosSection(), 300);
+                }
             } catch (error) { console.error("Error saving budget:", error); showErrorMessage("Erro", "Falha ao salvar o orçamento."); }
         }
 
@@ -3642,6 +3657,11 @@
             try {
                 await addDoc(collection(db, `artifacts/${appId}/public/data/tasks`), data);
                 showSuccessMessage("Sucesso!", "Tarefa adicionada.");
+                closeFormModal();
+                // Auto-refresh tarefas section if currently active
+                if (document.getElementById('tasks-section')) {
+                    setTimeout(() => renderTarefasSection(), 300);
+                }
             } catch (error) { console.error("Error saving task:", error); showErrorMessage("Erro", "Falha ao salvar a tarefa."); }
         }
 
@@ -7315,7 +7335,10 @@
                             }
                         },
                         'save-pef-lesson': () => savePefLesson(unitId, lessonNumber),
-                        'add-campanha': openCampanhaForm,
+                        'add-campanha': () => {
+                            console.log('add-campanha action triggered');
+                            openCampanhaForm();
+                        },
                         'view-campanha': () => openCampanhaModal(id),
                         'edit-campanha': () => openCampanhaForm(id),
                         'add-budget': openBudgetForm,
@@ -7409,6 +7432,15 @@
 
             document.getElementById('logout-button').addEventListener('click', handleLogout);
             document.getElementById('pending-logout').addEventListener('click', handleLogout);
+            
+            // Always load dashboard on startup
+            setTimeout(() => {
+                const dashboardButton = document.querySelector('[data-target="inicio"]');
+                if (dashboardButton) {
+                    dashboardButton.click();
+                }
+            }, 100);
+            
             initializeFirebase();
         });
     </script>
