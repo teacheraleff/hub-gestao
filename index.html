@@ -504,6 +504,7 @@
         function loadDemoData() {
             // Load demo data from localStorage or create default data
             students = JSON.parse(localStorage.getItem('demo-students') || '[]');
+            ideias = JSON.parse(localStorage.getItem('slap-ideias') || '[]');
             turmas = JSON.parse(localStorage.getItem('demo-turmas') || '[]');
             vips = JSON.parse(localStorage.getItem('demo-vips') || '[]');
             tasks = JSON.parse(localStorage.getItem('demo-tasks') || '[]');
@@ -1200,6 +1201,8 @@
                         const newIdeia = { ...data, id: Date.now().toString() };
                         ideias.push(newIdeia);
                     }
+                    // Save to localStorage in development mode
+                    localStorage.setItem('slap-ideias', JSON.stringify(ideias));
                     renderMuralIdeiasSection();
                     document.getElementById('form-modal').classList.remove('visible');
                     showSuccessMessage("Sucesso!", ideiaId ? "Ideia atualizada!" : "Ideia compartilhada! Agora aguarde os likes da equipe.");
@@ -1245,6 +1248,8 @@
                     if (index !== -1) {
                         ideias[index].likes = newLikes;
                         ideias[index].likedBy = newLikedBy;
+                        // Save to localStorage in development mode
+                        localStorage.setItem('slap-ideias', JSON.stringify(ideias));
                         renderMuralIdeiasSection();
                     }
                     return;
@@ -1654,6 +1659,174 @@
             return filteredStudents.sort((a, b) => a.name.localeCompare(b.name));
         }
 
+        function getFilteredTurmas() {
+            const searchTerm = document.getElementById('turma-search')?.value.toLowerCase() || '';
+            const teacherFilter = document.getElementById('turma-teacher-filter')?.value || '';
+            let filteredTurmas = turmas;
+
+            if (currentUserRole === 'teacher') {
+                // Find the teacher's name in collaborators to ensure correct mapping
+                const teacherCollaborator = collaborators.find(c => 
+                    c.sectors && c.sectors.includes('professor') && 
+                    (c.name === currentUserName || c.email === currentUserName || c.id === userId)
+                );
+                const originalTeacherName = teacherCollaborator ? teacherCollaborator.name : currentUserName;
+                
+                // Use smart name matching to find the actual teacher name in turmas
+                const teacherNames = [...new Set(turmas.map(t => t.teacherName))];
+                const exactMatch = teacherNames.find(name => name === originalTeacherName);
+                let teacherNameToFilter = exactMatch;
+                
+                if (!exactMatch && originalTeacherName) {
+                    // Try first name matching
+                    const searchFirstName = originalTeacherName.trim().split(' ')[0].toLowerCase();
+                    const firstNameMatch = teacherNames.find(name => {
+                        const nameFirstName = name.trim().split(' ')[0].toLowerCase();
+                        return nameFirstName === searchFirstName;
+                    });
+                    teacherNameToFilter = firstNameMatch;
+                }
+                
+                teacherNameToFilter = teacherNameToFilter || originalTeacherName;
+                filteredTurmas = turmas.filter(t => t.teacherName === teacherNameToFilter);
+            } else if (teacherFilter) {
+                // Apply teacher filter for non-teacher users
+                filteredTurmas = turmas.filter(t => t.teacherName === teacherFilter);
+            }
+
+            if (searchTerm) {
+                filteredTurmas = filteredTurmas.filter(t => 
+                    t.name.toLowerCase().includes(searchTerm) ||
+                    t.teacherName.toLowerCase().includes(searchTerm) ||
+                    t.level.toLowerCase().includes(searchTerm)
+                );
+            }
+
+            return filteredTurmas.sort((a, b) => a.name.localeCompare(b.name));
+        }
+
+        function getFilteredVips() {
+            const searchTerm = document.getElementById('vip-search')?.value.toLowerCase() || '';
+            const teacherFilter = document.getElementById('vip-teacher-filter')?.value || '';
+            const vipStudents = students.filter(s => s.modalidade === 'VIP');
+            let filteredVips = vipStudents;
+
+            if (currentUserRole === 'teacher') {
+                // Find the teacher's name in collaborators to ensure correct mapping
+                const teacherCollaborator = collaborators.find(c => 
+                    c.sectors && c.sectors.includes('professor') && 
+                    (c.name === currentUserName || c.email === currentUserName || c.id === userId)
+                );
+                const originalTeacherName = teacherCollaborator ? teacherCollaborator.name : currentUserName;
+                
+                // Use smart name matching to find the actual teacher name in VIPs
+                const teacherNames = [...new Set(vips.map(v => v.teacherName))];
+                const exactMatch = teacherNames.find(name => name === originalTeacherName);
+                let teacherNameToFilter = exactMatch;
+                
+                if (!exactMatch && originalTeacherName) {
+                    // Try first name matching
+                    const searchFirstName = originalTeacherName.trim().split(' ')[0].toLowerCase();
+                    const firstNameMatch = teacherNames.find(name => {
+                        const nameFirstName = name.trim().split(' ')[0].toLowerCase();
+                        return nameFirstName === searchFirstName;
+                    });
+                    teacherNameToFilter = firstNameMatch;
+                }
+                
+                teacherNameToFilter = teacherNameToFilter || originalTeacherName;
+                
+                // For teachers, filter VIP students who have matching VIP records with their name
+                filteredVips = vipStudents.filter(student => {
+                    const vipRecord = vips.find(v => v.studentId === student.id);
+                    return vipRecord && vipRecord.teacherName === teacherNameToFilter;
+                });
+            } else if (teacherFilter) {
+                // Apply teacher filter for non-teacher users
+                filteredVips = vipStudents.filter(student => {
+                    const vipRecord = vips.find(v => v.studentId === student.id);
+                    return vipRecord && vipRecord.teacherName === teacherFilter;
+                });
+            }
+
+            if (searchTerm) {
+                filteredVips = filteredVips.filter(student => {
+                    const vipRecord = vips.find(v => v.studentId === student.id);
+                    const teacher = vipRecord ? collaborators.find(c => c.id === vipRecord.teacherId) : null;
+                    return student.name.toLowerCase().includes(searchTerm) ||
+                           (teacher && teacher.name.toLowerCase().includes(searchTerm)) ||
+                           (vipRecord && vipRecord.level && vipRecord.level.toLowerCase().includes(searchTerm));
+                });
+            }
+
+            return filteredVips.sort((a, b) => a.name.localeCompare(b.name));
+        }
+
+        function updateTurmasList() {
+            const filteredTurmas = getFilteredTurmas();
+            const turmasGrid = document.getElementById('turmas-grid');
+            
+            if (!turmasGrid) return;
+
+            turmasGrid.innerHTML = filteredTurmas.map(t => {
+                // Count only TURMA modality students in the class
+                const turmaStudents = students.filter(s => 
+                    (t.studentIds || []).includes(s.id) && s.modalidade === 'TURMA'
+                );
+                const canManage = ['admin', 'pedagogico', 'ap'].includes(currentUserRole);
+                return `
+                <div class="base-card flex flex-col">
+                    <div class="flex-1">
+                        <div class="flex justify-between items-start mb-2">
+                            <h3 class="text-xl font-bold text-stone-800">${t.name}</h3>
+                            <span class="text-sm font-semibold text-stone-600">${turmaStudents.length} aluno(s)</span>
+                        </div>
+                        <p class="text-sm text-stone-500 mb-2">Professor: ${t.teacherName}</p>
+                        <p class="text-sm text-stone-600"><strong>Nível:</strong> ${t.level}</p>
+                        <p class="text-sm text-stone-600"><strong>Semestre:</strong> ${t.semestre || 'N/A'}</p>
+                    </div>
+                    <div class="mt-auto pt-4 border-t border-stone-100 flex gap-2">
+                        ${canManage ? `<button class="secondary-btn !text-sm flex-1" data-action="edit-turma" data-id="${t.id}">Editar</button>` : ''}
+                        <button class="primary-btn !text-sm flex-1" data-action="open-turma-pef" data-id="${t.id}">PEF</button>
+                    </div>
+                </div>`}).join('') || '<p class="col-span-full text-center py-10 text-stone-500">Nenhuma turma encontrada.</p>';
+        }
+
+        function updateVipsList() {
+            const filteredVips = getFilteredVips();
+            const vipsGrid = document.getElementById('vips-grid');
+            
+            if (!vipsGrid) return;
+
+            vipsGrid.innerHTML = filteredVips.map(student => {
+                const vipRecord = vips.find(v => v.studentId === student.id);
+                const teacher = vipRecord ? collaborators.find(c => c.id === vipRecord.teacherId) : null;
+                const canManage = ['admin', 'pedagogico', 'ap'].includes(currentUserRole);
+                return `
+                <div class="base-card flex flex-col">
+                    <div class="flex-1">
+                        <div class="flex justify-between items-start mb-2">
+                            <div>
+                                <h3 class="text-xl font-bold text-stone-800">${student.name}</h3>
+                            </div>
+                            ${canManage ? `
+                            <div class="flex gap-1">
+                                <button class="secondary-btn text-xs px-2 py-1" data-action="view-aluno" data-id="${student.id}" title="Ver Perfil">👤</button>
+                                ${vipRecord ? `<button class="secondary-btn text-xs px-2 py-1" data-action="edit-vip" data-id="${vipRecord.id}" title="Editar VIP">✏️</button>` : ''}
+                            </div>
+                            ` : ''}
+                        </div>
+                        <p class="text-sm text-stone-600 mb-2"><strong>Status:</strong> <span class="status-tag status-${(student.status || 'pendente').toLowerCase()}">${student.status || 'Pendente'}</span></p>
+                        ${vipRecord ? `<p class="text-sm text-stone-500 mb-2">Professor: ${teacher?.name || 'N/A'}</p>` : ''}
+                        ${vipRecord ? `<p class="text-sm text-stone-600"><strong>Nível:</strong> ${vipRecord.level || 'N/A'}</p>` : ''}
+                        ${student.indicacao ? `<p class="text-sm text-stone-600"><strong>Indicação:</strong> ${student.indicacao}</p>` : ''}
+                    </div>
+                    <div class="mt-auto pt-4 border-t border-stone-100 flex gap-2">
+                        ${vipRecord ? `<button class="primary-btn !text-sm flex-1" data-action="open-vip-pef" data-id="${vipRecord.id}">PEF</button>` : ''}
+                    </div>
+                </div>`}).join('') || '<p class="col-span-full text-center py-10 text-stone-500">Nenhum aluno VIP encontrado.</p>';
+        }
+
         function updateAlunosList(filter) {
             const listBody = document.getElementById('alunos-list');
             if (!listBody) return;
@@ -1764,48 +1937,30 @@
             document.getElementById('main-description').textContent = 'Crie turmas, adicione alunos e registre as presenças.';
 
             const canManage = ['admin', 'pedagogico', 'ap'].includes(currentUserRole);
-            let itemsToDisplay = turmas;
-            if (currentUserRole === 'teacher') {
-                // Find the teacher's name in collaborators to ensure correct mapping
-                const teacherCollaborator = collaborators.find(c => 
-                    c.sectors && c.sectors.includes('professor') && 
-                    (c.name === currentUserName || c.email === currentUserName || c.id === userId)
-                );
-                const originalTeacherName = teacherCollaborator ? teacherCollaborator.name : currentUserName;
-                
-                // Use smart name matching to find the actual teacher name in turmas
-                const teacherNames = [...new Set(turmas.map(t => t.teacherName))];
-                const exactMatch = teacherNames.find(name => name === originalTeacherName);
-                let teacherNameToFilter = exactMatch;
-                
-                if (!exactMatch && originalTeacherName) {
-                    // Try first name matching
-                    const searchFirstName = originalTeacherName.trim().split(' ')[0].toLowerCase();
-                    const firstNameMatch = teacherNames.find(name => {
-                        const nameFirstName = name.trim().split(' ')[0].toLowerCase();
-                        return nameFirstName === searchFirstName;
-                    });
-                    teacherNameToFilter = firstNameMatch;
-                }
-                
-                teacherNameToFilter = teacherNameToFilter || originalTeacherName;
-                itemsToDisplay = turmas.filter(t => t.teacherName === teacherNameToFilter);
-                
-                console.log('DEBUG: Turmas filtering for teacher', {
-                    currentUserName,
-                    originalTeacherName,
-                    teacherNameToFilter,
-                    availableTeachersInTurmas: teacherNames,
-                    filteredTurmasCount: itemsToDisplay.length
-                });
-            }
+            let itemsToDisplay = getFilteredTurmas();
+
 
             contentArea.innerHTML = `
                 <div id="turmas-section">
-                    <div class="text-right mb-6">
-                        ${canManage ? `<button class="primary-btn w-auto" data-action="add-turma">+ Adicionar Turma</button>` : ''}
+                    <div class="flex justify-between items-center mb-6 gap-4">
+                        <div class="flex gap-4 flex-1">
+                            <div class="flex-1 max-w-md">
+                                <input type="text" id="turma-search" placeholder="🔍 Pesquisar turmas..." class="form-input" oninput="updateTurmasList()">
+                            </div>
+                            <div class="min-w-48">
+                                <select id="turma-teacher-filter" class="form-input" onchange="updateTurmasList()">
+                                    <option value="">Todos os professores</option>
+                                    ${[...new Set(turmas.map(t => t.teacherName))].sort().map(teacher => 
+                                        `<option value="${teacher}">${teacher}</option>`
+                                    ).join('')}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            ${canManage ? `<button class="primary-btn w-auto" data-action="add-turma">+ Adicionar Turma</button>` : ''}
+                        </div>
                     </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="turmas-grid">
                         ${itemsToDisplay.map(t => {
                             // Count only TURMA modality students in the class
                             const turmaStudents = students.filter(s => 
@@ -1837,56 +1992,31 @@
 
             const canManage = ['admin', 'pedagogico', 'ap'].includes(currentUserRole);
             
-            // Filter only students with VIP modality
-            const vipStudents = students.filter(s => s.modalidade === 'VIP');
-            let itemsToDisplay = vipStudents;
+            let itemsToDisplay = getFilteredVips();
             
-            if (currentUserRole === 'teacher') {
-                // Find the teacher's name in collaborators to ensure correct mapping
-                const teacherCollaborator = collaborators.find(c => 
-                    c.sectors && c.sectors.includes('professor') && 
-                    (c.name === currentUserName || c.email === currentUserName || c.id === userId)
-                );
-                const originalTeacherName = teacherCollaborator ? teacherCollaborator.name : currentUserName;
-                
-                // Use smart name matching to find the actual teacher name in VIPs
-                const teacherNames = [...new Set(vips.map(v => v.teacherName))];
-                const exactMatch = teacherNames.find(name => name === originalTeacherName);
-                let teacherNameToFilter = exactMatch;
-                
-                if (!exactMatch && originalTeacherName) {
-                    // Try first name matching
-                    const searchFirstName = originalTeacherName.trim().split(' ')[0].toLowerCase();
-                    const firstNameMatch = teacherNames.find(name => {
-                        const nameFirstName = name.trim().split(' ')[0].toLowerCase();
-                        return nameFirstName === searchFirstName;
-                    });
-                    teacherNameToFilter = firstNameMatch;
-                }
-                
-                teacherNameToFilter = teacherNameToFilter || originalTeacherName;
-                
-                // For teachers, filter VIP students who have matching VIP records with their name
-                itemsToDisplay = vipStudents.filter(student => {
-                    const vipRecord = vips.find(v => v.studentId === student.id);
-                    return vipRecord && vipRecord.teacherName === teacherNameToFilter;
-                });
-                
-                console.log('DEBUG: VIPs filtering for teacher', {
-                    currentUserName,
-                    originalTeacherName,
-                    teacherNameToFilter,
-                    availableTeachersInVips: teacherNames,
-                    filteredVipsCount: itemsToDisplay.length
-                });
-            }
+
 
             contentArea.innerHTML = `
                 <div id="vips-section">
-                    <div class="text-right mb-6">
-                        ${canManage ? `<button class="primary-btn w-auto" data-action="add-vip">+ Adicionar VIP</button>` : ''}
+                    <div class="flex justify-between items-center mb-6 gap-4">
+                        <div class="flex gap-4 flex-1">
+                            <div class="flex-1 max-w-md">
+                                <input type="text" id="vip-search" placeholder="🔍 Pesquisar VIPs..." class="form-input" oninput="updateVipsList()">
+                            </div>
+                            <div class="min-w-48">
+                                <select id="vip-teacher-filter" class="form-input" onchange="updateVipsList()">
+                                    <option value="">Todos os professores</option>
+                                    ${[...new Set(vips.map(v => v.teacherName).filter(name => name))].sort().map(teacher => 
+                                        `<option value="${teacher}">${teacher}</option>`
+                                    ).join('')}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            ${canManage ? `<button class="primary-btn w-auto" data-action="add-vip">+ Adicionar VIP</button>` : ''}
+                        </div>
                     </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="vips-grid">
                         ${itemsToDisplay.map(student => {
                             const vipRecord = vips.find(v => v.studentId === student.id);
                             const teacher = vipRecord ? collaborators.find(c => c.id === vipRecord.teacherId) : null;
@@ -2467,7 +2597,9 @@
                                                 <div class="mt-2 flex flex-wrap">${(aula.keywords || []).map(k => `<span class="keyword-tag">${k}</span>`).join('')}</div>
                                             </div>
                                             ${canEdit ? `
-                                            <div>
+                                            <div class="flex items-center gap-1">
+                                                <button class="secondary-btn text-xs p-1" data-action="reorder-aula" data-nivel-id="${nivel.id}" data-aula-index="${index}" data-direction="up" ${index === 0 ? 'disabled' : ''} title="Mover para cima">↑</button>
+                                                <button class="secondary-btn text-xs p-1" data-action="reorder-aula" data-nivel-id="${nivel.id}" data-aula-index="${index}" data-direction="down" ${index === nivel.lessons.length - 1 ? 'disabled' : ''} title="Mover para baixo">↓</button>
                                                 <button class="secondary-btn text-xs" data-action="edit-aula" data-nivel-id="${nivel.id}" data-aula-index="${index}">Editar</button>
                                                 <button class="danger-btn text-xs" data-action="delete-aula" data-nivel-id="${nivel.id}" data-aula-index="${index}">X</button>
                                             </div>
@@ -4095,6 +4227,40 @@
             } catch (e) { console.error(e); showErrorMessage("Erro", "Não foi possível remover a aula."); }
         }
 
+        async function reorderAula(nivelId, aulaIndex, direction) {
+            const nivel = cps.find(c => c.id === nivelId);
+            if (!nivel || !nivel.lessons || nivel.lessons.length === 0) return;
+
+            const currentIndex = parseInt(aulaIndex);
+            const otherIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+            
+            if (otherIndex < 0 || otherIndex >= nivel.lessons.length) return;
+
+            // Create a copy of the lessons array
+            const newLessons = [...nivel.lessons];
+            
+            // Swap the lessons
+            [newLessons[currentIndex], newLessons[otherIndex]] = [newLessons[otherIndex], newLessons[currentIndex]];
+
+            try {
+                if (!db) {
+                    // Development mode - update local data
+                    nivel.lessons = newLessons;
+                    renderCPsSection();
+                    showSuccessMessage("Sucesso!", "Ordem das aulas atualizada!");
+                    return;
+                }
+
+                // Update in Firebase
+                const nivelRef = doc(db, `artifacts/${appId}/public/data/cps`, nivelId);
+                await updateDoc(nivelRef, { lessons: newLessons });
+                showSuccessMessage("Sucesso!", "Ordem das aulas atualizada!");
+            } catch (error) {
+                console.error("Error reordering aula:", error);
+                showErrorMessage("Erro", "Não foi possível reordenar as aulas.");
+            }
+        }
+
         async function reorderCPLevel(levelId, direction) {
             const currentIndex = cps.findIndex(c => c.id === levelId);
             if (currentIndex === -1) return;
@@ -4940,6 +5106,9 @@
 
         // Expose function globally for onclick handlers
         window.changeMarketingMonth = changeMarketingMonth;
+        window.viewMarketingEvent = viewMarketingEvent;
+        window.updateTurmasList = updateTurmasList;
+        window.updateVipsList = updateVipsList;
 
         function renderMarketingCalendar() {
             const monthYear = document.getElementById('marketing-calendar-month-year');
@@ -7070,7 +7239,7 @@
                 { key: 'grade', label: 'Grade', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" x2="16" y1="2" y2="6"></line><line x1="8" x2="8" y1="2" y2="6"></line><line x1="3" x2="21" y1="10" y2="10"></line></svg>', roles: ['admin', 'ap', 'pedagogico', 'financeiro', 'teacher'] },
                 { key: 'calendario-pedagogico', label: 'Calendário Pedagógico', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>', roles: ['admin', 'ap', 'pedagogico', 'financeiro', 'teacher', 'am'] },
                 { key: 'calendario-marketing', label: 'Calendário Marketing', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line><circle cx="9" cy="16" r="2"/><path d="m15 13 3 3 3-3"/></svg>', roles: ['admin', 'ap', 'am', 'financeiro'] },
-                { key: 'desafio-pedagogico', label: 'Desafio Pedagógico', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>', roles: ['admin', 'pedagogico', 'teacher', 'ap'] },
+                { key: 'desafio-pedagogico', label: 'Desafio Pedagógico', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>', roles: ['admin', 'pedagogico', 'teacher', 'ap'] },
                 { key: 'diretrizes', label: 'Diretrizes', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14,2 14,8 20,8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10,9 9,9 8,9"></polyline></svg>', roles: ['admin', 'teacher', 'pedagogico'] },
                 { key: 'tarefas', label: 'Tarefas', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>', roles: ['admin', 'am', 'ap', 'pedagogico', 'financeiro', 'teacher'] },
                 { key: 'cps', label: 'CPs', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>', roles: ['admin', 'pedagogico', 'ap'] },
@@ -7174,6 +7343,7 @@
                         'add-nivel': () => openNivelForm(),
                         'edit-nivel': () => openNivelForm(id),
                         'reorder-cp': () => reorderCPLevel(id, direction),
+                        'reorder-aula': () => reorderAula(nivelId, aulaIndex, direction),
                         'add-aula': () => openAulaForm(nivelId),
                         'edit-aula': () => openAulaForm(nivelId, aulaIndex),
                         'delete-aula': () => deleteAula(nivelId, aulaIndex),
