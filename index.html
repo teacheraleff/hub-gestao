@@ -157,6 +157,24 @@
         .marketing-event { background-color: #84C7DF !important; color: white !important; }
         .marketing-event:hover { background-color: #6ba3c7 !important; }
         .marketing-event .event-tipos { display: block; font-size: 0.65rem; opacity: 0.9; margin-top: 2px; }
+        
+        .holiday-event { 
+            background: linear-gradient(135deg, #dc2626, #ef4444) !important;
+            color: white !important;
+            cursor: default !important;
+            border: 1px solid #fca5a5;
+        }
+        .holiday-event:hover { 
+            background: linear-gradient(135deg, #dc2626, #ef4444) !important;
+            transform: none !important;
+        }
+        .event-country {
+            background: rgba(255,255,255,0.2);
+            padding: 1px 3px;
+            border-radius: 2px;
+            font-size: 8px;
+            margin-left: 2px;
+        }
 
         /* --- Monthly Highlight Styles --- */
         .highlight-card { display: flex; gap: 1rem; align-items: center; }
@@ -425,39 +443,7 @@
         </div>
     </div>
 
-    <!-- Monthly Highlight Modal -->
-    <div id="monthly-highlight-modal" class="modal-overlay">
-        <div class="modal-content max-w-md">
-            <div class="modal-header">
-                <h4>Editar Destaque do Mês</h4>
-                <button data-action="close-highlight-modal" class="modal-close-btn">&times;</button>
-            </div>
-            <form id="monthly-highlight-form">
-                <div class="space-y-4">
-                    <div>
-                        <label class="font-medium text-sm">Nome do Funcionário</label>
-                        <input type="text" id="highlight-name" class="form-input" required>
-                    </div>
-                    <div>
-                        <label class="font-medium text-sm">URL da Foto (Cloudinary)</label>
-                        <input type="url" id="highlight-photo-url" class="form-input" placeholder="https://res.cloudinary.com/..." required>
-                    </div>
-                    <div>
-                        <label class="font-medium text-sm">Descrição</label>
-                        <textarea id="highlight-description" rows="4" class="form-input" placeholder="Descreva os méritos e conquistas..." required></textarea>
-                    </div>
-                    <div>
-                        <label class="font-medium text-sm">Premiação</label>
-                        <input type="text" id="highlight-award" class="form-input" placeholder="Ex: R$ 500 em vale-compras">
-                    </div>
-                    <div class="flex justify-end gap-2">
-                        <button type="button" data-action="close-highlight-modal" class="secondary-btn">Cancelar</button>
-                        <button type="submit" class="primary-btn w-auto">Salvar</button>
-                    </div>
-                </div>
-            </form>
-        </div>
-    </div>
+    <!-- Fortune Cookie section - no modal needed -->
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
@@ -507,6 +493,7 @@
             vips = JSON.parse(localStorage.getItem('demo-vips') || '[]');
             tasks = JSON.parse(localStorage.getItem('demo-tasks') || '[]');
             events = JSON.parse(localStorage.getItem('demo-events') || '[]');
+            calendarEvents = JSON.parse(localStorage.getItem('demo-calendar-events') || '[]');
             budgets = JSON.parse(localStorage.getItem('demo-budgets') || '[]');
             collaborators = JSON.parse(localStorage.getItem('demo-collaborators') || '[]');
             expenses = JSON.parse(localStorage.getItem('demo-expenses') || '[]');
@@ -775,20 +762,14 @@
 
                     <!-- Employee Highlight and Top 3 Dojo Section -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <!-- Employee Highlight Section - Compact -->
+                        <!-- Fortune Cookie Section - Compact -->
                         <div class="bg-white p-4 rounded-lg shadow-sm border border-stone-200">
-                            <div class="flex justify-between items-start mb-3">
-                                <h4 class="text-base font-semibold text-stone-800">Destaque do Mês</h4>
-                                ${currentUserRole === 'admin' ? `
-                                <button class="text-stone-500 hover:text-stone-700 p-1" data-action="edit-monthly-highlight" title="Editar destaque">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002 2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                                    </svg>
-                                </button>
-                                ` : ''}
+                            <div class="flex justify-between items-center mb-3">
+                                <h4 class="text-base font-semibold text-stone-800">🥠 Biscoito da Sorte</h4>
+                                <div class="text-xs text-stone-500">Muda diariamente</div>
                             </div>
-                            <div id="monthly-highlight-content" class="text-sm">
-                                <!-- Monthly highlight content will be rendered here -->
+                            <div id="fortune-cookie-content" class="text-sm">
+                                <!-- Fortune cookie content will be rendered here -->
                             </div>
                         </div>
 
@@ -882,7 +863,7 @@
             `;
 
             // Initialize monthly highlight
-            renderMonthlyHighlight().catch(console.error);
+            renderFortuneCookie();
         }
 
         // Dashboard helper functions
@@ -1405,23 +1386,31 @@
                 </div>`;
         }
 
-        function renderCampanhasSection() {
+        async function renderCampanhasSection() {
             document.getElementById('main-title').textContent = 'Gestor de Campanhas';
             document.getElementById('main-description').textContent = 'Planeje e gerencie todas as campanhas de marketing da marca.';
+            
+            // Load campanhas from Firebase if not in development mode
+            if (!window.isDevelopmentMode) {
+                await loadCampanhas();
+            }
+            
             contentArea.innerHTML = `
-                <div id="campanhas-section">
+                <div id="campanhas-section" class="bg-gradient-to-br from-yellow-50 to-orange-50 p-6 rounded-xl shadow-sm border border-yellow-200">
                     <div class="text-right mb-6">
-                        <button class="primary-btn w-auto" data-action="add-campanha">+ Adicionar Campanha</button>
+                        <button class="primary-btn w-auto shadow-md hover:shadow-lg transition-shadow" data-action="add-campanha">+ Adicionar Campanha</button>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         ${events.map(c => `
-                        <div class="base-card ${c.finalizada ? 'opacity-60' : ''}" data-action="view-campanha" data-id="${c.id}">
+                        <div class="base-card bg-white hover:bg-yellow-50 border-l-4 border-l-yellow-400 shadow-md hover:shadow-lg transition-all duration-200 ${c.finalizada ? 'opacity-60' : ''}" data-action="view-campanha" data-id="${c.id}">
                             <div class="flex justify-between items-start mb-2">
                                 <h3 class="text-xl font-bold text-stone-800 ${c.finalizada ? 'line-through' : ''}">${c.nome || c.title}</h3>
                                 ${c.setores && c.setores.length > 0 ? c.setores.map(setor => `<span class="status-tag status-${setor.toLowerCase()} text-xs mr-1">${setor}</span>`).join('') : ''}
                             </div>
                             <p class="text-sm text-stone-500 mb-2"><strong>Responsável:</strong> ${c.responsavel || 'N/A'}</p>
-                            <p class="text-sm text-stone-600 mb-2"><strong>Foco:</strong> ${c.foco && c.foco.length > 0 ? c.foco.join(', ') : 'N/A'}</p>
+                            <p class="text-sm text-stone-600 mb-2"><strong>Plataforma:</strong> ${c.plataforma && c.plataforma.length > 0 ? c.plataforma.join(', ') : (c.foco && c.foco.length > 0 ? c.foco.join(', ') : 'N/A')}</p>
+                            <p class="text-sm text-stone-600 mb-2"><strong>Foco:</strong> ${c.focoObjetivo && c.focoObjetivo.length > 0 ? c.focoObjetivo.join(', ') : 'N/A'}</p>
+                            ${c.referencia1 || c.referencia2 ? `<p class="text-sm text-stone-600 mb-2"><strong>Referências:</strong> ${[c.referencia1, c.referencia2].filter(Boolean).length} link(s)</p>` : ''}
                             ${c.local ? `<p class="text-sm text-stone-600 mb-2"><strong>Local:</strong> ${c.local}</p>` : ''}
                             ${c.horario ? `<p class="text-sm text-stone-600 mb-2"><strong>Horário:</strong> ${c.horario}</p>` : ''}
                             <div class="flex items-center justify-between mt-3 pt-2 border-t">
@@ -2620,7 +2609,9 @@
             const campanha = campanhaId ? events.find(c => c.id === campanhaId) : null;
             document.getElementById('form-modal-title').textContent = campanha ? "Editar Campanha" : "Adicionar Nova Campanha";
 
-            const colaboradorOptions = collaborators.map(c => `<option value="${c.name}" ${campanha?.responsavel === c.name ? 'selected' : ''}>${c.name}</option>`).join('');
+            const colaboradorOptions = collaborators
+                .filter(c => c.sectors && (c.sectors.includes('campanhas') || c.sectors.includes('admin')))
+                .map(c => `<option value="${c.name}" ${campanha?.responsavel === c.name ? 'selected' : ''}>${c.name}</option>`).join('');
             const setoresOptions = ['Marketing', 'Pedagógico', 'Comercial', 'Financeiro', 'Administrativo'].map(setor => 
                 `<div class="flex items-center">
                     <input type="checkbox" id="setor-${setor}" name="setores" value="${setor}" class="h-4 w-4 rounded" ${campanha?.setores?.includes(setor) ? 'checked' : ''}>
@@ -2628,9 +2619,16 @@
                 </div>`
             ).join('');
             
-            const focoOptions = ['Reels', 'Story', 'Destaque', 'TikTok', 'YouTube', 'YouTube Shorts', 'Presencial'].map(foco => 
+            const plataformaOptions = ['Reels', 'Story', 'Destaque', 'TikTok', 'YouTube', 'YouTube Shorts', 'Presencial'].map(plataforma => 
                 `<div class="flex items-center">
-                    <input type="checkbox" id="foco-${foco.replace(/\s+/g, '')}" name="foco" value="${foco}" class="h-4 w-4 rounded foco-checkbox" ${campanha?.foco?.includes(foco) ? 'checked' : ''}>
+                    <input type="checkbox" id="plataforma-${plataforma.replace(/\s+/g, '')}" name="plataforma" value="${plataforma}" class="h-4 w-4 rounded plataforma-checkbox" ${campanha?.plataforma?.includes(plataforma) || campanha?.foco?.includes(plataforma) ? 'checked' : ''}>
+                    <label for="plataforma-${plataforma.replace(/\s+/g, '')}" class="ml-2 text-sm">${plataforma}</label>
+                </div>`
+            ).join('');
+
+            const focoOptions = ['Matrículas', 'Engajamento', 'Captação de Leads', 'Fortalecimento de Marca', 'Gestão de Crise', 'Filler'].map(foco => 
+                `<div class="flex items-center">
+                    <input type="checkbox" id="foco-${foco.replace(/\s+/g, '')}" name="foco" value="${foco}" class="h-4 w-4 rounded foco-checkbox" ${campanha?.focoObjetivo?.includes(foco) ? 'checked' : ''}>
                     <label for="foco-${foco.replace(/\s+/g, '')}" class="ml-2 text-sm">${foco}</label>
                 </div>`
             ).join('');
@@ -2658,8 +2656,23 @@
                     <div><label class="font-medium text-sm">Link Útil</label><input type="url" id="campanha-link" class="form-input" placeholder="https://exemplo.com" value="${campanha?.linkUtil || ''}"></div>
                     
                     <div>
+                        <label class="font-medium text-sm">Referências</label>
+                        <div class="space-y-2 mt-2">
+                            <input type="url" id="campanha-referencia1" class="form-input" placeholder="https://referencia1.com" value="${campanha?.referencia1 || ''}">
+                            <input type="url" id="campanha-referencia2" class="form-input" placeholder="https://referencia2.com" value="${campanha?.referencia2 || ''}">
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="font-medium text-sm">Plataforma</label>
+                        <div class="mt-2 grid grid-cols-2 gap-2 p-3 border rounded-md bg-blue-50">
+                            ${plataformaOptions}
+                        </div>
+                    </div>
+
+                    <div>
                         <label class="font-medium text-sm">Foco da Campanha</label>
-                        <div class="mt-2 grid grid-cols-2 gap-2 p-3 border rounded-md">
+                        <div class="mt-2 grid grid-cols-2 gap-2 p-3 border rounded-md bg-yellow-50">
                             ${focoOptions}
                         </div>
                     </div>
@@ -2697,7 +2710,7 @@
             
             // Add event listeners for conditional fields
             setTimeout(() => {
-                const presencialCheckbox = document.getElementById('foco-Presencial');
+                const presencialCheckbox = document.getElementById('plataforma-Presencial');
                 const horarioCheckbox = document.getElementById('add-horario');
                 
                 if (presencialCheckbox) {
@@ -2744,6 +2757,7 @@
             const campanhaId = document.getElementById('campanha-id').value;
             
             const setoresSelecionados = Array.from(document.querySelectorAll('input[name="setores"]:checked')).map(cb => cb.value);
+            const plataformaSelecionada = Array.from(document.querySelectorAll('input[name="plataforma"]:checked')).map(cb => cb.value);
             const focoSelecionado = Array.from(document.querySelectorAll('input[name="foco"]:checked')).map(cb => cb.value);
             
             const data = {
@@ -2753,7 +2767,12 @@
                 briefing: document.getElementById('campanha-briefing').value,
                 estrategia: document.getElementById('campanha-estrategia').value,
                 linkUtil: document.getElementById('campanha-link').value,
-                foco: focoSelecionado,
+                referencia1: document.getElementById('campanha-referencia1').value,
+                referencia2: document.getElementById('campanha-referencia2').value,
+                plataforma: plataformaSelecionada,
+                focoObjetivo: focoSelecionado,
+                // Keep old foco field for backward compatibility
+                foco: plataformaSelecionada,
                 local: document.getElementById('campanha-local').value,
                 horario: document.getElementById('campanha-horario').value,
                 finalizada: document.getElementById('campanha-finalizada').checked,
@@ -2763,12 +2782,12 @@
             if (!data.nome) { showErrorMessage("Erro", "O nome da campanha é obrigatório."); return; }
             if (!data.responsavel) { showErrorMessage("Erro", "O responsável é obrigatório."); return; }
             if (setoresSelecionados.length === 0) { showErrorMessage("Erro", "Selecione pelo menos um setor."); return; }
-            if (focoSelecionado.length === 0) { showErrorMessage("Erro", "Selecione pelo menos um foco."); return; }
+            if (plataformaSelecionada.length === 0) { showErrorMessage("Erro", "Selecione pelo menos uma plataforma."); return; }
+            if (focoSelecionado.length === 0) { showErrorMessage("Erro", "Selecione pelo menos um foco da campanha."); return; }
 
             if (!db) { 
-                console.warn("Offline mode."); 
-                closeFormModal(); 
-                showSuccessMessage("Sucesso!", "Campanha salva localmente (modo offline)."); 
+                console.warn("Firebase not available");
+                showErrorMessage("Erro", "Sistema offline. Tente novamente quando a conexão for restaurada."); 
                 return; 
             }
             
@@ -2963,8 +2982,8 @@
             const collaborator = collaboratorId ? collaborators.find(c => c.id === collaboratorId) : null;
             document.getElementById('form-modal-title').textContent = collaborator ? "Editar Colaborador" : "Adicionar Novo Colaborador";
 
-            const sectors = ['professor', 'tarefas', 'cancelamentos', 'orcamentos', 'banco de fotos'];
-            const sectorLabels = { professor: 'Professor (Grade)', tarefas: 'Tarefas', cancelamentos: 'Cancelamentos', orcamentos: 'Orçamentos', 'banco de fotos': 'Banco de Fotos' };
+            const sectors = ['professor', 'tarefas', 'cancelamentos', 'orcamentos', 'campanhas', 'banco de fotos'];
+            const sectorLabels = { professor: 'Professor (Grade)', tarefas: 'Tarefas', cancelamentos: 'Cancelamentos', orcamentos: 'Orçamentos', campanhas: 'Campanhas', 'banco de fotos': 'Banco de Fotos' };
 
             const sectorCheckboxes = sectors.map(sector => {
                 const isChecked = collaborator?.sectors?.includes(sector) ? 'checked' : '';
@@ -4071,9 +4090,9 @@
                 <div class="calendar-container">
                     <div class="calendar-header">
                         <div class="flex items-center gap-4">
-                            <button class="calendar-nav-btn" onclick="changeMarketingMonth(-1)">« Anterior</button>
+                            <button class="calendar-nav-btn" data-action="change-marketing-month" data-direction="-1">« Anterior</button>
                             <h2 id="marketing-calendar-month-year" class="text-2xl font-bold text-stone-800"></h2>
-                            <button class="calendar-nav-btn" onclick="changeMarketingMonth(1)">Próximo »</button>
+                            <button class="calendar-nav-btn" data-action="change-marketing-month" data-direction="1">Próximo »</button>
                         </div>
                         ${['admin', 'am'].includes(currentUserRole) ? `
                         <button class="primary-btn w-auto" data-action="add-marketing-event">
@@ -4177,6 +4196,64 @@
         let currentMarketingDate = new Date();
         let marketingEvents = [];
 
+        // Brazilian and US holidays for marketing calendar
+        function getHolidays(year) {
+            return [
+                // Brazilian holidays
+                { date: `${year}-01-01`, title: "Ano Novo (BR)", type: "holiday", country: "BR" },
+                { date: `${year}-02-12`, title: "Carnaval (BR)", type: "holiday", country: "BR" },
+                { date: `${year}-04-21`, title: "Tiradentes (BR)", type: "holiday", country: "BR" },
+                { date: `${year}-05-01`, title: "Dia do Trabalhador (BR)", type: "holiday", country: "BR" },
+                { date: `${year}-09-07`, title: "Independência do Brasil", type: "holiday", country: "BR" },
+                { date: `${year}-10-12`, title: "Nossa Senhora Aparecida (BR)", type: "holiday", country: "BR" },
+                { date: `${year}-11-02`, title: "Finados (BR)", type: "holiday", country: "BR" },
+                { date: `${year}-11-15`, title: "Proclamação da República (BR)", type: "holiday", country: "BR" },
+                { date: `${year}-12-25`, title: "Natal (BR/US)", type: "holiday", country: "BR/US" },
+                { date: `${year}-05-12`, title: "Dia das Mães (BR)", type: "holiday", country: "BR" },
+                { date: `${year}-08-11`, title: "Dia dos Pais (BR)", type: "holiday", country: "BR" },
+                { date: `${year}-10-15`, title: "Dia do Professor (BR)", type: "holiday", country: "BR" },
+                { date: `${year}-06-12`, title: "Dia dos Namorados (BR)", type: "holiday", country: "BR" },
+                
+                // US holidays
+                { date: `${year}-01-15`, title: "Martin Luther King Day (US)", type: "holiday", country: "US" },
+                { date: `${year}-02-19`, title: "Presidents' Day (US)", type: "holiday", country: "US" },
+                { date: `${year}-05-27`, title: "Memorial Day (US)", type: "holiday", country: "US" },
+                { date: `${year}-07-04`, title: "Independence Day (US)", type: "holiday", country: "US" },
+                { date: `${year}-09-02`, title: "Labor Day (US)", type: "holiday", country: "US" },
+                { date: `${year}-10-14`, title: "Columbus Day (US)", type: "holiday", country: "US" },
+                { date: `${year}-11-11`, title: "Veterans Day (US)", type: "holiday", country: "US" },
+                { date: `${year}-11-28`, title: "Thanksgiving (US)", type: "holiday", country: "US" },
+                { date: `${year}-11-29`, title: "Black Friday (US)", type: "holiday", country: "US" },
+                { date: `${year}-12-24`, title: "Christmas Eve (US)", type: "holiday", country: "US" },
+                { date: `${year}-12-31`, title: "New Year's Eve (BR/US)", type: "holiday", country: "BR/US" },
+                { date: `${year}-02-14`, title: "Valentine's Day (US)", type: "holiday", country: "US" },
+                { date: `${year}-03-17`, title: "St. Patrick's Day (US)", type: "holiday", country: "US" },
+                { date: `${year}-10-31`, title: "Halloween (US)", type: "holiday", country: "US" },
+                { date: `${year}-05-12`, title: "Mother's Day (US)", type: "holiday", country: "US" },
+                { date: `${year}-06-16`, title: "Father's Day (US)", type: "holiday", country: "US" }
+            ];
+        }
+
+        // Brazilian national holidays only for pedagogical calendar
+        function getBrazilianHolidays(year) {
+            return [
+                { date: `${year}-01-01`, title: "Ano Novo", type: "holiday", country: "BR" },
+                { date: `${year}-02-12`, title: "Carnaval", type: "holiday", country: "BR" },
+                { date: `${year}-04-21`, title: "Tiradentes", type: "holiday", country: "BR" },
+                { date: `${year}-05-01`, title: "Dia do Trabalhador", type: "holiday", country: "BR" },
+                { date: `${year}-09-07`, title: "Independência do Brasil", type: "holiday", country: "BR" },
+                { date: `${year}-10-12`, title: "Nossa Senhora Aparecida", type: "holiday", country: "BR" },
+                { date: `${year}-11-02`, title: "Finados", type: "holiday", country: "BR" },
+                { date: `${year}-11-15`, title: "Proclamação da República", type: "holiday", country: "BR" },
+                { date: `${year}-12-25`, title: "Natal", type: "holiday", country: "BR" },
+                { date: `${year}-05-12`, title: "Dia das Mães", type: "holiday", country: "BR" },
+                { date: `${year}-08-11`, title: "Dia dos Pais", type: "holiday", country: "BR" },
+                { date: `${year}-10-15`, title: "Dia do Professor", type: "holiday", country: "BR" },
+                { date: `${year}-06-12`, title: "Dia dos Namorados", type: "holiday", country: "BR" },
+                { date: `${year}-12-31`, title: "Ano Novo (Véspera)", type: "holiday", country: "BR" }
+            ];
+        }
+
         function initializeCalendar() {
             renderCalendar();
             loadCalendarEvents();
@@ -4217,7 +4294,10 @@
                          data-date="${currentDay.toISOString().split('T')[0]}">
                         <div class="calendar-day-number">${currentDay.getDate()}</div>
                         ${dayEvents.map(event => 
-                            `<div class="calendar-event ${event.type}" onclick="viewCalendarEvent('${event.id}')">${event.title}</div>`
+                            `<div class="calendar-event ${event.type === 'holiday' ? 'holiday-event' : event.type}" 
+                                  ${event.type === 'holiday' ? '' : `onclick="viewCalendarEvent('${event.id}')"`}>
+                                ${event.type === 'holiday' ? `🎉 ${event.title}` : event.title}
+                            </div>`
                         ).join('')}
                     </div>
                 `;
@@ -4228,26 +4308,76 @@
 
         function getEventsForDate(date) {
             const dateString = date.toISOString().split('T')[0];
-            return calendarEvents.filter(event => event.date === dateString);
+            const events = calendarEvents.filter(event => event.date === dateString);
+            
+            // Add Brazilian holidays for pedagogical calendar
+            const holidays = getBrazilianHolidays(date.getFullYear()).filter(holiday => holiday.date === dateString);
+            
+            return [...events, ...holidays];
         }
 
-        function loadCalendarEvents() {
-            // Load from localStorage or initialize with sample data
-            const savedEvents = localStorage.getItem('calendar-events');
-            if (savedEvents) {
-                calendarEvents = JSON.parse(savedEvents);
-            } else {
+        async function loadCalendarEvents() {
+            if (!db) {
+                console.warn("Firebase not available, using sample data");
                 calendarEvents = [
                     { id: '1', title: 'Reunião Pedagógica', date: '2025-01-15', time: '09:00', type: 'reuniao', description: 'Reunião mensal da equipe pedagógica' },
                     { id: '2', title: 'Gravação Aula', date: '2025-01-20', time: '14:00', type: 'gravacao', description: 'Gravação da aula de pronunciação avançada' }
                 ];
-                saveCalendarEvents();
+                renderCalendar();
+                return;
             }
-            renderCalendar();
+
+            try {
+                const eventsCollection = collection(db, `artifacts/${appId}/public/data/calendar-events`);
+                const eventsSnapshot = await getDocs(eventsCollection);
+                calendarEvents = eventsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                
+                // Set up real-time listener
+                onSnapshot(eventsCollection, (snapshot) => {
+                    calendarEvents = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    renderCalendar();
+                });
+                
+                renderCalendar();
+            } catch (error) {
+                console.error("Error loading calendar events:", error);
+                calendarEvents = [];
+                renderCalendar();
+            }
         }
 
-        function saveCalendarEvents() {
-            localStorage.setItem('calendar-events', JSON.stringify(calendarEvents));
+        async function saveCalendarEvents() {
+            // No longer needed - events are saved individually via saveCalendarEvent
+        }
+
+        // Load campanhas from Firebase
+        async function loadCampanhas() {
+            if (!db) {
+                console.warn("Firebase not available, using sample data");
+                events = [
+                    { id: '1', nome: 'Campanha Demo', responsavel: 'Admin', setores: ['Marketing'], plataforma: ['Instagram'], focoObjetivo: ['Engajamento'], finalizada: false }
+                ];
+                return;
+            }
+
+            try {
+                const campanhasCollection = collection(db, `artifacts/${appId}/public/data/events`);
+                const campanhasSnapshot = await getDocs(campanhasCollection);
+                events = campanhasSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                
+                // Set up real-time listener for campanhas
+                onSnapshot(campanhasCollection, (snapshot) => {
+                    events = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    // Update UI if currently on campanhas section
+                    if (document.getElementById('campanhas-section')) {
+                        renderCampanhasSection();
+                    }
+                });
+                
+            } catch (error) {
+                console.error("Error loading campanhas:", error);
+                events = [];
+            }
         }
 
         // Marketing Calendar Functions
@@ -4260,6 +4390,9 @@
             currentMarketingDate.setMonth(currentMarketingDate.getMonth() + direction);
             renderMarketingCalendar();
         }
+
+        // Expose function globally for onclick handlers
+        window.changeMarketingMonth = changeMarketingMonth;
 
         function renderMarketingCalendar() {
             const monthYear = document.getElementById('marketing-calendar-month-year');
@@ -4291,11 +4424,13 @@
                          data-date="${currentDay.toISOString().split('T')[0]}">
                         <div class="calendar-day-number">${currentDay.getDate()}</div>
                         ${dayEvents.map(event =>
-                            `<div class="calendar-event marketing-event" onclick="viewMarketingEvent('${event.id}')">
-                                <span class="event-title">${event.title}</span>
+                            `<div class="calendar-event ${event.type === 'holiday' ? 'holiday-event' : 'marketing-event'}" 
+                                  ${event.type === 'holiday' ? '' : `onclick="viewMarketingEvent('${event.id}')"`}>
+                                <span class="event-title">${event.type === 'holiday' ? `🎉 ${event.title}` : event.title}</span>
                                 ${event.time ? `<span class="event-time">${event.time}</span>` : ''}
                                 ${event.tipos && event.tipos.length > 0 ? 
                                     `<span class="event-tipos">${event.tipos.slice(0, 2).join(', ')}${event.tipos.length > 2 ? '...' : ''}</span>` : ''}
+                                ${event.country ? `<span class="event-country">${event.country}</span>` : ''}
                             </div>`
                         ).join('')}
                     </div>
@@ -4307,7 +4442,12 @@
 
         function getMarketingEventsForDate(date) {
             const dateStr = date.toISOString().split('T')[0];
-            return marketingEvents.filter(event => event.date === dateStr);
+            const events = marketingEvents.filter(event => event.date === dateStr);
+            
+            // Add holidays for the current year
+            const holidays = getHolidays(date.getFullYear()).filter(holiday => holiday.date === dateStr);
+            
+            return [...events, ...holidays];
         }
 
         function loadMarketingEvents() {
@@ -6025,8 +6165,107 @@
             localStorage.setItem('slap-guidelines', JSON.stringify(guidelines));
         }
 
-        // --- Monthly Highlight Functions ---
+        // --- Fortune Cookie Functions ---
+        // Fortune cookie phrases - 60 phrases for daily rotation
+        const fortuneCookiePhrases = [
+            "O sucesso é a soma de pequenos esforços repetidos dia após dia.",
+            "Acredite em si mesmo e tudo será possível.",
+            "Cada novo dia é uma oportunidade de crescer e aprender.",
+            "A persistência é o caminho do êxito.",
+            "Grandes conquistas exigem grandes sonhos.",
+            "O otimismo é a fé em ação.",
+            "Seja a mudança que você quer ver no mundo.",
+            "O conhecimento é o único bem que cresce quando compartilhado.",
+            "A educação é a arma mais poderosa para mudar o mundo.",
+            "Ensinar é tocar vidas para sempre.",
+            "A paciência é amarga, mas seus frutos são doces.",
+            "O futuro pertence àqueles que acreditam na beleza de seus sonhos.",
+            "Nunca deixe que ninguém diga que você não pode fazer algo.",
+            "A única forma de fazer um excelente trabalho é amar o que você faz.",
+            "O impossível é apenas uma opinião.",
+            "Cada estudante que você inspira pode mudar o mundo.",
+            "A motivação te leva ao início, o hábito te leva ao fim.",
+            "Seja grato pelo que você tem enquanto trabalha pelo que você quer.",
+            "O fracasso é apenas o primeiro passo para o sucesso.",
+            "Acreditar em si mesmo é o primeiro segredo do sucesso.",
+            "A diferença entre o possível e o impossível está na determinação.",
+            "Um professor afeta a eternidade; nunca se sabe onde sua influência termina.",
+            "A educação não é preparação para a vida; a educação é a própria vida.",
+            "Seja você mesmo, todos os outros já existem.",
+            "O que não nos mata, nos fortalece.",
+            "A criatividade é a inteligência se divertindo.",
+            "Grandes mentes discutem ideias, mentes pequenas discutem pessoas.",
+            "O aprendizado nunca esgota a mente.",
+            "A única constante na vida é a mudança.",
+            "Seja a pessoa que você precisava quando era mais jovem.",
+            "O sucesso é ir de fracasso em fracasso sem perder o entusiasmo.",
+            "A educação é o passaporte para o futuro.",
+            "Investir em conhecimento rende sempre os melhores juros.",
+            "A mente que se abre a uma nova ideia jamais volta ao tamanho original.",
+            "Não espere por oportunidades, crie-as.",
+            "A coragem não é a ausência do medo, mas agir apesar dele.",
+            "Cada erro é uma oportunidade de aprendizado.",
+            "O professor medíocre conta, o bom professor explica, o professor superior demonstra, o grande professor inspira.",
+            "Seja gentil, pois cada pessoa está enfrentando uma batalha difícil.",
+            "A única competição real é com a pessoa que você foi ontem.",
+            "Sonhe grande e ouse falhar.",
+            "A gratidão transforma o que temos em suficiente.",
+            "O conhecimento é poder, mas o conhecimento compartilhado é poder multiplicado.",
+            "Seja curioso, não julgador.",
+            "A perfeição não existe, mas a excelência sim.",
+            "Cada dia é uma página em branco, escreva uma história bonita.",
+            "A bondade é um idioma que os surdos podem ouvir e os cegos podem ver.",
+            "O sucesso é medido não pelo que você conquista, mas pelo que você supera.",
+            "Seja a luz que você quer ver no mundo.",
+            "A vida recompensa a ação, não a intenção.",
+            "Transforme obstáculos em oportunidades.",
+            "A felicidade não é destino, é jornada.",
+            "Seja paciente com seu progresso e gentil com seus erros.",
+            "A educação é a chave que abre todas as portas.",
+            "Inspire-se para inspirar outros.",
+            "O hoje é resultado das escolhas de ontem, o amanhã será resultado das de hoje.",
+            "Celebre pequenas vitórias, elas levam a grandes conquistas.",
+            "A humildade é a base de toda verdadeira grandeza.",
+            "Seja alguém que faz a diferença na vida dos outros.",
+            "O sucesso não é sobre perfeição, é sobre progresso."
+        ];
+
+        // Get daily fortune cookie phrase based on current date
+        function getDailyFortune() {
+            const today = new Date();
+            const dayOfYear = Math.floor((today - new Date(today.getFullYear(), 0, 0)) / 86400000);
+            const phraseIndex = dayOfYear % fortuneCookiePhrases.length;
+            return fortuneCookiePhrases[phraseIndex];
+        }
+
         let monthlyHighlight = null;
+
+        function renderFortuneCookie() {
+            const container = document.getElementById('fortune-cookie-content');
+            if (!container) return;
+
+            const dailyFortune = getDailyFortune();
+            
+            container.innerHTML = `
+                <div class="fortune-card">
+                    <div class="fortune-cookie-icon mb-3 text-center">
+                        <svg class="w-12 h-12 mx-auto text-yellow-600" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                        </svg>
+                    </div>
+                    <div class="fortune-text">
+                        <p class="text-center text-stone-700 font-medium leading-relaxed italic">
+                            "${dailyFortune}"
+                        </p>
+                    </div>
+                    <div class="fortune-footer mt-3 text-center">
+                        <span class="text-xs text-stone-500">
+                            Frase do dia ${new Date().toLocaleDateString('pt-BR')}
+                        </span>
+                    </div>
+                </div>
+            `;
+        }
 
         async function renderMonthlyHighlight() {
             const container = document.getElementById('monthly-highlight-content');
@@ -6385,7 +6624,7 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            const pageRenderers = { 'inicio': renderInicioSection, 'alunos': renderAlunosSection, 'turmas': renderTurmasSection, 'vips': renderVipsSection, 'campanhas': renderCampanhasSection, 'orcamentos': renderOrcamentosSection, 'tarefas': renderTarefasSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection, 'cancelamentos': renderCancelamentosSection, 'colaboradores': renderColaboradoresSection, 'cps': renderCPsSection, 'dojo': renderDojoSection, 'calendario-pedagogico': renderCalendarioPedagogicoSection, 'calendario-marketing': renderCalendarioMarketingSection, 'desafio-pedagogico': renderDesafioPedagogicoSection, 'diretrizes': renderDiretrizesSection };
+            const pageRenderers = { 'inicio': renderInicioSection, 'alunos': renderAlunosSection, 'turmas': renderTurmasSection, 'vips': renderVipsSection, 'campanhas': () => renderCampanhasSection(), 'orcamentos': renderOrcamentosSection, 'tarefas': renderTarefasSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection, 'cancelamentos': renderCancelamentosSection, 'colaboradores': renderColaboradoresSection, 'cps': renderCPsSection, 'dojo': renderDojoSection, 'calendario-pedagogico': renderCalendarioPedagogicoSection, 'calendario-marketing': renderCalendarioMarketingSection, 'desafio-pedagogico': renderDesafioPedagogicoSection, 'diretrizes': renderDiretrizesSection };
 
             document.body.addEventListener('click', (event) => {
                 // Close modals when clicking overlay or close button
@@ -6493,6 +6732,7 @@
                             }
                             openMarketingEventForm(id);
                         },
+                        'change-marketing-month': () => changeMarketingMonth(parseInt(direction) || 0),
                         'close-marketing-modal': () => {
                             document.getElementById('marketing-event-modal').classList.remove('visible');
                         },
