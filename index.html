@@ -1296,13 +1296,14 @@
             const totalCount = students.length;
             const activeCount = students.filter(s => s.status === 'Ativo').length;
             const cancelledCount = students.filter(s => s.status === 'Cancelado').length;
+            const pendingCount = students.filter(s => s.status === 'Pendente').length;
             const totalRevenue = students.reduce((sum, student) => {
                 return sum + parseFloat(student.amountReceived || student.amountPaid || 0);
             }, 0);
 
             contentArea.innerHTML = `
                 <section id="alunos-section" class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
                         <div class="bg-stone-100 p-4 rounded-lg text-center">
                             <p class="text-2xl font-bold text-stone-800">${totalCount}</p>
                             <p class="text-sm text-stone-600">Total de Alunos</p>
@@ -1310,6 +1311,10 @@
                         <div class="bg-green-100 p-4 rounded-lg text-center">
                             <p class="text-2xl font-bold text-green-700">${activeCount}</p>
                             <p class="text-sm text-green-600">Alunos Ativos</p>
+                        </div>
+                        <div class="bg-yellow-100 p-4 rounded-lg text-center">
+                            <p class="text-2xl font-bold text-yellow-700">${pendingCount}</p>
+                            <p class="text-sm text-yellow-600">Alunos Pendentes</p>
                         </div>
                         <div class="bg-red-100 p-4 rounded-lg text-center">
                             <p class="text-2xl font-bold text-red-700">${cancelledCount}</p>
@@ -1331,6 +1336,7 @@
                         <div class="flex gap-2" id="alunos-filter-buttons">
                             <button class="secondary-btn filter-btn active" data-filter="todos">Todos</button>
                             <button class="secondary-btn filter-btn" data-filter="ativo">Ativos</button>
+                            <button class="secondary-btn filter-btn" data-filter="pendente">Pendentes</button>
                             <button class="secondary-btn filter-btn" data-filter="cancelado">Cancelados</button>
                         </div>
                         <div class="flex gap-2">
@@ -1981,7 +1987,7 @@
                 const deadlineDate = new Date(task.deadline + 'T00:00:00'); 
                 const isOverdue = !task.completed && deadlineDate < new Date(); 
                 const deadlineClass = isOverdue ? 'deadline-overdue' : ''; 
-                const formattedDate = deadlineDate.toLocaleDateString('pt-BR', { timeZone: 'UTC' }); 
+                const formattedDate = formatDateBR(task.deadline); 
                 return `<div class="task-card flex items-start gap-4 ${task.completed ? 'completed' : ''}"><input type="checkbox" data-action="toggle-task" data-id="${task.id}" class="mt-1.5 h-5 w-5 rounded border-gray-300 text-yellow-500 focus:ring-yellow-400" ${task.completed ? 'checked' : ''}><div class="flex-1"><p class="text-stone-800 font-medium">${task.description}</p><div class="mt-3 flex flex-wrap justify-between items-center gap-4"><div class="flex items-center gap-2 flex-wrap"><span class="text-xs text-stone-500">Para:</span>${(task.assignedTo || []).map(name => `<span class="user-tag" style="background-color: #e5e7eb; color: #374151;">${name}</span>`).join('')}</div><div class="text-right"><span class="text-xs text-stone-500">Prazo</span><p class="deadline-text ${deadlineClass}">${formattedDate}</p></div></div></div><button class="task-delete-btn" data-action="delete-item" data-collection="tasks" data-id="${task.id}"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button></div>`; 
             }).join(''); 
         }
@@ -2311,7 +2317,7 @@
                                     <tr class="${exp.isPaid ? 'paid' : ''}">
                                         <td class="text-center"><input type="checkbox" data-action="toggle-expense" data-id="${exp.id}" class="h-5 w-5 rounded border-gray-300 text-yellow-500 focus:ring-yellow-400" ${exp.isPaid ? 'checked' : ''}></td>
                                         <td class="font-medium cursor-pointer" data-action="view-expense" data-id="${exp.id}">${exp.description} ${exp.isFixedSalary && exp.employeeRole ? `<span class="sector-tag">${exp.employeeRole}</span>` : ''}</td>
-                                        <td class="cursor-pointer" data-action="view-expense" data-id="${exp.id}">${exp.effectiveDueDate.toLocaleDateString('pt-BR', {timeZone: 'UTC'})}</td>
+                                        <td class="cursor-pointer" data-action="view-expense" data-id="${exp.id}">${formatDateBR(exp.effectiveDueDate)}</td>
                                         <td class="text-right font-mono cursor-pointer" data-action="view-expense" data-id="${exp.id}">${Number(exp.amount).toFixed(2)}</td>
                                         <td class="text-center">
                                             <button class="task-delete-btn" data-action="delete-item" data-collection="expenses" data-id="${exp.id}">
@@ -2558,6 +2564,19 @@
         }
         function showConfirmationModal(title, message, onConfirm) { clearModalHeaderButtons(); const modalTitle = document.getElementById('form-modal-title'); const modalContentArea = document.getElementById('form-modal-content-area'); modalTitle.textContent = title; modalContentArea.innerHTML = `<p class="text-stone-600">${message}</p><div class="mt-6 flex justify-end gap-4"><button class="secondary-btn" data-action="close-modal">Cancelar</button><button id="confirm-action-btn" class="danger-btn w-auto">Confirmar</button></div>`; document.getElementById('form-modal').classList.add('visible'); document.getElementById('confirm-action-btn').onclick = () => { onConfirm(); closeFormModal(); }; }
 
+        // Função para formatação de data consistente no formato brasileiro
+        function formatDateBR(date) {
+            if (!date) return 'N/A';
+            const dateObj = typeof date === 'string' ? new Date(date + 'T00:00:00') : new Date(date);
+            
+            // Garante formato brasileiro DD/MM/AAAA independente da configuração do sistema
+            const day = String(dateObj.getDate()).padStart(2, '0');
+            const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const year = dateObj.getFullYear();
+            
+            return `${day}/${month}/${year}`;
+        }
+
         function openSignUpModal() {
             clearModalHeaderButtons();
             const modalTitle = document.getElementById('form-modal-title');
@@ -2789,7 +2808,7 @@
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2 text-sm text-stone-600">
                         <p><strong>Modalidade:</strong> <span class="status-tag status-${(aluno.modalidade || 'turma').toLowerCase()}">${aluno.modalidade || 'TURMA'}</span></p>
-                        <p><strong>Início:</strong> ${aluno.startDate ? new Date(aluno.startDate + 'T00:00:00').toLocaleDateString('pt-BR') : 'N/A'}</p>
+                        <p><strong>Início:</strong> ${formatDateBR(aluno.startDate)}</p>
                         ${canViewFinancialInfo ? `<p><strong>Pagamento:</strong> ${aluno.paymentType || 'N/A'}</p>` : ''}
                         ${canViewFinancialInfo ? `<p><strong>Parcelas:</strong> ${aluno.parcelas ? `${aluno.parcelas}x` : 'Não informado'}</p>` : ''}
                         <p><strong>Indicação:</strong> ${aluno.indicacao || 'Não informado'}</p>
@@ -2810,7 +2829,7 @@
                     <div class="mt-4 pt-4 border-t border-red-200 bg-red-50 p-4 rounded-lg">
                         <h4 class="font-semibold text-red-700 mb-2">Informações do Cancelamento</h4>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-red-700">
-                            <p><strong>Data:</strong> ${new Date(aluno.cancellationDate + 'T00:00:00').toLocaleDateString('pt-BR')}</p>
+                            <p><strong>Data:</strong> ${formatDateBR(aluno.cancellationDate)}</p>
                             <p><strong>Processado por:</strong> ${aluno.processedBy || 'N/A'}</p>
                         </div>
                         ${aluno.cancellationReason ? `<p class="mt-2 text-sm text-red-700"><strong>Motivo:</strong></p><p class="mt-1 p-2 bg-red-100 rounded text-sm text-red-800 whitespace-pre-wrap">${aluno.cancellationReason}</p>` : ''}
@@ -2966,12 +2985,34 @@
 
             const teacherOptions = collaborators.filter(c => c.sectors?.includes('professor')).map(c => `<option value="${c.id}" data-name="${c.name}" ${vip?.teacherId === c.id ? 'selected' : ''}>${c.name}</option>`).join('');
             const levelOptions = cps.map(cp => `<option value="${cp.title}" ${vip?.level === cp.title ? 'selected' : ''}>${cp.title}</option>`).join('') + `<option value="outro">Outro (especificar)</option>`;
-            const studentOptions = students.filter(s => s.modalidade === 'VIP' && (!vips.find(v => v.studentId === s.id) || vip?.studentId === s.id)).map(s => `<option value="${s.id}" data-name="${s.name}" ${vip?.studentId === s.id ? 'selected' : ''}>${s.name}</option>`).join('');
+            
+            // Available VIP students (modalidade VIP and not already registered as VIP, or current VIP being edited)
+            const availableVipStudents = students.filter(s => s.modalidade === 'VIP' && (!vips.find(v => v.studentId === s.id) || vip?.studentId === s.id));
 
             document.getElementById('form-modal-content-area').innerHTML = `
                 <form id="form-modal-body" class="space-y-4">
                     <input type="hidden" id="vip-id" value="${vipId || ''}">
-                    <div><label class="font-medium text-sm">Aluno VIP</label><select id="vip-student" class="form-input" required><option value="">Selecione um aluno VIP</option>${studentOptions}</select></div>
+                    <div>
+                        <label class="font-medium text-sm">Aluno VIP</label>
+                        <div class="relative">
+                            <input type="text" id="vip-student-search" class="form-input" placeholder="🔍 Digite o nome do aluno ou clique na seta para ver a lista..." 
+                                   autocomplete="off" value="${vip ? vip.studentName : ''}" required>
+                            <input type="hidden" id="vip-student-id" value="${vip ? vip.studentId : ''}">
+                            
+                            <!-- Dropdown toggle button -->
+                            <button type="button" id="vip-student-dropdown-btn" class="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="6 9 12 15 18 9"></polyline>
+                                </svg>
+                            </button>
+                            
+                            <!-- Search results dropdown -->
+                            <div id="vip-student-results" class="absolute z-50 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto hidden">
+                                <div class="p-2 text-sm text-gray-500">Digite para pesquisar alunos VIP...</div>
+                            </div>
+                        </div>
+                        <div id="vip-student-error" class="text-red-500 text-sm mt-1 hidden">Selecione um aluno VIP válido</div>
+                    </div>
                     <div><label class="font-medium text-sm">Professor (Opcional)</label><select id="vip-teacher" class="form-input"><option value="">Sem professor definido</option>${teacherOptions}</select></div>
                     <div>
                         <label class="font-medium text-sm">Nível (Opcional)</label>
@@ -2989,13 +3030,131 @@
                     </div>
                 </form>
             `;
+            // Level selection functionality
             const levelSelect = document.getElementById('vip-level');
             const levelCustomInput = document.getElementById('vip-level-custom');
             levelSelect.addEventListener('change', (e) => {
                 levelCustomInput.classList.toggle('hidden', e.target.value !== 'outro');
             });
+
+            // VIP student search functionality
+            setupVipStudentSearch(availableVipStudents);
+
             document.getElementById('form-modal-body').onsubmit = saveVip;
             document.getElementById('form-modal').classList.add('visible');
+        }
+
+        function setupVipStudentSearch(availableVipStudents) {
+            const searchInput = document.getElementById('vip-student-search');
+            const studentIdInput = document.getElementById('vip-student-id');
+            const resultsContainer = document.getElementById('vip-student-results');
+            const dropdownBtn = document.getElementById('vip-student-dropdown-btn');
+            const errorDiv = document.getElementById('vip-student-error');
+
+            // Function to filter and display students
+            function filterAndDisplayStudents(query = '') {
+                const filteredStudents = availableVipStudents.filter(student => 
+                    student.name.toLowerCase().includes(query.toLowerCase())
+                );
+
+                if (filteredStudents.length === 0) {
+                    resultsContainer.innerHTML = `<div class="p-2 text-sm text-gray-500">Nenhum aluno VIP encontrado${query ? ` para "${query}"` : ''}</div>`;
+                } else {
+                    resultsContainer.innerHTML = filteredStudents.map(student => `
+                        <div class="p-2 cursor-pointer hover:bg-gray-100 border-b border-gray-100 last:border-b-0" 
+                             data-student-id="${student.id}" data-student-name="${student.name}">
+                            <div class="font-medium">${student.name}</div>
+                            <div class="text-xs text-gray-500">ID: ${student.id} | Status: ${student.status}</div>
+                        </div>
+                    `).join('');
+                }
+
+                // Add click listeners to results
+                resultsContainer.querySelectorAll('[data-student-id]').forEach(item => {
+                    item.addEventListener('click', () => {
+                        const studentId = item.getAttribute('data-student-id');
+                        const studentName = item.getAttribute('data-student-name');
+                        selectStudent(studentId, studentName);
+                    });
+                });
+            }
+
+            // Function to select a student
+            function selectStudent(studentId, studentName) {
+                searchInput.value = studentName;
+                studentIdInput.value = studentId;
+                resultsContainer.classList.add('hidden');
+                errorDiv.classList.add('hidden');
+            }
+
+            // Search input event listener
+            searchInput.addEventListener('input', (e) => {
+                const query = e.target.value.trim();
+                
+                if (query.length === 0) {
+                    studentIdInput.value = '';
+                    resultsContainer.classList.add('hidden');
+                    errorDiv.classList.add('hidden');
+                    return;
+                }
+
+                // Check if typed name matches exactly an available student
+                const exactMatch = availableVipStudents.find(s => 
+                    s.name.toLowerCase() === query.toLowerCase()
+                );
+
+                if (exactMatch) {
+                    studentIdInput.value = exactMatch.id;
+                    errorDiv.classList.add('hidden');
+                } else {
+                    studentIdInput.value = '';
+                }
+
+                filterAndDisplayStudents(query);
+                resultsContainer.classList.remove('hidden');
+            });
+
+            // Dropdown button click to show all students
+            dropdownBtn.addEventListener('click', () => {
+                if (resultsContainer.classList.contains('hidden')) {
+                    filterAndDisplayStudents(); // Show all students
+                    resultsContainer.classList.remove('hidden');
+                    searchInput.focus();
+                } else {
+                    resultsContainer.classList.add('hidden');
+                }
+            });
+
+            // Focus event to show dropdown
+            searchInput.addEventListener('focus', () => {
+                if (searchInput.value.trim()) {
+                    filterAndDisplayStudents(searchInput.value.trim());
+                } else {
+                    filterAndDisplayStudents(); // Show all students
+                }
+                resultsContainer.classList.remove('hidden');
+            });
+
+            // Validate on blur
+            searchInput.addEventListener('blur', (e) => {
+                // Small delay to allow clicking on results
+                setTimeout(() => {
+                    if (!studentIdInput.value && searchInput.value.trim()) {
+                        errorDiv.classList.remove('hidden');
+                        errorDiv.textContent = 'Selecione um aluno válido da lista';
+                    }
+                    resultsContainer.classList.add('hidden');
+                }, 150);
+            });
+
+            // Hide dropdown when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('#vip-student-search') && 
+                    !e.target.closest('#vip-student-results') && 
+                    !e.target.closest('#vip-student-dropdown-btn')) {
+                    resultsContainer.classList.add('hidden');
+                }
+            });
         }
 
         async function saveVip(event) {
@@ -3003,17 +3162,28 @@
             const vipId = document.getElementById('vip-id').value;
             const teacherSelect = document.getElementById('vip-teacher');
             const selectedTeacherOption = teacherSelect.options[teacherSelect.selectedIndex];
-            const studentSelect = document.getElementById('vip-student');
-            const selectedStudentOption = studentSelect.options[studentSelect.selectedIndex];
+            
+            // Get student data from the new search system
+            const studentId = document.getElementById('vip-student-id').value;
+            const studentName = document.getElementById('vip-student-search').value.trim();
 
             const levelSelect = document.getElementById('vip-level');
             const levelValue = levelSelect.value === 'outro'
                 ? document.getElementById('vip-level-custom').value
                 : levelSelect.value;
 
+            // Validate student selection
+            if (!studentId || !studentName) {
+                const errorDiv = document.getElementById('vip-student-error');
+                errorDiv.classList.remove('hidden');
+                errorDiv.textContent = 'Selecione um aluno VIP válido';
+                showErrorMessage("Erro", "Selecione um aluno VIP.");
+                return;
+            }
+
             const data = {
-                studentId: selectedStudentOption.value,
-                studentName: selectedStudentOption.getAttribute('data-name') || selectedStudentOption.textContent,
+                studentId: studentId,
+                studentName: studentName,
                 teacherId: selectedTeacherOption.value || null,
                 teacherName: selectedTeacherOption.getAttribute('data-name') || null,
                 level: levelValue || null,
@@ -3021,11 +3191,6 @@
                 startDate: document.getElementById('vip-startDate').value,
                 endDate: document.getElementById('vip-endDate').value,
             };
-
-            if (!data.studentId) {
-                showErrorMessage("Erro", "Selecione um aluno VIP.");
-                return;
-            }
 
             try {
                 if (vipId) {
@@ -4070,7 +4235,7 @@
             document.getElementById('form-modal-content-area').innerHTML = `
                 <div class="space-y-4">
                     <p><strong>Aluno:</strong> ${cancelamento.studentName}</p>
-                    <p><strong>Data:</strong> ${new Date(cancelamento.cancellationDate + 'T00:00:00').toLocaleDateString('pt-BR')}</p>
+                    <p><strong>Data:</strong> ${formatDateBR(cancelamento.cancellationDate)}</p>
                     <p><strong>Processado por:</strong> ${cancelamento.processedBy}</p>
                     <div><strong>Motivo:</strong><p class="mt-1 p-3 bg-stone-50 rounded-md">${cancelamento.reason}</p></div>
                     <div class="border-t pt-4 flex justify-end gap-2">
@@ -5209,7 +5374,7 @@
                             <h3 class="text-xl font-semibold text-stone-800 mb-4">${event.title}</h3>
                         </div>
                         <div class="grid grid-cols-1 gap-3 text-sm">
-                            <div><strong>Data:</strong> ${new Date(event.date + 'T00:00:00').toLocaleDateString('pt-BR')}</div>
+                            <div><strong>Data:</strong> ${formatDateBR(event.date)}</div>
                             ${event.time ? `<div><strong>Horário:</strong> ${event.time}</div>` : ''}
                             <div><strong>País:</strong> <span class="inline-block px-2 py-1 rounded text-xs bg-blue-100 text-blue-700">${event.country || 'Brasil'}</span></div>
                             <div><strong>Tipos de Conteúdo:</strong> 
@@ -6906,7 +7071,7 @@
                 <body>
                     <h1>Lista Completa de Alunos - SLAP</h1>
                     <div class="header-info">
-                        <p>Data de Exportação: ${new Date().toLocaleDateString('pt-BR')}</p>
+                        <p>Data de Exportação: ${formatDateBR(new Date())}</p>
                         <p>Total de Alunos: ${allStudents.length}</p>
                         <p>Ativos: ${allStudents.filter(s => s.status === 'Ativo').length} | Cancelados: ${allStudents.filter(s => s.status === 'Cancelado').length} | Outros: ${allStudents.filter(s => s.status !== 'Ativo' && s.status !== 'Cancelado').length}</p>
                     </div>
@@ -7011,7 +7176,7 @@
                 <body>
                     <h1>Diretrizes SLAP - Documento Completo</h1>
                     <div class="header-info">
-                        <p>Data de Exportação: ${new Date().toLocaleDateString('pt-BR')}</p>
+                        <p>Data de Exportação: ${formatDateBR(new Date())}</p>
                         <p>Total de Diretrizes: ${allGuidelines.length}</p>
                         <p>Boas Práticas: ${guidelines.goodPractices ? guidelines.goodPractices.length : 0} | Itens Proibidos: ${guidelines.prohibitedItems ? guidelines.prohibitedItems.length : 0}</p>
                     </div>
@@ -7160,7 +7325,7 @@
                     </div>
                     <div class="fortune-footer mt-3 text-center">
                         <span class="text-xs text-gray-300">
-                            Frase do dia ${new Date().toLocaleDateString('pt-BR')}
+                            Frase do dia ${formatDateBR(new Date())}
                         </span>
                     </div>
                 </div>
@@ -7386,7 +7551,7 @@
                             <h3 class="text-xl font-semibold text-stone-800 mb-4">${event.title}</h3>
                         </div>
                         <div class="grid grid-cols-1 gap-3 text-sm">
-                            <div><strong>Data:</strong> ${new Date(event.date + 'T00:00:00').toLocaleDateString('pt-BR')}</div>
+                            <div><strong>Data:</strong> ${formatDateBR(event.date)}</div>
                             ${timeText ? `<div>${timeText}</div>` : ''}
                             <div><strong>Tipo:</strong> <span class="inline-block px-2 py-1 rounded text-xs bg-${getEventTypeColor(event.type)}-100 text-${getEventTypeColor(event.type)}-700">${typeText}</span></div>
                             <div class="mt-4">
