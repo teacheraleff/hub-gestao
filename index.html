@@ -3064,7 +3064,7 @@
                         <div class="p-2 cursor-pointer hover:bg-gray-100 border-b border-gray-100 last:border-b-0" 
                              data-student-id="${student.id}" data-student-name="${student.name}">
                             <div class="font-medium">${student.name}</div>
-                            <div class="text-xs text-gray-500">ID: ${student.id} | Status: ${student.status}</div>
+                            <div class="text-xs text-gray-500">Status: ${student.status} | Modalidade: ${student.modalidade || 'VIP'}</div>
                         </div>
                     `).join('');
                 }
