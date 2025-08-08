@@ -4645,7 +4645,9 @@
             }
 
             if (!db) {
+                // Development mode - update localStorage
                 calendarEvents = calendarEvents.filter(e => e.id !== eventId);
+                localStorage.setItem('calendarEvents', JSON.stringify(calendarEvents));
                 renderCalendar();
                 document.getElementById('form-modal').classList.remove('visible');
                 showSuccessMessage("Sucesso!", "Evento excluído com sucesso.");
@@ -4976,11 +4978,18 @@
 
         async function loadCalendarEvents() {
             if (!db) {
-                console.warn("Firebase not available, using sample data");
-                calendarEvents = [
-                    { id: '1', title: 'Reunião Pedagógica', date: '2025-01-15', time: '09:00', type: 'reuniao', description: 'Reunião mensal da equipe pedagógica' },
-                    { id: '2', title: 'Gravação Aula', date: '2025-01-20', time: '14:00', type: 'gravacao', description: 'Gravação da aula de pronunciação avançada' }
-                ];
+                console.warn("Firebase not available, loading from localStorage");
+                const localEvents = JSON.parse(localStorage.getItem('calendarEvents') || '[]');
+                if (localEvents.length === 0) {
+                    // Add sample data if no events exist
+                    calendarEvents = [
+                        { id: '1', title: 'Reunião Pedagógica', date: '2025-01-15', time: '09:00', type: 'reuniao', description: 'Reunião mensal da equipe pedagógica' },
+                        { id: '2', title: 'Gravação Aula', date: '2025-01-20', time: '14:00', type: 'gravacao', description: 'Gravação da aula de pronunciação avançada' }
+                    ];
+                    localStorage.setItem('calendarEvents', JSON.stringify(calendarEvents));
+                } else {
+                    calendarEvents = localEvents;
+                }
                 renderCalendar();
                 return;
             }
@@ -6327,7 +6336,7 @@
                                 </svg>
                                 Exportar Diretrizes
                             </button>
-                            ${['admin', 'pedagogico'].includes(currentUserRole) ? `
+                            ${['admin', 'pedagogico', 'ap'].includes(currentUserRole) ? `
                             <button class="primary-btn w-auto" data-action="add-guideline">
                                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
@@ -6524,8 +6533,13 @@
                             <div class="flex-1">
                                 <h3 class="guideline-title">${item.title}</h3>
                             </div>
-                            ${['admin', 'pedagogico'].includes(currentUserRole) ? `
-                            <button class="danger-btn !text-xs !py-1 !px-2 ml-2" onclick="deleteGuidelineItem('${type}', ${realIndex})">
+                            ${['admin', 'pedagogico', 'ap'].includes(currentUserRole) ? `
+                            <button class="secondary-btn !text-xs !py-1 !px-2 ml-2" onclick="editGuidelineItem('${type}', ${realIndex})">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                </svg>
+                            </button>
+                            <button class="danger-btn !text-xs !py-1 !px-2 ml-1" onclick="deleteGuidelineItem('${type}', ${realIndex})">
                                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                                 </svg>
@@ -6620,9 +6634,33 @@
             renderGuidelines(searchTerm);
         }
 
-        function openGuidelineForm() {
+        function openGuidelineForm(type = null, index = null) {
             const modal = document.getElementById('guideline-modal');
             const form = document.getElementById('guideline-form');
+            const title = document.getElementById('guideline-modal-title');
+            
+            // Reset form
+            form.reset();
+            
+            if (type !== null && index !== null) {
+                // Edit mode
+                title.textContent = 'Editar Diretriz';
+                const guidelineType = type === 'goodPractices' ? 'good-practice' : 'prohibited';
+                const item = guidelines[type][index];
+                
+                document.getElementById('guideline-type').value = guidelineType;
+                document.getElementById('guideline-title').value = item.title;
+                document.getElementById('guideline-description').value = item.description;
+                
+                // Store edit info for saving
+                form.dataset.editType = type;
+                form.dataset.editIndex = index;
+            } else {
+                // Add mode
+                title.textContent = 'Nova Diretriz';
+                delete form.dataset.editType;
+                delete form.dataset.editIndex;
+            }
 
             // Add submit event listener
             form.onsubmit = (e) => {
@@ -6748,25 +6786,42 @@
 
         function saveGuideline(event) {
             event.preventDefault();
-
+            
+            const form = event.target;
             const type = document.getElementById('guideline-type').value;
             const title = document.getElementById('guideline-title').value;
             const description = document.getElementById('guideline-description').value;
 
-            const newGuideline = {
-                id: Date.now().toString(),
+            const guidelineData = {
                 title: title,
                 description: description
             };
-
-            if (type === 'good-practice') {
-                guidelines.goodPractices.push(newGuideline);
+            
+            if (form.dataset.editType && form.dataset.editIndex !== undefined) {
+                // Edit mode
+                const editIndex = parseInt(form.dataset.editIndex);
+                guidelines[form.dataset.editType][editIndex] = {
+                    ...guidelines[form.dataset.editType][editIndex],
+                    ...guidelineData
+                };
+                showSuccessMessage("Sucesso!", "Diretriz atualizada com sucesso.");
             } else {
-                guidelines.prohibitedItems.push(newGuideline);
+                // Add mode
+                const newGuideline = {
+                    id: Date.now().toString(),
+                    ...guidelineData
+                };
+                
+                if (type === 'good-practice') {
+                    guidelines.goodPractices.push(newGuideline);
+                } else {
+                    guidelines.prohibitedItems.push(newGuideline);
+                }
+                showSuccessMessage("Sucesso!", "Diretriz adicionada com sucesso.");
             }
 
             saveGuidelines();
-            renderGuidelines();
+            renderGuidelines(document.getElementById('guidelines-search').value);
 
             // Close modal and reset form
             document.getElementById('guideline-modal').classList.remove('visible');
@@ -7247,32 +7302,59 @@
             };
         });
 
-        function saveCalendarEvent(eventId = null) {
+        async function saveCalendarEvent(eventId = null) {
             const title = document.getElementById('event-title').value;
             const date = document.getElementById('event-date').value;
             const time = document.getElementById('event-time').value;
             const type = document.getElementById('event-type').value;
             const description = document.getElementById('event-description').value;
 
-            if (eventId) {
-                const eventIndex = calendarEvents.findIndex(e => e.id === eventId);
-                if (eventIndex !== -1) {
-                    calendarEvents[eventIndex] = { id: eventId, title, date, time, type, description };
-                }
-            } else {
-                const newEvent = {
-                    id: Date.now().toString(),
-                    title,
-                    date,
-                    time,
-                    type,
-                    description
-                };
-                calendarEvents.push(newEvent);
+            if (!title || !date) {
+                showErrorMessage("Erro", "Título e data são obrigatórios.");
+                return;
             }
 
-            saveCalendarEvents();
-            renderCalendar();
+            const eventData = { title, date, time, type, description };
+
+            try {
+                if (!db) {
+                    // Development mode - save to localStorage
+                    let localEvents = JSON.parse(localStorage.getItem('calendarEvents') || '[]');
+                    
+                    if (eventId) {
+                        const eventIndex = localEvents.findIndex(e => e.id === eventId);
+                        if (eventIndex !== -1) {
+                            localEvents[eventIndex] = { id: eventId, ...eventData };
+                        }
+                    } else {
+                        const newEvent = {
+                            id: Date.now().toString(),
+                            ...eventData
+                        };
+                        localEvents.push(newEvent);
+                    }
+                    
+                    localStorage.setItem('calendarEvents', JSON.stringify(localEvents));
+                    calendarEvents = localEvents;
+                    showSuccessMessage("Sucesso", "Evento salvo com sucesso.");
+                } else {
+                    // Firebase mode - save to database
+                    if (eventId) {
+                        await updateDoc(doc(db, `artifacts/${appId}/public/data/calendar-events`, eventId), eventData);
+                        showSuccessMessage("Sucesso", "Evento atualizado com sucesso.");
+                    } else {
+                        eventData.createdAt = serverTimestamp();
+                        await addDoc(collection(db, `artifacts/${appId}/public/data/calendar-events`), eventData);
+                        showSuccessMessage("Sucesso", "Evento criado com sucesso.");
+                    }
+                }
+                
+                closeFormModal();
+                renderCalendar();
+            } catch (error) {
+                console.error("Error saving calendar event:", error);
+                showErrorMessage("Erro", "Falha ao salvar o evento. Tente novamente.");
+            }
         }
 
         function viewCalendarEvent(eventId) {
@@ -7356,7 +7438,7 @@
                 { key: 'calendario-pedagogico', label: 'Calendário Pedagógico', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>', roles: ['admin', 'ap', 'pedagogico', 'financeiro', 'teacher', 'am'] },
                 { key: 'calendario-marketing', label: 'Calendário Marketing', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>', roles: ['admin', 'ap', 'am', 'financeiro', 'pedagogico'] },
                 { key: 'desafio-pedagogico', label: 'Desafio Pedagógico', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>', roles: ['admin', 'pedagogico', 'teacher', 'ap'] },
-                { key: 'diretrizes', label: 'Diretrizes', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14,2 14,8 20,8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10,9 9,9 8,9"></polyline></svg>', roles: ['admin', 'teacher', 'pedagogico'] },
+                { key: 'diretrizes', label: 'Diretrizes', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14,2 14,8 20,8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10,9 9,9 8,9"></polyline></svg>', roles: ['admin', 'teacher', 'pedagogico', 'ap'] },
                 { key: 'tarefas', label: 'Tarefas', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>', roles: ['admin', 'am', 'ap', 'pedagogico', 'financeiro', 'teacher'] },
                 { key: 'cps', label: 'CPs', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>', roles: ['admin', 'pedagogico', 'ap'] },
                 { key: 'campanhas', label: 'Campanhas', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>', roles: ['admin', 'am', 'ap', 'pedagogico'] },
