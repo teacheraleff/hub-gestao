@@ -6612,6 +6612,10 @@
             }
         }
 
+        function editGuidelineItem(type, realIndex) {
+            openGuidelineForm(type, realIndex);
+        }
+
         function deleteGuidelineItem(type, realIndex) {
             const itemTitle = guidelines[type][realIndex].title;
 
@@ -7043,6 +7047,7 @@
         window.saveGuideline = saveGuideline;
         window.deleteGuideline = deleteGuideline;
         window.deleteGuidelineItem = deleteGuidelineItem;
+        window.editGuidelineItem = editGuidelineItem;
         window.changeGuidelinePage = changeGuidelinePage;
         window.exportAlunosDoc = exportAlunosDoc;
         window.exportGuidelinesDoc = exportGuidelinesDoc;
