@@ -800,7 +800,7 @@
                         </div>
                         ${canViewFinancialInfo ? `
                         <div class="bg-white p-4 rounded-lg shadow-sm border border-stone-200 text-center">
-                            <p class="text-2xl font-bold" style="color: #FF5C3D;">R$ ${totalRevenue.toFixed(0)}</p>
+                            <p class="text-2xl font-bold" style="color: #FF5C3D;">${formatCurrencyBR(totalRevenue)}</p>
                             <p class="text-sm text-stone-600">Receita</p>
                         </div>
                         ` : ''}
@@ -1322,7 +1322,7 @@
                         </div>
                         ${canViewFinancialInfo ? `
                         <div class="p-4 rounded-lg text-center" style="background-color: #FEF3C7;">
-                            <p class="text-2xl font-bold font-mono" style="color: #92400E;">R$ ${totalRevenue.toFixed(2)}</p>
+                            <p class="text-2xl font-bold font-mono" style="color: #92400E;">${formatCurrencyBR(totalRevenue)}</p>
                             <p class="text-sm" style="color: #B45309;">Receita Total</p>
                         </div>
                         ` : ''}
@@ -1556,26 +1556,13 @@
                 const today = new Date();
                 const thirtyDaysFromNow = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
                 
-                console.log('Filtro A Finalizar ativo:', {
-                    totalVips: filteredVips.length,
-                    today: today.toDateString(),
-                    thirtyDaysFromNow: thirtyDaysFromNow.toDateString()
-                });
-                
                 filteredVips = filteredVips.filter(student => {
                     const vipRecord = vips.find(v => v.studentId === student.id);
-                    if (!vipRecord || !vipRecord.endDate) {
-                        console.log(`VIP ${student.name}: sem endDate`);
-                        return false;
-                    }
+                    if (!vipRecord || !vipRecord.endDate) return false;
                     
                     const endDate = new Date(vipRecord.endDate);
-                    const isExpiring = endDate <= thirtyDaysFromNow && endDate >= today;
-                    console.log(`VIP ${student.name}: endDate=${endDate.toDateString()}, isExpiring=${isExpiring}`);
-                    return isExpiring;
+                    return endDate <= thirtyDaysFromNow && endDate >= today;
                 });
-                
-                console.log('VIPs a finalizar encontrados:', filteredVips.length);
             }
 
             if (searchTerm) {
@@ -2625,6 +2612,14 @@
             const year = dateObj.getFullYear();
             
             return `${day}/${month}/${year}`;
+        }
+
+        // Função para formatação de valores monetários no padrão brasileiro
+        function formatCurrencyBR(value) {
+            return new Intl.NumberFormat('pt-BR', {
+                style: 'currency',
+                currency: 'BRL'
+            }).format(value);
         }
 
         function openSignUpModal() {
