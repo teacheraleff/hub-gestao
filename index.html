@@ -1512,20 +1512,7 @@
             });
             let filteredVips = vipStudents;
 
-            // Apply status filter for "A Finalizar" - VIPs with 30 days or less to end
-            if (statusFilter === 'a-finalizar') {
-                const today = new Date();
-                const thirtyDaysFromNow = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
-                
-                filteredVips = vipStudents.filter(student => {
-                    const vipRecord = vips.find(v => v.studentId === student.id);
-                    if (!vipRecord || !vipRecord.endDate) return false;
-                    
-                    const endDate = new Date(vipRecord.endDate);
-                    return endDate <= thirtyDaysFromNow && endDate >= today;
-                });
-            }
-
+            // Apply role-based filtering first
             if (currentUserRole === 'teacher') {
                 // Find the teacher's name in collaborators to ensure correct mapping
                 const teacherCollaborator = collaborators.find(c => 
@@ -1562,6 +1549,33 @@
                     const vipRecord = vips.find(v => v.studentId === student.id);
                     return vipRecord && vipRecord.teacherName === teacherFilter;
                 });
+            }
+
+            // Apply status filter for "A Finalizar" - VIPs with 30 days or less to end
+            if (statusFilter === 'a-finalizar') {
+                const today = new Date();
+                const thirtyDaysFromNow = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
+                
+                console.log('Filtro A Finalizar ativo:', {
+                    totalVips: filteredVips.length,
+                    today: today.toDateString(),
+                    thirtyDaysFromNow: thirtyDaysFromNow.toDateString()
+                });
+                
+                filteredVips = filteredVips.filter(student => {
+                    const vipRecord = vips.find(v => v.studentId === student.id);
+                    if (!vipRecord || !vipRecord.endDate) {
+                        console.log(`VIP ${student.name}: sem endDate`);
+                        return false;
+                    }
+                    
+                    const endDate = new Date(vipRecord.endDate);
+                    const isExpiring = endDate <= thirtyDaysFromNow && endDate >= today;
+                    console.log(`VIP ${student.name}: endDate=${endDate.toDateString()}, isExpiring=${isExpiring}`);
+                    return isExpiring;
+                });
+                
+                console.log('VIPs a finalizar encontrados:', filteredVips.length);
             }
 
             if (searchTerm) {
@@ -1882,7 +1896,7 @@
                         </div>
                     </div>
 
-                    ${canManage ? `
+                    ${canManage || currentUserRole === 'teacher' ? `
                     <div class="flex gap-2 mb-6" id="vips-filter-buttons">
                         <button class="secondary-btn filter-btn active" data-filter="todos">Todos</button>
                         <button class="secondary-btn filter-btn" data-filter="a-finalizar">A Finalizar</button>
@@ -1918,7 +1932,7 @@
                 </div>`;
 
             // Add event listeners for filter buttons
-            if (canManage) {
+            if (canManage || currentUserRole === 'teacher') {
                 const filterButtons = document.querySelectorAll('#vips-filter-buttons .filter-btn');
                 filterButtons.forEach(btn => {
                     btn.addEventListener('click', () => {
