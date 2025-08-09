@@ -1503,12 +1503,28 @@
         function getFilteredVips() {
             const searchTerm = document.getElementById('vip-search')?.value.toLowerCase() || '';
             const teacherFilter = document.getElementById('vip-teacher-filter')?.value || '';
+            const statusFilter = document.querySelector('#vips-filter-buttons .filter-btn.active')?.dataset.filter || 'todos';
+            
             // Only show students who have actual VIP records, not just VIP modality
             const vipStudents = students.filter(s => {
                 const hasVipRecord = vips.find(v => v.studentId === s.id);
                 return s.modalidade === 'VIP' && hasVipRecord;
             });
             let filteredVips = vipStudents;
+
+            // Apply status filter for "A Finalizar" - VIPs with 30 days or less to end
+            if (statusFilter === 'a-finalizar') {
+                const today = new Date();
+                const thirtyDaysFromNow = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
+                
+                filteredVips = vipStudents.filter(student => {
+                    const vipRecord = vips.find(v => v.studentId === student.id);
+                    if (!vipRecord || !vipRecord.endDate) return false;
+                    
+                    const endDate = new Date(vipRecord.endDate);
+                    return endDate <= thirtyDaysFromNow && endDate >= today;
+                });
+            }
 
             if (currentUserRole === 'teacher') {
                 // Find the teacher's name in collaborators to ensure correct mapping
@@ -1865,6 +1881,13 @@
                             ${canManage ? `<button class="primary-btn w-auto" data-action="add-vip">+ Adicionar VIP</button>` : ''}
                         </div>
                     </div>
+
+                    ${canManage ? `
+                    <div class="flex gap-2 mb-6" id="vips-filter-buttons">
+                        <button class="secondary-btn filter-btn active" data-filter="todos">Todos</button>
+                        <button class="secondary-btn filter-btn" data-filter="a-finalizar">A Finalizar</button>
+                    </div>
+                    ` : ''}
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="vips-grid">
                         ${itemsToDisplay.map(student => {
                             const vipRecord = vips.find(v => v.studentId === student.id);
@@ -1881,6 +1904,7 @@
                                 <p class="text-sm text-stone-600 mb-2"><strong>Status:</strong> <span class="status-tag status-${(student.status || 'pendente').toLowerCase()}">${student.status || 'Pendente'}</span></p>
                                 ${vipRecord ? `<p class="text-sm text-stone-500 mb-2">Professor: ${teacher?.name || 'N/A'}</p>` : ''}
                                 ${vipRecord ? `<p class="text-sm text-stone-600"><strong>Nível:</strong> ${vipRecord.level || 'N/A'}</p>` : ''}
+                                ${vipRecord && vipRecord.endDate ? `<p class="text-sm text-stone-600"><strong>Finaliza em:</strong> ${formatDateBR(vipRecord.endDate)}</p>` : ''}
                                 ${student.indicacao ? `<p class="text-sm text-stone-600"><strong>Indicação:</strong> ${student.indicacao}</p>` : ''}
                             </div>
                             <div class="mt-auto pt-4 border-t border-stone-100 flex gap-2">
@@ -1892,6 +1916,18 @@
                         </div>`}).join('') || '<p class="col-span-full text-center py-10 text-stone-500">Nenhum aluno VIP encontrado.</p>'}
                     </div>
                 </div>`;
+
+            // Add event listeners for filter buttons
+            if (canManage) {
+                const filterButtons = document.querySelectorAll('#vips-filter-buttons .filter-btn');
+                filterButtons.forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        filterButtons.forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        updateVipsList();
+                    });
+                });
+            }
         }
 
         async function renderCampanhasSection() {
