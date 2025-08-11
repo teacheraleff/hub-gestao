@@ -1727,7 +1727,7 @@
             listBody.innerHTML = paginatedStudents.map(student => {
                 const vipRecord = student.modalidade === 'VIP' ? vips.find(v => v.studentId === student.id) : null;
                 return `
-                <tr data-action="view-aluno" data-id="${student.id}" class="cursor-pointer">
+                <tr class="cursor-pointer" onclick="openAlunoModal('${student.id}')">
                     <td class="font-medium">
                         <div class="flex flex-col">
                             <div>${student.name}</div>
@@ -1742,8 +1742,7 @@
                     ${canViewFinancialInfo ? `<td class="font-mono">R$ ${parseFloat(student.amountReceived || student.amountPaid || 0).toFixed(2)}</td>` : `<td>${student.responsibleName || 'N/A'}</td>`}
                     <td class="text-center">
                         <div class="flex gap-1 justify-center">
-                            ${canEdit ? `<button class="secondary-btn" data-action="edit-aluno" data-id="${student.id}" onclick="event.stopPropagation()">Editar</button>` : `<button class="secondary-btn" data-action="view-aluno" data-id="${student.id}" onclick="event.stopPropagation()">Ver</button>`}
-                            ${vipRecord && canEdit ? `<button class="secondary-btn text-xs px-2 py-1" data-action="edit-vip" data-id="${vipRecord.id}" onclick="event.stopPropagation()" title="Editar VIP">✏️</button>` : ''}
+                            ${vipRecord && canEdit ? `<button class="primary-btn text-xs px-3 py-1" data-action="edit-vip" data-id="${vipRecord.id}" onclick="event.stopPropagation()" title="Editar configurações VIP">VIP</button>` : ''}
                         </div>
                     </td>
                 </tr>
@@ -7906,8 +7905,6 @@
                     const actionHandlers = {
                         'open-signup': openSignUpModal,
                         'add-aluno': () => openAlunoForm(),
-                        'view-aluno': () => openAlunoModal(id),
-                        'edit-aluno': () => openAlunoForm(id),
                         'add-turma': () => openTurmaForm(),
                         'open-turma-pef': () => openTurmaPefModal(id),
                         'edit-turma': () => openTurmaForm(id),
