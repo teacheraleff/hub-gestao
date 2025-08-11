@@ -1769,13 +1769,30 @@
             return '';
         }
 
+        let currentVipPage = 1;
+        let vipsPerPage = 6;
+
         function updateVipsList() {
-            const filteredVips = getFilteredVips();
+            const allFilteredVips = getFilteredVips();
             const vipsGrid = document.getElementById('vips-grid');
             
             if (!vipsGrid) return;
 
-            vipsGrid.innerHTML = filteredVips.map(student => {
+            // Pagination logic
+            const totalVips = allFilteredVips.length;
+            const totalPages = Math.ceil(totalVips / vipsPerPage);
+            
+            // Reset to page 1 if current page is beyond total pages
+            if (currentVipPage > totalPages && totalPages > 0) {
+                currentVipPage = 1;
+            }
+            
+            // Calculate pagination
+            const startIndex = (currentVipPage - 1) * vipsPerPage;
+            const endIndex = startIndex + vipsPerPage;
+            const paginatedVips = allFilteredVips.slice(startIndex, endIndex);
+
+            vipsGrid.innerHTML = paginatedVips.map(student => {
                 const vipRecord = vips.find(v => v.studentId === student.id);
                 const teacher = vipRecord ? collaborators.find(c => c.id === vipRecord.teacherId) : null;
                 const canManage = ['admin', 'pedagogico', 'ap', 'financeiro', 'teacher'].includes(currentUserRole);
@@ -1815,6 +1832,9 @@
                         ` : ''}
                     </div>
                 </div>`}).join('') || '<p class="col-span-full text-center py-10 text-stone-500">Nenhum aluno VIP encontrado.</p>';
+            
+            // Update pagination controls
+            updateVipsPaginationControls(totalVips, totalPages, startIndex, endIndex);
         }
 
         function updateAlunosList(filter) {
@@ -1943,6 +1963,7 @@
                             <div class="flex-1 max-w-md">
                                 <input type="text" id="turma-search" placeholder="🔍 Pesquisar turmas..." class="form-input" oninput="updateTurmasList()">
                             </div>
+                            ${currentUserRole !== 'teacher' ? `
                             <div class="min-w-48">
                                 <select id="turma-teacher-filter" class="form-input" onchange="updateTurmasList()">
                                     <option value="">Todos os professores</option>
@@ -1951,6 +1972,7 @@
                                     ).join('')}
                                 </select>
                             </div>
+                            ` : ''}
                         </div>
                         <div class="text-right">
                             ${canManage ? `<button class="primary-btn w-auto" data-action="add-turma">+ Adicionar Turma</button>` : ''}
@@ -2020,6 +2042,7 @@
                             <div class="flex-1 max-w-md">
                                 <input type="text" id="vip-search" placeholder="🔍 Pesquisar VIPs..." class="form-input" oninput="updateVipsList()">
                             </div>
+                            ${currentUserRole !== 'teacher' ? `
                             <div class="min-w-48">
                                 <select id="vip-teacher-filter" class="form-input" onchange="updateVipsList()">
                                     <option value="">Todos os professores</option>
@@ -2028,6 +2051,7 @@
                                     ).join('')}
                                 </select>
                             </div>
+                            ` : ''}
                         </div>
                         <div class="text-right">
                             ${canManage ? `<button class="primary-btn w-auto" data-action="add-vip">+ Adicionar VIP</button>` : ''}
@@ -2044,6 +2068,27 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="vips-grid">
                         <!-- Content will be populated by updateVipsList() -->
                     </div>
+                    
+                    <!-- VIPs Pagination -->
+                    <div class="mt-8 flex flex-col sm:flex-row justify-between items-center gap-4" id="vips-pagination">
+                        <div class="flex items-center gap-2">
+                            <label class="text-sm text-stone-600">VIPs por página:</label>
+                            <select id="vips-per-page" class="form-input !py-1 !px-2 text-sm w-auto">
+                                <option value="6">6</option>
+                                <option value="12">12</option>
+                                <option value="24">24</option>
+                                <option value="48">48</option>
+                            </select>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <span class="text-sm text-stone-600" id="vips-info">Mostrando 0 de 0</span>
+                            <div class="flex items-center gap-2">
+                                <button id="vips-prev-page" class="pagination-btn" disabled>Anterior</button>
+                                <div class="flex gap-1" id="vips-page-numbers"></div>
+                                <button id="vips-next-page" class="pagination-btn" disabled>Próximo</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>`;
 
             // Add event listeners for filter buttons
@@ -2058,8 +2103,89 @@
                 });
             }
 
+            // Set up VIPs pagination controls
+            const vipsPerPageSelect = document.getElementById('vips-per-page');
+            const vipsPrevPageBtn = document.getElementById('vips-prev-page');
+            const vipsNextPageBtn = document.getElementById('vips-next-page');
+
+            if (vipsPerPageSelect) {
+                vipsPerPageSelect.addEventListener('change', () => {
+                    vipsPerPage = parseInt(vipsPerPageSelect.value);
+                    currentVipPage = 1;
+                    updateVipsList();
+                });
+            }
+
+            if (vipsPrevPageBtn) {
+                vipsPrevPageBtn.addEventListener('click', () => {
+                    if (currentVipPage > 1) {
+                        currentVipPage--;
+                        updateVipsList();
+                    }
+                });
+            }
+
+            if (vipsNextPageBtn) {
+                vipsNextPageBtn.addEventListener('click', () => {
+                    const totalVips = getFilteredVips().length;
+                    const totalPages = Math.ceil(totalVips / vipsPerPage);
+                    if (currentVipPage < totalPages) {
+                        currentVipPage++;
+                        updateVipsList();
+                    }
+                });
+            }
+
             // Initial population of VIPs list
             updateVipsList();
+        }
+
+        function updateVipsPaginationControls(totalItems, totalPages, startIndex, endIndex) {
+            const vipsInfo = document.getElementById('vips-info');
+            const vipsPrevPageBtn = document.getElementById('vips-prev-page');
+            const vipsNextPageBtn = document.getElementById('vips-next-page');
+            const vipsPageNumbers = document.getElementById('vips-page-numbers');
+
+            if (!vipsInfo || !vipsPrevPageBtn || !vipsNextPageBtn || !vipsPageNumbers) return;
+
+            // Update info text
+            const showingEnd = Math.min(endIndex, totalItems);
+            vipsInfo.textContent = totalItems > 0 ? 
+                `Mostrando ${startIndex + 1}-${showingEnd} de ${totalItems}` : 
+                'Mostrando 0 de 0';
+
+            // Update buttons
+            vipsPrevPageBtn.disabled = currentVipPage <= 1;
+            vipsNextPageBtn.disabled = currentVipPage >= totalPages;
+
+            // Generate page numbers
+            let pageNumbersHTML = '';
+            const maxVisiblePages = 5;
+            let startPage = Math.max(1, currentVipPage - Math.floor(maxVisiblePages / 2));
+            let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+            if (endPage - startPage < maxVisiblePages - 1) {
+                startPage = Math.max(1, endPage - maxVisiblePages + 1);
+            }
+
+            for (let i = startPage; i <= endPage; i++) {
+                const isActive = i === currentVipPage;
+                pageNumbersHTML += `
+                    <button class="page-number-btn ${isActive ? 'active' : ''}" data-vip-page="${i}">
+                        ${i}
+                    </button>
+                `;
+            }
+
+            vipsPageNumbers.innerHTML = pageNumbersHTML;
+
+            // Add click events to VIPs page number buttons
+            document.querySelectorAll('[data-vip-page]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    currentVipPage = parseInt(btn.dataset.vipPage);
+                    updateVipsList();
+                });
+            });
         }
 
         async function renderCampanhasSection() {
