@@ -1571,8 +1571,19 @@
                 );
                 const originalTeacherName = teacherCollaborator ? teacherCollaborator.name : currentUserName;
                 
+                console.log('Teacher VIP filtering:', {
+                    currentUserName,
+                    currentUserId: userId,
+                    teacherCollaborator,
+                    originalTeacherName,
+                    allVips: vips,
+                    vipStudents: vipStudents.length
+                });
+                
                 // Use smart name matching to find the actual teacher name in VIPs
-                const teacherNames = [...new Set(vips.map(v => v.teacherName))];
+                const teacherNames = [...new Set(vips.map(v => v.teacherName).filter(name => name))];
+                console.log('Available teacher names in VIPs:', teacherNames);
+                
                 const exactMatch = teacherNames.find(name => name === originalTeacherName);
                 let teacherNameToFilter = exactMatch;
                 
@@ -1588,10 +1599,23 @@
                 
                 teacherNameToFilter = teacherNameToFilter || originalTeacherName;
                 
+                console.log('Final teacherNameToFilter:', teacherNameToFilter);
+                
                 // For teachers, only show VIPs assigned to them
                 filteredVips = vipStudents.filter(student => {
                     const vipRecord = vips.find(v => v.studentId === student.id);
-                    return vipRecord && vipRecord.teacherName === teacherNameToFilter;
+                    const matches = vipRecord && vipRecord.teacherName === teacherNameToFilter;
+                    
+                    if (vipRecord) {
+                        console.log('Checking VIP:', {
+                            studentName: student.name,
+                            vipTeacherName: vipRecord.teacherName,
+                            teacherNameToFilter,
+                            matches
+                        });
+                    }
+                    
+                    return matches;
                 });
             } else if (teacherFilter) {
                 // Apply teacher filter for non-teacher users
