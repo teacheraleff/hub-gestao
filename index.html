@@ -520,10 +520,41 @@
             // Initialize with sample data if empty
             if (students.length === 0) {
                 students = [
-                    { id: '1', name: 'Maria Silva', email: 'maria@exemplo.com', phone: '(11) 98765-4321', status: 'ativo', setor: 'financeiro' },
-                    { id: '2', name: 'João Santos', email: 'joao@exemplo.com', phone: '(11) 87654-3210', status: 'ativo', setor: 'pedagogico' }
+                    { id: '1', name: 'Maria Silva', email: 'maria@exemplo.com', phone: '(11) 98765-4321', status: 'Ativo', modalidade: 'VIP', setor: 'financeiro' },
+                    { id: '2', name: 'João Santos', email: 'joao@exemplo.com', phone: '(11) 87654-3210', status: 'Ativo', modalidade: 'VIP', setor: 'pedagogico' },
+                    { id: '3', name: 'Ana Costa', email: 'ana@exemplo.com', phone: '(11) 99999-8888', status: 'Ativo', modalidade: 'Turma', setor: 'comercial' }
                 ];
                 localStorage.setItem('demo-students', JSON.stringify(students));
+            }
+
+            if (vips.length === 0) {
+                const today = new Date();
+                const futureDate = new Date(today.getTime() + 20 * 24 * 60 * 60 * 1000); // 20 days from now
+                const farFutureDate = new Date(today.getTime() + 60 * 24 * 60 * 60 * 1000); // 60 days from now
+                
+                vips = [
+                    { 
+                        id: 'vip1', 
+                        studentId: '1', 
+                        teacherId: 'teacher1', 
+                        teacherName: 'Prof. Carlos', 
+                        level: 'Intermediário', 
+                        startDate: '2024-01-15',
+                        endDate: futureDate.toISOString().split('T')[0], // 20 days from now (will appear in "A Finalizar")
+                        semestre: '2024.1'
+                    },
+                    { 
+                        id: 'vip2', 
+                        studentId: '2', 
+                        teacherId: 'teacher2', 
+                        teacherName: 'Prof. Ana', 
+                        level: 'Avançado', 
+                        startDate: '2024-02-01',
+                        endDate: farFutureDate.toISOString().split('T')[0], // 60 days from now
+                        semestre: '2024.1'
+                    }
+                ];
+                localStorage.setItem('demo-vips', JSON.stringify(vips));
             }
         }
 
@@ -1654,13 +1685,13 @@
                         <p class="text-sm text-stone-600 mb-2"><strong>Status:</strong> <span class="status-tag status-${(student.status || 'pendente').toLowerCase()}">${student.status || 'Pendente'}</span></p>
                         ${vipRecord ? `<p class="text-sm text-stone-500 mb-2">Professor: ${teacher?.name || 'N/A'}</p>` : ''}
                         ${vipRecord ? `<p class="text-sm text-stone-600"><strong>Nível:</strong> ${vipRecord.level || 'N/A'}</p>` : ''}
+                        ${vipRecord && vipRecord.endDate ? `<p class="text-sm text-stone-600"><strong>Finaliza em:</strong> ${formatDateBR(vipRecord.endDate)}</p>` : ''}
                         ${student.indicacao ? `<p class="text-sm text-stone-600"><strong>Indicação:</strong> ${student.indicacao}</p>` : ''}
                     </div>
                     <div class="mt-auto pt-4 border-t border-stone-100 flex gap-2">
                         ${vipRecord ? `
                             <button class="primary-btn !text-sm flex-1" data-action="open-vip-pef" data-id="${vipRecord.id}">PEF</button>
                             <button class="secondary-btn !text-sm flex-1" data-action="edit-vip" data-id="${vipRecord.id}">Configurar</button>
-                            <button class="danger-btn !text-sm" data-action="delete-vip" data-id="${vipRecord.id}">🗑️</button>
                         ` : ''}
                     </div>
                 </div>`}).join('') || '<p class="col-span-full text-center py-10 text-stone-500">Nenhum aluno VIP encontrado.</p>';
