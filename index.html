@@ -1727,7 +1727,7 @@
             listBody.innerHTML = paginatedStudents.map(student => {
                 const vipRecord = student.modalidade === 'VIP' ? vips.find(v => v.studentId === student.id) : null;
                 return `
-                <tr class="cursor-pointer" onclick="openAlunoModal('${student.id}')">
+                <tr class="cursor-pointer hover:bg-stone-50" onclick="openAlunoModal('${student.id}')">
                     <td class="font-medium">
                         <div class="flex flex-col">
                             <div>${student.name}</div>
@@ -1741,9 +1741,7 @@
                     ${canViewFinancialInfo ? `<td class="font-mono">R$ ${parseFloat(student.amountPaid || 0).toFixed(2)}</td>` : ''}
                     ${canViewFinancialInfo ? `<td class="font-mono">R$ ${parseFloat(student.amountReceived || student.amountPaid || 0).toFixed(2)}</td>` : `<td>${student.responsibleName || 'N/A'}</td>`}
                     <td class="text-center">
-                        <div class="flex gap-1 justify-center">
-                            ${vipRecord && canEdit ? `<button class="primary-btn text-xs px-3 py-1" data-action="edit-vip" data-id="${vipRecord.id}" onclick="event.stopPropagation()" title="Editar configurações VIP">VIP</button>` : ''}
-                        </div>
+                        ${canEdit ? `<button class="secondary-btn text-sm px-3 py-1" onclick="event.stopPropagation(); openAlunoForm('${student.id}')">Editar</button>` : ''}
                     </td>
                 </tr>
                 `;
