@@ -523,9 +523,25 @@
                     { id: '1', name: 'Maria Silva', email: 'maria@exemplo.com', phone: '(11) 98765-4321', status: 'ativo', modalidade: 'VIP' },
                     { id: '2', name: 'João Santos', email: 'joao@exemplo.com', phone: '(11) 87654-3210', status: 'ativo', modalidade: 'TURMA' },
                     { id: '3', name: 'Ana Costa', email: 'ana@exemplo.com', phone: '(11) 99988-7766', status: 'ativo', modalidade: 'VIP' },
-                    { id: '4', name: 'Carlos Lima', email: 'carlos@exemplo.com', phone: '(11) 88877-6655', status: 'ativo', modalidade: 'VIP' }
+                    { id: '4', name: 'Carlos Lima', email: 'carlos@exemplo.com', phone: '(11) 88877-6655', status: 'ativo', modalidade: 'VIP' },
+                    { id: '5', name: 'Beatriz Alves', email: 'beatriz@exemplo.com', phone: '(11) 77766-5544', status: 'ativo', modalidade: 'VIP' },
+                    { id: '6', name: 'Ricardo Ferreira', email: 'ricardo@exemplo.com', phone: '(11) 66655-4433', status: 'ativo', modalidade: 'VIP' },
+                    { id: '7', name: 'Camila Rocha', email: 'camila@exemplo.com', phone: '(11) 55544-3322', status: 'ativo', modalidade: 'VIP' },
+                    { id: '8', name: 'Eduardo Souza', email: 'eduardo@exemplo.com', phone: '(11) 44433-2211', status: 'ativo', modalidade: 'VIP' }
                 ];
                 localStorage.setItem('demo-students', JSON.stringify(students));
+            }
+            
+            if (turmas.length === 0) {
+                turmas = [
+                    { id: 'turma1', name: 'Turma Intermediate A', teacherName: 'Jaynni', level: 'Intermediate', studentsCount: 8 },
+                    { id: 'turma2', name: 'Turma Advanced B', teacherName: 'Felipe', level: 'Advanced', studentsCount: 6 },
+                    { id: 'turma3', name: 'Turma Beginner C', teacherName: 'Areli', level: 'Beginner', studentsCount: 10 },
+                    { id: 'turma4', name: 'Turma Upper-Int D', teacherName: 'Victor', level: 'Upper-Intermediate', studentsCount: 7 },
+                    { id: 'turma5', name: 'Turma Elementary E', teacherName: 'Anael', level: 'Elementary', studentsCount: 9 },
+                    { id: 'turma6', name: 'Turma Pre-Int F', teacherName: 'Gabriella', level: 'Pre-Intermediate', studentsCount: 8 }
+                ];
+                localStorage.setItem('demo-turmas', JSON.stringify(turmas));
             }
             
             if (vips.length === 0) {
@@ -539,7 +555,7 @@
                     { 
                         id: 'vip1', 
                         studentId: '1', 
-                        teacherName: 'Ana Professor', 
+                        teacherName: 'Jaynni', 
                         teacherId: 'teacher1',
                         level: 'Intermediate',
                         endDate: in15Days.toISOString().split('T')[0], // A finalizar em 15 dias
@@ -548,7 +564,7 @@
                     { 
                         id: 'vip2', 
                         studentId: '3', 
-                        teacherName: 'Carlos Teacher', 
+                        teacherName: 'Felipe', 
                         teacherId: 'teacher2',
                         level: 'Advanced',
                         endDate: expired10DaysAgo.toISOString().split('T')[0], // Expirado há 10 dias
@@ -557,11 +573,47 @@
                     { 
                         id: 'vip3', 
                         studentId: '4', 
-                        teacherName: 'Ana Professor', 
-                        teacherId: 'teacher1',
+                        teacherName: 'Areli', 
+                        teacherId: 'teacher3',
                         level: 'Beginner',
                         endDate: expired5DaysAgo.toISOString().split('T')[0], // Expirado há 5 dias
                         observacoes: 'Primeiro contato com inglês. Bastante ansioso mas muito esforçado. Precisa de muito encorajamento e paciência.'
+                    },
+                    { 
+                        id: 'vip4', 
+                        studentId: '5', 
+                        teacherName: 'Victor', 
+                        teacherId: 'teacher4',
+                        level: 'Upper-Intermediate',
+                        endDate: in45Days.toISOString().split('T')[0], // Mais de 30 dias para finalizar
+                        observacoes: 'Aluna com bom nível de inglês, focada em aperfeiçoamento da pronúncia. Muito participativa nas aulas.'
+                    },
+                    { 
+                        id: 'vip5', 
+                        studentId: '6', 
+                        teacherName: 'Anael', 
+                        teacherId: 'teacher5',
+                        level: 'Elementary',
+                        endDate: in15Days.toISOString().split('T')[0], // A finalizar em 15 dias
+                        observacoes: 'Estudante dedicado, mas com dificuldades na expressão oral. Precisa de mais prática de conversação.'
+                    },
+                    { 
+                        id: 'vip6', 
+                        studentId: '7', 
+                        teacherName: 'Gabriella', 
+                        teacherId: 'teacher6',
+                        level: 'Pre-Intermediate',
+                        endDate: expired5DaysAgo.toISOString().split('T')[0], // Expirado há 5 dias
+                        observacoes: 'Aluna jovem, muito motivada. Aprende rapidamente e gosta de desafios. Boa com tecnologia.'
+                    },
+                    { 
+                        id: 'vip7', 
+                        studentId: '8', 
+                        teacherName: 'Jaynni', 
+                        teacherId: 'teacher1',
+                        level: 'Intermediate',
+                        endDate: in45Days.toISOString().split('T')[0], // Mais de 30 dias para finalizar
+                        observacoes: 'Profissional da área de TI, precisa de inglês técnico. Disponível apenas nos finais de semana.'
                     }
                 ];
                 localStorage.setItem('demo-vips', JSON.stringify(vips));
@@ -569,9 +621,13 @@
             
             if (collaborators.length === 0) {
                 collaborators = [
-                    { id: 'teacher1', name: 'Ana Professor', sectors: ['professor'], email: 'ana@slap.com' },
-                    { id: 'teacher2', name: 'Carlos Teacher', sectors: ['professor'], email: 'carlos@slap.com' },
-                    { id: 'admin1', name: 'Admin SLAP', sectors: ['admin'], email: 'admin@slap.com' }
+                    { id: 'teacher1', name: 'Jaynni', sectors: ['professor'], email: 'jaynni@slapingles.com' },
+                    { id: 'teacher2', name: 'Felipe', sectors: ['professor'], email: 'felipe@slapingles.com' },
+                    { id: 'teacher3', name: 'Areli', sectors: ['professor'], email: 'areli@slapingles.com' },
+                    { id: 'teacher4', name: 'Victor', sectors: ['professor'], email: 'victor@slapingles.com' },
+                    { id: 'teacher5', name: 'Anael', sectors: ['professor'], email: 'anael@slapingles.com' },
+                    { id: 'teacher6', name: 'Gabriella', sectors: ['professor'], email: 'gabriella@slapingles.com' },
+                    { id: 'admin1', name: 'Admin SLAP', sectors: ['admin'], email: 'admin@slapingles.com' }
                 ];
                 localStorage.setItem('demo-collaborators', JSON.stringify(collaborators));
             }
@@ -1562,7 +1618,7 @@
             });
             let filteredVips = vipStudents;
 
-            // Apply role-based filtering first
+            // Apply role-based filtering first - usar a mesma lógica que funciona em turmas
             if (currentUserRole === 'teacher') {
                 // Find the teacher's name in collaborators to ensure correct mapping
                 const teacherCollaborator = collaborators.find(c => 
@@ -1571,19 +1627,8 @@
                 );
                 const originalTeacherName = teacherCollaborator ? teacherCollaborator.name : currentUserName;
                 
-                console.log('Teacher VIP filtering:', {
-                    currentUserName,
-                    currentUserId: userId,
-                    teacherCollaborator,
-                    originalTeacherName,
-                    allVips: vips,
-                    vipStudents: vipStudents.length
-                });
-                
                 // Use smart name matching to find the actual teacher name in VIPs
                 const teacherNames = [...new Set(vips.map(v => v.teacherName).filter(name => name))];
-                console.log('Available teacher names in VIPs:', teacherNames);
-                
                 const exactMatch = teacherNames.find(name => name === originalTeacherName);
                 let teacherNameToFilter = exactMatch;
                 
@@ -1599,23 +1644,10 @@
                 
                 teacherNameToFilter = teacherNameToFilter || originalTeacherName;
                 
-                console.log('Final teacherNameToFilter:', teacherNameToFilter);
-                
                 // For teachers, only show VIPs assigned to them
                 filteredVips = vipStudents.filter(student => {
                     const vipRecord = vips.find(v => v.studentId === student.id);
-                    const matches = vipRecord && vipRecord.teacherName === teacherNameToFilter;
-                    
-                    if (vipRecord) {
-                        console.log('Checking VIP:', {
-                            studentName: student.name,
-                            vipTeacherName: vipRecord.teacherName,
-                            teacherNameToFilter,
-                            matches
-                        });
-                    }
-                    
-                    return matches;
+                    return vipRecord && vipRecord.teacherName === teacherNameToFilter;
                 });
             } else if (teacherFilter) {
                 // Apply teacher filter for non-teacher users
@@ -1971,8 +2003,6 @@
         }
 
         function renderVipsSection() {
-            console.log('renderVipsSection called for user role:', currentUserRole);
-            
             document.getElementById('main-title').textContent = 'Alunos VIP';
             document.getElementById('main-description').textContent = 'Gerencie alunos VIP e registre suas presenças.';
 
@@ -2028,9 +2058,7 @@
             }
 
             // Initial population of VIPs list
-            console.log('About to call updateVipsList for role:', currentUserRole);
             updateVipsList();
-            console.log('updateVipsList completed for role:', currentUserRole);
         }
 
         async function renderCampanhasSection() {
@@ -7957,17 +7985,6 @@
                 const navTarget = event.target.closest('.nav-item');
                 if (navTarget && !navTarget.disabled) {
                     const pageKey = navTarget.dataset.target;
-                    
-                    // Debug log for VIPs navigation
-                    if (pageKey === 'vips') {
-                        console.log('VIPs navigation clicked:', {
-                            pageKey,
-                            currentUserRole,
-                            hasRenderer: !!pageRenderers[pageKey],
-                            navTargetDisabled: navTarget.disabled,
-                            element: navTarget
-                        });
-                    }
                     
                     if (pageKey && pageRenderers[pageKey]) {
                         // Clear any existing timeouts or intervals that might interfere
