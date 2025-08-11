@@ -1947,6 +1947,8 @@
         }
 
         function renderVipsSection() {
+            console.log('renderVipsSection called for user role:', currentUserRole);
+            
             document.getElementById('main-title').textContent = 'Alunos VIP';
             document.getElementById('main-description').textContent = 'Gerencie alunos VIP e registre suas presenças.';
 
@@ -2002,7 +2004,9 @@
             }
 
             // Initial population of VIPs list
+            console.log('About to call updateVipsList for role:', currentUserRole);
             updateVipsList();
+            console.log('updateVipsList completed for role:', currentUserRole);
         }
 
         async function renderCampanhasSection() {
@@ -7929,6 +7933,18 @@
                 const navTarget = event.target.closest('.nav-item');
                 if (navTarget && !navTarget.disabled) {
                     const pageKey = navTarget.dataset.target;
+                    
+                    // Debug log for VIPs navigation
+                    if (pageKey === 'vips') {
+                        console.log('VIPs navigation clicked:', {
+                            pageKey,
+                            currentUserRole,
+                            hasRenderer: !!pageRenderers[pageKey],
+                            navTargetDisabled: navTarget.disabled,
+                            element: navTarget
+                        });
+                    }
+                    
                     if (pageKey && pageRenderers[pageKey]) {
                         // Clear any existing timeouts or intervals that might interfere
                         clearTimeout(window.navigationTimeout);
