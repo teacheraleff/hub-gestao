@@ -1741,7 +1741,7 @@
                     ${canViewFinancialInfo ? `<td class="font-mono">R$ ${parseFloat(student.amountPaid || 0).toFixed(2)}</td>` : ''}
                     ${canViewFinancialInfo ? `<td class="font-mono">R$ ${parseFloat(student.amountReceived || student.amountPaid || 0).toFixed(2)}</td>` : `<td>${student.responsibleName || 'N/A'}</td>`}
                     <td class="text-center">
-                        ${canEdit ? `<button class="secondary-btn text-sm px-3 py-1" onclick="event.stopPropagation(); openAlunoForm('${student.id}')">Editar</button>` : ''}
+                        ${canEdit ? `<button class="secondary-btn text-sm px-3 py-1" data-action="edit-aluno" data-id="${student.id}" onclick="event.stopPropagation()">Editar</button>` : ''}
                     </td>
                 </tr>
                 `;
@@ -2950,7 +2950,7 @@
             const allocatedStudentIds = getStudentsAllocatedToOtherTurmas(turmaId);
 
             const studentCheckboxes = students
-                .filter(s => s.status === 'Ativo' && s.modalidade === 'TURMA')
+                .filter(s => s.status === 'Ativo' && (s.modalidade === 'TURMA' || s.modalidade === 'DUPLA'))
                 .sort((a, b) => a.name.localeCompare(b.name))
                 .map(s => {
                     const isCurrentlyInThisTurma = (turma?.studentIds || []).includes(s.id);
@@ -7903,6 +7903,7 @@
                     const actionHandlers = {
                         'open-signup': openSignUpModal,
                         'add-aluno': () => openAlunoForm(),
+                        'edit-aluno': () => openAlunoForm(id),
                         'add-turma': () => openTurmaForm(),
                         'open-turma-pef': () => openTurmaPefModal(id),
                         'edit-turma': () => openTurmaForm(id),
