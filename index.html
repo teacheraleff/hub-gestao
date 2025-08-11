@@ -1532,7 +1532,6 @@
         }
 
         function getFilteredVips() {
-            console.log('DEBUG getFilteredVips: currentUserRole =', currentUserRole);
             const searchTerm = document.getElementById('vip-search')?.value.toLowerCase() || '';
             const teacherFilter = document.getElementById('vip-teacher-filter')?.value || '';
             const statusFilter = document.querySelector('#vips-filter-buttons .filter-btn.active')?.dataset.filter || 'todos';
@@ -1545,9 +1544,7 @@
             let filteredVips = vipStudents;
 
             // Apply role-based filtering first
-            console.log('DEBUG: vipStudents found:', vipStudents.length);
             if (currentUserRole === 'teacher') {
-                console.log('DEBUG: Teacher role detected');
                 // Find the teacher's name in collaborators to ensure correct mapping
                 const teacherCollaborator = collaborators.find(c => 
                     c.sectors && c.sectors.includes('professor') && 
@@ -1571,14 +1568,12 @@
                 }
                 
                 teacherNameToFilter = teacherNameToFilter || originalTeacherName;
-                console.log('DEBUG: teacherNameToFilter =', teacherNameToFilter);
                 
                 // For teachers, only show VIPs assigned to them
                 filteredVips = vipStudents.filter(student => {
                     const vipRecord = vips.find(v => v.studentId === student.id);
                     return vipRecord && vipRecord.teacherName === teacherNameToFilter;
                 });
-                console.log('DEBUG: filteredVips for teacher:', filteredVips.length);
             } else if (teacherFilter) {
                 // Apply teacher filter for non-teacher users
                 filteredVips = vipStudents.filter(student => {
@@ -1587,31 +1582,34 @@
                 });
             }
 
-            // Apply status filter for "A Finalizar" - VIPs with 30 days or less to end
-            if (statusFilter === 'a-finalizar') {
-                const today = new Date();
-                const thirtyDaysFromNow = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
-                
-                filteredVips = filteredVips.filter(student => {
-                    const vipRecord = vips.find(v => v.studentId === student.id);
-                    if (!vipRecord || !vipRecord.endDate) return false;
+            // Apply status filter for "A Finalizar" and "Expirados" only for non-teacher users
+            if (currentUserRole !== 'teacher') {
+                // Apply status filter for "A Finalizar" - VIPs with 30 days or less to end
+                if (statusFilter === 'a-finalizar') {
+                    const today = new Date();
+                    const thirtyDaysFromNow = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
                     
-                    const endDate = new Date(vipRecord.endDate);
-                    return endDate <= thirtyDaysFromNow && endDate >= today;
-                });
-            }
-            
-            // Apply status filter for "Expirados" - VIPs with contracts that have passed the end date
-            if (statusFilter === 'expirados') {
-                const today = new Date();
+                    filteredVips = filteredVips.filter(student => {
+                        const vipRecord = vips.find(v => v.studentId === student.id);
+                        if (!vipRecord || !vipRecord.endDate) return false;
+                        
+                        const endDate = new Date(vipRecord.endDate);
+                        return endDate <= thirtyDaysFromNow && endDate >= today;
+                    });
+                }
                 
-                filteredVips = filteredVips.filter(student => {
-                    const vipRecord = vips.find(v => v.studentId === student.id);
-                    if (!vipRecord || !vipRecord.endDate) return false;
+                // Apply status filter for "Expirados" - VIPs with contracts that have passed the end date
+                if (statusFilter === 'expirados') {
+                    const today = new Date();
                     
-                    const endDate = new Date(vipRecord.endDate);
-                    return endDate < today;
-                });
+                    filteredVips = filteredVips.filter(student => {
+                        const vipRecord = vips.find(v => v.studentId === student.id);
+                        if (!vipRecord || !vipRecord.endDate) return false;
+                        
+                        const endDate = new Date(vipRecord.endDate);
+                        return endDate < today;
+                    });
+                }
             }
 
             if (searchTerm) {
@@ -1936,6 +1934,9 @@
             
             let itemsToDisplay = getFilteredVips();
             
+            // Teachers only see "Todos" tab, other roles see all three tabs
+            const showAllTabs = !['teacher'].includes(currentUserRole);
+            
 
 
             contentArea.innerHTML = `
@@ -1962,8 +1963,10 @@
                     ${canManage || currentUserRole === 'teacher' ? `
                     <div class="flex gap-2 mb-6" id="vips-filter-buttons">
                         <button class="secondary-btn filter-btn active" data-filter="todos">Todos</button>
+                        ${showAllTabs ? `
                         <button class="secondary-btn filter-btn" data-filter="a-finalizar">A Finalizar</button>
                         <button class="secondary-btn filter-btn" data-filter="expirados">Expirados</button>
+                        ` : ''}
                     </div>
                     ` : ''}
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="vips-grid">
