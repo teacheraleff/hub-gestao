@@ -1595,6 +1595,19 @@
                     return endDate <= thirtyDaysFromNow && endDate >= today;
                 });
             }
+            
+            // Apply status filter for "Expirados" - VIPs with contracts that have passed the end date
+            if (statusFilter === 'expirados') {
+                const today = new Date();
+                
+                filteredVips = filteredVips.filter(student => {
+                    const vipRecord = vips.find(v => v.studentId === student.id);
+                    if (!vipRecord || !vipRecord.endDate) return false;
+                    
+                    const endDate = new Date(vipRecord.endDate);
+                    return endDate < today;
+                });
+            }
 
             if (searchTerm) {
                 filteredVips = filteredVips.filter(student => {
@@ -1674,6 +1687,19 @@
                 // Can show PEF if user is admin/pedagogico/ap/financeiro OR if user is the assigned teacher
                 const canShowPef = canManage || (currentUserRole === 'teacher' && vipRecord && vipRecord.teacherId === currentUserId);
                 
+                // Calculate if expired and how many days
+                let expiredTag = '';
+                if (vipRecord && vipRecord.endDate) {
+                    const today = new Date();
+                    const endDate = new Date(vipRecord.endDate);
+                    const timeDiff = today - endDate;
+                    const daysDiff = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+                    
+                    if (daysDiff > 0) {
+                        expiredTag = `<div class="mt-2"><span class="status-tag status-cancelado !text-xs !py-1 !px-2">Contrato expirado há ${daysDiff} dia${daysDiff > 1 ? 's' : ''}</span></div>`;
+                    }
+                }
+                
                 return `
                 <div class="base-card flex flex-col">
                     <div class="flex-1">
@@ -1687,6 +1713,8 @@
                         ${vipRecord ? `<p class="text-sm text-stone-600"><strong>Nível:</strong> ${vipRecord.level || 'N/A'}</p>` : ''}
                         ${vipRecord && vipRecord.endDate ? `<p class="text-sm text-stone-600"><strong>Finaliza em:</strong> ${formatDateBR(vipRecord.endDate)}</p>` : ''}
                         ${student.indicacao ? `<p class="text-sm text-stone-600"><strong>Indicação:</strong> ${student.indicacao}</p>` : ''}
+                        ${vipRecord && vipRecord.observacoes ? `<div class="mt-2 p-2 bg-stone-50 rounded border-l-3 border-yellow-400"><p class="text-xs font-medium text-stone-500 mb-1">Observações:</p><p class="text-sm text-stone-700">${vipRecord.observacoes}</p></div>` : ''}
+                        ${expiredTag}
                     </div>
                     <div class="mt-auto pt-4 border-t border-stone-100 flex gap-2">
                         ${vipRecord ? `
@@ -1915,6 +1943,7 @@
                     <div class="flex gap-2 mb-6" id="vips-filter-buttons">
                         <button class="secondary-btn filter-btn active" data-filter="todos">Todos</button>
                         <button class="secondary-btn filter-btn" data-filter="a-finalizar">A Finalizar</button>
+                        <button class="secondary-btn filter-btn" data-filter="expirados">Expirados</button>
                     </div>
                     ` : ''}
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="vips-grid">
@@ -1922,6 +1951,20 @@
                             const vipRecord = vips.find(v => v.studentId === student.id);
                             const teacher = vipRecord ? collaborators.find(c => c.id === vipRecord.teacherId) : null;
                             const canShowPef = canManage || (currentUserRole === 'teacher' && vipRecord && vipRecord.teacherId === currentUserId);
+                            
+                            // Calculate if expired and how many days
+                            let expiredTag = '';
+                            if (vipRecord && vipRecord.endDate) {
+                                const today = new Date();
+                                const endDate = new Date(vipRecord.endDate);
+                                const timeDiff = today - endDate;
+                                const daysDiff = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+                                
+                                if (daysDiff > 0) {
+                                    expiredTag = `<div class="mt-2"><span class="status-tag status-cancelado !text-xs !py-1 !px-2">Contrato expirado há ${daysDiff} dia${daysDiff > 1 ? 's' : ''}</span></div>`;
+                                }
+                            }
+                            
                             return `
                         <div class="base-card flex flex-col">
                             <div class="flex-1">
@@ -1935,6 +1978,8 @@
                                 ${vipRecord ? `<p class="text-sm text-stone-600"><strong>Nível:</strong> ${vipRecord.level || 'N/A'}</p>` : ''}
                                 ${vipRecord && vipRecord.endDate ? `<p class="text-sm text-stone-600"><strong>Finaliza em:</strong> ${formatDateBR(vipRecord.endDate)}</p>` : ''}
                                 ${student.indicacao ? `<p class="text-sm text-stone-600"><strong>Indicação:</strong> ${student.indicacao}</p>` : ''}
+                                ${vipRecord && vipRecord.observacoes ? `<div class="mt-2 p-2 bg-stone-50 rounded border-l-3 border-yellow-400"><p class="text-xs font-medium text-stone-500 mb-1">Observações:</p><p class="text-sm text-stone-700">${vipRecord.observacoes}</p></div>` : ''}
+                                ${expiredTag}
                             </div>
                             <div class="mt-auto pt-4 border-t border-stone-100 flex gap-2">
                                 ${vipRecord ? `
@@ -3097,6 +3142,10 @@
                         <div><label class="font-medium text-sm">Data de Início</label><input type="date" id="vip-startDate" class="form-input" value="${vip?.startDate || ''}"></div>
                         <div><label class="font-medium text-sm">Data de Finalização</label><input type="date" id="vip-endDate" class="form-input" value="${vip?.endDate || ''}"></div>
                     </div>
+                    <div>
+                        <label class="font-medium text-sm">Observações</label>
+                        <textarea id="vip-observacoes" class="form-input" rows="3" placeholder="Adicione observações sobre o aluno VIP...">${vip?.observacoes || ''}</textarea>
+                    </div>
                     <div class="flex justify-end gap-2">
                         ${vipId ? `<button type="button" class="danger-btn" data-action="delete-vip" data-id="${vipId}">Excluir VIP</button>` : ''}
                         <button type="submit" class="primary-btn w-auto">${vipId ? 'Salvar' : 'Criar VIP'}</button>
@@ -3263,6 +3312,7 @@
                 semestre: document.getElementById('vip-semestre').value,
                 startDate: document.getElementById('vip-startDate').value,
                 endDate: document.getElementById('vip-endDate').value,
+                observacoes: document.getElementById('vip-observacoes').value,
             };
 
             try {
