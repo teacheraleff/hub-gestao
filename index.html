@@ -1532,11 +1532,10 @@
         }
 
         function getFilteredVips() {
+            console.log('DEBUG getFilteredVips: currentUserRole =', currentUserRole);
             const searchTerm = document.getElementById('vip-search')?.value.toLowerCase() || '';
             const teacherFilter = document.getElementById('vip-teacher-filter')?.value || '';
             const statusFilter = document.querySelector('#vips-filter-buttons .filter-btn.active')?.dataset.filter || 'todos';
-            
-            console.log('DEBUG: getFilteredVips called - currentUserRole:', currentUserRole);
             
             // Only show students who have actual VIP records, not just VIP modality
             const vipStudents = students.filter(s => {
@@ -1546,7 +1545,9 @@
             let filteredVips = vipStudents;
 
             // Apply role-based filtering first
+            console.log('DEBUG: vipStudents found:', vipStudents.length);
             if (currentUserRole === 'teacher') {
+                console.log('DEBUG: Teacher role detected');
                 // Find the teacher's name in collaborators to ensure correct mapping
                 const teacherCollaborator = collaborators.find(c => 
                     c.sectors && c.sectors.includes('professor') && 
@@ -1570,12 +1571,14 @@
                 }
                 
                 teacherNameToFilter = teacherNameToFilter || originalTeacherName;
+                console.log('DEBUG: teacherNameToFilter =', teacherNameToFilter);
                 
                 // For teachers, only show VIPs assigned to them
                 filteredVips = vipStudents.filter(student => {
                     const vipRecord = vips.find(v => v.studentId === student.id);
                     return vipRecord && vipRecord.teacherName === teacherNameToFilter;
                 });
+                console.log('DEBUG: filteredVips for teacher:', filteredVips.length);
             } else if (teacherFilter) {
                 // Apply teacher filter for non-teacher users
                 filteredVips = vipStudents.filter(student => {
@@ -1704,16 +1707,17 @@
                     } else if (daysDiff === 0) {
                         // Contract ends today
                         contractStatusTag = `<div class="mt-2"><span class="status-tag !bg-orange-500 !text-white !text-xs !py-1 !px-2">Contrato finaliza hoje</span></div>`;
-                    } else {
-                        // Contract still active - show remaining days
+                    } else if (daysDiff <= 30) {
+                        // Contract still active and within 30 days - show remaining days
                         let statusClass = 'status-ativo'; // Default green
                         if (daysDiff <= 7) {
                             statusClass = '!bg-red-500 !text-white'; // Red for urgent (7 days or less)
-                        } else if (daysDiff <= 30) {
-                            statusClass = '!bg-orange-500 !text-white'; // Orange for warning (30 days or less)
+                        } else {
+                            statusClass = '!bg-orange-500 !text-white'; // Orange for warning (8-30 days)
                         }
                         contractStatusTag = `<div class="mt-2"><span class="status-tag ${statusClass} !text-xs !py-1 !px-2">${daysDiff} dia${daysDiff > 1 ? 's' : ''} restante${daysDiff > 1 ? 's' : ''}</span></div>`;
                     }
+                    // For contracts with more than 30 days remaining, no tag is shown
                 }
                 
                 return `
@@ -1925,14 +1929,12 @@
         }
 
         function renderVipsSection() {
-            console.log('DEBUG: renderVipsSection called - currentUserRole:', currentUserRole);
             document.getElementById('main-title').textContent = 'Alunos VIP';
             document.getElementById('main-description').textContent = 'Gerencie alunos VIP e registre suas presenças.';
 
             const canManage = ['admin', 'pedagogico', 'ap', 'financeiro'].includes(currentUserRole);
             
             let itemsToDisplay = getFilteredVips();
-            console.log('DEBUG: VIPs filtered for display:', itemsToDisplay.length, 'items');
             
 
 
@@ -1985,16 +1987,17 @@
                                 } else if (daysDiff === 0) {
                                     // Contract ends today
                                     contractStatusTag = `<div class="mt-2"><span class="status-tag !bg-orange-500 !text-white !text-xs !py-1 !px-2">Contrato finaliza hoje</span></div>`;
-                                } else {
-                                    // Contract still active - show remaining days
+                                } else if (daysDiff <= 30) {
+                                    // Contract still active and within 30 days - show remaining days
                                     let statusClass = 'status-ativo'; // Default green
                                     if (daysDiff <= 7) {
                                         statusClass = '!bg-red-500 !text-white'; // Red for urgent (7 days or less)
-                                    } else if (daysDiff <= 30) {
-                                        statusClass = '!bg-orange-500 !text-white'; // Orange for warning (30 days or less)
+                                    } else {
+                                        statusClass = '!bg-orange-500 !text-white'; // Orange for warning (8-30 days)
                                     }
                                     contractStatusTag = `<div class="mt-2"><span class="status-tag ${statusClass} !text-xs !py-1 !px-2">${daysDiff} dia${daysDiff > 1 ? 's' : ''} restante${daysDiff > 1 ? 's' : ''}</span></div>`;
                                 }
+                                // For contracts with more than 30 days remaining, no tag is shown
                             }
                             
                             return `
