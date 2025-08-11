@@ -1620,6 +1620,12 @@
 
             // Apply role-based filtering first - usar a mesma lógica que funciona em turmas
             if (currentUserRole === 'teacher') {
+                console.log('DEBUG VIP FILTERING - Starting teacher filter');
+                console.log('Current user info:', { currentUserName, currentUserRole, userId });
+                console.log('All collaborators:', collaborators);
+                console.log('All VIPs:', vips);
+                console.log('VIP students found:', vipStudents);
+                
                 // Find the teacher's name in collaborators to ensure correct mapping
                 const teacherCollaborator = collaborators.find(c => 
                     c.sectors && c.sectors.includes('professor') && 
@@ -1627,28 +1633,54 @@
                 );
                 const originalTeacherName = teacherCollaborator ? teacherCollaborator.name : currentUserName;
                 
+                console.log('Teacher collaborator found:', teacherCollaborator);
+                console.log('Original teacher name:', originalTeacherName);
+                
                 // Use smart name matching to find the actual teacher name in VIPs
                 const teacherNames = [...new Set(vips.map(v => v.teacherName).filter(name => name))];
+                console.log('Available teacher names in VIPs:', teacherNames);
+                
                 const exactMatch = teacherNames.find(name => name === originalTeacherName);
                 let teacherNameToFilter = exactMatch;
+                
+                console.log('Exact match found:', exactMatch);
                 
                 if (!exactMatch && originalTeacherName) {
                     // Try first name matching
                     const searchFirstName = originalTeacherName.trim().split(' ')[0].toLowerCase();
+                    console.log('Searching by first name:', searchFirstName);
+                    
                     const firstNameMatch = teacherNames.find(name => {
                         const nameFirstName = name.trim().split(' ')[0].toLowerCase();
+                        console.log('Comparing:', nameFirstName, 'vs', searchFirstName);
                         return nameFirstName === searchFirstName;
                     });
                     teacherNameToFilter = firstNameMatch;
+                    console.log('First name match found:', firstNameMatch);
                 }
                 
                 teacherNameToFilter = teacherNameToFilter || originalTeacherName;
+                console.log('Final teacher name to filter by:', teacherNameToFilter);
                 
                 // For teachers, only show VIPs assigned to them
                 filteredVips = vipStudents.filter(student => {
                     const vipRecord = vips.find(v => v.studentId === student.id);
-                    return vipRecord && vipRecord.teacherName === teacherNameToFilter;
+                    const matches = vipRecord && vipRecord.teacherName === teacherNameToFilter;
+                    
+                    if (vipRecord) {
+                        console.log('Checking VIP student:', {
+                            studentName: student.name,
+                            studentId: student.id,
+                            vipTeacherName: vipRecord.teacherName,
+                            teacherNameToFilter,
+                            matches
+                        });
+                    }
+                    
+                    return matches;
                 });
+                
+                console.log('Final filtered VIPs for teacher:', filteredVips);
             } else if (teacherFilter) {
                 // Apply teacher filter for non-teacher users
                 filteredVips = vipStudents.filter(student => {
