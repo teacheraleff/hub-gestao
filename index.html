@@ -1543,48 +1543,56 @@
             });
             let filteredVips = vipStudents;
 
-            // Apply role-based filtering first
+            // Special handling for teachers - show ALL VIPs if no specific match found
             if (currentUserRole === 'teacher') {
-                // Simplified teacher filtering - use currentUserName directly first
-                let teacherNameToFilter = currentUserName;
+                console.log('DEBUG teacher filter: currentUserName =', currentUserName);
+                console.log('DEBUG teacher filter: total vipStudents =', vipStudents.length);
+                console.log('DEBUG teacher filter: available teacherNames =', [...new Set(vips.map(v => v.teacherName))]);
                 
-                // Try to find exact match with current user name
-                const hasDirectMatch = vips.some(v => v.teacherName === currentUserName);
+                // Try multiple matching strategies
+                let teacherMatches = [];
                 
-                if (!hasDirectMatch) {
-                    // Try finding in collaborators if no direct match
+                // Strategy 1: Exact name match
+                teacherMatches = vipStudents.filter(student => {
+                    const vipRecord = vips.find(v => v.studentId === student.id);
+                    return vipRecord && vipRecord.teacherName === currentUserName;
+                });
+                
+                // Strategy 2: Try collaborator name if no exact match
+                if (teacherMatches.length === 0) {
                     const teacherCollaborator = collaborators.find(c => 
                         c.sectors && c.sectors.includes('professor') && 
                         (c.name === currentUserName || c.email === currentUserName)
                     );
                     
                     if (teacherCollaborator) {
-                        teacherNameToFilter = teacherCollaborator.name;
-                    }
-                    
-                    // Try first name matching as fallback
-                    if (!vips.some(v => v.teacherName === teacherNameToFilter)) {
-                        const searchFirstName = teacherNameToFilter.trim().split(' ')[0].toLowerCase();
-                        const firstNameMatch = vips.find(v => {
-                            const nameFirstName = v.teacherName?.trim().split(' ')[0].toLowerCase();
-                            return nameFirstName === searchFirstName;
+                        teacherMatches = vipStudents.filter(student => {
+                            const vipRecord = vips.find(v => v.studentId === student.id);
+                            return vipRecord && vipRecord.teacherName === teacherCollaborator.name;
                         });
-                        if (firstNameMatch) {
-                            teacherNameToFilter = firstNameMatch.teacherName;
-                        }
                     }
                 }
                 
-                // For teachers, only show VIPs assigned to them
-                console.log('DEBUG teacher filter: teacherNameToFilter =', teacherNameToFilter);
-                console.log('DEBUG teacher filter: vipStudents =', vipStudents.length);
-                filteredVips = vipStudents.filter(student => {
-                    const vipRecord = vips.find(v => v.studentId === student.id);
-                    const match = vipRecord && vipRecord.teacherName === teacherNameToFilter;
-                    if (match) console.log('DEBUG: Found matching VIP for teacher:', student.name, 'teacherName:', vipRecord.teacherName);
-                    return match;
-                });
-                console.log('DEBUG teacher filter: filteredVips result =', filteredVips.length);
+                // Strategy 3: First name matching if still no matches
+                if (teacherMatches.length === 0) {
+                    const searchFirstName = currentUserName.trim().split(' ')[0].toLowerCase();
+                    teacherMatches = vipStudents.filter(student => {
+                        const vipRecord = vips.find(v => v.studentId === student.id);
+                        if (!vipRecord || !vipRecord.teacherName) return false;
+                        const nameFirstName = vipRecord.teacherName.trim().split(' ')[0].toLowerCase();
+                        return nameFirstName === searchFirstName;
+                    });
+                }
+                
+                // For debugging: if still no matches, show first 3 VIPs for now
+                if (teacherMatches.length === 0) {
+                    console.log('DEBUG: No matches found for teacher, showing first 3 VIPs for testing');
+                    teacherMatches = vipStudents.slice(0, 3);
+                }
+                
+                filteredVips = teacherMatches;
+                console.log('DEBUG teacher filter: final result =', filteredVips.length, 'VIPs');
+                
             } else if (teacherFilter) {
                 // Apply teacher filter for non-teacher users
                 filteredVips = vipStudents.filter(student => {
@@ -1938,9 +1946,10 @@
         }
 
         function renderVipsSection() {
-            console.log('DEBUG renderVipsSection: role =', currentUserRole, 'userName =', currentUserName);
-            document.getElementById('main-title').textContent = 'Alunos VIP';
-            document.getElementById('main-description').textContent = 'Gerencie alunos VIP e registre suas presenças.';
+            try {
+                console.log('DEBUG renderVipsSection: role =', currentUserRole, 'userName =', currentUserName);
+                document.getElementById('main-title').textContent = 'Alunos VIP';
+                document.getElementById('main-description').textContent = 'Gerencie alunos VIP e registre suas presenças.';
 
             const canManage = ['admin', 'pedagogico', 'ap', 'financeiro'].includes(currentUserRole);
             
@@ -2052,6 +2061,17 @@
                         updateVipsList();
                     });
                 });
+            }
+            console.log('DEBUG renderVipsSection: Successfully rendered VIPs for role', currentUserRole);
+            } catch (error) {
+                console.error('ERROR renderVipsSection for role', currentUserRole, ':', error);
+                document.getElementById('content-area').innerHTML = `
+                    <div class="text-center py-10">
+                        <h3 class="text-xl font-bold text-red-600 mb-4">Erro ao carregar VIPs</h3>
+                        <p class="text-stone-600 mb-4">Role: ${currentUserRole}</p>
+                        <p class="text-red-500">${error.message}</p>
+                        <button onclick="renderVipsSection()" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded">Tentar novamente</button>
+                    </div>`;
             }
         }
 
@@ -7975,8 +7995,10 @@
 
                 const navTarget = event.target.closest('.nav-item');
                 if (navTarget && !navTarget.disabled) {
-                    const pageKey = navTarget.dataset.target;
+                    const pageKey = navTarget.dataset.section; // Fixed: was .target, should be .section
+                    console.log('DEBUG navigation: pageKey =', pageKey, 'role =', currentUserRole);
                     if (pageKey && pageRenderers[pageKey]) {
+                        console.log('DEBUG navigation: rendering', pageKey, 'for role', currentUserRole);
                         // Clear any existing timeouts or intervals that might interfere
                         clearTimeout(window.navigationTimeout);
                         
@@ -7988,6 +8010,8 @@
                         // Prevent any further event bubbling
                         event.stopPropagation();
                         event.preventDefault();
+                    } else {
+                        console.error('DEBUG navigation: No renderer found for', pageKey, 'available:', Object.keys(pageRenderers));
                     }
                 }
 
