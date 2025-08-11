@@ -1536,6 +1536,8 @@
             const teacherFilter = document.getElementById('vip-teacher-filter')?.value || '';
             const statusFilter = document.querySelector('#vips-filter-buttons .filter-btn.active')?.dataset.filter || 'todos';
             
+            console.log('DEBUG: getFilteredVips called - currentUserRole:', currentUserRole);
+            
             // Only show students who have actual VIP records, not just VIP modality
             const vipStudents = students.filter(s => {
                 const hasVipRecord = vips.find(v => v.studentId === s.id);
@@ -1923,12 +1925,14 @@
         }
 
         function renderVipsSection() {
+            console.log('DEBUG: renderVipsSection called - currentUserRole:', currentUserRole);
             document.getElementById('main-title').textContent = 'Alunos VIP';
             document.getElementById('main-description').textContent = 'Gerencie alunos VIP e registre suas presenças.';
 
             const canManage = ['admin', 'pedagogico', 'ap', 'financeiro'].includes(currentUserRole);
             
             let itemsToDisplay = getFilteredVips();
+            console.log('DEBUG: VIPs filtered for display:', itemsToDisplay.length, 'items');
             
 
 
