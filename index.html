@@ -1985,31 +1985,7 @@
                     </div>
                     ` : ''}
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="vips-grid">
-                        ${itemsToDisplay.map(student => {
-                            const vipRecord = vips.find(v => v.studentId === student.id);
-                            const teacher = vipRecord ? collaborators.find(c => c.id === vipRecord.teacherId) : null;
-                            const canShowPef = canManage || (currentUserRole === 'teacher' && vipRecord && vipRecord.teacherId === currentUserId);
-                            return `
-                        <div class="base-card flex flex-col">
-                            <div class="flex-1">
-                                <div class="flex justify-between items-start mb-2">
-                                    <div>
-                                        <h3 class="text-xl font-bold text-stone-800">${student.name}</h3>
-                                    </div>
-                                </div>
-                                <p class="text-sm text-stone-600 mb-2"><strong>Status:</strong> <span class="status-tag status-${(student.status || 'pendente').toLowerCase()}">${student.status || 'Pendente'}</span></p>
-                                ${vipRecord ? `<p class="text-sm text-stone-500 mb-2">Professor: ${teacher?.name || 'N/A'}</p>` : ''}
-                                ${vipRecord ? `<p class="text-sm text-stone-600"><strong>Nível:</strong> ${vipRecord.level || 'N/A'}</p>` : ''}
-                                ${vipRecord && vipRecord.endDate ? `<p class="text-sm text-stone-600"><strong>Finaliza em:</strong> ${formatDateBR(vipRecord.endDate)}</p>` : ''}
-                                ${student.indicacao ? `<p class="text-sm text-stone-600"><strong>Indicação:</strong> ${student.indicacao}</p>` : ''}
-                            </div>
-                            <div class="mt-auto pt-4 border-t border-stone-100 flex gap-2">
-                                ${vipRecord ? `
-                                    <button class="primary-btn !text-sm flex-1" data-action="open-vip-pef" data-id="${vipRecord.id}">PEF</button>
-                                    <button class="secondary-btn !text-sm flex-1" data-action="edit-vip" data-id="${vipRecord.id}">Configurar</button>
-                                ` : ''}
-                            </div>
-                        </div>`}).join('') || '<p class="col-span-full text-center py-10 text-stone-500">Nenhum aluno VIP encontrado.</p>'}
+                        <!-- Content will be populated by updateVipsList() -->
                     </div>
                 </div>`;
 
@@ -2024,6 +2000,9 @@
                     });
                 });
             }
+
+            // Initial population of VIPs list
+            updateVipsList();
         }
 
         async function renderCampanhasSection() {
