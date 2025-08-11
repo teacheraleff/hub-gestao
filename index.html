@@ -1687,16 +1687,30 @@
                 // Can show PEF if user is admin/pedagogico/ap/financeiro OR if user is the assigned teacher
                 const canShowPef = canManage || (currentUserRole === 'teacher' && vipRecord && vipRecord.teacherId === currentUserId);
                 
-                // Calculate if expired and how many days
-                let expiredTag = '';
+                // Calculate contract status and days remaining/expired
+                let contractStatusTag = '';
                 if (vipRecord && vipRecord.endDate) {
                     const today = new Date();
                     const endDate = new Date(vipRecord.endDate);
-                    const timeDiff = today - endDate;
+                    const timeDiff = endDate - today;
                     const daysDiff = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
                     
-                    if (daysDiff > 0) {
-                        expiredTag = `<div class="mt-2"><span class="status-tag status-cancelado !text-xs !py-1 !px-2">Contrato expirado há ${daysDiff} dia${daysDiff > 1 ? 's' : ''}</span></div>`;
+                    if (daysDiff < 0) {
+                        // Contract expired
+                        const expiredDays = Math.abs(daysDiff);
+                        contractStatusTag = `<div class="mt-2"><span class="status-tag status-cancelado !text-xs !py-1 !px-2">Contrato expirado há ${expiredDays} dia${expiredDays > 1 ? 's' : ''}</span></div>`;
+                    } else if (daysDiff === 0) {
+                        // Contract ends today
+                        contractStatusTag = `<div class="mt-2"><span class="status-tag !bg-orange-500 !text-white !text-xs !py-1 !px-2">Contrato finaliza hoje</span></div>`;
+                    } else {
+                        // Contract still active - show remaining days
+                        let statusClass = 'status-ativo'; // Default green
+                        if (daysDiff <= 7) {
+                            statusClass = '!bg-red-500 !text-white'; // Red for urgent (7 days or less)
+                        } else if (daysDiff <= 30) {
+                            statusClass = '!bg-orange-500 !text-white'; // Orange for warning (30 days or less)
+                        }
+                        contractStatusTag = `<div class="mt-2"><span class="status-tag ${statusClass} !text-xs !py-1 !px-2">${daysDiff} dia${daysDiff > 1 ? 's' : ''} restante${daysDiff > 1 ? 's' : ''}</span></div>`;
                     }
                 }
                 
@@ -1714,7 +1728,7 @@
                         ${vipRecord && vipRecord.endDate ? `<p class="text-sm text-stone-600"><strong>Finaliza em:</strong> ${formatDateBR(vipRecord.endDate)}</p>` : ''}
                         ${student.indicacao ? `<p class="text-sm text-stone-600"><strong>Indicação:</strong> ${student.indicacao}</p>` : ''}
                         ${vipRecord && vipRecord.observacoes ? `<div class="mt-2 p-2 bg-stone-50 rounded border-l-3 border-yellow-400"><p class="text-xs font-medium text-stone-500 mb-1">Observações:</p><p class="text-sm text-stone-700">${vipRecord.observacoes}</p></div>` : ''}
-                        ${expiredTag}
+                        ${contractStatusTag}
                     </div>
                     <div class="mt-auto pt-4 border-t border-stone-100 flex gap-2">
                         ${vipRecord ? `
