@@ -1614,15 +1614,42 @@
             // Only show students who have actual VIP records, not just VIP modality
             const vipStudents = students.filter(s => {
                 const hasVipRecord = vips.find(v => v.studentId === s.id);
-                const isVipMode = s.modalidade === 'VIP';
-                console.log(`Student ${s.name}: modalidade=${s.modalidade}, hasVipRecord=${!!hasVipRecord}, qualifies=${isVipMode && hasVipRecord}`);
-                return isVipMode && hasVipRecord;
+                return s.modalidade === 'VIP' && hasVipRecord;
             });
-            console.log('VIP students found:', vipStudents.length, vipStudents);
             let filteredVips = vipStudents;
 
-            // Teachers now have full access to all VIPs like pedagogico role
-            if (teacherFilter) {
+            // Apply role-based filtering first
+            if (currentUserRole === 'teacher') {
+                // Find the teacher's name in collaborators to ensure correct mapping
+                const teacherCollaborator = collaborators.find(c => 
+                    c.sectors && c.sectors.includes('professor') && 
+                    (c.name === currentUserName || c.email === currentUserName || c.id === userId)
+                );
+                const originalTeacherName = teacherCollaborator ? teacherCollaborator.name : currentUserName;
+                
+                // Use smart name matching to find the actual teacher name in VIPs
+                const teacherNames = [...new Set(vips.map(v => v.teacherName).filter(name => name))];
+                const exactMatch = teacherNames.find(name => name === originalTeacherName);
+                let teacherNameToFilter = exactMatch;
+                
+                if (!exactMatch && originalTeacherName) {
+                    // Try first name matching
+                    const searchFirstName = originalTeacherName.trim().split(' ')[0].toLowerCase();
+                    const firstNameMatch = teacherNames.find(name => {
+                        const nameFirstName = name.trim().split(' ')[0].toLowerCase();
+                        return nameFirstName === searchFirstName;
+                    });
+                    teacherNameToFilter = firstNameMatch;
+                }
+                
+                teacherNameToFilter = teacherNameToFilter || originalTeacherName;
+                
+                // For teachers, only show VIPs assigned to them
+                filteredVips = vipStudents.filter(student => {
+                    const vipRecord = vips.find(v => v.studentId === student.id);
+                    return vipRecord && vipRecord.teacherName === teacherNameToFilter;
+                });
+            } else if (teacherFilter) {
                 // Apply teacher filter for non-teacher users
                 filteredVips = vipStudents.filter(student => {
                     const vipRecord = vips.find(v => v.studentId === student.id);
@@ -1743,26 +1770,19 @@
         }
 
         function updateVipsList() {
-            console.log('updateVipsList called for role:', currentUserRole);
             const filteredVips = getFilteredVips();
-            console.log('Filtered VIPs:', filteredVips);
-            console.log('All students:', students);
-            console.log('All VIPs:', vips);
-            
             const vipsGrid = document.getElementById('vips-grid');
             
-            if (!vipsGrid) {
-                console.log('VIPs grid not found!');
-                return;
-            }
+            if (!vipsGrid) return;
 
             vipsGrid.innerHTML = filteredVips.map(student => {
                 const vipRecord = vips.find(v => v.studentId === student.id);
                 const teacher = vipRecord ? collaborators.find(c => c.id === vipRecord.teacherId) : null;
                 const canManage = ['admin', 'pedagogico', 'ap', 'financeiro', 'teacher'].includes(currentUserRole);
                 
-                // Can show PEF if user is admin/pedagogico/ap/financeiro/teacher
-                const canShowPef = canManage;
+                // Can show PEF if user is admin/pedagogico/ap/financeiro OR if user is the assigned teacher
+                const canShowPef = ['admin', 'pedagogico', 'ap', 'financeiro'].includes(currentUserRole) || 
+                    (currentUserRole === 'teacher' && vipRecord && vipRecord.teacherName === currentUserName);
                 
                 // Get status tag for contract expiration/ending
                 const statusTag = getVipStatusTag(vipRecord);
