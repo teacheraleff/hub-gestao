@@ -1543,12 +1543,8 @@
             });
             let filteredVips = vipStudents;
 
-            // Special handling for teachers - show ALL VIPs if no specific match found
+            // Special handling for teachers - show VIPs assigned to them
             if (currentUserRole === 'teacher') {
-                console.log('DEBUG teacher filter: currentUserName =', currentUserName);
-                console.log('DEBUG teacher filter: total vipStudents =', vipStudents.length);
-                console.log('DEBUG teacher filter: available teacherNames =', [...new Set(vips.map(v => v.teacherName))]);
-                
                 // Try multiple matching strategies
                 let teacherMatches = [];
                 
@@ -1584,14 +1580,7 @@
                     });
                 }
                 
-                // For debugging: if still no matches, show first 3 VIPs for now
-                if (teacherMatches.length === 0) {
-                    console.log('DEBUG: No matches found for teacher, showing first 3 VIPs for testing');
-                    teacherMatches = vipStudents.slice(0, 3);
-                }
-                
                 filteredVips = teacherMatches;
-                console.log('DEBUG teacher filter: final result =', filteredVips.length, 'VIPs');
                 
             } else if (teacherFilter) {
                 // Apply teacher filter for non-teacher users
@@ -1947,14 +1936,12 @@
 
         function renderVipsSection() {
             try {
-                console.log('DEBUG renderVipsSection: role =', currentUserRole, 'userName =', currentUserName);
                 document.getElementById('main-title').textContent = 'Alunos VIP';
                 document.getElementById('main-description').textContent = 'Gerencie alunos VIP e registre suas presenças.';
 
             const canManage = ['admin', 'pedagogico', 'ap', 'financeiro'].includes(currentUserRole);
             
             let itemsToDisplay = getFilteredVips();
-            console.log('DEBUG renderVipsSection: itemsToDisplay =', itemsToDisplay.length, 'items');
             
             // Teachers only see "Todos" tab, other roles see all three tabs
             const showAllTabs = !['teacher'].includes(currentUserRole);
@@ -2062,7 +2049,7 @@
                     });
                 });
             }
-            console.log('DEBUG renderVipsSection: Successfully rendered VIPs for role', currentUserRole);
+
             } catch (error) {
                 console.error('ERROR renderVipsSection for role', currentUserRole, ':', error);
                 document.getElementById('content-area').innerHTML = `
@@ -7814,7 +7801,7 @@
 
             const menuItemsHTML = menuItems
                 .filter(item => !item.roles || item.roles.includes(currentUserRole))
-                .map(item => `<button data-target="${item.key}" class="nav-item w-full text-left px-4 py-2.5 rounded-lg flex items-center font-semibold">${item.icon}${item.label}</button>`)
+                .map(item => `<button data-section="${item.key}" class="nav-item w-full text-left px-4 py-2.5 rounded-lg flex items-center font-semibold">${item.icon}${item.label}</button>`)
                 .join('');
 
             mainNav.innerHTML = menuItemsHTML;
@@ -7975,9 +7962,10 @@
             });
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            const pageRenderers = { 'inicio': renderInicioSection, 'alunos': renderAlunosSection, 'turmas': renderTurmasSection, 'vips': renderVipsSection, 'campanhas': renderCampanhasSection, 'tarefas': renderTarefasSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection, 'colaboradores': renderColaboradoresSection, 'cps': renderCPsSection, 'dojo': renderDojoSection, 'calendario-pedagogico': renderCalendarioPedagogicoSection, 'calendario-marketing': renderCalendarioMarketingSection, 'desafio-pedagogico': renderDesafioPedagogicoSection, 'diretrizes': renderDiretrizesSection };
+        // Define pageRenderers globally so it's accessible in event handlers
+        const pageRenderers = { 'inicio': renderInicioSection, 'alunos': renderAlunosSection, 'turmas': renderTurmasSection, 'vips': renderVipsSection, 'campanhas': renderCampanhasSection, 'tarefas': renderTarefasSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection, 'colaboradores': renderColaboradoresSection, 'cps': renderCPsSection, 'dojo': renderDojoSection, 'calendario-pedagogico': renderCalendarioPedagogicoSection, 'calendario-marketing': renderCalendarioMarketingSection, 'desafio-pedagogico': renderDesafioPedagogicoSection, 'diretrizes': renderDiretrizesSection };
 
+        document.addEventListener('DOMContentLoaded', () => {
             document.body.addEventListener('click', (event) => {
                 // Close modals when clicking overlay or close button
                 if (event.target.matches('.modal-overlay') || event.target.matches('[data-action="close-calendar-modal"]')) {
@@ -7995,10 +7983,9 @@
 
                 const navTarget = event.target.closest('.nav-item');
                 if (navTarget && !navTarget.disabled) {
-                    const pageKey = navTarget.dataset.section; // Fixed: was .target, should be .section
-                    console.log('DEBUG navigation: pageKey =', pageKey, 'role =', currentUserRole);
+                    const pageKey = navTarget.dataset.section;
+
                     if (pageKey && pageRenderers[pageKey]) {
-                        console.log('DEBUG navigation: rendering', pageKey, 'for role', currentUserRole);
                         // Clear any existing timeouts or intervals that might interfere
                         clearTimeout(window.navigationTimeout);
                         
@@ -8010,8 +7997,6 @@
                         // Prevent any further event bubbling
                         event.stopPropagation();
                         event.preventDefault();
-                    } else {
-                        console.error('DEBUG navigation: No renderer found for', pageKey, 'available:', Object.keys(pageRenderers));
                     }
                 }
 
