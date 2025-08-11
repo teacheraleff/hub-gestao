@@ -520,10 +520,60 @@
             // Initialize with sample data if empty
             if (students.length === 0) {
                 students = [
-                    { id: '1', name: 'Maria Silva', email: 'maria@exemplo.com', phone: '(11) 98765-4321', status: 'ativo', setor: 'financeiro' },
-                    { id: '2', name: 'João Santos', email: 'joao@exemplo.com', phone: '(11) 87654-3210', status: 'ativo', setor: 'pedagogico' }
+                    { id: '1', name: 'Maria Silva', email: 'maria@exemplo.com', phone: '(11) 98765-4321', status: 'ativo', modalidade: 'VIP' },
+                    { id: '2', name: 'João Santos', email: 'joao@exemplo.com', phone: '(11) 87654-3210', status: 'ativo', modalidade: 'TURMA' },
+                    { id: '3', name: 'Ana Costa', email: 'ana@exemplo.com', phone: '(11) 99988-7766', status: 'ativo', modalidade: 'VIP' },
+                    { id: '4', name: 'Carlos Lima', email: 'carlos@exemplo.com', phone: '(11) 88877-6655', status: 'ativo', modalidade: 'VIP' }
                 ];
                 localStorage.setItem('demo-students', JSON.stringify(students));
+            }
+            
+            if (vips.length === 0) {
+                const today = new Date();
+                const in15Days = new Date(today.getTime() + 15 * 24 * 60 * 60 * 1000);
+                const in45Days = new Date(today.getTime() + 45 * 24 * 60 * 60 * 1000);
+                const expired10DaysAgo = new Date(today.getTime() - 10 * 24 * 60 * 60 * 1000);
+                const expired5DaysAgo = new Date(today.getTime() - 5 * 24 * 60 * 60 * 1000);
+                
+                vips = [
+                    { 
+                        id: 'vip1', 
+                        studentId: '1', 
+                        teacherName: 'Ana Professor', 
+                        teacherId: 'teacher1',
+                        level: 'Intermediate',
+                        endDate: in15Days.toISOString().split('T')[0], // A finalizar em 15 dias
+                        observacoes: 'Aluna muito dedicada, prefere aulas no período da manhã. Tem facilidade com conversação mas precisa reforçar gramática.'
+                    },
+                    { 
+                        id: 'vip2', 
+                        studentId: '3', 
+                        teacherName: 'Carlos Teacher', 
+                        teacherId: 'teacher2',
+                        level: 'Advanced',
+                        endDate: expired10DaysAgo.toISOString().split('T')[0], // Expirado há 10 dias
+                        observacoes: 'Estudante focada em inglês para negócios. Disponível apenas após 18h. Gosta de materiais práticos e situações reais.'
+                    },
+                    { 
+                        id: 'vip3', 
+                        studentId: '4', 
+                        teacherName: 'Ana Professor', 
+                        teacherId: 'teacher1',
+                        level: 'Beginner',
+                        endDate: expired5DaysAgo.toISOString().split('T')[0], // Expirado há 5 dias
+                        observacoes: 'Primeiro contato com inglês. Bastante ansioso mas muito esforçado. Precisa de muito encorajamento e paciência.'
+                    }
+                ];
+                localStorage.setItem('demo-vips', JSON.stringify(vips));
+            }
+            
+            if (collaborators.length === 0) {
+                collaborators = [
+                    { id: 'teacher1', name: 'Ana Professor', sectors: ['professor'], email: 'ana@slap.com' },
+                    { id: 'teacher2', name: 'Carlos Teacher', sectors: ['professor'], email: 'carlos@slap.com' },
+                    { id: 'admin1', name: 'Admin SLAP', sectors: ['admin'], email: 'admin@slap.com' }
+                ];
+                localStorage.setItem('demo-collaborators', JSON.stringify(collaborators));
             }
         }
 
@@ -1564,6 +1614,19 @@
                     return endDate <= thirtyDaysFromNow && endDate >= today;
                 });
             }
+            
+            // Apply status filter for "Expirados" - VIPs with contracts that have passed the end date
+            if (statusFilter === 'expirados') {
+                const today = new Date();
+                
+                filteredVips = filteredVips.filter(student => {
+                    const vipRecord = vips.find(v => v.studentId === student.id);
+                    if (!vipRecord || !vipRecord.endDate) return false;
+                    
+                    const endDate = new Date(vipRecord.endDate);
+                    return endDate < today;
+                });
+            }
 
             if (searchTerm) {
                 filteredVips = filteredVips.filter(student => {
@@ -1629,6 +1692,27 @@
                 </div>`}).join('') || '<p class="col-span-full text-center py-10 text-stone-500">Nenhuma turma encontrada.</p>';
         }
 
+        // Function to calculate VIP status tags based on contract dates
+        function getVipStatusTag(vipRecord) {
+            if (!vipRecord || !vipRecord.endDate) return '';
+            
+            const today = new Date();
+            const endDate = new Date(vipRecord.endDate);
+            const diffTime = endDate.getTime() - today.getTime();
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            if (diffDays < 0) {
+                // Contract expired
+                const expiredDays = Math.abs(diffDays);
+                return `<div class="mt-2"><span class="status-tag" style="background-color: #FEE2E2; color: #991B1B; font-weight: 600;">Contrato expirado há ${expiredDays} dia${expiredDays !== 1 ? 's' : ''}</span></div>`;
+            } else if (diffDays <= 30) {
+                // Contract ending within 30 days
+                return `<div class="mt-2"><span class="status-tag" style="background-color: #FEF3C7; color: #92400E; font-weight: 600;">${diffDays} dia${diffDays !== 1 ? 's' : ''} para finalizar</span></div>`;
+            }
+            
+            return '';
+        }
+
         function updateVipsList() {
             const filteredVips = getFilteredVips();
             const vipsGrid = document.getElementById('vips-grid');
@@ -1643,6 +1727,9 @@
                 // Can show PEF if user is admin/pedagogico/ap/financeiro OR if user is the assigned teacher
                 const canShowPef = canManage || (currentUserRole === 'teacher' && vipRecord && vipRecord.teacherId === currentUserId);
                 
+                // Get status tag for contract expiration/ending
+                const statusTag = getVipStatusTag(vipRecord);
+                
                 return `
                 <div class="base-card flex flex-col">
                     <div class="flex-1">
@@ -1654,13 +1741,20 @@
                         <p class="text-sm text-stone-600 mb-2"><strong>Status:</strong> <span class="status-tag status-${(student.status || 'pendente').toLowerCase()}">${student.status || 'Pendente'}</span></p>
                         ${vipRecord ? `<p class="text-sm text-stone-500 mb-2">Professor: ${teacher?.name || 'N/A'}</p>` : ''}
                         ${vipRecord ? `<p class="text-sm text-stone-600"><strong>Nível:</strong> ${vipRecord.level || 'N/A'}</p>` : ''}
+                        ${vipRecord && vipRecord.endDate ? `<p class="text-sm text-stone-600"><strong>Finaliza em:</strong> ${formatDateBR(vipRecord.endDate)}</p>` : ''}
                         ${student.indicacao ? `<p class="text-sm text-stone-600"><strong>Indicação:</strong> ${student.indicacao}</p>` : ''}
+                        ${vipRecord && vipRecord.observacoes ? `
+                            <div class="mt-3 pt-2 border-t border-stone-100">
+                                <p class="text-sm text-stone-600"><strong>Observações:</strong></p>
+                                <p class="text-sm text-stone-500 mt-1 italic">${vipRecord.observacoes}</p>
+                            </div>
+                        ` : ''}
+                        ${statusTag}
                     </div>
                     <div class="mt-auto pt-4 border-t border-stone-100 flex gap-2">
                         ${vipRecord ? `
                             <button class="primary-btn !text-sm flex-1" data-action="open-vip-pef" data-id="${vipRecord.id}">PEF</button>
                             <button class="secondary-btn !text-sm flex-1" data-action="edit-vip" data-id="${vipRecord.id}">Configurar</button>
-                            <button class="danger-btn !text-sm" data-action="delete-vip" data-id="${vipRecord.id}">🗑️</button>
                         ` : ''}
                     </div>
                 </div>`}).join('') || '<p class="col-span-full text-center py-10 text-stone-500">Nenhum aluno VIP encontrado.</p>';
@@ -1887,6 +1981,7 @@
                     <div class="flex gap-2 mb-6" id="vips-filter-buttons">
                         <button class="secondary-btn filter-btn active" data-filter="todos">Todos</button>
                         <button class="secondary-btn filter-btn" data-filter="a-finalizar">A Finalizar</button>
+                        <button class="secondary-btn filter-btn" data-filter="expirados">Expirados</button>
                     </div>
                     ` : ''}
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="vips-grid">
@@ -3069,6 +3164,13 @@
                         <div><label class="font-medium text-sm">Data de Início</label><input type="date" id="vip-startDate" class="form-input" value="${vip?.startDate || ''}"></div>
                         <div><label class="font-medium text-sm">Data de Finalização</label><input type="date" id="vip-endDate" class="form-input" value="${vip?.endDate || ''}"></div>
                     </div>
+                    <div>
+                        <label class="font-medium text-sm">Observações sobre o aluno</label>
+                        <textarea id="vip-observacoes" class="form-input h-24 resize-none" 
+                                placeholder="Digite observações relevantes sobre o aluno, perfil de aprendizagem, preferências, histórico, etc."
+                                >${vip?.observacoes || ''}</textarea>
+                        <p class="text-xs text-gray-500 mt-1">Informações que podem ajudar o professor no acompanhamento do aluno</p>
+                    </div>
                     <div class="flex justify-end gap-2">
                         ${vipId ? `<button type="button" class="danger-btn" data-action="delete-vip" data-id="${vipId}">Excluir VIP</button>` : ''}
                         <button type="submit" class="primary-btn w-auto">${vipId ? 'Salvar' : 'Criar VIP'}</button>
@@ -3233,6 +3335,7 @@
                 teacherName: selectedTeacherOption.getAttribute('data-name') || null,
                 level: levelValue || null,
                 semestre: document.getElementById('vip-semestre').value,
+                observacoes: document.getElementById('vip-observacoes').value.trim(),
                 startDate: document.getElementById('vip-startDate').value,
                 endDate: document.getElementById('vip-endDate').value,
             };
