@@ -498,6 +498,147 @@
             renderMenu();
         }
 
+        // Sistema de Backup dos CPs para proteger dados do usuário
+        function createCPsBackup() {
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+            const currentCps = localStorage.getItem('demo-cps');
+            
+            if (currentCps && currentCps !== '[]') {
+                // Criar backup automático
+                localStorage.setItem(`backup-cps-${timestamp}`, currentCps);
+                
+                // Manter apenas os 10 backups mais recentes
+                const allKeys = Object.keys(localStorage);
+                const backupKeys = allKeys.filter(key => key.startsWith('backup-cps-')).sort();
+                
+                if (backupKeys.length > 10) {
+                    for (let i = 0; i < backupKeys.length - 10; i++) {
+                        localStorage.removeItem(backupKeys[i]);
+                    }
+                }
+                
+                console.log(`Backup dos CPs criado: backup-cps-${timestamp}`);
+            }
+        }
+
+        function restoreCPsFromBackup(backupKey = null) {
+            if (!backupKey) {
+                // Encontrar o backup mais recente
+                const allKeys = Object.keys(localStorage);
+                const backupKeys = allKeys.filter(key => key.startsWith('backup-cps-')).sort();
+                backupKey = backupKeys[backupKeys.length - 1];
+            }
+            
+            if (backupKey) {
+                const backupData = localStorage.getItem(backupKey);
+                if (backupData) {
+                    localStorage.setItem('demo-cps', backupData);
+                    cps = JSON.parse(backupData);
+                    console.log(`CPs restaurados do backup: ${backupKey}`);
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function exportCPsBackup() {
+            const currentCps = localStorage.getItem('demo-cps');
+            if (currentCps) {
+                const timestamp = new Date().toISOString().split('T')[0];
+                const blob = new Blob([currentCps], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `backup-cps-${timestamp}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                showSuccessMessage("Backup Exportado", "Backup dos CPs baixado com sucesso!");
+            }
+        }
+
+        function safeDeleteItem(collection, id, itemName = 'item') {
+            // Criar backup automático antes de deletar dados críticos dos CPs
+            if (collection === 'cps') {
+                createCPsBackup();
+                console.log("Backup automático criado antes de deletar CP");
+                
+                const nivel = cps.find(cp => cp.id === id);
+                const confirmMessage = `ATENÇÃO: Você está prestes a deletar o nível "${nivel?.title || id}" dos CPs. 
+                
+Um backup foi criado automaticamente.
+                
+Esta operação não pode ser desfeita. Deseja continuar?`;
+                
+                if (!confirm(confirmMessage)) {
+                    showInfoMessage("Operação Cancelada", "O nível não foi deletado.");
+                    return;
+                }
+            }
+            
+            // Continuar com a operação de deletar
+            deleteItem(collection, id);
+        }
+
+        function safeCPOperation(operation, message = "Esta operação modificará os CPs") {
+            // Criar backup automático antes de operações críticas
+            createCPsBackup();
+            console.log("Backup automático criado antes da operação:", operation);
+            
+            if (confirm(`${message}. Um backup foi criado automaticamente. Deseja continuar?`)) {
+                return true;
+            }
+            return false;
+        }
+
+        // Função de emergência para recuperar CPs do backup mais recente
+        // Use no console: restoreLatestCPsBackup()
+        function restoreLatestCPsBackup() {
+            const allKeys = Object.keys(localStorage);
+            const backupKeys = allKeys.filter(key => key.startsWith('backup-cps-')).sort();
+            
+            if (backupKeys.length === 0) {
+                console.log("Nenhum backup encontrado!");
+                return false;
+            }
+            
+            const latestBackup = backupKeys[backupKeys.length - 1];
+            const backupData = localStorage.getItem(latestBackup);
+            
+            if (backupData) {
+                localStorage.setItem('demo-cps', backupData);
+                cps = JSON.parse(backupData);
+                renderCPsSection();
+                console.log(`CPs restaurados do backup: ${latestBackup}`);
+                showSuccessMessage("Backup Restaurado", `CPs recuperados do backup: ${latestBackup}`);
+                return true;
+            }
+            
+            console.log("Erro ao restaurar backup!");
+            return false;
+        }
+
+        // Função para listar todos os backups disponíveis
+        // Use no console: listCPsBackups()
+        function listCPsBackups() {
+            const allKeys = Object.keys(localStorage);
+            const backupKeys = allKeys.filter(key => key.startsWith('backup-cps-')).sort();
+            
+            console.log("=== BACKUPS DE CPs DISPONÍVEIS ===");
+            backupKeys.forEach((key, index) => {
+                const timestamp = key.replace('backup-cps-', '');
+                const data = JSON.parse(localStorage.getItem(key) || '[]');
+                console.log(`${index + 1}. ${timestamp} - ${data.length} níveis`);
+            });
+            
+            if (backupKeys.length === 0) {
+                console.log("Nenhum backup encontrado!");
+            }
+            
+            return backupKeys;
+        }
+
         function loadDemoData() {
             // Load demo data from localStorage or create default data
             students = JSON.parse(localStorage.getItem('demo-students') || '[]');
@@ -513,6 +654,69 @@
             fluxos = JSON.parse(localStorage.getItem('demo-fluxos') || '[]');
             expenses = JSON.parse(localStorage.getItem('demo-expenses') || '[]');
             cps = JSON.parse(localStorage.getItem('demo-cps') || '[]');
+
+            // Create automatic backup of CPs data
+            createCPsBackup();
+
+            // Initialize CPs with sample data if empty
+            if (cps.length === 0) {
+                cps = [
+                    {
+                        id: 'nivel_beginner',
+                        title: 'Beginner',
+                        lessons: [
+                            {
+                                title: 'Greetings and Introductions',
+                                topic: 'Basic greetings, introducing yourself and others',
+                                keywords: ['hello', 'goodbye', 'name', 'nice to meet you', 'introductions']
+                            },
+                            {
+                                title: 'Numbers and Age',
+                                topic: 'Numbers 1-100, talking about age',
+                                keywords: ['numbers', 'age', 'how old', 'counting', 'years old']
+                            },
+                            {
+                                title: 'Family Members',
+                                topic: 'Family vocabulary and relationships',
+                                keywords: ['family', 'mother', 'father', 'sister', 'brother', 'parents']
+                            }
+                        ]
+                    },
+                    {
+                        id: 'nivel_elementary',
+                        title: 'Elementary',
+                        lessons: [
+                            {
+                                title: 'Present Simple - Daily Routines',
+                                topic: 'Present simple tense with daily activities',
+                                keywords: ['present simple', 'daily routine', 'wake up', 'breakfast', 'work']
+                            },
+                            {
+                                title: 'Food and Drinks',
+                                topic: 'Food vocabulary and expressing preferences',
+                                keywords: ['food', 'drink', 'like', 'dislike', 'restaurant', 'menu']
+                            }
+                        ]
+                    },
+                    {
+                        id: 'nivel_preintermediate',
+                        title: 'Pre-Intermediate',
+                        lessons: [
+                            {
+                                title: 'Past Simple - Life Events',
+                                topic: 'Past simple tense for completed actions',
+                                keywords: ['past simple', 'yesterday', 'last week', 'childhood', 'memories']
+                            },
+                            {
+                                title: 'Future Plans - Going to',
+                                topic: 'Expressing future plans and intentions',
+                                keywords: ['going to', 'future plans', 'intentions', 'weekend', 'vacation']
+                            }
+                        ]
+                    }
+                ];
+                localStorage.setItem('demo-cps', JSON.stringify(cps));
+            }
 
             // Initialize with sample data if empty
             if (students.length === 0) {
@@ -1757,7 +1961,7 @@
                     </div>
                     <div class="mt-auto pt-4 border-t border-stone-100 flex gap-2">
                         ${canManage ? `<button class="secondary-btn !text-sm flex-1" data-action="edit-turma" data-id="${t.id}">Editar</button>` : ''}
-                        <button class="primary-btn !text-sm flex-1" data-action="open-turma-pef" data-id="${t.id}">PEF</button>
+                        <button class="primary-btn !text-sm flex-1 text-center" data-action="open-turma-pef" data-id="${t.id}">PEF</button>
                     </div>
                 </div>`}).join('') || '<p class="col-span-full text-center py-10 text-stone-500">Nenhuma turma encontrada.</p>';
         }
@@ -1841,7 +2045,7 @@
                     </div>
                     <div class="mt-auto pt-4 border-t border-stone-100 flex gap-2">
                         ${vipRecord ? `
-                            <button class="primary-btn !text-sm flex-1" data-action="open-vip-pef" data-id="${vipRecord.id}">PEF</button>
+                            <button class="primary-btn !text-sm flex-1 text-center" data-action="open-vip-pef" data-id="${vipRecord.id}">PEF</button>
                             <button class="secondary-btn !text-sm flex-1" data-action="edit-vip" data-id="${vipRecord.id}">Configurar</button>
                         ` : ''}
                     </div>
@@ -2032,7 +2236,7 @@
                             </div>
                             <div class="mt-auto pt-4 border-t border-stone-100 flex gap-2">
                                 ${canManage ? `<button class="secondary-btn !text-sm flex-1" data-action="edit-turma" data-id="${t.id}">Editar</button>` : ''}
-                                <button class="primary-btn !text-sm flex-1" data-action="open-turma-pef" data-id="${t.id}">PEF</button>
+                                <button class="primary-btn !text-sm flex-1 text-center" data-action="open-turma-pef" data-id="${t.id}">PEF</button>
                             </div>
                         </div>`}).join('') || '<p class="col-span-full text-center py-10 text-stone-500">Nenhuma turma encontrada.</p>'}
                     </div>
@@ -2715,46 +2919,39 @@
                     <div class="flex justify-between items-center mb-6 flex-wrap gap-4">
                         <h3 class="text-xl font-bold text-stone-800">Níveis do Curso</h3>
                         <div class="flex gap-2">
+                           <button class="secondary-btn w-auto" data-action="backup-cps" title="Fazer backup dos CPs">🛟 Backup</button>
                            <button class="secondary-btn w-auto" data-action="export-cps-doc">Exportar CPs</button>
                            ${addNivelBtn}
                         </div>
                     </div>
-                    <div id="cp-list-container">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         ${cps.map((nivel, index) => `
-                            <div class="cp-level-card" id="nivel-${nivel.id}">
-                                <div class="cp-level-header" data-action="toggle-cp-level" data-id="${nivel.id}">
+                            <div class="base-card hover:shadow-lg transition-shadow cursor-pointer" data-action="view-nivel" data-id="${nivel.id}">
+                                <div class="flex justify-between items-start mb-3">
                                     <h4 class="text-lg font-bold text-stone-800">${nivel.title}</h4>
-                                    <div class="flex items-center gap-2">
-                                        ${canEdit ? `
-                                        <button class="secondary-btn text-xs p-1" data-action="reorder-cp" data-id="${nivel.id}" data-direction="up" ${index === 0 ? 'disabled' : ''}>↑</button>
-                                        <button class="secondary-btn text-xs p-1" data-action="reorder-cp" data-id="${nivel.id}" data-direction="down" ${index === cps.length - 1 ? 'disabled' : ''}>↓</button>
-                                        <button class="secondary-btn text-xs" data-action="add-aula" data-nivel-id="${nivel.id}">+ Aula</button>
-                                        <button class="secondary-btn text-xs" data-action="edit-nivel" data-id="${nivel.id}">Editar</button>
-                                        <button class="danger-btn text-xs" data-action="delete-item" data-collection="cps" data-id="${nivel.id}">X</button>` : ''}
-                                        <svg class="h-6 w-6 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
-                                    </div>
+                                    ${canEdit ? `
+                                    <div class="flex gap-1">
+                                        <button class="secondary-btn text-xs p-1" data-action="edit-nivel" data-id="${nivel.id}" onclick="event.stopPropagation()">✏️</button>
+                                        <button class="danger-btn text-xs p-1" data-action="delete-item" data-collection="cps" data-id="${nivel.id}" onclick="event.stopPropagation()">🗑️</button>
+                                    </div>` : ''}
                                 </div>
-                                <div class="cp-level-content">
-                                    ${(nivel.lessons && nivel.lessons.length > 0) ? nivel.lessons.map((aula, index) => `
-                                        <div class="cp-lesson-item">
-                                            <div>
-                                                <p class="font-semibold">${index + 1}. ${aula.title}</p>
-                                                <p class="text-sm text-stone-600">${aula.topic}</p>
-                                                <div class="mt-2 flex flex-wrap">${(aula.keywords || []).map(k => `<span class="keyword-tag">${k}</span>`).join('')}</div>
-                                            </div>
-                                            ${canEdit ? `
-                                            <div class="flex items-center gap-1">
-                                                <button class="secondary-btn text-xs p-1" data-action="reorder-aula" data-nivel-id="${nivel.id}" data-aula-index="${index}" data-direction="up" ${index === 0 ? 'disabled' : ''} title="Mover para cima">↑</button>
-                                                <button class="secondary-btn text-xs p-1" data-action="reorder-aula" data-nivel-id="${nivel.id}" data-aula-index="${index}" data-direction="down" ${index === nivel.lessons.length - 1 ? 'disabled' : ''} title="Mover para baixo">↓</button>
-                                                <button class="secondary-btn text-xs" data-action="edit-aula" data-nivel-id="${nivel.id}" data-aula-index="${index}">Editar</button>
-                                                <button class="danger-btn text-xs" data-action="delete-aula" data-nivel-id="${nivel.id}" data-aula-index="${index}">X</button>
-                                            </div>
-                                            ` : ''}
-                                        </div>
-                                    `).join('') : '<p class="text-center text-stone-500 py-4">Nenhuma aula adicionada.</p>'}
+                                <div class="text-sm text-stone-600 mb-3">
+                                    ${(nivel.lessons && nivel.lessons.length > 0) ? 
+                                        `${nivel.lessons.length} aula${nivel.lessons.length !== 1 ? 's' : ''} cadastrada${nivel.lessons.length !== 1 ? 's' : ''}` : 
+                                        'Nenhuma aula cadastrada'
+                                    }
+                                </div>
+                                <div class="flex justify-between items-center text-xs text-stone-500">
+                                    <span>Clique para ver aulas</span>
+                                    ${canEdit ? `
+                                    <div class="flex gap-1">
+                                        <button class="secondary-btn text-xs p-1" data-action="reorder-cp" data-id="${nivel.id}" data-direction="up" ${index === 0 ? 'disabled' : ''} onclick="event.stopPropagation()" title="Mover para cima">↑</button>
+                                        <button class="secondary-btn text-xs p-1" data-action="reorder-cp" data-id="${nivel.id}" data-direction="down" ${index === cps.length - 1 ? 'disabled' : ''} onclick="event.stopPropagation()" title="Mover para baixo">↓</button>
+                                    </div>` : ''}
                                 </div>
                             </div>
-                        `).join('') || '<p class="text-center py-10 text-stone-500">Nenhum nível cadastrado.</p>'}
+                        `).join('')}
+                        ${cps.length === 0 ? '<div class="col-span-full text-center py-10 text-stone-500">Nenhum nível cadastrado ainda.</div>' : ''}
                     </div>
                 </section>
             `;
@@ -4598,6 +4795,52 @@
 
 
 
+        function openNivelModal(nivelId) {
+            const nivel = cps.find(n => n.id === nivelId);
+            if (!nivel) {
+                showErrorMessage("Erro", "Nível não encontrado.");
+                return;
+            }
+
+            const canEdit = ['pedagogico', 'ap', 'admin'].includes(currentUserRole);
+
+            document.getElementById('form-modal-title').textContent = nivel.title;
+            document.getElementById('form-modal-content-area').innerHTML = `
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center mb-4">
+                        <p class="text-stone-600">
+                            ${nivel.lessons && nivel.lessons.length > 0 ? 
+                                `${nivel.lessons.length} aula${nivel.lessons.length !== 1 ? 's' : ''} cadastrada${nivel.lessons.length !== 1 ? 's' : ''}` : 
+                                'Nenhuma aula cadastrada'
+                            }
+                        </p>
+                        ${canEdit ? `<button class="primary-btn text-xs" data-action="add-aula" data-nivel-id="${nivelId}">+ Adicionar Aula</button>` : ''}
+                    </div>
+                    <div class="max-h-96 overflow-y-auto space-y-3">
+                        ${nivel.lessons && nivel.lessons.length > 0 ? nivel.lessons.map((aula, index) => `
+                            <div class="p-4 bg-stone-50 rounded-lg border">
+                                <div class="flex justify-between items-start mb-2">
+                                    <h5 class="font-semibold text-stone-800">${index + 1}. ${aula.title}</h5>
+                                    ${canEdit ? `
+                                    <div class="flex gap-1">
+                                        <button class="secondary-btn text-xs p-1" data-action="reorder-aula" data-nivel-id="${nivelId}" data-aula-index="${index}" data-direction="up" ${index === 0 ? 'disabled' : ''} title="Mover para cima">↑</button>
+                                        <button class="secondary-btn text-xs p-1" data-action="reorder-aula" data-nivel-id="${nivelId}" data-aula-index="${index}" data-direction="down" ${index === nivel.lessons.length - 1 ? 'disabled' : ''} title="Mover para baixo">↓</button>
+                                        <button class="secondary-btn text-xs p-1" data-action="edit-aula" data-nivel-id="${nivelId}" data-aula-index="${index}">✏️</button>
+                                        <button class="danger-btn text-xs p-1" data-action="delete-aula" data-nivel-id="${nivelId}" data-aula-index="${index}">🗑️</button>
+                                    </div>` : ''}
+                                </div>
+                                <p class="text-sm text-stone-600 mb-2">${aula.topic}</p>
+                                <div class="flex flex-wrap gap-1">
+                                    ${(aula.keywords || []).map(k => `<span class="keyword-tag">${k}</span>`).join('')}
+                                </div>
+                            </div>
+                        `).join('') : '<div class="text-center py-8 text-stone-500">Nenhuma aula cadastrada ainda.</div>'}
+                    </div>
+                </div>
+            `;
+            document.getElementById('form-modal').classList.add('visible');
+        }
+
         function openNivelForm(nivelId = null) {
             clearModalHeaderButtons();
             const nivel = nivelId ? cps.find(n => n.id === nivelId) : null;
@@ -4615,19 +4858,38 @@
 
         async function saveNivel(event) {
             event.preventDefault();
+            
+            // Criar backup automático antes da operação
+            createCPsBackup();
+            console.log("Backup automático criado antes de salvar nível");
+            
             const nivelId = document.getElementById('nivel-id').value;
             const title = document.getElementById('nivel-title').value;
             if (!title) { showErrorMessage("Erro", "O título é obrigatório."); return; }
 
-            try {
-                if (nivelId) {
-                    await updateDoc(doc(db, `artifacts/${appId}/public/data/cps`, nivelId), { title });
+            // Para dados locais (demo)
+            if (nivelId) {
+                const nivel = cps.find(n => n.id === nivelId);
+                if (nivel) {
+                    nivel.title = title;
+                    localStorage.setItem('demo-cps', JSON.stringify(cps));
                     showSuccessMessage("Sucesso", "Nível atualizado.");
-                } else {
-                    await addDoc(collection(db, `artifacts/${appId}/public/data/cps`), { title, lessons: [], order: cps.length });
-                    showSuccessMessage("Sucesso", "Nível adicionado.");
+                    renderCPsSection();
+                    closeFormModal();
                 }
-            } catch(e) { console.error(e); showErrorMessage("Erro", "Não foi possível salvar o nível."); }
+            } else {
+                const newNivel = {
+                    id: 'nivel_' + Date.now(),
+                    title: title,
+                    lessons: [],
+                    order: cps.length
+                };
+                cps.push(newNivel);
+                localStorage.setItem('demo-cps', JSON.stringify(cps));
+                showSuccessMessage("Sucesso", "Nível adicionado.");
+                renderCPsSection();
+                closeFormModal();
+            }
         }
 
         function openAulaForm(nivelId, aulaIndex = null) {
@@ -4651,12 +4913,48 @@
 
         async function saveAula(event) {
             event.preventDefault();
+            
+            // Criar backup automático antes da operação
+            createCPsBackup();
+            console.log("Backup automático criado antes de salvar aula");
+            
             const nivelId = document.getElementById('aula-nivel-id').value;
             const aulaIndex = document.getElementById('aula-index').value;
-            const nivelRef = doc(db, `artifacts/${appId}/public/data/cps`, nivelId);
-
+            const title = document.getElementById('aula-title').value;
+            const topic = document.getElementById('aula-topic').value;
             const keywordsString = document.getElementById('aula-keywords').value;
             const keywords = keywordsString.split(',').map(k => k.trim()).filter(Boolean);
+
+            // Para dados locais (demo)
+            const nivel = cps.find(n => n.id === nivelId);
+            if (!nivel) {
+                showErrorMessage("Erro", "Nível não encontrado.");
+                return;
+            }
+
+            if (!nivel.lessons) {
+                nivel.lessons = [];
+            }
+
+            const aulaData = { title, topic, keywords };
+
+            if (aulaIndex !== '') {
+                // Editando aula existente
+                nivel.lessons[parseInt(aulaIndex)] = aulaData;
+            } else {
+                // Adicionando nova aula
+                nivel.lessons.push(aulaData);
+            }
+
+            localStorage.setItem('demo-cps', JSON.stringify(cps));
+            showSuccessMessage("Sucesso", aulaIndex !== '' ? "Aula atualizada." : "Aula adicionada.");
+            closeFormModal();
+            // Se o modal de nível estava aberto, reabrir para mostrar as aulas atualizadas
+            if (document.getElementById('form-modal').classList.contains('visible')) {
+                setTimeout(() => openNivelModal(nivelId), 300);
+            } else {
+                renderCPsSection();
+            }
 
             const novaAula = {
                 title: document.getElementById('aula-title').value,
@@ -4678,16 +4976,35 @@
         }
 
         async function deleteAula(nivelId, aulaIndex) {
-            const nivelRef = doc(db, `artifacts/${appId}/public/data/cps`, nivelId);
+            // Criar backup automático antes da operação
+            createCPsBackup();
+            console.log("Backup automático criado antes de deletar aula");
+            
             const nivel = cps.find(n => n.id === nivelId);
-            const aulaParaRemover = nivel.lessons[aulaIndex];
-            try {
-                await updateDoc(nivelRef, { lessons: arrayRemove(aulaParaRemover) });
-                showSuccessMessage("Sucesso", "Aula removida.");
-            } catch (e) { console.error(e); showErrorMessage("Erro", "Não foi possível remover a aula."); }
+            if (!nivel || !nivel.lessons || !nivel.lessons[aulaIndex]) {
+                showErrorMessage("Erro", "Aula não encontrada.");
+                return;
+            }
+
+            const aulaTitle = nivel.lessons[aulaIndex].title;
+            if (!confirm(`Deseja realmente deletar a aula "${aulaTitle}"?`)) {
+                return;
+            }
+
+            // Para dados locais (demo)
+            nivel.lessons.splice(aulaIndex, 1);
+            localStorage.setItem('demo-cps', JSON.stringify(cps));
+            showSuccessMessage("Sucesso", "Aula removida.");
+            
+            // Reabrir o modal do nível
+            setTimeout(() => openNivelModal(nivelId), 300);
         }
 
         async function reorderAula(nivelId, aulaIndex, direction) {
+            // Criar backup automático antes da operação
+            createCPsBackup();
+            console.log("Backup automático criado antes de reordenar aula");
+            
             const nivel = cps.find(c => c.id === nivelId);
             if (!nivel || !nivel.lessons || nivel.lessons.length === 0) return;
 
@@ -4702,48 +5019,32 @@
             // Swap the lessons
             [newLessons[currentIndex], newLessons[otherIndex]] = [newLessons[otherIndex], newLessons[currentIndex]];
 
-            try {
-                if (!db) {
-                    // Development mode - update local data
-                    nivel.lessons = newLessons;
-                    renderCPsSection();
-                    showSuccessMessage("Sucesso!", "Ordem das aulas atualizada!");
-                    return;
-                }
-
-                // Update in Firebase
-                const nivelRef = doc(db, `artifacts/${appId}/public/data/cps`, nivelId);
-                await updateDoc(nivelRef, { lessons: newLessons });
-                showSuccessMessage("Sucesso!", "Ordem das aulas atualizada!");
-            } catch (error) {
-                console.error("Error reordering aula:", error);
-                showErrorMessage("Erro", "Não foi possível reordenar as aulas.");
-            }
+            // Para dados locais (demo)
+            nivel.lessons = newLessons;
+            localStorage.setItem('demo-cps', JSON.stringify(cps));
+            showSuccessMessage("Sucesso!", "Ordem das aulas atualizada!");
+            
+            // Reabrir o modal do nível
+            setTimeout(() => openNivelModal(nivelId), 300);
         }
 
         async function reorderCPLevel(levelId, direction) {
+            // Criar backup automático antes da operação
+            createCPsBackup();
+            console.log("Backup automático criado antes de reordenar nível");
+            
             const currentIndex = cps.findIndex(c => c.id === levelId);
             if (currentIndex === -1) return;
 
             const otherIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
             if (otherIndex < 0 || otherIndex >= cps.length) return;
 
-            const currentLevel = cps[currentIndex];
-            const otherLevel = cps[otherIndex];
-
-            const batch = writeBatch(db);
-            const currentRef = doc(db, `artifacts/${appId}/public/data/cps`, currentLevel.id);
-            const otherRef = doc(db, `artifacts/${appId}/public/data/cps`, otherLevel.id);
-
-            batch.update(currentRef, { order: otherLevel.order });
-            batch.update(otherRef, { order: currentLevel.order });
-
-            try {
-                await batch.commit();
-            } catch (error) {
-                console.error("Error reordering levels:", error);
-                showErrorMessage("Erro", "Falha ao reordenar os níveis.");
-            }
+            // Para dados locais (demo) - trocar posições no array
+            [cps[currentIndex], cps[otherIndex]] = [cps[otherIndex], cps[currentIndex]];
+            
+            localStorage.setItem('demo-cps', JSON.stringify(cps));
+            renderCPsSection();
+            showSuccessMessage("Sucesso!", "Ordem dos níveis atualizada!");
         }
 
         function openDojoCompetitorForm(competitorId = null) {
@@ -8806,7 +9107,7 @@
                         'add-expense': openExpenseForm,
                         'view-expense': () => openExpenseForm(id),
 
-                        'delete-item': () => deleteItem(collection, id),
+                        'delete-item': () => safeDeleteItem(collection, id),
                         'close-modal': closeFormModal,
 
                         'toggle-cp-level': () => { const card = document.getElementById(`nivel-${id}`); if(card) { card.classList.toggle('open'); const icon = card.querySelector('svg'); icon.style.transform = card.classList.contains('open') ? 'rotate(180deg)' : 'rotate(0deg)'; } },
@@ -8824,6 +9125,8 @@
                         'export-vip-pef': () => exportVipPef(id),
                         'export-turma-pef': () => exportTurmaPef(id),
                         'export-cps-doc': exportCPsDoc,
+                        'backup-cps': () => exportCPsBackup(),
+                        'view-nivel': () => openNivelModal(id),
                         'add-calendar-event': openCalendarEventForm,
                         'view-calendar-event': () => viewCalendarEvent(id),
                         'edit-calendar-event': () => {
