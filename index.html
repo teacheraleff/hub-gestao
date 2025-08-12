@@ -6894,7 +6894,7 @@
                                         </div>
                                     </div>
                                     ${currentUserRole === 'admin' || currentUserRole === 'pedagogico' ? `
-                                        <div class="flex gap-1">
+                                        <div class="flex gap-1" onclick="event.stopPropagation();">
                                             <button data-action="edit-fluxo" data-id="${fluxo.id}" 
                                                     class="opacity-50 group-hover:opacity-100 transition-opacity p-1 hover:bg-stone-100 rounded"
                                                     title="Editar fluxo">
@@ -7056,6 +7056,7 @@
         }
 
         function openFluxoForm(fluxoId = null) {
+            console.log('openFluxoForm called with fluxoId:', fluxoId);
             const isEdit = !!fluxoId;
             const fluxo = isEdit ? fluxos.find(f => f.id === fluxoId) : {};
             
@@ -7232,6 +7233,7 @@
         }
 
         async function deleteFluxo(fluxoId) {
+            console.log('deleteFluxo called with fluxoId:', fluxoId);
             if (!confirm('Tem certeza que deseja excluir este fluxo? Esta ação não pode ser desfeita.')) {
                 return;
             }
