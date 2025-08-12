@@ -514,6 +514,7 @@
             calendarEvents = JSON.parse(localStorage.getItem('demo-calendar-events') || '[]');
 
             collaborators = JSON.parse(localStorage.getItem('demo-collaborators') || '[]');
+            schedules = JSON.parse(localStorage.getItem('demo-schedules') || '[]');
             expenses = JSON.parse(localStorage.getItem('demo-expenses') || '[]');
             cps = JSON.parse(localStorage.getItem('demo-cps') || '[]');
 
@@ -630,6 +631,45 @@
                     { id: 'admin1', name: 'Admin SLAP', sectors: ['admin'], email: 'admin@slapingles.com' }
                 ];
                 localStorage.setItem('demo-collaborators', JSON.stringify(collaborators));
+            }
+            
+            if (schedules.length === 0) {
+                schedules = [
+                    // Jaynni's schedule
+                    { id: 'sched1', teacher: 'Jaynni', student: 'Maria Silva', level: 'Intermediate', day: 'Segunda', startTime: '08:00', endTime: '09:00', type: 'vip' },
+                    { id: 'sched2', teacher: 'Jaynni', student: 'Eduardo Souza', level: 'Intermediate', day: 'Terça', startTime: '10:00', endTime: '11:00', type: 'vip' },
+                    { id: 'sched3', teacher: 'Jaynni', student: 'Turma Intermediate A', level: 'Intermediate', day: 'Quarta', startTime: '14:00', endTime: '15:30', type: 'turma' },
+                    { id: 'sched4', teacher: 'Jaynni', student: 'Break', level: '', day: 'Quinta', startTime: '15:00', endTime: '15:30', type: 'break' },
+                    
+                    // Felipe's schedule 
+                    { id: 'sched5', teacher: 'Felipe', student: 'Ana Costa', level: 'Advanced', day: 'Segunda', startTime: '18:00', endTime: '19:00', type: 'vip' },
+                    { id: 'sched6', teacher: 'Felipe', student: 'Turma Advanced B', level: 'Advanced', day: 'Terça', startTime: '19:00', endTime: '20:30', type: 'turma' },
+                    { id: 'sched7', teacher: 'Felipe', student: 'Break', level: '', day: 'Quarta', startTime: '18:30', endTime: '19:00', type: 'break' },
+                    
+                    // Areli's schedule
+                    { id: 'sched8', teacher: 'Areli', student: 'Carlos Lima', level: 'Beginner', day: 'Segunda', startTime: '09:00', endTime: '10:00', type: 'vip' },
+                    { id: 'sched9', teacher: 'Areli', student: 'Turma Beginner C', level: 'Beginner', day: 'Terça', startTime: '16:00', endTime: '17:30', type: 'turma' },
+                    { id: 'sched10', teacher: 'Areli', student: 'Break', level: '', day: 'Quinta', startTime: '10:00', endTime: '10:30', type: 'break' },
+                    
+                    // Victor's schedule
+                    { id: 'sched11', teacher: 'Victor', student: 'Beatriz Alves', level: 'Upper-Intermediate', day: 'Segunda', startTime: '20:00', endTime: '21:00', type: 'vip' },
+                    { id: 'sched12', teacher: 'Victor', student: 'Turma Upper-Int D', level: 'Upper-Intermediate', day: 'Quarta', startTime: '19:00', endTime: '20:30', type: 'turma' },
+                    
+                    // Anael's schedule - VAMOS VERIFICAR ESTA CONTAGEM!
+                    { id: 'sched13', teacher: 'Anael', student: 'Ricardo Ferreira', level: 'Elementary', day: 'Segunda', startTime: '07:00', endTime: '08:00', type: 'vip' },
+                    { id: 'sched14', teacher: 'Anael', student: 'Break', level: '', day: 'Segunda', startTime: '08:00', endTime: '08:30', type: 'break' },
+                    { id: 'sched15', teacher: 'Anael', student: 'Turma Elementary E', level: 'Elementary', day: 'Terça', startTime: '13:00', endTime: '14:30', type: 'turma' },
+                    { id: 'sched16', teacher: 'Anael', student: 'Break', level: '', day: 'Terça', startTime: '14:30', endTime: '15:00', type: 'break' },
+                    { id: 'sched17', teacher: 'Anael', student: 'Aula Extra', level: 'Elementary', day: 'Quarta', startTime: '11:00', endTime: '12:00', type: 'vip' },
+                    { id: 'sched18', teacher: 'Anael', student: 'Turma Elementary E', level: 'Elementary', day: 'Quinta', startTime: '13:00', endTime: '14:30', type: 'turma' },
+                    { id: 'sched19', teacher: 'Anael', student: 'Aula Individual', level: 'Elementary', day: 'Sexta', startTime: '16:00', endTime: '17:00', type: 'vip' },
+                    
+                    // Gabriella's schedule
+                    { id: 'sched20', teacher: 'Gabriella', student: 'Camila Rocha', level: 'Pre-Intermediate', day: 'Segunda', startTime: '15:00', endTime: '16:00', type: 'vip' },
+                    { id: 'sched21', teacher: 'Gabriella', student: 'Turma Pre-Int F', level: 'Pre-Intermediate', day: 'Quarta', startTime: '17:00', endTime: '18:30', type: 'turma' },
+                    { id: 'sched22', teacher: 'Gabriella', student: 'Break', level: '', day: 'Sexta', startTime: '16:00', endTime: '16:30', type: 'break' }
+                ];
+                localStorage.setItem('demo-schedules', JSON.stringify(schedules));
             }
         }
 
@@ -2282,7 +2322,7 @@
                 const isOverdue = !task.completed && deadlineDate < new Date(); 
                 const deadlineClass = isOverdue ? 'deadline-overdue' : ''; 
                 const formattedDate = formatDateBR(task.deadline); 
-                return `<div class="task-card flex items-start gap-4 ${task.completed ? 'completed' : ''}"><input type="checkbox" data-action="toggle-task" data-id="${task.id}" class="mt-1.5 h-5 w-5 rounded border-gray-300 text-yellow-500 focus:ring-yellow-400" ${task.completed ? 'checked' : ''}><div class="flex-1"><p class="text-stone-800 font-medium">${task.description}</p><div class="mt-3 flex flex-wrap justify-between items-center gap-4"><div class="flex items-center gap-2 flex-wrap"><span class="text-xs text-stone-500">Para:</span>${(task.assignedTo || []).map(name => `<span class="user-tag" style="background-color: #e5e7eb; color: #374151;">${name}</span>`).join('')}</div><div class="text-right"><span class="text-xs text-stone-500">Prazo</span><p class="deadline-text ${deadlineClass}">${formattedDate}</p></div></div></div><button class="task-delete-btn" data-action="delete-item" data-collection="tasks" data-id="${task.id}"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button></div>`; 
+                return `<div class="task-card flex items-start gap-4 ${task.completed ? 'completed' : ''}"><input type="checkbox" data-action="toggle-task" data-id="${task.id}" class="mt-1.5 h-5 w-5 rounded border-gray-300 text-yellow-500 focus:ring-yellow-400" ${task.completed ? 'checked' : ''}><div class="flex-1"><p class="text-stone-800 font-medium">${task.description}</p><div class="mt-3 flex flex-wrap justify-between items-center gap-4"><div class="flex items-center gap-2 flex-wrap"><span class="text-xs text-stone-500">Para:</span>${(task.assignedTo || []).map(name => `<span class="user-tag" style="background-color: #e5e7eb; color: #374151;">${name}</span>`).join('')}${task.assignedBy ? `<span class="text-xs text-stone-500 ml-3">Adicionado por:</span><span class="user-tag" style="background-color: #F1D24B; color: #44403c;">${task.assignedBy}</span>` : ''}</div><div class="text-right"><span class="text-xs text-stone-500">Prazo</span><p class="deadline-text ${deadlineClass}">${formattedDate}</p></div></div></div><button class="task-delete-btn" data-action="delete-item" data-collection="tasks" data-id="${task.id}"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button></div>`; 
             }).join(''); 
         }
 
@@ -2407,11 +2447,32 @@
             const actualTeacherName = findTeacherByName(teacherName) || teacherName;
             const teacherSchedules = schedules.filter(s => s.teacher === actualTeacherName && s.type !== 'break');
 
+            // Debug específico para Anael
+            if (teacherName.toLowerCase().includes('anael')) {
+                console.log('DEBUG ANAEL - Cálculo de horas:', {
+                    teacherName,
+                    actualTeacherName,
+                    allSchedules: schedules.length,
+                    anaelSchedules: teacherSchedules,
+                    allTeachers: [...new Set(schedules.map(s => s.teacher))]
+                });
+            }
+
             let totalHours = 0;
             teacherSchedules.forEach(schedule => {
                 const duration = calculateClassDuration(schedule.startTime, schedule.endTime);
                 totalHours += duration;
+                
+                // Debug para Anael
+                if (teacherName.toLowerCase().includes('anael')) {
+                    console.log(`DEBUG ANAEL - Aula: ${schedule.day} ${schedule.startTime}-${schedule.endTime}, Duração: ${duration}h`);
+                }
             });
+
+            // Log final para Anael
+            if (teacherName.toLowerCase().includes('anael')) {
+                console.log(`DEBUG ANAEL - Total final: ${totalHours} horas`);
+            }
 
             return totalHours;
         }
@@ -4038,9 +4099,13 @@
 
 
         function openTaskForm() {
+            console.log('openTaskForm called');
             clearModalHeaderButtons();
             document.getElementById('form-modal-title').textContent = "Adicionar Nova Tarefa";
-            const collaboratorOptions = collaborators.filter(c => c.sectors && (c.sectors.includes('tarefas') || c.sectors.includes('professor'))).map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+            
+            // Show all collaborators instead of filtering by sectors - more flexible
+            const collaboratorOptions = collaborators.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+            console.log('Collaborator options:', collaboratorOptions);
 
             document.getElementById('form-modal-content-area').innerHTML = `
                 <form id="form-modal-body" class="space-y-4">
@@ -4051,6 +4116,7 @@
                 </form>`;
             document.getElementById('form-modal-body').onsubmit = saveTask;
             document.getElementById('form-modal').classList.add('visible');
+            console.log('Task form modal should be visible now');
         }
         async function saveTask(event) {
             event.preventDefault();
@@ -6905,29 +6971,65 @@
             prohibitedItems: { currentPage: 1, itemsPerPage: 6 }
         };
 
-        function loadGuidelines() {
-            // Load from localStorage or initialize with sample data
-            const savedGuidelines = localStorage.getItem('slap-guidelines');
-            if (savedGuidelines) {
-                guidelines = JSON.parse(savedGuidelines);
-            } else {
+        async function loadGuidelines() {
+            try {
+                let loadedGuidelines = null;
+                
+                if (!db) {
+                    // Local storage mode
+                    const savedGuidelines = localStorage.getItem('slap-guidelines');
+                    if (savedGuidelines) {
+                        loadedGuidelines = JSON.parse(savedGuidelines);
+                    }
+                } else {
+                    // Firebase mode
+                    try {
+                        const docRef = doc(db, `artifacts/${appId}/public/data`, 'guidelines');
+                        const docSnap = await getDoc(docRef);
+                        if (docSnap.exists()) {
+                            loadedGuidelines = docSnap.data();
+                            console.log('Guidelines loaded from Firebase successfully');
+                        }
+                    } catch (firebaseError) {
+                        console.error('Error loading from Firebase:', firebaseError);
+                        // Fallback to localStorage
+                        const savedGuidelines = localStorage.getItem('slap-guidelines');
+                        if (savedGuidelines) {
+                            loadedGuidelines = JSON.parse(savedGuidelines);
+                        }
+                    }
+                }
+
+                if (loadedGuidelines) {
+                    guidelines = loadedGuidelines;
+                } else {
+                    // Default guidelines if none exist
+                    guidelines = {
+                        goodPractices: [
+                            { id: '1', title: 'Pontualidade nas Aulas', description: 'Sempre chegue às aulas com pelo menos 5 minutos de antecedência para preparar o ambiente e receber os alunos adequadamente.' },
+                            { id: '2', title: 'Feedback Construtivo', description: 'Ofereça feedback específico e encorajador aos alunos, focando em aspectos que podem ser melhorados.' },
+                            { id: '3', title: 'Material Organizado', description: 'Mantenha todos os materiais didáticos organizados e facilmente acessíveis durante as aulas.' },
+                            { id: '4', title: 'Comunicação Clara', description: 'Use linguagem simples e clara, adaptando a complexidade ao nível dos alunos.' }
+                        ],
+                        prohibitedItems: [
+                            { id: '1', title: 'Uso de Celular Durante Aulas', description: 'É proibido o uso de dispositivos móveis para fins pessoais durante o período de aula.' },
+                            { id: '2', title: 'Linguagem Inadequada', description: 'Evite o uso de gírias excessivas ou linguagem informal que possa prejudicar o aprendizado.' },
+                            { id: '3', title: 'Atraso Frequente', description: 'Atrasos constantes são inaceitáveis e prejudicam o andamento das atividades pedagógicas.' },
+                            { id: '4', title: 'Material Não Aprovado', description: 'Não utilize materiais didáticos que não tenham sido aprovados pela coordenação pedagógica.' }
+                        ]
+                    };
+                    await saveGuidelines();
+                }
+                renderGuidelines();
+            } catch (error) {
+                console.error('Error in loadGuidelines:', error);
+                // Final fallback - use defaults
                 guidelines = {
-                    goodPractices: [
-                        { id: '1', title: 'Pontualidade nas Aulas', description: 'Sempre chegue às aulas com pelo menos 5 minutos de antecedência para preparar o ambiente e receber os alunos adequadamente.' },
-                        { id: '2', title: 'Feedback Construtivo', description: 'Ofereça feedback específico e encorajador aos alunos, focando em aspectos que podem ser melhorados.' },
-                        { id: '3', title: 'Material Organizado', description: 'Mantenha todos os materiais didáticos organizados e facilmente acessíveis durante as aulas.' },
-                        { id: '4', title: 'Comunicação Clara', description: 'Use linguagem simples e clara, adaptando a complexidade ao nível dos alunos.' }
-                    ],
-                    prohibitedItems: [
-                        { id: '1', title: 'Uso de Celular Durante Aulas', description: 'É proibido o uso de dispositivos móveis para fins pessoais durante o período de aula.' },
-                        { id: '2', title: 'Linguagem Inadequada', description: 'Evite o uso de gírias excessivas ou linguagem informal que possa prejudicar o aprendizado.' },
-                        { id: '3', title: 'Atraso Frequente', description: 'Atrasos constantes são inaceitáveis e prejudicam o andamento das atividades pedagógicas.' },
-                        { id: '4', title: 'Material Não Aprovado', description: 'Não utilize materiais didáticos que não tenham sido aprovados pela coordenação pedagógica.' }
-                    ]
+                    goodPractices: [],
+                    prohibitedItems: []
                 };
-                saveGuidelines();
+                renderGuidelines();
             }
-            renderGuidelines();
         }
 
         function renderGuidelines(filter = '') {
@@ -7091,12 +7193,12 @@
             openGuidelineForm(type, realIndex);
         }
 
-        function deleteGuidelineItem(type, realIndex) {
+        async function deleteGuidelineItem(type, realIndex) {
             const itemTitle = guidelines[type][realIndex].title;
 
             if (confirm(`Tem certeza que deseja excluir "${itemTitle}"?`)) {
                 guidelines[type].splice(realIndex, 1);
-                saveGuidelines();
+                await saveGuidelines();
 
                 // Adjust current page if necessary
                 const pagination = guidelinesPagination[type];
@@ -7263,7 +7365,7 @@
             }
         }
 
-        function saveGuideline(event) {
+        async function saveGuideline(event) {
             event.preventDefault();
             
             const form = event.target;
@@ -7299,7 +7401,7 @@
                 showSuccessMessage("Sucesso!", "Diretriz adicionada com sucesso.");
             }
 
-            saveGuidelines();
+            await saveGuidelines();
             renderGuidelines(document.getElementById('guidelines-search').value);
 
             // Close modal and reset form
@@ -7536,8 +7638,22 @@
             if (navItem) navItem.click();
         };
 
-        function saveGuidelines() {
-            localStorage.setItem('slap-guidelines', JSON.stringify(guidelines));
+        async function saveGuidelines() {
+            try {
+                if (!db) {
+                    // Local storage fallback
+                    localStorage.setItem('slap-guidelines', JSON.stringify(guidelines));
+                } else {
+                    // Save to Firebase
+                    const docRef = doc(db, `artifacts/${appId}/public/data`, 'guidelines');
+                    await setDoc(docRef, guidelines);
+                    console.log('Guidelines saved to Firebase successfully');
+                }
+            } catch (error) {
+                console.error('Error saving guidelines:', error);
+                // Fallback to localStorage if Firebase fails
+                localStorage.setItem('slap-guidelines', JSON.stringify(guidelines));
+            }
         }
 
         // --- Fortune Cookie Functions ---
