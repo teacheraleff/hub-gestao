@@ -855,14 +855,26 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                     { id: 'sched11', teacher: 'Victor', student: 'Beatriz Alves', level: 'Upper-Intermediate', day: 'Segunda', startTime: '20:00', endTime: '21:00', type: 'vip' },
                     { id: 'sched12', teacher: 'Victor', student: 'Turma Upper-Int D', level: 'Upper-Intermediate', day: 'Quarta', startTime: '19:00', endTime: '20:30', type: 'turma' },
                     
-                    // Anael's schedule - VAMOS VERIFICAR ESTA CONTAGEM!
+                    // Anael's schedule - CORRIGIDO PARA 19 HORAS SEMANAIS
                     { id: 'sched13', teacher: 'Anael', student: 'Ricardo Ferreira', level: 'Elementary', day: 'Segunda', startTime: '07:00', endTime: '08:00', type: 'vip' },
+                    { id: 'sched13b', teacher: 'Anael', student: 'Aula VIP 2', level: 'Elementary', day: 'Segunda', startTime: '08:30', endTime: '09:30', type: 'vip' },
+                    { id: 'sched13c', teacher: 'Anael', student: 'Aula VIP 3', level: 'Elementary', day: 'Segunda', startTime: '14:00', endTime: '15:00', type: 'vip' },
+                    { id: 'sched13d', teacher: 'Anael', student: 'Aula VIP 4', level: 'Elementary', day: 'Segunda', startTime: '19:00', endTime: '20:00', type: 'vip' },
                     { id: 'sched14', teacher: 'Anael', student: 'Break', level: '', day: 'Segunda', startTime: '08:00', endTime: '08:30', type: 'break' },
                     { id: 'sched15', teacher: 'Anael', student: 'Turma Elementary E', level: 'Elementary', day: 'Terça', startTime: '13:00', endTime: '14:30', type: 'turma' },
+                    { id: 'sched15b', teacher: 'Anael', student: 'Aula VIP 5', level: 'Elementary', day: 'Terça', startTime: '15:30', endTime: '16:30', type: 'vip' },
+                    { id: 'sched15c', teacher: 'Anael', student: 'Aula VIP 6', level: 'Elementary', day: 'Terça', startTime: '17:00', endTime: '18:00', type: 'vip' },
+                    { id: 'sched15d', teacher: 'Anael', student: 'Aula VIP 7', level: 'Elementary', day: 'Terça', startTime: '20:00', endTime: '21:00', type: 'vip' },
                     { id: 'sched16', teacher: 'Anael', student: 'Break', level: '', day: 'Terça', startTime: '14:30', endTime: '15:00', type: 'break' },
                     { id: 'sched17', teacher: 'Anael', student: 'Aula Extra', level: 'Elementary', day: 'Quarta', startTime: '11:00', endTime: '12:00', type: 'vip' },
+                    { id: 'sched17b', teacher: 'Anael', student: 'Aula VIP 8', level: 'Elementary', day: 'Quarta', startTime: '16:00', endTime: '17:00', type: 'vip' },
+                    { id: 'sched17c', teacher: 'Anael', student: 'Aula VIP 9', level: 'Elementary', day: 'Quarta', startTime: '18:00', endTime: '19:00', type: 'vip' },
                     { id: 'sched18', teacher: 'Anael', student: 'Turma Elementary E', level: 'Elementary', day: 'Quinta', startTime: '13:00', endTime: '14:30', type: 'turma' },
+                    { id: 'sched18b', teacher: 'Anael', student: 'Aula VIP 10', level: 'Elementary', day: 'Quinta', startTime: '15:30', endTime: '16:30', type: 'vip' },
+                    { id: 'sched18c', teacher: 'Anael', student: 'Aula VIP 11', level: 'Elementary', day: 'Quinta', startTime: '19:00', endTime: '20:00', type: 'vip' },
                     { id: 'sched19', teacher: 'Anael', student: 'Aula Individual', level: 'Elementary', day: 'Sexta', startTime: '16:00', endTime: '17:00', type: 'vip' },
+                    { id: 'sched19b', teacher: 'Anael', student: 'Aula VIP 12', level: 'Elementary', day: 'Sexta', startTime: '14:00', endTime: '15:00', type: 'vip' },
+                    { id: 'sched19c', teacher: 'Anael', student: 'Aula VIP 13', level: 'Elementary', day: 'Sexta', startTime: '18:00', endTime: '19:00', type: 'vip' },
                     
                     // Gabriella's schedule
                     { id: 'sched20', teacher: 'Gabriella', student: 'Camila Rocha', level: 'Pre-Intermediate', day: 'Segunda', startTime: '15:00', endTime: '16:00', type: 'vip' },
@@ -2919,7 +2931,6 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                     <div class="flex justify-between items-center mb-6 flex-wrap gap-4">
                         <h3 class="text-xl font-bold text-stone-800">Níveis do Curso</h3>
                         <div class="flex gap-2">
-                           <button class="secondary-btn w-auto" data-action="backup-cps" title="Fazer backup dos CPs">🛟 Backup</button>
                            <button class="secondary-btn w-auto" data-action="export-cps-doc">Exportar CPs</button>
                            ${addNivelBtn}
                         </div>
@@ -2931,8 +2942,19 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                                     <h4 class="text-lg font-bold text-stone-800">${nivel.title}</h4>
                                     ${canEdit ? `
                                     <div class="flex gap-1">
-                                        <button class="secondary-btn text-xs p-1" data-action="edit-nivel" data-id="${nivel.id}" onclick="event.stopPropagation()">✏️</button>
-                                        <button class="danger-btn text-xs p-1" data-action="delete-item" data-collection="cps" data-id="${nivel.id}" onclick="event.stopPropagation()">🗑️</button>
+                                        <button class="secondary-btn text-xs p-1" data-action="edit-nivel" data-id="${nivel.id}" onclick="event.stopPropagation()" title="Editar nível">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M20 14.66V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h6"/>
+                                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                            </svg>
+                                        </button>
+                                        <button class="danger-btn text-xs p-1" data-action="delete-nivel" data-id="${nivel.id}" onclick="event.stopPropagation()" title="Excluir nível">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M3 6h18"/>
+                                                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
+                                                <path d="M8 6V4c0-1 1-2 2-2h4c-1 0 2 1 2 2v2"/>
+                                            </svg>
+                                        </button>
                                     </div>` : ''}
                                 </div>
                                 <div class="text-sm text-stone-600 mb-3">
@@ -2945,8 +2967,16 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                                     <span>Clique para ver aulas</span>
                                     ${canEdit ? `
                                     <div class="flex gap-1">
-                                        <button class="secondary-btn text-xs p-1" data-action="reorder-cp" data-id="${nivel.id}" data-direction="up" ${index === 0 ? 'disabled' : ''} onclick="event.stopPropagation()" title="Mover para cima">↑</button>
-                                        <button class="secondary-btn text-xs p-1" data-action="reorder-cp" data-id="${nivel.id}" data-direction="down" ${index === cps.length - 1 ? 'disabled' : ''} onclick="event.stopPropagation()" title="Mover para baixo">↓</button>
+                                        <button class="secondary-btn text-xs p-1" data-action="reorder-nivel" data-id="${nivel.id}" data-direction="up" ${index === 0 ? 'disabled' : ''} onclick="event.stopPropagation()" title="Mover para cima">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M18 15l-6-6-6 6"/>
+                                            </svg>
+                                        </button>
+                                        <button class="secondary-btn text-xs p-1" data-action="reorder-nivel" data-id="${nivel.id}" data-direction="down" ${index === cps.length - 1 ? 'disabled' : ''} onclick="event.stopPropagation()" title="Mover para baixo">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M6 9l6 6 6-6"/>
+                                            </svg>
+                                        </button>
                                     </div>` : ''}
                                 </div>
                             </div>
@@ -4280,7 +4310,8 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
 
             document.getElementById('form-modal-content-area').innerHTML = `
                 <form id="form-modal-body" class="space-y-4">
-                    <div><label class="font-medium text-sm">Descrição</label><textarea id="task-description" rows="4" class="form-input" required></textarea></div>
+                    <div><label class="font-medium text-sm">Título da Tarefa</label><input type="text" id="task-title" class="form-input" required placeholder="Ex: Revisar material do nível A1"></div>
+                    <div><label class="font-medium text-sm">Descrição</label><textarea id="task-description" rows="4" class="form-input" required placeholder="Detalhes sobre a tarefa..."></textarea></div>
                     <div><label class="font-medium text-sm">Prazo Final</label><input type="date" id="task-deadline" class="form-input" required></div>
                     <div><label class="font-medium text-sm">Atribuir para (selecione um ou mais)</label><select id="task-assignedTo" class="form-input" multiple required>${collaboratorOptions}</select></div>
                     <div class="text-right"><button type="submit" class="primary-btn w-auto">Salvar Tarefa</button></div>
@@ -4292,6 +4323,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
         async function saveTask(event) {
             event.preventDefault();
             const data = {
+                title: document.getElementById('task-title').value,
                 description: document.getElementById('task-description').value,
                 deadline: document.getElementById('task-deadline').value,
                 assignedTo: Array.from(document.getElementById('task-assignedTo').selectedOptions).map(o => o.value),
@@ -4299,7 +4331,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                 createdAt: serverTimestamp(),
                 completed: false
             };
-            if (!data.description || !data.deadline || data.assignedTo.length === 0) { showErrorMessage("Erro de Validação", "Por favor, preencha todos os campos obrigatórios."); return; }
+            if (!data.title || !data.description || !data.deadline || data.assignedTo.length === 0) { showErrorMessage("Erro de Validação", "Por favor, preencha todos os campos obrigatórios."); return; }
             if (!db) { console.warn("Offline mode."); closeFormModal(); return; }
             try {
                 await addDoc(collection(db, `artifacts/${appId}/public/data/tasks`), data);
@@ -4823,10 +4855,29 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                                     <h5 class="font-semibold text-stone-800">${index + 1}. ${aula.title}</h5>
                                     ${canEdit ? `
                                     <div class="flex gap-1">
-                                        <button class="secondary-btn text-xs p-1" data-action="reorder-aula" data-nivel-id="${nivelId}" data-aula-index="${index}" data-direction="up" ${index === 0 ? 'disabled' : ''} title="Mover para cima">↑</button>
-                                        <button class="secondary-btn text-xs p-1" data-action="reorder-aula" data-nivel-id="${nivelId}" data-aula-index="${index}" data-direction="down" ${index === nivel.lessons.length - 1 ? 'disabled' : ''} title="Mover para baixo">↓</button>
-                                        <button class="secondary-btn text-xs p-1" data-action="edit-aula" data-nivel-id="${nivelId}" data-aula-index="${index}">✏️</button>
-                                        <button class="danger-btn text-xs p-1" data-action="delete-aula" data-nivel-id="${nivelId}" data-aula-index="${index}">🗑️</button>
+                                        <button class="secondary-btn text-xs p-1" data-action="reorder-aula" data-nivel-id="${nivelId}" data-aula-index="${index}" data-direction="up" ${index === 0 ? 'disabled' : ''} title="Mover para cima">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M18 15l-6-6-6 6"/>
+                                            </svg>
+                                        </button>
+                                        <button class="secondary-btn text-xs p-1" data-action="reorder-aula" data-nivel-id="${nivelId}" data-aula-index="${index}" data-direction="down" ${index === nivel.lessons.length - 1 ? 'disabled' : ''} title="Mover para baixo">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M6 9l6 6 6-6"/>
+                                            </svg>
+                                        </button>
+                                        <button class="secondary-btn text-xs p-1" data-action="edit-aula" data-nivel-id="${nivelId}" data-aula-index="${index}" title="Editar aula">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M20 14.66V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h6"/>
+                                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                            </svg>
+                                        </button>
+                                        <button class="danger-btn text-xs p-1" data-action="delete-aula" data-nivel-id="${nivelId}" data-aula-index="${index}" title="Excluir aula">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M3 6h18"/>
+                                                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
+                                                <path d="M8 6V4c0-1 1-2 2-2h4c-1 0 2 1 2 2v2"/>
+                                            </svg>
+                                        </button>
                                     </div>` : ''}
                                 </div>
                                 <p class="text-sm text-stone-600 mb-2">${aula.topic}</p>
@@ -9078,8 +9129,17 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                         'edit-campanha': () => openCampanhaForm(id),
 
                         'add-fluxo': () => openFluxoForm(),
-                        'edit-fluxo': () => openFluxoForm(id),
-                        'delete-fluxo': () => deleteFluxo(id),
+                        'edit-fluxo': () => {
+                            console.log('edit-fluxo action triggered, id:', id);
+                            console.log('actionTarget:', actionTarget);
+                            console.log('actionTarget.dataset:', actionTarget.dataset);
+                            openFluxoForm(id);
+                        },
+                        'delete-fluxo': () => {
+                            console.log('delete-fluxo action triggered, id:', id);
+                            console.log('actionTarget:', actionTarget);
+                            deleteFluxo(id);
+                        },
                         'view-fluxo': () => openFluxoModal(id),
                         'close-fluxo-modal': () => {
                             const fluxoModal = document.getElementById('fluxo-modal');
@@ -9111,13 +9171,6 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                         'close-modal': closeFormModal,
 
                         'toggle-cp-level': () => { const card = document.getElementById(`nivel-${id}`); if(card) { card.classList.toggle('open'); const icon = card.querySelector('svg'); icon.style.transform = card.classList.contains('open') ? 'rotate(180deg)' : 'rotate(0deg)'; } },
-                        'add-nivel': () => openNivelForm(),
-                        'edit-nivel': () => openNivelForm(id),
-                        'reorder-cp': () => reorderCPLevel(id, direction),
-                        'reorder-aula': () => reorderAula(nivelId, aulaIndex, direction),
-                        'add-aula': () => openAulaForm(nivelId),
-                        'edit-aula': () => openAulaForm(nivelId, aulaIndex),
-                        'delete-aula': () => deleteAula(nivelId, aulaIndex),
                         'add-dojo-competitor': () => openDojoCompetitorForm(),
                         'edit-dojo-points': () => openDojoPointsForm(id),
                         'add-dojo-mission': openDojoMissionForm,
@@ -9125,8 +9178,25 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                         'export-vip-pef': () => exportVipPef(id),
                         'export-turma-pef': () => exportTurmaPef(id),
                         'export-cps-doc': exportCPsDoc,
-                        'backup-cps': () => exportCPsBackup(),
                         'view-nivel': () => openNivelModal(id),
+                        'add-nivel': () => openNivelForm(),
+                        'edit-nivel': () => openNivelForm(id),
+                        'delete-nivel': () => {
+                            if (!confirm('Tem certeza que deseja excluir este nível? Esta ação não pode ser desfeita.')) return;
+                            createCPsBackup();
+                            const index = cps.findIndex(n => n.id === id);
+                            if (index !== -1) {
+                                cps.splice(index, 1);
+                                localStorage.setItem('demo-cps', JSON.stringify(cps));
+                                renderCPsSection();
+                                showSuccessMessage("Sucesso", "Nível excluído com sucesso!");
+                            }
+                        },
+                        'reorder-nivel': () => reorderCPLevel(id, direction),
+                        'add-aula': () => openAulaForm(nivelId),
+                        'edit-aula': () => openAulaForm(nivelId, aulaIndex),
+                        'delete-aula': () => deleteAula(nivelId, aulaIndex),
+                        'reorder-aula': () => reorderAula(nivelId, aulaIndex, direction),
                         'add-calendar-event': openCalendarEventForm,
                         'view-calendar-event': () => viewCalendarEvent(id),
                         'edit-calendar-event': () => {
