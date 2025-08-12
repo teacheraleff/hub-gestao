@@ -108,8 +108,9 @@
             cursor: pointer; 
         }
         .form-input:disabled { background-color: #f3f4f6; cursor: not-allowed; }
-        .primary-btn { background-color: #F1D24B; color: #44403c; padding: 0.75rem 1.5rem; border-radius: 0.375rem; font-weight: 600; transition: background-color 0.2s; width: 100%; border: none; cursor: pointer; }
+        .primary-btn { background-color: #F1D24B; color: #44403c; padding: 0.75rem 1.5rem; border-radius: 0.375rem; font-weight: 600; transition: background-color 0.2s; border: none; cursor: pointer; display: inline-flex; align-items: center; white-space: nowrap; }
         .primary-btn:hover { background-color: #eab308; }
+        .primary-btn.full-width { width: 100%; justify-content: center; }
         .secondary-btn { background-color: #f3f4f6; color: #4b5563; border: 1px solid #d1d5db; padding: 0.5rem 1rem; border-radius: 0.375rem; font-weight: 600; transition: all 0.2s; }
         .secondary-btn:hover { background-color: #e5e7eb; }
         .secondary-btn.active { background-color: #F1D24B; color: #44403c; border-color: #F1D24B;}
@@ -468,7 +469,7 @@
         const pendingView = document.getElementById('pending-view');
 
         let db, auth, storage, userId, currentUserName, currentUserRole;
-        let usersData = [], students = [], turmas = [], vips = [], attendance = [], tasks = [], events = [], collaborators = [], schedules = [], expenses = [], cps = [], dojoRanking = [], dojoMissions = [];
+        let usersData = [], students = [], turmas = [], vips = [], attendance = [], tasks = [], events = [], collaborators = [], schedules = [], expenses = [], cps = [], dojoRanking = [], dojoMissions = [], fluxos = [];
         let userProfiles = {};
         let monthlyHighlight = {
             name: 'João Silva',
@@ -515,6 +516,7 @@
 
             collaborators = JSON.parse(localStorage.getItem('demo-collaborators') || '[]');
             schedules = JSON.parse(localStorage.getItem('demo-schedules') || '[]');
+            fluxos = JSON.parse(localStorage.getItem('demo-fluxos') || '[]');
             expenses = JSON.parse(localStorage.getItem('demo-expenses') || '[]');
             cps = JSON.parse(localStorage.getItem('demo-cps') || '[]');
 
@@ -671,6 +673,113 @@
                 ];
                 localStorage.setItem('demo-schedules', JSON.stringify(schedules));
             }
+            
+            if (fluxos.length === 0) {
+                fluxos = [
+                    {
+                        id: 'fluxo1',
+                        titulo: 'Teste de Nível',
+                        setor: 'PEDAGÓGICO',
+                        descricao: 'Processo completo para avaliação do nível de inglês dos candidatos',
+                        passos: [
+                            'Recebimento da solicitação de teste via WhatsApp ou site',
+                            'Agendamento do teste com o candidato',
+                            'Aplicação do teste oral (15-20 minutos)',
+                            'Aplicação do teste escrito (20-30 minutos)',
+                            'Análise dos resultados pelo coordenador pedagógico',
+                            'Elaboração do relatório de nível',
+                            'Envio do resultado para o candidato',
+                            'Direcionamento para a modalidade adequada'
+                        ],
+                        responsavel: 'Coordenação Pedagógica',
+                        prazo: '2 dias úteis',
+                        documentos: ['Formulário de teste', 'Relatório de avaliação', 'E-mail padrão de resultado']
+                    },
+                    {
+                        id: 'fluxo2',
+                        titulo: 'Matrícula de Novo Aluno',
+                        setores: ['COMERCIAL', 'PEDAGÓGICO', 'FINANCEIRO'],
+                        setor: 'COMERCIAL',
+                        descricao: 'Processo de matrícula e integração de novos estudantes',
+                        passos: [
+                            'Primeiro contato e apresentação da escola',
+                            'Teste de nível (se necessário)',
+                            'Apresentação das modalidades disponíveis',
+                            'Negociação de valores e condições',
+                            'Preenchimento da ficha de matrícula',
+                            'Assinatura do contrato',
+                            'Processamento do pagamento',
+                            'Cadastro no sistema',
+                            'Encaminhamento para o professor responsável',
+                            'Agendamento da primeira aula'
+                        ],
+                        responsavel: 'Consultores Comerciais',
+                        prazo: '3 dias úteis',
+                        documentos: ['Ficha de matrícula', 'Contrato', 'Comprovante de pagamento']
+                    },
+                    {
+                        id: 'fluxo3',
+                        titulo: 'Reagendamento de Aulas',
+                        setor: 'PEDAGÓGICO',
+                        descricao: 'Processo para reagendamento de aulas VIP e em grupo',
+                        passos: [
+                            'Solicitação de reagendamento pelo aluno',
+                            'Verificação da disponibilidade do professor',
+                            'Consulta à agenda geral da escola',
+                            'Proposta de novos horários disponíveis',
+                            'Confirmação com o aluno',
+                            'Atualização na agenda do professor',
+                            'Atualização no sistema de controle',
+                            'Confirmação por WhatsApp/e-mail'
+                        ],
+                        responsavel: 'Coordenação Pedagógica',
+                        prazo: '24 horas',
+                        documentos: ['Comprovante de reagendamento', 'Atualização de agenda']
+                    },
+                    {
+                        id: 'fluxo4',
+                        titulo: 'Processo de Pagamento',
+                        setor: 'FINANCEIRO',
+                        descricao: 'Fluxo completo de processamento e controle de pagamentos',
+                        passos: [
+                            'Recebimento da confirmação de pagamento',
+                            'Verificação no sistema bancário',
+                            'Conciliação com a fatura emitida',
+                            'Atualização do status no sistema',
+                            'Baixa da cobrança (se aplicável)',
+                            'Envio de comprovante para o aluno',
+                            'Registro na planilha de controle financeiro',
+                            'Arquivamento dos documentos'
+                        ],
+                        responsavel: 'Setor Financeiro',
+                        prazo: '1 dia útil',
+                        documentos: ['Comprovante de pagamento', 'Relatório financeiro', 'Recibo']
+                    },
+                    {
+                        id: 'fluxo5',
+                        titulo: 'Campanha de Marketing',
+                        setores: ['MARKETING', 'COMERCIAL'],
+                        setor: 'MARKETING',
+                        descricao: 'Processo de criação e execução de campanhas publicitárias',
+                        passos: [
+                            'Definição do objetivo da campanha',
+                            'Análise do público-alvo',
+                            'Criação do briefing criativo',
+                            'Desenvolvimento do conceito',
+                            'Produção de materiais (posts, stories, vídeos)',
+                            'Aprovação interna dos materiais',
+                            'Programação e publicação',
+                            'Monitoramento de métricas',
+                            'Relatório de resultados',
+                            'Análise de ROI e ajustes futuros'
+                        ],
+                        responsavel: 'Equipe de Marketing',
+                        prazo: '7-14 dias',
+                        documentos: ['Briefing', 'Materiais criativos', 'Relatório de performance']
+                    }
+                ];
+                localStorage.setItem('demo-fluxos', JSON.stringify(fluxos));
+            }
         }
 
         // --- FIREBASE INITIALIZATION ---
@@ -806,6 +915,7 @@
             }, (ref) => query(ref, orderBy("order")));
             getCollectionListener('dojo_ranking', dojoRanking, renderDojoSection);
             getCollectionListener('dojo_missions', dojoMissions, renderDojoSection, (ref) => query(ref, orderBy("points", "desc")));
+            getCollectionListener('fluxos', fluxos, renderFluxosSection);
 
             
             // Load monthly highlight with real-time updates
@@ -858,7 +968,7 @@
                         </div>
                         <p id="login-error" class="text-sm text-red-600 text-center"></p>
                         <div>
-                            <button type="submit" class="primary-btn">Entrar</button>
+                            <button type="submit" class="primary-btn full-width">Entrar</button>
                         </div>
                     </form>
                     <p class="text-sm text-center text-stone-600">
@@ -6860,6 +6970,454 @@
         // Make it globally accessible for console usage
         window.bulkImportGuidelines = bulkImportGuidelines;
 
+        function renderFluxosSection() {
+            document.getElementById('main-title').textContent = 'Fluxos';
+            document.getElementById('main-description').textContent = 'Processos organizacionais da empresa';
+            
+            const setorColors = {
+                'PEDAGÓGICO': 'bg-green-100 text-green-800',
+                'COMERCIAL': 'bg-blue-100 text-blue-800',
+                'FINANCEIRO': 'bg-yellow-100 text-yellow-800',
+                'MARKETING': 'bg-purple-100 text-purple-800',
+                'ADMINISTRATIVO': 'bg-gray-100 text-gray-800'
+            };
+
+            const fluxosFiltered = fluxos.filter(fluxo => fluxo && fluxo.id);
+            
+            contentArea.innerHTML = `
+                <div class="space-y-6">
+                    <div class="flex flex-col sm:flex-row justify-between items-start gap-4">
+                        <div class="flex-1">
+                            <input type="text" id="fluxos-search" placeholder="Buscar fluxos..." 
+                                   class="form-input max-w-sm" onkeyup="filterFluxos()">
+                        </div>
+                        ${currentUserRole === 'admin' || currentUserRole === 'pedagogico' || currentUserRole === 'ap' ? `
+                            <button data-action="add-fluxo" class="primary-btn">
+                                <svg class="mr-2" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                </svg>
+                                Adicionar Fluxo
+                            </button>
+                        ` : ''}
+                    </div>
+
+                    <div id="fluxos-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        ${fluxosFiltered.length === 0 ? `
+                            <div class="col-span-full text-center py-12">
+                                <svg class="mx-auto h-12 w-12 text-stone-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                                    <polyline points="7.5 4.21 12 6.81 16.5 4.21"></polyline>
+                                    <polyline points="7.5 19.79 7.5 14.6 3 12"></polyline>
+                                    <polyline points="21 12 16.5 14.6 16.5 19.79"></polyline>
+                                </svg>
+                                <h3 class="mt-2 text-lg font-medium text-stone-600">Nenhum fluxo encontrado</h3>
+                                <p class="mt-1 text-stone-500">Comece criando o primeiro fluxo de processo da empresa.</p>
+                            </div>
+                        ` : fluxosFiltered.map(fluxo => `
+                            <div class="base-card group cursor-pointer" data-action="view-fluxo" data-id="${fluxo.id}">
+                                <div class="flex items-start justify-between mb-3">
+                                    <div class="flex-1">
+                                        <h3 class="font-semibold text-stone-800 group-hover:text-stone-900 transition-colors">
+                                            ${fluxo.titulo}
+                                        </h3>
+                                        <div class="flex flex-wrap gap-1 mt-2">
+                                            ${(fluxo.setores || [fluxo.setor]).filter(s => s).map(setor => `
+                                                <span class="px-2 py-1 text-xs font-medium rounded-full ${setorColors[setor] || setorColors['ADMINISTRATIVO']}">
+                                                    ${setor}
+                                                </span>
+                                            `).join('')}
+                                        </div>
+                                    </div>
+                                    ${currentUserRole === 'admin' || currentUserRole === 'pedagogico' || currentUserRole === 'ap' ? `
+                                        <button data-action="edit-fluxo" data-id="${fluxo.id}" 
+                                                class="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-stone-100 rounded"
+                                                onclick="event.stopPropagation()" title="Editar fluxo">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M20 14.66V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h6M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                            </svg>
+                                        </button>
+                                    ` : ''}
+                                </div>
+                                
+                                <p class="text-sm text-stone-600 mb-3 line-clamp-2">
+                                    ${fluxo.descricao}
+                                </p>
+                                
+                                <div class="flex items-center justify-between text-xs text-stone-500">
+                                    <div class="flex items-center">
+                                        <svg class="mr-1" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                                        </svg>
+                                        ${fluxo.passos ? fluxo.passos.length : 0} passos
+                                    </div>
+                                    <div class="flex items-center">
+                                        <svg class="mr-1" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <circle cx="12" cy="12" r="10"></circle>
+                                            <polyline points="12,6 12,12 16,14"></polyline>
+                                        </svg>
+                                        ${fluxo.prazo || 'Não definido'}
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <!-- Modal para visualização detalhada de fluxo -->
+                <div id="fluxo-modal" class="modal-overlay">
+                    <div class="modal-content max-w-4xl">
+                        <div class="modal-header">
+                            <h4 id="fluxo-modal-title">Detalhes do Fluxo</h4>
+                            <button class="modal-close-btn" data-action="close-fluxo-modal">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                                </svg>
+                            </button>
+                        </div>
+                        <div id="fluxo-modal-content"></div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function filterFluxos() {
+            const searchTerm = document.getElementById('fluxos-search').value.toLowerCase();
+            const container = document.getElementById('fluxos-container');
+            const cards = container.querySelectorAll('.base-card');
+            
+            cards.forEach(card => {
+                const text = card.textContent.toLowerCase();
+                card.style.display = text.includes(searchTerm) ? 'block' : 'none';
+            });
+        }
+
+        function openFluxoModal(fluxoId) {
+            const fluxo = fluxos.find(f => f.id === fluxoId);
+            if (!fluxo) return;
+
+            const setorColors = {
+                'PEDAGÓGICO': 'bg-green-100 text-green-800',
+                'COMERCIAL': 'bg-blue-100 text-blue-800',
+                'FINANCEIRO': 'bg-yellow-100 text-yellow-800',
+                'MARKETING': 'bg-purple-100 text-purple-800',
+                'ADMINISTRATIVO': 'bg-gray-100 text-gray-800'
+            };
+
+            document.getElementById('fluxo-modal-title').textContent = fluxo.titulo;
+            document.getElementById('fluxo-modal-content').innerHTML = `
+                <div class="space-y-6">
+                    <div class="flex flex-wrap items-center gap-4">
+                        <div class="flex flex-wrap gap-2">
+                            ${(fluxo.setores || [fluxo.setor]).filter(s => s).map(setor => `
+                                <span class="px-3 py-1 text-sm font-medium rounded-full ${setorColors[setor] || setorColors['ADMINISTRATIVO']}">
+                                    ${setor}
+                                </span>
+                            `).join('')}
+                        </div>
+                        <div class="text-sm text-stone-600">
+                            <strong>Responsável:</strong> ${fluxo.responsavel || 'Não definido'}
+                        </div>
+                        <div class="text-sm text-stone-600">
+                            <strong>Prazo:</strong> ${fluxo.prazo || 'Não definido'}
+                        </div>
+                    </div>
+
+                    <div>
+                        <h5 class="text-lg font-semibold text-stone-800 mb-2">Descrição</h5>
+                        <p class="text-stone-600">${fluxo.descricao}</p>
+                    </div>
+
+                    <div>
+                        <h5 class="text-lg font-semibold text-stone-800 mb-4">Passos do Processo</h5>
+                        <div class="space-y-3">
+                            ${fluxo.passos ? fluxo.passos.map((passo, index) => `
+                                <div class="flex items-start space-x-3 p-3 bg-stone-50 rounded-lg">
+                                    <div class="flex-shrink-0 w-8 h-8 bg-[#F1D24B] text-stone-800 rounded-full flex items-center justify-center text-sm font-semibold">
+                                        ${index + 1}
+                                    </div>
+                                    <div class="flex-1">
+                                        <p class="text-stone-700">${passo}</p>
+                                    </div>
+                                </div>
+                            `).join('') : '<p class="text-stone-500">Nenhum passo definido</p>'}
+                        </div>
+                    </div>
+
+                    ${fluxo.documentos && fluxo.documentos.length > 0 ? `
+                        <div>
+                            <h5 class="text-lg font-semibold text-stone-800 mb-3">Documentos Necessários</h5>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                ${fluxo.documentos.map(doc => `
+                                    <div class="flex items-center space-x-2 p-2 bg-stone-50 rounded-lg">
+                                        <svg class="w-4 h-4 text-stone-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                            <polyline points="14,2 14,8 20,8"></polyline>
+                                        </svg>
+                                        <span class="text-sm text-stone-700">${doc}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+
+            document.getElementById('fluxo-modal').classList.add('visible');
+        }
+
+        function openFluxoForm(fluxoId = null) {
+            const isEdit = !!fluxoId;
+            const fluxo = isEdit ? fluxos.find(f => f.id === fluxoId) : {};
+            
+            const modalTitle = isEdit ? 'Editar Fluxo' : 'Adicionar Fluxo';
+            
+            document.getElementById('form-modal-title').textContent = modalTitle;
+            document.getElementById('form-modal-content-area').innerHTML = `
+                <form id="fluxo-form" class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="font-medium text-sm">Título do Fluxo</label>
+                            <input type="text" id="fluxo-titulo" value="${fluxo.titulo || ''}" class="form-input" required>
+                        </div>
+                        <div>
+                            <label class="font-medium text-sm">Setores (selecione um ou mais)</label>
+                            <div class="grid grid-cols-2 gap-3 mt-2">
+                                <div class="flex items-center">
+                                    <input type="checkbox" id="setor-pedagogico" value="PEDAGÓGICO" 
+                                           ${(fluxo.setores && fluxo.setores.includes('PEDAGÓGICO')) || fluxo.setor === 'PEDAGÓGICO' ? 'checked' : ''} 
+                                           class="h-4 w-4 rounded setor-checkbox">
+                                    <label for="setor-pedagogico" class="ml-2 text-sm">Pedagógico</label>
+                                </div>
+                                <div class="flex items-center">
+                                    <input type="checkbox" id="setor-comercial" value="COMERCIAL" 
+                                           ${(fluxo.setores && fluxo.setores.includes('COMERCIAL')) || fluxo.setor === 'COMERCIAL' ? 'checked' : ''} 
+                                           class="h-4 w-4 rounded setor-checkbox">
+                                    <label for="setor-comercial" class="ml-2 text-sm">Comercial</label>
+                                </div>
+                                <div class="flex items-center">
+                                    <input type="checkbox" id="setor-financeiro" value="FINANCEIRO" 
+                                           ${(fluxo.setores && fluxo.setores.includes('FINANCEIRO')) || fluxo.setor === 'FINANCEIRO' ? 'checked' : ''} 
+                                           class="h-4 w-4 rounded setor-checkbox">
+                                    <label for="setor-financeiro" class="ml-2 text-sm">Financeiro</label>
+                                </div>
+                                <div class="flex items-center">
+                                    <input type="checkbox" id="setor-marketing" value="MARKETING" 
+                                           ${(fluxo.setores && fluxo.setores.includes('MARKETING')) || fluxo.setor === 'MARKETING' ? 'checked' : ''} 
+                                           class="h-4 w-4 rounded setor-checkbox">
+                                    <label for="setor-marketing" class="ml-2 text-sm">Marketing</label>
+                                </div>
+                                <div class="flex items-center">
+                                    <input type="checkbox" id="setor-administrativo" value="ADMINISTRATIVO" 
+                                           ${(fluxo.setores && fluxo.setores.includes('ADMINISTRATIVO')) || fluxo.setor === 'ADMINISTRATIVO' ? 'checked' : ''} 
+                                           class="h-4 w-4 rounded setor-checkbox">
+                                    <label for="setor-administrativo" class="ml-2 text-sm">Administrativo</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="font-medium text-sm">Descrição</label>
+                        <textarea id="fluxo-descricao" rows="3" class="form-input" placeholder="Descreva o objetivo e contexto deste fluxo...">${fluxo.descricao || ''}</textarea>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="font-medium text-sm">Responsável</label>
+                            <input type="text" id="fluxo-responsavel" value="${fluxo.responsavel || ''}" class="form-input" placeholder="Ex: Coordenação Pedagógica">
+                        </div>
+                        <div>
+                            <label class="font-medium text-sm">Prazo</label>
+                            <input type="text" id="fluxo-prazo" value="${fluxo.prazo || ''}" class="form-input" placeholder="Ex: 2 dias úteis">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="font-medium text-sm">Passos do Processo</label>
+                        <div id="passos-container" class="space-y-2">
+                            ${fluxo.passos ? fluxo.passos.map((passo, index) => `
+                                <div class="flex items-center space-x-2">
+                                    <span class="text-sm text-stone-500 w-6">${index + 1}.</span>
+                                    <input type="text" value="${passo}" class="form-input flex-1 passo-input" placeholder="Descreva este passo do processo">
+                                    <button type="button" onclick="removePasso(this)" class="text-red-600 hover:text-red-800 p-1">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                                        </svg>
+                                    </button>
+                                </div>
+                            `).join('') : ''}
+                        </div>
+                        <button type="button" onclick="addPasso()" class="mt-2 text-sm text-[#F1D24B] hover:text-[#eab308] font-medium">
+                            + Adicionar Passo
+                        </button>
+                    </div>
+
+                    <div>
+                        <label class="font-medium text-sm">Documentos Necessários</label>
+                        <div id="documentos-container" class="space-y-2">
+                            ${fluxo.documentos ? fluxo.documentos.map(doc => `
+                                <div class="flex items-center space-x-2">
+                                    <input type="text" value="${doc}" class="form-input flex-1 documento-input" placeholder="Nome do documento">
+                                    <button type="button" onclick="removeDocumento(this)" class="text-red-600 hover:text-red-800 p-1">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                                        </svg>
+                                    </button>
+                                </div>
+                            `).join('') : ''}
+                        </div>
+                        <button type="button" onclick="addDocumento()" class="mt-2 text-sm text-[#F1D24B] hover:text-[#eab308] font-medium">
+                            + Adicionar Documento
+                        </button>
+                    </div>
+
+                    <div class="flex justify-end gap-2 pt-4">
+                        <button type="button" data-action="close-modal" class="secondary-btn">Cancelar</button>
+                        <button type="submit" class="primary-btn full-width">${isEdit ? 'Atualizar' : 'Criar'} Fluxo</button>
+                    </div>
+                </form>
+            `;
+
+            document.getElementById('form-modal').classList.add('visible');
+
+            // Form submission handler
+            document.getElementById('fluxo-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                saveFluxo(fluxoId);
+            });
+        }
+
+        function addPasso() {
+            const container = document.getElementById('passos-container');
+            const index = container.children.length + 1;
+            const div = document.createElement('div');
+            div.className = 'flex items-center space-x-2';
+            div.innerHTML = `
+                <span class="text-sm text-stone-500 w-6">${index}.</span>
+                <input type="text" class="form-input flex-1 passo-input" placeholder="Descreva este passo do processo">
+                <button type="button" onclick="removePasso(this)" class="text-red-600 hover:text-red-800 p-1">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            `;
+            container.appendChild(div);
+            updatePassoNumbers();
+        }
+
+        function removePasso(button) {
+            button.parentElement.remove();
+            updatePassoNumbers();
+        }
+
+        function updatePassoNumbers() {
+            const container = document.getElementById('passos-container');
+            Array.from(container.children).forEach((child, index) => {
+                const span = child.querySelector('span');
+                if (span) span.textContent = `${index + 1}.`;
+            });
+        }
+
+        function addDocumento() {
+            const container = document.getElementById('documentos-container');
+            const div = document.createElement('div');
+            div.className = 'flex items-center space-x-2';
+            div.innerHTML = `
+                <input type="text" class="form-input flex-1 documento-input" placeholder="Nome do documento">
+                <button type="button" onclick="removeDocumento(this)" class="text-red-600 hover:text-red-800 p-1">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            `;
+            container.appendChild(div);
+        }
+
+        function removeDocumento(button) {
+            button.parentElement.remove();
+        }
+
+        async function saveFluxo(fluxoId = null) {
+            const titulo = document.getElementById('fluxo-titulo').value.trim();
+            const setores = Array.from(document.querySelectorAll('.setor-checkbox:checked')).map(cb => cb.value);
+            const descricao = document.getElementById('fluxo-descricao').value.trim();
+            const responsavel = document.getElementById('fluxo-responsavel').value.trim();
+            const prazo = document.getElementById('fluxo-prazo').value.trim();
+
+            const passos = Array.from(document.querySelectorAll('.passo-input'))
+                .map(input => input.value.trim())
+                .filter(passo => passo);
+
+            const documentos = Array.from(document.querySelectorAll('.documento-input'))
+                .map(input => input.value.trim())
+                .filter(doc => doc);
+
+            if (!titulo || setores.length === 0) {
+                playErrorSound();
+                alert('Por favor, preencha pelo menos o título e selecione ao menos um setor do fluxo.');
+                return;
+            }
+
+            const fluxoData = {
+                titulo,
+                setores,
+                setor: setores[0], // Manter compatibilidade com fluxos antigos
+                descricao,
+                responsavel,
+                prazo,
+                passos,
+                documentos,
+                updatedAt: new Date().toISOString()
+            };
+
+            try {
+                if (fluxoId) {
+                    // Update existing fluxo
+                    const index = fluxos.findIndex(f => f.id === fluxoId);
+                    if (index !== -1) {
+                        fluxos[index] = { ...fluxos[index], ...fluxoData };
+                        
+                        if (db) {
+                            const fluxoRef = doc(db, `artifacts/${appId}/public/data/fluxos`, fluxoId);
+                            await updateDoc(fluxoRef, fluxoData);
+                        }
+                        
+                        localStorage.setItem('demo-fluxos', JSON.stringify(fluxos));
+                    }
+                } else {
+                    // Create new fluxo
+                    const newFluxo = {
+                        id: 'fluxo-' + Date.now(),
+                        ...fluxoData,
+                        createdAt: new Date().toISOString()
+                    };
+
+                    fluxos.push(newFluxo);
+                    
+                    if (db) {
+                        const fluxosRef = collection(db, `artifacts/${appId}/public/data/fluxos`);
+                        await addDoc(fluxosRef, newFluxo);
+                    }
+                    
+                    localStorage.setItem('demo-fluxos', JSON.stringify(fluxos));
+                }
+
+                playSuccessSound();
+                closeFormModal();
+                renderFluxosSection();
+            } catch (error) {
+                console.error('Erro ao salvar fluxo:', error);
+                playErrorSound();
+                alert('Erro ao salvar o fluxo. Tente novamente.');
+            }
+        }
+
         function renderDiretrizesSection() {
             document.getElementById('main-title').textContent = 'Diretrizes SLAP';
             const contentArea = document.getElementById('content-area');
@@ -8035,6 +8593,7 @@
                 { key: 'calendario-marketing', label: 'Calendário Marketing', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>', roles: ['admin', 'ap', 'am', 'financeiro', 'pedagogico'] },
                 { key: 'desafio-pedagogico', label: 'Desafio Pedagógico', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>', roles: ['admin', 'pedagogico', 'teacher', 'ap'] },
                 { key: 'diretrizes', label: 'Diretrizes', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14,2 14,8 20,8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10,9 9,9 8,9"></polyline></svg>', roles: ['admin', 'teacher', 'pedagogico', 'ap'] },
+                { key: 'fluxos', label: 'Fluxos', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="7.5 4.21 12 6.81 16.5 4.21"></polyline><polyline points="7.5 19.79 7.5 14.6 3 12"></polyline><polyline points="21 12 16.5 14.6 16.5 19.79"></polyline><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>', roles: ['admin', 'pedagogico', 'ap', 'am', 'financeiro'] },
                 { key: 'tarefas', label: 'Tarefas', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>', roles: ['admin', 'am', 'ap', 'pedagogico', 'financeiro', 'teacher'] },
                 { key: 'cps', label: 'CPs', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>', roles: ['admin', 'pedagogico', 'ap'] },
                 { key: 'campanhas', label: 'Campanhas', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>', roles: ['admin', 'am', 'ap', 'pedagogico'] },
@@ -8208,7 +8767,7 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            const pageRenderers = { 'inicio': renderInicioSection, 'alunos': renderAlunosSection, 'turmas': renderTurmasSection, 'vips': renderVipsSection, 'campanhas': renderCampanhasSection, 'tarefas': renderTarefasSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection, 'colaboradores': renderColaboradoresSection, 'cps': renderCPsSection, 'dojo': renderDojoSection, 'calendario-pedagogico': renderCalendarioPedagogicoSection, 'calendario-marketing': renderCalendarioMarketingSection, 'desafio-pedagogico': renderDesafioPedagogicoSection, 'diretrizes': renderDiretrizesSection };
+            const pageRenderers = { 'inicio': renderInicioSection, 'alunos': renderAlunosSection, 'turmas': renderTurmasSection, 'vips': renderVipsSection, 'campanhas': renderCampanhasSection, 'tarefas': renderTarefasSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection, 'colaboradores': renderColaboradoresSection, 'cps': renderCPsSection, 'dojo': renderDojoSection, 'calendario-pedagogico': renderCalendarioPedagogicoSection, 'calendario-marketing': renderCalendarioMarketingSection, 'desafio-pedagogico': renderDesafioPedagogicoSection, 'diretrizes': renderDiretrizesSection, 'fluxos': renderFluxosSection };
 
             document.body.addEventListener('click', (event) => {
                 // Close modals when clicking overlay or close button
@@ -8223,6 +8782,10 @@
                 }
                 if (event.target.matches('.modal-overlay') || event.target.matches('[data-action="close-challenge-modal"]')) {
                     document.getElementById('challenge-edit-modal').classList.remove('visible');
+                }
+                if (event.target.matches('.modal-overlay') || event.target.matches('[data-action="close-fluxo-modal"]')) {
+                    const fluxoModal = document.getElementById('fluxo-modal');
+                    if (fluxoModal) fluxoModal.classList.remove('visible');
                 }
 
                 const navTarget = event.target.closest('.nav-item');
@@ -8285,6 +8848,14 @@
                         },
                         'view-campanha': () => openCampanhaModal(id),
                         'edit-campanha': () => openCampanhaForm(id),
+
+                        'add-fluxo': () => openFluxoForm(),
+                        'edit-fluxo': () => openFluxoForm(id),
+                        'view-fluxo': () => openFluxoModal(id),
+                        'close-fluxo-modal': () => {
+                            const fluxoModal = document.getElementById('fluxo-modal');
+                            if (fluxoModal) fluxoModal.classList.remove('visible');
+                        },
 
                         'add-task': openTaskForm,
                         'add-collaborator': () => openCollaboratorForm(),
