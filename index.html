@@ -515,7 +515,7 @@
         }
 
         // Sistema de Backup dos CPs para proteger dados do usuário
-        function createCPsBackup() {
+        window.createCPsBackup = function() {
             const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
             const currentCps = localStorage.getItem('demo-cps');
             
@@ -3041,13 +3041,13 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                                     <h4 class="text-lg font-bold text-stone-800">${nivel.title}</h4>
                                     ${canEdit ? `
                                     <div class="flex gap-1">
-                                        <button class="secondary-btn text-xs p-1" data-action="edit-nivel" data-id="${nivel.id}" onclick="event.stopPropagation()" title="Editar nível">
+                                        <button class="secondary-btn text-xs p-1" data-action="edit-nivel" data-id="${nivel.id}" onclick="event.stopPropagation(); openNivelForm('${nivel.id}');" title="Editar nível">
                                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                                 <path d="M20 14.66V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h6"/>
                                                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                                             </svg>
                                         </button>
-                                        <button class="danger-btn text-xs p-1" data-action="delete-nivel" data-id="${nivel.id}" onclick="event.stopPropagation()" title="Excluir nível">
+                                        <button class="danger-btn text-xs p-1" data-action="delete-nivel" data-id="${nivel.id}" onclick="event.stopPropagation(); if(confirm('Tem certeza que deseja excluir este nível? Esta ação não pode ser desfeita.')) { createCPsBackup(); const index = cps.findIndex(n => n.id === '${nivel.id}'); if (index !== -1) { cps.splice(index, 1); localStorage.setItem('demo-cps', JSON.stringify(cps)); renderCPsSection(); showSuccessMessage('Sucesso', 'Nível excluído com sucesso!'); } }" title="Excluir nível">
                                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                                 <path d="M3 6h18"/>
                                                 <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
@@ -3069,12 +3069,12 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                                     <span>Clique para ver aulas</span>
                                     ${canEdit ? `
                                     <div class="flex gap-1">
-                                        <button class="secondary-btn text-xs p-1" data-action="reorder-nivel" data-id="${nivel.id}" data-direction="up" ${index === 0 ? 'disabled' : ''} onclick="event.stopPropagation()" title="Mover para cima">
+                                        <button class="secondary-btn text-xs p-1" data-action="reorder-nivel" data-id="${nivel.id}" data-direction="up" ${index === 0 ? 'disabled' : ''} onclick="event.stopPropagation(); reorderCPLevel('${nivel.id}', 'up');" title="Mover para cima">
                                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                                 <path d="M18 15l-6-6-6 6"/>
                                             </svg>
                                         </button>
-                                        <button class="secondary-btn text-xs p-1" data-action="reorder-nivel" data-id="${nivel.id}" data-direction="down" ${index === cps.length - 1 ? 'disabled' : ''} onclick="event.stopPropagation()" title="Mover para baixo">
+                                        <button class="secondary-btn text-xs p-1" data-action="reorder-nivel" data-id="${nivel.id}" data-direction="down" ${index === cps.length - 1 ? 'disabled' : ''} onclick="event.stopPropagation(); reorderCPLevel('${nivel.id}', 'down');" title="Mover para baixo">
                                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                                 <path d="M6 9l6 6 6-6"/>
                                             </svg>
@@ -3202,7 +3202,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
             modal.removeAttribute('data-pef-type');
             modal.removeAttribute('data-student-name');
         }
-        function showSuccessMessage(title, message) { 
+        window.showSuccessMessage = function(title, message) { 
             playSuccessSound(); // Play success sound
             clearModalHeaderButtons(); 
             const modalTitle = document.getElementById('form-modal-title'); 
@@ -4517,7 +4517,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
             }
         }
 
-        function reorderCPLevel(nivelId, direction) {
+        window.reorderCPLevel = function(nivelId, direction) {
             createCPsBackup();
             const currentIndex = cps.findIndex(n => n.id === nivelId);
             
@@ -5116,7 +5116,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
             document.getElementById('form-modal').classList.add('visible');
         }
 
-        function openNivelForm(nivelId = null) {
+        window.openNivelForm = function(nivelId = null) {
             clearModalHeaderButtons();
             const nivel = nivelId ? cps.find(n => n.id === nivelId) : null;
             document.getElementById('form-modal-title').textContent = nivel ? 'Editar Nível' : 'Adicionar Novo Nível';
@@ -8053,6 +8053,32 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
             `;
 
             loadGuidelines();
+            
+            // Add debugging button for admins
+            if (currentUserRole === 'admin') {
+                setTimeout(() => {
+                    const debugBtn = document.createElement('button');
+                    debugBtn.textContent = 'Debug Guidelines Sync';
+                    debugBtn.className = 'secondary-btn text-xs';
+                    debugBtn.onclick = async () => {
+                        console.log('=== GUIDELINES DEBUG ===');
+                        console.log('Current guidelines object:', guidelines);
+                        console.log('Firebase db available:', !!db);
+                        console.log('AppId:', appId);
+                        
+                        // Force a save to Firebase
+                        if (db) {
+                            await saveGuidelines();
+                            console.log('Force save completed');
+                            
+                            // Then reload
+                            await loadGuidelines();
+                            console.log('Force reload completed');
+                        }
+                    };
+                    document.querySelector('.guidelines-search').parentNode.appendChild(debugBtn);
+                }, 1000);
+            }
         }
 
         let guidelines = {
@@ -8084,14 +8110,13 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                         if (docSnap.exists()) {
                             loadedGuidelines = docSnap.data();
                             console.log('Guidelines loaded from Firebase successfully');
+                        } else {
+                            console.log('No guidelines document found in Firebase, will create with defaults');
                         }
                     } catch (firebaseError) {
-                        console.error('Error loading from Firebase:', firebaseError);
-                        // Fallback to localStorage
-                        const savedGuidelines = localStorage.getItem('slap-guidelines');
-                        if (savedGuidelines) {
-                            loadedGuidelines = JSON.parse(savedGuidelines);
-                        }
+                        console.error('Error loading guidelines from Firebase:', firebaseError);
+                        // Don't fallback to localStorage - let it create fresh defaults and sync to Firebase
+                        loadedGuidelines = null;
                     }
                 }
 
@@ -8738,16 +8763,21 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                 if (!db) {
                     // Local storage fallback
                     localStorage.setItem('slap-guidelines', JSON.stringify(guidelines));
+                    console.log('Guidelines saved to localStorage (no database connection)');
                 } else {
                     // Save to Firebase
                     const docRef = doc(db, `artifacts/${appId}/public/data`, 'guidelines');
-                    await setDoc(docRef, guidelines);
+                    await setDoc(docRef, guidelines, { merge: true });
                     console.log('Guidelines saved to Firebase successfully');
+                    
+                    // Also clear localStorage to prevent conflicts
+                    localStorage.removeItem('slap-guidelines');
                 }
             } catch (error) {
-                console.error('Error saving guidelines:', error);
+                console.error('Error saving guidelines to Firebase:', error);
                 // Fallback to localStorage if Firebase fails
                 localStorage.setItem('slap-guidelines', JSON.stringify(guidelines));
+                console.log('Fallback: Guidelines saved to localStorage due to Firebase error');
             }
         }
 
@@ -9346,9 +9376,12 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
 
                 const actionTarget = event.target.closest('[data-action]');
                 if (actionTarget) {
-                    console.log('Action target found:', actionTarget);
-                    console.log('Action:', actionTarget.dataset.action);
-                    console.log('ID:', actionTarget.dataset.id);
+                    console.log('🎯 ACTION TARGET FOUND:', actionTarget);
+                    console.log('🎯 ACTION:', actionTarget.dataset.action);
+                    console.log('🎯 ID:', actionTarget.dataset.id);
+                    console.log('🎯 DATASET:', actionTarget.dataset);
+                    console.log('🎯 TARGET ELEMENT:', event.target);
+                    console.log('🎯 ACTUAL TARGET:', actionTarget.tagName, actionTarget.className);
                     
                     // Don't interfere with navigation clicks that don't have data-action
                     if (actionTarget.closest('.nav-item') && !actionTarget.dataset.action) {
@@ -9357,7 +9390,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                     
                     // Special handling for CP card actions - prevent card click when button is clicked
                     if (['edit-nivel', 'delete-nivel', 'reorder-nivel'].includes(actionTarget.dataset.action)) {
-                        console.log('CP button action detected, stopping propagation');
+                        console.log('🎯 CP BUTTON ACTION DETECTED, stopping propagation');
                         event.stopPropagation();
                         event.preventDefault();
                     }
@@ -9451,27 +9484,69 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                         'view-nivel': () => openNivelModal(id),
                         'add-nivel': () => openNivelForm(),
                         'edit-nivel': () => {
-                            console.log('Edit nivel action triggered for ID:', id);
+                            console.log('🔧 EDIT NIVEL - Action triggered for ID:', id);
+                            console.log('🔧 EDIT NIVEL - Event object:', event);
+                            console.log('🔧 EDIT NIVEL - Target:', event.target);
+                            console.log('🔧 EDIT NIVEL - typeof openNivelForm:', typeof openNivelForm);
+                            console.log('🔧 EDIT NIVEL - CPs array:', cps);
                             event.stopPropagation();
-                            openNivelForm(id);
+                            
+                            try {
+                                console.log('🔧 EDIT NIVEL - Calling openNivelForm with ID:', id);
+                                openNivelForm(id);
+                                console.log('✅ EDIT NIVEL - Form opened successfully');
+                                
+                                // Extra verification that modal is visible
+                                setTimeout(() => {
+                                    const modal = document.getElementById('form-modal');
+                                    console.log('🔧 EDIT NIVEL - Modal element:', modal);
+                                    console.log('🔧 EDIT NIVEL - Modal classes:', modal?.className);
+                                    console.log('🔧 EDIT NIVEL - Modal is visible:', modal?.classList.contains('visible'));
+                                }, 100);
+                                
+                            } catch (error) {
+                                console.error('❌ EDIT NIVEL - Error opening form:', error);
+                            }
                         },
                         'delete-nivel': () => {
-                            console.log('Delete nivel action triggered for ID:', id);
+                            console.log('🗑️ DELETE NIVEL - Action triggered for ID:', id);
+                            console.log('🗑️ DELETE NIVEL - Event object:', event);
+                            console.log('🗑️ DELETE NIVEL - Target:', event.target);
                             event.stopPropagation();
-                            if (!confirm('Tem certeza que deseja excluir este nível? Esta ação não pode ser desfeita.')) return;
-                            createCPsBackup();
-                            const index = cps.findIndex(n => n.id === id);
-                            if (index !== -1) {
-                                cps.splice(index, 1);
-                                localStorage.setItem('demo-cps', JSON.stringify(cps));
-                                renderCPsSection();
-                                showSuccessMessage("Sucesso", "Nível excluído com sucesso!");
+                            
+                            if (!confirm('Tem certeza que deseja excluir este nível? Esta ação não pode ser desfeita.')) {
+                                console.log('🗑️ DELETE NIVEL - User cancelled deletion');
+                                return;
+                            }
+                            
+                            try {
+                                createCPsBackup();
+                                const index = cps.findIndex(n => n.id === id);
+                                if (index !== -1) {
+                                    cps.splice(index, 1);
+                                    localStorage.setItem('demo-cps', JSON.stringify(cps));
+                                    renderCPsSection();
+                                    showSuccessMessage("Sucesso", "Nível excluído com sucesso!");
+                                    console.log('✅ DELETE NIVEL - Deletion completed successfully');
+                                } else {
+                                    console.error('❌ DELETE NIVEL - Level not found in array');
+                                }
+                            } catch (error) {
+                                console.error('❌ DELETE NIVEL - Error during deletion:', error);
                             }
                         },
                         'reorder-nivel': () => {
-                            console.log('Reorder nivel action triggered for ID:', id, 'direction:', direction);
+                            console.log('↕️ REORDER NIVEL - Action triggered for ID:', id, 'direction:', direction);
+                            console.log('↕️ REORDER NIVEL - Event object:', event);
+                            console.log('↕️ REORDER NIVEL - Target:', event.target);
                             event.stopPropagation();
-                            reorderCPLevel(id, direction);
+                            
+                            try {
+                                reorderCPLevel(id, direction);
+                                console.log('✅ REORDER NIVEL - Reorder completed successfully');
+                            } catch (error) {
+                                console.error('❌ REORDER NIVEL - Error during reorder:', error);
+                            }
                         },
                         'add-aula': () => openAulaForm(nivelId),
                         'edit-aula': () => openAulaForm(nivelId, aulaIndex),
