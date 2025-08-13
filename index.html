@@ -1022,13 +1022,13 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                 let firebaseConfig;
                 
                 try {
-                    // Try to import from separate config file (for local development)
+                    // Try to import from separate config file (works in both local and Netlify)
                     const configModule = await import('./firebase-config.js');
                     firebaseConfig = configModule.firebaseConfig;
                 } catch (error) {
-                    // Fallback configuration for Netlify deployment
+                    // Fallback: direct configuration for immediate access
                     firebaseConfig = {
-                        apiKey: "", // Empty for security in deployed version
+                        apiKey: "AIzaSyBeJ3d8dIbBOLDuxXPO94Kx8mFf7rPbsqI",
                         authDomain: "hub-mkt.firebaseapp.com",
                         projectId: "hub-mkt",
                         storageBucket: "hub-mkt.firebasestorage.app",
