@@ -1018,15 +1018,24 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
         // --- FIREBASE INITIALIZATION ---
         async function initializeFirebase() {
             try {
-                // Firebase configuration for Hub SLAP
-                const firebaseConfig = {
-                    apiKey: "AIzaSyBeJ3d8dIbBOLDuxXPO94Kx8mFf7rPbsqI",
-                    authDomain: "hub-mkt.firebaseapp.com",
-                    projectId: "hub-mkt",
-                    storageBucket: "hub-mkt.firebasestorage.app",
-                    messagingSenderId: "1085372538328",
-                    appId: "1:1085372538328:web:4e66315bf0debd2dd5e6ad"
-                };
+                // Try to load Firebase configuration
+                let firebaseConfig;
+                
+                try {
+                    // Try to import from separate config file (for local development)
+                    const configModule = await import('./firebase-config.js');
+                    firebaseConfig = configModule.firebaseConfig;
+                } catch (error) {
+                    // Fallback configuration for Netlify deployment
+                    firebaseConfig = {
+                        apiKey: "", // Empty for security in deployed version
+                        authDomain: "hub-mkt.firebaseapp.com",
+                        projectId: "hub-mkt",
+                        storageBucket: "hub-mkt.firebasestorage.app",
+                        messagingSenderId: "1085372538328",
+                        appId: "1:1085372538328:web:4e66315bf0debd2dd5e6ad"
+                    };
+                }
 
                 if (!firebaseConfig.apiKey) {
                     console.warn("Configuração do Firebase não encontrada. Executando em modo de desenvolvimento local.");
