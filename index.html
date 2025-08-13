@@ -466,6 +466,10 @@
 
     <!-- Fortune Cookie section - no modal needed -->
 
+    <script>
+        // Firebase configuration restored to access your data
+        window.FIREBASE_API_KEY = 'restored';
+    </script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, updateProfile, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
