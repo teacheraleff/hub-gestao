@@ -3050,7 +3050,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                             <button class="filter-card" data-expense-filter="pendentes">
                                 <div class="flex items-center gap-2">
                                     <div class="w-3 h-3 rounded-full bg-red-500"></div>
-                                    <span>Pendentes</span>
+                                    <span>A pagar</span>
                                 </div>
                             </button>
                             <button class="filter-card" data-expense-filter="parciais">
@@ -3099,9 +3099,9 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                                                 const totalDue = Number(exp.amount) + Number(exp.extraAmount || 0);
                                                 const paid = Number(exp.paidAmount || 0);
                                                 const remaining = totalDue - paid;
-                                                if (remaining <= 0) return '<span class="text-green-600 font-semibold">✓ Pago</span>';
+                                                if (remaining <= 0) return '<span class="text-green-600 font-semibold">● Pago</span>';
                                                 if (paid > 0) return '<span class="text-yellow-600 font-semibold">◐ Parcial</span>';
-                                                return '<span class="text-red-600 font-semibold">○ Pendente</span>';
+                                                return '<span class="text-red-600 font-semibold">○ A pagar</span>';
                                             })()}
                                         </td>
                                         <td class="font-medium cursor-pointer" data-action="view-expense" data-id="${exp.id}">${exp.description} ${exp.isFixedSalary && exp.employeeRole ? `<span class="sector-tag">${exp.employeeRole}</span>` : ''}</td>
