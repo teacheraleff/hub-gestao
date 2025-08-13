@@ -466,6 +466,10 @@
 
     <!-- Fortune Cookie section - no modal needed -->
 
+    <script>
+        // Set Firebase configuration - runs in development mode on Netlify to avoid exposed secrets
+        window.FIREBASE_API_KEY = '';
+    </script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, updateProfile, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
@@ -1014,9 +1018,9 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
         // --- FIREBASE INITIALIZATION ---
         async function initializeFirebase() {
             try {
-                // Firebase configuration for Hub SLAP
+                // Firebase configuration - use environment variables for security
                 const firebaseConfig = {
-                    apiKey: "AIzaSyBeJ3d8dIbBOLDuxXPO94Kx8mFf7rPbsqI",
+                    apiKey: window.FIREBASE_API_KEY || "",
                     authDomain: "hub-mkt.firebaseapp.com",
                     projectId: "hub-mkt",
                     storageBucket: "hub-mkt.firebasestorage.app",
