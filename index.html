@@ -1107,9 +1107,9 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                             updateWelcomeMessages(currentUserName);
                             showHubView();
                         } else {
-                            // No user - redirect to simple login page
-                            console.log('No user found, redirecting to simple login');
-                            window.location.href = '/login-simple.html';
+                            // No user - show simple login directly
+                            console.log('No user found, showing login');
+                            showSimpleLogin();
                         }
                     } catch (error) {
                         console.error("Error in auth state change:", error);
@@ -1123,8 +1123,8 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
 
             } catch (error) {
                 console.error("Error initializing Firebase:", error);
-                console.log('Firebase error, redirecting to simple login');
-                window.location.href = '/login-simple.html';
+                console.log('Firebase error, showing login');
+                showSimpleLogin();
             }
         }
 
@@ -9284,6 +9284,96 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
         };
 
         console.log('performLogin function defined globally');
+        
+        // Simple login function that works
+        function showSimpleLogin() {
+            console.log('Showing simple login screen');
+            
+            document.body.innerHTML = `
+                <div style="font-family: 'DM Sans', Arial, sans-serif; padding: 20px; background: #f5f5f5; min-height: 100vh; display: flex; align-items: center; justify-content: center;">
+                    <div style="max-width: 400px; width: 100%; background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+                        <div style="text-align: center; margin-bottom: 30px;">
+                            <div style="font-size: 28px; font-weight: bold; color: #333; margin-bottom: 8px;">🏆 SLAP</div>
+                            <div style="color: #666; font-size: 16px;">Hub de Gestão</div>
+                        </div>
+                        <div id="login-error" style="color: #dc2626; margin: 15px 0; text-align: center; display: none; padding: 10px; background: #fef2f2; border-radius: 6px; border: 1px solid #fecaca;"></div>
+                        <div style="margin-bottom: 20px;">
+                            <input type="email" id="simple-email" placeholder="E-mail" required 
+                                   style="width: 100%; padding: 14px; margin: 8px 0; border: 2px solid #e5e7eb; border-radius: 8px; box-sizing: border-box; font-size: 16px; transition: border-color 0.2s;"
+                                   onfocus="this.style.borderColor='#F1D24B'" onblur="this.style.borderColor='#e5e7eb'">
+                        </div>
+                        <div style="margin-bottom: 25px;">
+                            <input type="password" id="simple-password" placeholder="Senha" required 
+                                   style="width: 100%; padding: 14px; margin: 8px 0; border: 2px solid #e5e7eb; border-radius: 8px; box-sizing: border-box; font-size: 16px; transition: border-color 0.2s;"
+                                   onfocus="this.style.borderColor='#F1D24B'" onblur="this.style.borderColor='#e5e7eb'">
+                        </div>
+                        <button onclick="performSimpleLogin()" id="simple-login-btn" 
+                                style="width: 100%; padding: 14px; background: #F1D24B; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 16px; color: #1f2937; transition: background-color 0.2s;"
+                                onmouseover="this.style.backgroundColor='#e6c742'" onmouseout="this.style.backgroundColor='#F1D24B'">
+                            Entrar
+                        </button>
+                        <div style="text-align: center; margin-top: 20px; color: #9ca3af; font-size: 14px;">
+                            Sistema de Gestão SLAP
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            console.log('Simple login screen rendered');
+        }
+        
+        // Perform login function
+        window.performSimpleLogin = async function() {
+            console.log('=== SIMPLE LOGIN STARTED ===');
+            
+            const email = document.getElementById('simple-email').value.trim();
+            const password = document.getElementById('simple-password').value.trim();
+            const errorDiv = document.getElementById('login-error');
+            const button = document.getElementById('simple-login-btn');
+            
+            console.log('Email:', email);
+            console.log('Password:', password ? '***' : 'empty');
+            
+            if (!email || !password) {
+                errorDiv.textContent = 'Preencha todos os campos';
+                errorDiv.style.display = 'block';
+                return;
+            }
+            
+            button.textContent = 'Entrando...';
+            button.disabled = true;
+            button.style.opacity = '0.7';
+            errorDiv.style.display = 'none';
+            
+            try {
+                console.log('Calling Firebase auth...');
+                const userCredential = await window.firebaseSignIn(window.firebaseAuth, email, password);
+                console.log('LOGIN SUCCESS!', userCredential.user.email);
+                
+                // Reload page to show authenticated state
+                window.location.reload();
+                
+            } catch (error) {
+                console.error('LOGIN ERROR:', error);
+                let errorMessage = 'Email ou senha inválidos';
+                
+                if (error.code === 'auth/user-not-found') {
+                    errorMessage = 'Usuário não encontrado';
+                } else if (error.code === 'auth/wrong-password') {
+                    errorMessage = 'Senha incorreta';
+                } else if (error.code === 'auth/invalid-email') {
+                    errorMessage = 'Email inválido';
+                } else if (error.code === 'auth/too-many-requests') {
+                    errorMessage = 'Muitas tentativas. Tente novamente mais tarde';
+                }
+                
+                errorDiv.textContent = errorMessage;
+                errorDiv.style.display = 'block';
+                button.textContent = 'Entrar';
+                button.disabled = false;
+                button.style.opacity = '1';
+            }
+        };
         
         window.showSection = function(sectionName) {
             const navItem = document.querySelector(`[data-target="${sectionName}"]`);
