@@ -1314,7 +1314,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                         </div>
                         <p id="login-error" class="text-sm text-red-600 text-center hidden"></p>
                         <div>
-                            <button type="button" class="primary-btn full-width" onclick="console.log('BUTTON CLICKED!'); performLogin();">Entrar</button>
+                            <button type="button" id="login-btn" class="primary-btn full-width">Entrar</button>
                         </div>
                     </div>
                     <p class="text-sm text-center text-stone-600">
@@ -1348,8 +1348,48 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                 </div>
             `;
             
-            // Login form now uses direct onclick - no event listeners needed
-            console.log('Login form rendered with onclick handler');
+            // Setup login button immediately after form render
+            setTimeout(() => {
+                const loginBtn = document.getElementById('login-btn');
+                if (loginBtn) {
+                    loginBtn.onclick = async () => {
+                        console.log('LOGIN BUTTON CLICKED!');
+                        
+                        const email = document.getElementById('email')?.value || '';
+                        const password = document.getElementById('password')?.value || '';
+                        
+                        if (!email || !password) {
+                            const errorElement = document.getElementById('login-error');
+                            if (errorElement) {
+                                errorElement.textContent = 'Preencha email e senha';
+                                errorElement.classList.remove('hidden');
+                            }
+                            return;
+                        }
+                        
+                        loginBtn.textContent = 'Entrando...';
+                        loginBtn.disabled = true;
+                        
+                        try {
+                            console.log('Attempting login with:', email);
+                            const userCredential = await window.firebaseSignIn(window.firebaseAuth, email, password);
+                            console.log('Login successful!', userCredential.user.email);
+                        } catch (error) {
+                            console.error('Login error:', error);
+                            const errorElement = document.getElementById('login-error');
+                            if (errorElement) {
+                                errorElement.textContent = error.message || 'Erro no login';
+                                errorElement.classList.remove('hidden');
+                            }
+                            loginBtn.textContent = 'Entrar';
+                            loginBtn.disabled = false;
+                        }
+                    };
+                    console.log('Login button handler attached successfully');
+                } else {
+                    console.error('Login button not found');
+                }
+            }, 50);
             
             // Add event listeners for signup functionality
             const signupFormElement = document.getElementById('signup-form-element');
