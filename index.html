@@ -1338,7 +1338,13 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
             `;
             
             // Add event listeners for the login form
-            document.getElementById('login-form').addEventListener('submit', handleLogin);
+            const loginForm = document.getElementById('login-form');
+            if (loginForm) {
+                loginForm.addEventListener('submit', handleLogin);
+                console.log('Login form event listener added successfully');
+            } else {
+                console.error('Login form not found!');
+            }
             
             // Add event listeners for signup functionality
             const signupFormElement = document.getElementById('signup-form-element');
@@ -1389,6 +1395,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
         }
         function setActiveNavItem(element) { document.querySelectorAll('#main-navigation .nav-item').forEach(item => item.classList.remove('active')); if (element) element.classList.add('active'); }
         async function handleLogin(event) {
+            console.log('handleLogin called');
             event.preventDefault();
             
             // Clear logout flag when user manually logs in
@@ -1396,14 +1403,38 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
             
             const email = event.target.email.value;
             const password = event.target.password.value;
+            
+            console.log('Attempting login with email:', email);
+            
+            // Show loading state
+            const submitButton = event.target.querySelector('button[type="submit"]');
+            const originalText = submitButton.textContent;
+            submitButton.textContent = 'Entrando...';
+            submitButton.disabled = true;
+            
             try {
+                if (!auth) {
+                    throw new Error('Firebase auth not initialized');
+                }
                 await signInWithEmailAndPassword(auth, email, password);
+                console.log('Login successful');
             } catch (error) {
+                console.error('Login error:', error);
                 const errorElement = document.getElementById('login-error');
                 if(errorElement) {
-                    errorElement.textContent = "E-mail ou senha inválidos.";
+                    let errorMessage = "E-mail ou senha inválidos.";
+                    if (error.code === 'auth/network-request-failed') {
+                        errorMessage = "Erro de conexão. Verifique sua internet.";
+                    } else if (error.code === 'auth/too-many-requests') {
+                        errorMessage = "Muitas tentativas. Tente novamente mais tarde.";
+                    }
+                    errorElement.textContent = errorMessage;
                     errorElement.classList.remove('hidden');
                 }
+            } finally {
+                // Restore button state
+                submitButton.textContent = originalText;
+                submitButton.disabled = false;
             }
         }
         async function handleSignUp(event) { event.preventDefault(); const name = event.target.name.value; const email = event.target.email.value; const password = event.target.password.value; try { const cred = await createUserWithEmailAndPassword(auth, email, password); await updateProfile(cred.user, { displayName: name }); await setDoc(doc(db, "users", cred.user.uid), { name, email, role: "pending", createdAt: serverTimestamp() }); await signOut(auth); showSuccessMessage("Cadastro Concluído!", "Sua conta foi criada. Aguarde aprovação de um administrador para acessar."); } catch (error) { showErrorMessage("Erro", "Erro ao criar conta. Verifique o e-mail e a senha."); } }
