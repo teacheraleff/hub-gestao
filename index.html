@@ -1076,6 +1076,15 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                 db = getFirestore(app);
                 auth = getAuth(app);
                 storage = getStorage(app);
+                
+                console.log('Firebase initialized successfully!');
+                console.log('Auth object available:', !!auth);
+                
+                // Make auth globally available for debugging
+                window.firebaseAuth = auth;
+                
+                // Firebase is ready for authentication
+                console.log('Firebase ready for email/password authentication');
 
                 onAuthStateChanged(auth, async (user) => {
                     try {
@@ -1303,7 +1312,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                         </div>
                         <p id="login-error" class="text-sm text-red-600 text-center hidden"></p>
                         <div>
-                            <button type="button" onclick="doLogin()" class="primary-btn full-width">Entrar</button>
+                            <button type="button" onclick="console.log('Button clicked!'); window.doLogin();" class="primary-btn full-width">Entrar</button>
                         </div>
                     </form>
                     <p class="text-sm text-center text-stone-600">
@@ -1339,6 +1348,30 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
             
             // Login form is now handled by onclick event
             console.log('Login form rendered with direct onclick handler');
+            
+            // Add a test button for debugging
+            setTimeout(() => {
+                if (document.getElementById('debug-login-test')) return;
+                
+                const testBtn = document.createElement('button');
+                testBtn.id = 'debug-login-test';
+                testBtn.textContent = 'Test Firebase';
+                testBtn.style.cssText = 'position:fixed;top:10px;right:10px;z-index:9999;background:red;color:white;padding:5px;';
+                testBtn.onclick = () => {
+                    console.log('=== FIREBASE DEBUG ===');
+                    console.log('Auth available:', !!window.firebaseAuth);
+                    console.log('signInWithEmailAndPassword function:', !!signInWithEmailAndPassword);
+                    console.log('doLogin function:', typeof window.doLogin);
+                    
+                    if (window.firebaseAuth) {
+                        console.log('Trying test login...');
+                        
+                        // Call the actual login function for testing
+                        window.doLogin();
+                    }
+                };
+                document.body.appendChild(testBtn);
+            }, 1000);
             
             // Add event listeners for signup functionality
             const signupFormElement = document.getElementById('signup-form-element');
@@ -1388,17 +1421,28 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
             pendingView.classList.add('flex');
         }
         function setActiveNavItem(element) { document.querySelectorAll('#main-navigation .nav-item').forEach(item => item.classList.remove('active')); if (element) element.classList.add('active'); }
-        // Simplified login function
+        // Simplified login function - Fixed version
         window.doLogin = async function() {
-            console.log('doLogin called');
+            console.log('=== doLogin function called ===');
             
             // Clear logout flag when user manually logs in
             window.isLoggedOut = false;
             
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
+            const email = document.getElementById('email')?.value || '';
+            const password = document.getElementById('password')?.value || '';
             
-            console.log('Attempting login with email:', email);
+            console.log('Email:', email);
+            console.log('Password provided:', password.length > 0);
+            
+            if (!email || !password) {
+                console.error('Email or password missing');
+                const errorElement = document.getElementById('login-error');
+                if(errorElement) {
+                    errorElement.textContent = 'Por favor, preencha email e senha.';
+                    errorElement.classList.remove('hidden');
+                }
+                return;
+            }
             
             // Show loading state
             const submitButton = document.querySelector('#login-form button');
@@ -1413,13 +1457,13 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
             }
             
             try {
-                if (!auth) {
-                    console.error('Firebase auth not initialized');
+                if (!window.firebaseAuth) {
+                    console.error('Firebase auth not available');
                     throw new Error('Sistema não inicializado. Recarregue a página.');
                 }
                 
-                console.log('Firebase auth available, attempting login...');
-                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                console.log('Attempting Firebase login...');
+                const userCredential = await signInWithEmailAndPassword(window.firebaseAuth, email, password);
                 console.log('Login successful for user:', userCredential.user.email);
                 
                 // Success will be handled by onAuthStateChanged
@@ -1435,12 +1479,12 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                     errorMessage = "Muitas tentativas. Tente novamente mais tarde.";
                 } else if (error.code === 'auth/user-not-found') {
                     errorMessage = "Usuário não encontrado.";
-                } else if (error.code === 'auth/wrong-password') {
+                } else if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
                     errorMessage = "Senha incorreta.";
                 } else if (error.code === 'auth/invalid-email') {
                     errorMessage = "E-mail inválido.";
-                } else if (error.message) {
-                    errorMessage = error.message;
+                } else if (error.code === 'auth/user-disabled') {
+                    errorMessage = "Conta desabilitada. Contate o administrador.";
                 }
                 
                 if(errorElement) {
