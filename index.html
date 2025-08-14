@@ -1338,13 +1338,15 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
             `;
             
             // Add event listeners for the login form
-            const loginForm = document.getElementById('login-form');
-            if (loginForm) {
-                loginForm.addEventListener('submit', handleLogin);
-                console.log('Login form event listener added successfully');
-            } else {
-                console.error('Login form not found!');
-            }
+            setTimeout(() => {
+                const loginForm = document.getElementById('login-form');
+                if (loginForm) {
+                    loginForm.addEventListener('submit', handleLogin);
+                    console.log('Login form event listener added successfully');
+                } else {
+                    console.error('Login form not found!');
+                }
+            }, 100);
             
             // Add event listeners for signup functionality
             const signupFormElement = document.getElementById('signup-form-element');
@@ -9175,6 +9177,8 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
         window.startQuiz = startQuiz;
         window.checkTimeConflict = checkTimeConflict;
         window.toggleCampanhaFinalizada = toggleCampanhaFinalizada;
+        window.handleLogin = handleLogin;
+        window.renderLoginForm = renderLoginForm;
         window.showSection = function(sectionName) {
             const navItem = document.querySelector(`[data-target="${sectionName}"]`);
             if (navItem) navItem.click();
