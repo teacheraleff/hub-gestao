@@ -1312,7 +1312,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                         </div>
                         <p id="login-error" class="text-sm text-red-600 text-center hidden"></p>
                         <div>
-                            <button type="button" onclick="console.log('Button clicked!'); window.doLogin();" class="primary-btn full-width">Entrar</button>
+                            <button type="button" id="login-submit-btn" class="primary-btn full-width">Entrar</button>
                         </div>
                     </form>
                     <p class="text-sm text-center text-stone-600">
@@ -1346,32 +1346,46 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                 </div>
             `;
             
-            // Login form is now handled by onclick event
-            console.log('Login form rendered with direct onclick handler');
+            // Set up login button after form is rendered
+            console.log('Login form rendered, setting up button handler');
             
-            // Add a test button for debugging
             setTimeout(() => {
-                if (document.getElementById('debug-login-test')) return;
+                const loginBtn = document.getElementById('login-submit-btn');
+                if (loginBtn) {
+                    loginBtn.addEventListener('click', function() {
+                        console.log('Login button clicked via addEventListener');
+                        if (typeof window.doLogin === 'function') {
+                            window.doLogin();
+                        } else {
+                            console.error('doLogin function not found!');
+                        }
+                    });
+                    console.log('Login button event listener attached successfully');
+                } else {
+                    console.error('Login button not found!');
+                }
                 
-                const testBtn = document.createElement('button');
-                testBtn.id = 'debug-login-test';
-                testBtn.textContent = 'Test Firebase';
-                testBtn.style.cssText = 'position:fixed;top:10px;right:10px;z-index:9999;background:red;color:white;padding:5px;';
-                testBtn.onclick = () => {
-                    console.log('=== FIREBASE DEBUG ===');
-                    console.log('Auth available:', !!window.firebaseAuth);
-                    console.log('signInWithEmailAndPassword function:', !!signInWithEmailAndPassword);
-                    console.log('doLogin function:', typeof window.doLogin);
-                    
-                    if (window.firebaseAuth) {
-                        console.log('Trying test login...');
-                        
-                        // Call the actual login function for testing
-                        window.doLogin();
+                // Add Enter key support
+                const emailInput = document.getElementById('email');
+                const passwordInput = document.getElementById('password');
+                
+                [emailInput, passwordInput].forEach(input => {
+                    if (input) {
+                        input.addEventListener('keypress', function(e) {
+                            if (e.key === 'Enter') {
+                                console.log('Enter key pressed, triggering login');
+                                if (typeof window.doLogin === 'function') {
+                                    window.doLogin();
+                                } else {
+                                    console.error('doLogin function not found!');
+                                }
+                            }
+                        });
                     }
-                };
-                document.body.appendChild(testBtn);
-            }, 1000);
+                });
+                
+                console.log('Enter key listeners added to form inputs');
+            }, 100);
             
             // Add event listeners for signup functionality
             const signupFormElement = document.getElementById('signup-form-element');
@@ -9241,6 +9255,9 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
         window.toggleCampanhaFinalizada = toggleCampanhaFinalizada;
         window.handleLogin = handleLogin;
         window.renderLoginForm = renderLoginForm;
+        
+        // Ensure doLogin is available globally EARLY
+        console.log('Setting up doLogin function globally...');
         window.showSection = function(sectionName) {
             const navItem = document.querySelector(`[data-target="${sectionName}"]`);
             if (navItem) navItem.click();
