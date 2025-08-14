@@ -2848,7 +2848,6 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                 .reduce((sum, exp) => sum + Number(exp.paidAmount || exp.amount), 0);
 
             // Calcular receita total baseada nos dados dos alunos
-            const students = getStudents();
             const totalRevenue = students
                 .filter(student => student.status === 'Ativo')
                 .reduce((sum, student) => {
