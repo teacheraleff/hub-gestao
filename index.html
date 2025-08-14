@@ -1107,17 +1107,14 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                             updateWelcomeMessages(currentUserName);
                             showHubView();
                         } else {
-                            // No user - show simple login directly
+                            // No user - show login
                             console.log('No user found, showing login');
                             showSimpleLogin();
                         }
                     } catch (error) {
                         console.error("Error in auth state change:", error);
-                        // Show login instead of falling back to dev mode
-                        renderLoginForm();
-                        loginView.classList.remove('hidden');
-                        loginView.classList.add('flex');
-                        hubView.classList.add('hidden');
+                        // Show login on auth error
+                        showSimpleLogin();
                     }
                 });
 
@@ -1135,10 +1132,13 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
 
             if (userDoc.exists()) {
                 const userData = userDoc.data();
-                currentUserName = userData.name || user.displayName;
+                currentUserName = userData.name || user.displayName || user.email;
                 currentUserRole = userData.role;
 
-                if (['admin', 'am', 'ap', 'pedagogico', 'financeiro', 'teacher'].includes(currentUserRole)) {
+                console.log('User role:', currentUserRole);
+
+                // Valid roles: admin, pedagogico, ap, financeiro, teacher, am
+                if (['admin', 'pedagogico', 'ap', 'financeiro', 'teacher', 'am'].includes(currentUserRole)) {
                     setupFirestoreListeners();
                     updateWelcomeMessages(currentUserName);
                     showHubView();
@@ -1146,6 +1146,8 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                     showPendingView();
                 }
             } else {
+                // User exists in auth but not in database - create user document
+                console.log('Creating user document for:', user.email);
                 showPendingView();
             }
         }
