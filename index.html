@@ -900,9 +900,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                 localStorage.setItem('demo-schedules', JSON.stringify(schedules));
             }
             
-            // Only create default fluxos if localStorage has never been initialized
-            const fluxosInitialized = localStorage.getItem('demo-fluxos-initialized');
-            if (fluxos.length === 0 && !fluxosInitialized) {
+            if (fluxos.length === 0) {
                 fluxos = [
                     {
                         id: 'fluxo1',
@@ -1007,7 +1005,6 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                     }
                 ];
                 localStorage.setItem('demo-fluxos', JSON.stringify(fluxos));
-                localStorage.setItem('demo-fluxos-initialized', 'true');
             }
         }
 
@@ -1038,33 +1035,10 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                 storage = getStorage(app);
 
                 onAuthStateChanged(auth, async (user) => {
-                    try {
-                        if (user && !user.isAnonymous) {
-                            await initializeAppWithUser(user);
-                        } else if (user && user.isAnonymous) {
-                            // Anonymous user - set up with admin role for shared data access
-                            userId = user.uid;
-                            currentUserName = "Admin SLAP";
-                            currentUserRole = "admin";
-                            setupFirestoreListeners();
-                            updateWelcomeMessages(currentUserName);
-                            showHubView();
-                        } else {
-                            // No user - sign in anonymously to enable Firebase sync
-                            try {
-                                await signInAnonymously(auth);
-                            } catch (authError) {
-                                console.warn("Anonymous auth failed, falling back to development mode:", authError);
-                                // Fall back to development mode if Firebase auth fails
-                                window.isDevelopmentMode = true;
-                                startAppInDevelopmentMode();
-                            }
-                        }
-                    } catch (error) {
-                        console.error("Error in auth state change:", error);
-                        // Fall back to development mode on any auth error
-                        window.isDevelopmentMode = true;
-                        startAppInDevelopmentMode();
+                    if (user && !user.isAnonymous) {
+                        await initializeAppWithUser(user);
+                    } else {
+                        showLoginView();
                     }
                 });
 
@@ -9355,13 +9329,6 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                         return;
                     }
                     
-                    // Special handling for CP card actions - prevent card click when button is clicked
-                    if (['edit-nivel', 'delete-nivel', 'reorder-nivel'].includes(actionTarget.dataset.action)) {
-                        console.log('CP button action detected, stopping propagation');
-                        event.stopPropagation();
-                        event.preventDefault();
-                    }
-                    
                     if(actionTarget.closest('.modal-content') && !['close-modal', 'export-vip-pef', 'export-turma-pef'].includes(actionTarget.dataset.action)) event.stopPropagation();
 
                     const { action, id, collection, nivelId, aulaIndex, direction, unitId, lessonNumber, status } = actionTarget.dataset;
@@ -9450,14 +9417,8 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                         'export-cps-doc': exportCPsDoc,
                         'view-nivel': () => openNivelModal(id),
                         'add-nivel': () => openNivelForm(),
-                        'edit-nivel': () => {
-                            console.log('Edit nivel action triggered for ID:', id);
-                            event.stopPropagation();
-                            openNivelForm(id);
-                        },
+                        'edit-nivel': () => openNivelForm(id),
                         'delete-nivel': () => {
-                            console.log('Delete nivel action triggered for ID:', id);
-                            event.stopPropagation();
                             if (!confirm('Tem certeza que deseja excluir este nível? Esta ação não pode ser desfeita.')) return;
                             createCPsBackup();
                             const index = cps.findIndex(n => n.id === id);
@@ -9468,11 +9429,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                                 showSuccessMessage("Sucesso", "Nível excluído com sucesso!");
                             }
                         },
-                        'reorder-nivel': () => {
-                            console.log('Reorder nivel action triggered for ID:', id, 'direction:', direction);
-                            event.stopPropagation();
-                            reorderCPLevel(id, direction);
-                        },
+                        'reorder-nivel': () => reorderCPLevel(id, direction),
                         'add-aula': () => openAulaForm(nivelId),
                         'edit-aula': () => openAulaForm(nivelId, aulaIndex),
                         'delete-aula': () => deleteAula(nivelId, aulaIndex),
