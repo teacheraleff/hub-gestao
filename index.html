@@ -1063,10 +1063,12 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                 }
 
                 if (!firebaseConfig || !firebaseConfig.apiKey) {
-                    console.warn("Configuração do Firebase não encontrada. Executando em modo de desenvolvimento local.");
-                    // Initialize in development mode with localStorage
-                    window.isDevelopmentMode = true;
-                    startAppInDevelopmentMode();
+                    console.error("Configuração do Firebase não encontrada.");
+                    renderLoginForm();
+                    loginView.classList.remove('hidden');
+                    loginView.classList.add('flex');
+                    hubView.classList.add('hidden');
+                    showErrorMessage("Erro de Configuração", "Sistema não está configurado corretamente. Contate o administrador.");
                     return;
                 }
 
@@ -1094,26 +1096,29 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                             updateWelcomeMessages(currentUserName);
                             showHubView();
                         } else {
-                            // No user - sign in anonymously to enable Firebase sync only if not logged out
-                            try {
-                                await signInAnonymously(auth);
-                            } catch (authError) {
-                                console.warn("Anonymous auth failed, falling back to development mode:", authError);
-                                // Fall back to development mode if Firebase auth fails
-                                window.isDevelopmentMode = true;
-                                startAppInDevelopmentMode();
-                            }
+                            // No user - show login form instead of falling back to dev mode
+                            renderLoginForm();
+                            loginView.classList.remove('hidden');
+                            loginView.classList.add('flex');
+                            hubView.classList.add('hidden');
                         }
                     } catch (error) {
                         console.error("Error in auth state change:", error);
-                        // Fall back to development mode on any auth error
-                        window.isDevelopmentMode = true;
-                        startAppInDevelopmentMode();
+                        // Show login instead of falling back to dev mode
+                        renderLoginForm();
+                        loginView.classList.remove('hidden');
+                        loginView.classList.add('flex');
+                        hubView.classList.add('hidden');
                     }
                 });
 
             } catch (error) {
                 console.error("Error initializing Firebase:", error);
+                renderLoginForm();
+                loginView.classList.remove('hidden');
+                loginView.classList.add('flex');
+                hubView.classList.add('hidden');
+                showErrorMessage("Erro de Conexão", "Não foi possível conectar ao Firebase. Verifique sua conexão.");
             }
         }
 
@@ -1275,37 +1280,58 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
         // --- AUTH, VIEW, and MENU FUNCTIONS ---
         function renderLoginForm() {
             const loginView = document.getElementById('login-view');
-            loginView.className = 'flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-stone-100 p-4';
+            loginView.className = 'flex items-center justify-center min-h-screen bg-stone-50 p-4';
+            loginView.style.background = '';
             loginView.innerHTML = `
-                <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md border border-stone-200 backdrop-blur-sm">
-                    <div class="text-center mb-8">
+                <div class="w-full max-w-md p-8 space-y-8 bg-white rounded-xl shadow-lg">
+                    <div class="text-center">
                         <img src="https://res.cloudinary.com/dqfi22uz0/image/upload/v1751163691/SLAP_TIPO_PRETO_1_xarnpe.png" 
-                             alt="SLAP Logo" class="h-16 w-auto mx-auto mb-6 filter drop-shadow-sm">
-                        <h2 class="text-3xl font-bold text-stone-800 mb-2">Hub SLAP</h2>
-                        <p class="text-stone-600">Acesse sua conta para continuar</p>
+                             alt="Logo SLAP" class="w-24 h-auto mx-auto rounded-lg mb-4">
+                        <h2 class="text-2xl font-bold text-stone-900">Acesse sua conta</h2>
+                        <p class="mt-2 text-sm text-stone-600">Bem-vindo(a) de volta!</p>
                     </div>
-                    
-                    <form id="login-form" class="space-y-5">
+                    <form id="login-form" class="mt-8 space-y-6">
                         <div>
-                            <label for="email" class="block text-sm font-semibold text-stone-700 mb-2">E-mail</label>
-                            <input type="email" name="email" id="email" required 
-                                   class="w-full px-4 py-3 border-2 border-stone-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-stone-50 focus:bg-white">
+                            <label for="email" class="sr-only">E-mail</label>
+                            <input id="email" name="email" type="email" autocomplete="email" required 
+                                   class="form-input" placeholder="Endereço de e-mail">
                         </div>
                         <div>
-                            <label for="password" class="block text-sm font-semibold text-stone-700 mb-2">Senha</label>
-                            <input type="password" name="password" id="password" required 
-                                   class="w-full px-4 py-3 border-2 border-stone-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-stone-50 focus:bg-white">
+                            <label for="password" class="sr-only">Senha</label>
+                            <input id="password" name="password" type="password" autocomplete="current-password" required 
+                                   class="form-input" placeholder="Senha">
                         </div>
-                        <button type="submit" class="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 px-4 rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
-                            Entrar no Hub
-                        </button>
-                        <div id="login-error" class="text-red-600 text-sm text-center hidden bg-red-50 p-3 rounded-lg border border-red-200"></div>
+                        <p id="login-error" class="text-sm text-red-600 text-center hidden"></p>
+                        <div>
+                            <button type="submit" class="primary-btn full-width">Entrar</button>
+                        </div>
                     </form>
+                    <p class="text-sm text-center text-stone-600">
+                        Não tem uma conta?
+                        <button id="show-signup" class="font-medium" style="color: #F1D24B;">Cadastre-se</button>
+                    </p>
                     
-                    <div class="mt-8 text-center border-t border-stone-200 pt-6">
-                        <p class="text-stone-600 text-sm mb-3">Não tem uma conta?</p>
-                        <button id="show-signup" class="text-blue-600 hover:text-blue-700 font-semibold text-sm bg-blue-50 px-4 py-2 rounded-lg hover:bg-blue-100 transition-all duration-200">
-                            Criar nova conta
+                    <div id="signup-form" class="hidden mt-6 border-t border-stone-200 pt-6">
+                        <h3 class="text-lg font-semibold text-stone-800 mb-4 text-center">Criar Nova Conta</h3>
+                        <form id="signup-form-element" class="space-y-4">
+                            <div>
+                                <input type="text" name="name" id="signup-name" required 
+                                       class="form-input" placeholder="Nome completo">
+                            </div>
+                            <div>
+                                <input type="email" name="email" id="signup-email" required 
+                                       class="form-input" placeholder="E-mail">
+                            </div>
+                            <div>
+                                <input type="password" name="password" id="signup-password" required 
+                                       class="form-input" placeholder="Senha">
+                            </div>
+                            <button type="submit" class="primary-btn full-width" style="background-color: #FF5C3D;">
+                                Criar Conta
+                            </button>
+                        </form>
+                        <button id="back-to-login" class="w-full mt-4 text-stone-600 hover:text-stone-800 text-sm py-2">
+                            ← Voltar ao login
                         </button>
                     </div>
                     
@@ -1340,51 +1366,33 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
             
             // Add event listeners for the login form
             document.getElementById('login-form').addEventListener('submit', handleLogin);
-            document.getElementById('signup-form-element').addEventListener('submit', handleSignUp);
-            document.getElementById('show-signup').addEventListener('click', () => {
-                document.getElementById('signup-form').classList.remove('hidden');
-                document.getElementById('show-signup').classList.add('hidden');
-            });
-            document.getElementById('back-to-login').addEventListener('click', () => {
-                document.getElementById('signup-form').classList.add('hidden');
-                document.getElementById('show-signup').classList.remove('hidden');
-            });
+            
+            // Add event listeners for signup functionality
+            const signupFormElement = document.getElementById('signup-form-element');
+            const showSignupBtn = document.getElementById('show-signup');
+            const backToLoginBtn = document.getElementById('back-to-login');
+            
+            if (signupFormElement) {
+                signupFormElement.addEventListener('submit', handleSignUp);
+            }
+            
+            if (showSignupBtn) {
+                showSignupBtn.addEventListener('click', () => {
+                    document.getElementById('signup-form').classList.remove('hidden');
+                    showSignupBtn.parentElement.classList.add('hidden');
+                });
+            }
+            
+            if (backToLoginBtn) {
+                backToLoginBtn.addEventListener('click', () => {
+                    document.getElementById('signup-form').classList.add('hidden');
+                    showSignupBtn.parentElement.classList.remove('hidden');
+                });
+            }
         }
 
         function showLoginView() {
-            hubView.classList.add('hidden');
-            pendingView.classList.add('hidden');
-            pendingView.classList.remove('flex');
-            loginView.classList.remove('hidden');
-            loginView.classList.add('flex');
-            loginView.innerHTML = `
-                <div class="w-full max-w-md p-8 space-y-8 bg-white rounded-xl shadow-lg">
-                    <div class="text-center">
-                        <img src="https://res.cloudinary.com/dqfi22uz0/image/upload/v1749349751/DBB440C2-684E-4DCF-9CD3-B2DDC18F1E53_3_vgocga.jpg" alt="Logo SLAP" class="w-24 h-auto mx-auto rounded-lg mb-4">
-                        <h2 class="text-2xl font-bold text-stone-900">Acesse sua conta</h2>
-                        <p class="mt-2 text-sm text-stone-600">Bem-vindo(a) de volta!</p>
-                    </div>
-                    <form id="login-form" class="mt-8 space-y-6">
-                        <div>
-                            <label for="login-email" class="sr-only">E-mail</label>
-                            <input id="login-email" name="email" type="email" autocomplete="email" required class="form-input" placeholder="Endereço de e-mail">
-                        </div>
-                        <div>
-                            <label for="login-password" class="sr-only">Senha</label>
-                            <input id="login-password" name="password" type="password" autocomplete="current-password" required class="form-input" placeholder="Senha">
-                        </div>
-                        <p id="login-error" class="text-sm text-red-600 text-center"></p>
-                        <div>
-                            <button type="submit" class="primary-btn full-width">Entrar</button>
-                        </div>
-                    </form>
-                    <p class="text-sm text-center text-stone-600">
-                        Não tem uma conta?
-                        <button data-action="open-signup" class="font-medium" style="color: #F1D24B;">Cadastre-se</button>
-                    </p>
-                </div>
-            `;
-            document.getElementById('login-form').addEventListener('submit', handleLogin);
+            renderLoginForm();
         }
 
         function showHubView() { 
@@ -1434,6 +1442,11 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                 window.isLoggedOut = true;
                 window.isDevelopmentMode = false;
                 
+                // Clear any timers that might interfere
+                if (window.navigationTimeout) {
+                    clearTimeout(window.navigationTimeout);
+                }
+                
                 // Clear current user data but preserve localStorage data
                 currentUserName = null;
                 currentUserRole = null;
@@ -1460,9 +1473,16 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                 }
                 
                 // Hide hub view and show login view
-                document.getElementById('hub-view').classList.add('hidden');
-                document.getElementById('pending-view').classList.add('hidden');
-                document.getElementById('login-view').classList.remove('hidden');
+                const hubView = document.getElementById('hub-view');
+                const pendingView = document.getElementById('pending-view');
+                const loginView = document.getElementById('login-view');
+                
+                if (hubView) hubView.classList.add('hidden');
+                if (pendingView) pendingView.classList.add('hidden');
+                if (loginView) {
+                    loginView.classList.remove('hidden');
+                    loginView.classList.add('flex');
+                }
                 
                 // Reset the login form
                 renderLoginForm();
