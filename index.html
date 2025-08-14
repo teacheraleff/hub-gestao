@@ -2840,8 +2840,16 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                 .filter(exp => !exp.isPaid)
                 .reduce((sum, exp) => sum + Number(exp.amount) + Number(exp.extraAmount || 0), 0);
 
-            // Total despesas deve ser igual ao total a pagar (despesas não pagas)
+            // Total despesas mostra apenas valores não pagos
             const totalExpenses = totalToPay;
+
+            // Calcular valores pagos para deduzir do total
+            const totalPaidValues = monthlyExpenses
+                .filter(exp => exp.isPaid && exp.paidAmount)
+                .reduce((sum, exp) => sum + Number(exp.paidAmount), 0);
+
+            // Ajustar total a pagar considerando valores parciais pagos
+            const adjustedTotalToPay = totalToPay - totalPaidValues;
 
             const totalPaid = monthlyExpenses
                 .filter(exp => exp.isPaid)
@@ -2942,7 +2950,8 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                         </table>
                     </div>
                     <div class="data-total">
-                        <p>Total a Pagar: ${totalToPay.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                        <p>Total a Pagar: ${adjustedTotalToPay.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                        ${totalPaidValues > 0 ? `<p class="text-green-600 text-sm mt-1">Valores Pagos: ${totalPaidValues.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>` : ''}
                     </div>
                 </section>
             `;
@@ -4800,7 +4809,90 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                 }
             } catch (error) { console.error("Error saving expense:", error); showErrorMessage("Erro", "Falha ao salvar despesa."); }
         }
-        async function toggleExpensePaid(expenseId, isPaid) { if (!db) return; const expenseRef = doc(db, `artifacts/${appId}/public/data/expenses`, expenseId); try { await updateDoc(expenseRef, { isPaid: isPaid }); } catch (error) { console.error("Error updating expense status:", error); } }
+        async function toggleExpensePaid(expenseId, isPaid) {
+            const expense = expenses.find(e => e.id === expenseId);
+            if (!expense) return;
+
+            if (isPaid) {
+                // Quando marcado como pago, abrir modal para inserir valor pago
+                const totalExpenseValue = Number(expense.amount) + Number(expense.extraAmount || 0);
+                clearModalHeaderButtons();
+                const modalTitle = document.getElementById('form-modal-title');
+                const modalContentArea = document.getElementById('form-modal-content-area');
+
+                modalTitle.textContent = "Registrar Pagamento";
+                modalContentArea.innerHTML = `
+                    <form id="payment-form" class="space-y-4">
+                        <p class="text-stone-600">Despesa: <strong>${expense.description}</strong></p>
+                        <p class="text-stone-600">Valor Total: <strong>${totalExpenseValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</strong></p>
+                        <div>
+                            <label class="font-medium text-sm">Valor Pago (R$)</label>
+                            <input type="number" step="0.01" id="paid-amount" class="form-input" placeholder="0,00" value="${totalExpenseValue}" required>
+                        </div>
+                        <div class="text-right">
+                            <button type="button" class="secondary-btn mr-2" data-action="close-modal">Cancelar</button>
+                            <button type="submit" class="primary-btn w-auto">Confirmar Pagamento</button>
+                        </div>
+                    </form>
+                `;
+
+                document.getElementById('form-modal').classList.add('visible');
+                document.getElementById('payment-form').addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const paidAmount = document.getElementById('paid-amount').value;
+                    
+                    if (!db) {
+                        // Modo desenvolvimento - atualizar localmente
+                        const expenseIndex = expenses.findIndex(e => e.id === expenseId);
+                        if (expenseIndex !== -1) {
+                            expenses[expenseIndex].isPaid = true;
+                            expenses[expenseIndex].paidAmount = Number(paidAmount);
+                        }
+                        renderFolhaPagamentoSection();
+                        document.getElementById('form-modal').classList.remove('visible');
+                        return;
+                    }
+
+                    try {
+                        const expenseRef = doc(db, `artifacts/${appId}/public/data/expenses`, expenseId);
+                        await updateDoc(expenseRef, { 
+                            isPaid: true,
+                            paidAmount: Number(paidAmount),
+                            paidAt: new Date().toISOString()
+                        });
+                        document.getElementById('form-modal').classList.remove('visible');
+                        showSuccessMessage("Pagamento Registrado", "Valor pago registrado com sucesso!");
+                    } catch (error) {
+                        console.error("Error updating expense payment:", error);
+                        showErrorMessage("Erro", "Erro ao registrar pagamento: " + error.message);
+                    }
+                });
+            } else {
+                // Quando desmarcado, remover pagamento
+                if (!db) {
+                    // Modo desenvolvimento - atualizar localmente
+                    const expenseIndex = expenses.findIndex(e => e.id === expenseId);
+                    if (expenseIndex !== -1) {
+                        expenses[expenseIndex].isPaid = false;
+                        delete expenses[expenseIndex].paidAmount;
+                        delete expenses[expenseIndex].paidAt;
+                    }
+                    renderFolhaPagamentoSection();
+                    return;
+                }
+
+                try {
+                    const expenseRef = doc(db, `artifacts/${appId}/public/data/expenses`, expenseId);
+                    await updateDoc(expenseRef, { 
+                        isPaid: false,
+                        paidAmount: 0,
+                        paidAt: null
+                    });
+                } catch (error) {
+                    console.error("Error updating expense status:", error);
+                }
+            }
+        }
 
         function openCancelamentoForm(cancelamentoId = null) {
             clearModalHeaderButtons();
