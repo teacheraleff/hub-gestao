@@ -2847,15 +2847,10 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                 .filter(exp => exp.isPaid)
                 .reduce((sum, exp) => sum + Number(exp.paidAmount || exp.amount), 0);
 
-            // Calcular receita total baseada nos dados dos alunos
-            const totalRevenue = students
-                .filter(student => student.status === 'Ativo')
-                .reduce((sum, student) => {
-                    const monthlyValue = student.modalidade === 'VIP' ? 
-                        Number(student.valorVip || 0) : 
-                        Number(student.valorMensalidade || 0);
-                    return sum + monthlyValue;
-                }, 0);
+            // Calcular receita total usando o mesmo método da seção de alunos
+            const totalRevenue = students.reduce((sum, student) => {
+                return sum + parseFloat(student.amountReceived || student.amountPaid || 0);
+            }, 0);
 
             const profit = totalRevenue - totalExpenses;
 
