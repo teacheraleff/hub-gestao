@@ -1314,7 +1314,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                         </div>
                         <p id="login-error" class="text-sm text-red-600 text-center hidden"></p>
                         <div>
-                            <button type="button" id="login-btn" class="primary-btn full-width">Entrar</button>
+                            <button type="button" id="login-btn" class="primary-btn full-width" style="cursor: pointer; position: relative; z-index: 100;">Entrar</button>
                         </div>
                     </div>
                     <p class="text-sm text-center text-stone-600">
@@ -1348,48 +1348,71 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                 </div>
             `;
             
-            // Setup login button immediately after form render
-            setTimeout(() => {
+            // Multiple approaches to ensure login works
+            const setupLoginHandlers = () => {
+                console.log('Setting up login handlers...');
+                
                 const loginBtn = document.getElementById('login-btn');
-                if (loginBtn) {
-                    loginBtn.onclick = async () => {
-                        console.log('LOGIN BUTTON CLICKED!');
-                        
-                        const email = document.getElementById('email')?.value || '';
-                        const password = document.getElementById('password')?.value || '';
-                        
-                        if (!email || !password) {
-                            const errorElement = document.getElementById('login-error');
-                            if (errorElement) {
-                                errorElement.textContent = 'Preencha email e senha';
-                                errorElement.classList.remove('hidden');
-                            }
-                            return;
-                        }
-                        
-                        loginBtn.textContent = 'Entrando...';
-                        loginBtn.disabled = true;
-                        
-                        try {
-                            console.log('Attempting login with:', email);
-                            const userCredential = await window.firebaseSignIn(window.firebaseAuth, email, password);
-                            console.log('Login successful!', userCredential.user.email);
-                        } catch (error) {
-                            console.error('Login error:', error);
-                            const errorElement = document.getElementById('login-error');
-                            if (errorElement) {
-                                errorElement.textContent = error.message || 'Erro no login';
-                                errorElement.classList.remove('hidden');
-                            }
-                            loginBtn.textContent = 'Entrar';
-                            loginBtn.disabled = false;
-                        }
-                    };
-                    console.log('Login button handler attached successfully');
-                } else {
-                    console.error('Login button not found');
+                const emailInput = document.getElementById('email');
+                const passwordInput = document.getElementById('password');
+                
+                if (!loginBtn || !emailInput || !passwordInput) {
+                    console.error('Login elements not found');
+                    return;
                 }
-            }, 50);
+                
+                // Define the login function
+                const doLogin = async () => {
+                    console.log('=== LOGIN INITIATED ===');
+                    
+                    const email = emailInput.value.trim();
+                    const password = passwordInput.value.trim();
+                    
+                    console.log('Email entered:', email);
+                    console.log('Password entered:', password ? '***' : 'empty');
+                    
+                    if (!email || !password) {
+                        alert('Preencha email e senha');
+                        return;
+                    }
+                    
+                    loginBtn.textContent = 'Entrando...';
+                    loginBtn.disabled = true;
+                    
+                    try {
+                        console.log('Calling Firebase signIn...');
+                        const result = await window.firebaseSignIn(window.firebaseAuth, email, password);
+                        console.log('LOGIN SUCCESS!', result.user.email);
+                    } catch (error) {
+                        console.error('LOGIN ERROR:', error);
+                        alert('Erro: ' + (error.message || 'Falha no login'));
+                        loginBtn.textContent = 'Entrar';
+                        loginBtn.disabled = false;
+                    }
+                };
+                
+                // Multiple event handlers to ensure it works
+                loginBtn.onclick = doLogin;
+                loginBtn.addEventListener('click', doLogin);
+                loginBtn.addEventListener('touchstart', doLogin);
+                
+                // Enter key handlers
+                [emailInput, passwordInput].forEach(input => {
+                    input.addEventListener('keypress', (e) => {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            doLogin();
+                        }
+                    });
+                });
+                
+                console.log('All login handlers attached');
+            };
+            
+            // Try multiple times to ensure setup
+            setTimeout(setupLoginHandlers, 10);
+            setTimeout(setupLoginHandlers, 100);
+            setTimeout(setupLoginHandlers, 500);
             
             // Add event listeners for signup functionality
             const signupFormElement = document.getElementById('signup-form-element');
