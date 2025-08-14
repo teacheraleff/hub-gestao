@@ -1218,6 +1218,34 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
             getCollectionListener('dojo_missions', dojoMissions, renderDojoSection, (ref) => query(ref, orderBy("points", "desc")));
             getCollectionListener('fluxos', fluxos, renderFluxosSection);
 
+            // Real-time guidelines listener
+            if (db) {
+                const guidelinesRef = doc(db, `artifacts/${appId}/public/data`, 'guidelines');
+                const unsubscribeGuidelines = onSnapshot(guidelinesRef, (docSnap) => {
+                    console.log('Guidelines snapshot received:', docSnap.exists());
+                    if (docSnap.exists()) {
+                        const data = docSnap.data();
+                        console.log('Guidelines data updated:', data);
+                        
+                        // Update the global guidelines object
+                        guidelines = {
+                            goodPractices: data.goodPractices || [],
+                            prohibitedItems: data.prohibitedItems || []
+                        };
+                        
+                        // Re-render if we're on the guidelines section
+                        const activePageId = contentArea.firstElementChild?.id;
+                        if (activePageId === 'diretrizes-section') {
+                            renderGuidelines(document.getElementById('guidelines-search')?.value || '');
+                        }
+                    } else {
+                        console.log('No guidelines document found');
+                    }
+                }, (error) => {
+                    console.error('Error listening to guidelines:', error);
+                });
+                allUnsubscribers.push(unsubscribeGuidelines);
+            }
             
             // Load monthly highlight with real-time updates
             if (db) {
@@ -9135,9 +9163,14 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                     localStorage.setItem('slap-guidelines', JSON.stringify(guidelines));
                     console.log('Guidelines saved to localStorage (no database connection)');
                 } else {
-                    // Save to Firebase
+                    // Save to Firebase with timestamp for better tracking
                     const docRef = doc(db, `artifacts/${appId}/public/data`, 'guidelines');
-                    await setDoc(docRef, guidelines, { merge: true });
+                    const dataToSave = {
+                        ...guidelines,
+                        lastUpdated: serverTimestamp(),
+                        updatedBy: currentUserName || 'Unknown'
+                    };
+                    await setDoc(docRef, dataToSave, { merge: true });
                     console.log('Guidelines saved to Firebase successfully');
                     
                     // Also clear localStorage to prevent conflicts
@@ -9530,7 +9563,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                 { key: 'calendario-marketing', label: 'Calendário Marketing', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>', roles: ['admin', 'ap', 'am', 'financeiro', 'pedagogico'] },
                 { key: 'desafio-pedagogico', label: 'Desafio Pedagógico', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>', roles: ['admin', 'pedagogico', 'teacher', 'ap'] },
                 { key: 'diretrizes', label: 'Diretrizes', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14,2 14,8 20,8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10,9 9,9 8,9"></polyline></svg>', roles: ['admin', 'teacher', 'pedagogico', 'ap'] },
-                { key: 'fluxos', label: 'Fluxos', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="7.5 4.21 12 6.81 16.5 4.21"></polyline><polyline points="7.5 19.79 7.5 14.6 3 12"></polyline><polyline points="21 12 16.5 14.6 16.5 19.79"></polyline><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>', roles: ['admin', 'pedagogico', 'financeiro'] },
+                { key: 'fluxos', label: 'Fluxos', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="7.5 4.21 12 6.81 16.5 4.21"></polyline><polyline points="7.5 19.79 7.5 14.6 3 12"></polyline><polyline points="21 12 16.5 14.6 16.5 19.79"></polyline><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>', roles: ['admin', 'pedagogico', 'financeiro', 'ap'] },
                 { key: 'tarefas', label: 'Tarefas', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>', roles: ['admin', 'am', 'ap', 'pedagogico', 'financeiro', 'teacher'] },
                 { key: 'cps', label: 'CPs', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>', roles: ['admin', 'pedagogico', 'ap'] },
                 { key: 'campanhas', label: 'Campanhas', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>', roles: ['admin', 'am', 'ap', 'pedagogico'] },
