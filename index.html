@@ -2840,8 +2840,8 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                 .filter(exp => !exp.isPaid)
                 .reduce((sum, exp) => sum + Number(exp.amount) + Number(exp.extraAmount || 0), 0);
 
-            const totalExpenses = monthlyExpenses
-                .reduce((sum, exp) => sum + Number(exp.amount) + Number(exp.extraAmount || 0), 0);
+            // Total despesas deve ser igual ao total a pagar (despesas não pagas)
+            const totalExpenses = totalToPay;
 
             const totalPaid = monthlyExpenses
                 .filter(exp => exp.isPaid)
