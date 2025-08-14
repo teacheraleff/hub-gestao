@@ -2847,10 +2847,18 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                 .filter(exp => exp.isPaid)
                 .reduce((sum, exp) => sum + Number(exp.paidAmount || exp.amount), 0);
 
-            // Calcular receita (você pode ajustar essa lógica conforme necessário)
-            const totalRevenue = 50000; // Valor exemplo - você pode calcular baseado em matrículas/mensalidades
+            // Calcular receita total baseada nos dados dos alunos
+            const students = getStudents();
+            const totalRevenue = students
+                .filter(student => student.status === 'Ativo')
+                .reduce((sum, student) => {
+                    const monthlyValue = student.modalidade === 'VIP' ? 
+                        Number(student.valorVip || 0) : 
+                        Number(student.valorMensalidade || 0);
+                    return sum + monthlyValue;
+                }, 0);
 
-            const profit = totalRevenue - totalPaid;
+            const profit = totalRevenue - totalExpenses;
 
             contentArea.innerHTML = `
                 <!-- Cards de Resumo Financeiro -->
