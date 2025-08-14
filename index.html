@@ -1299,7 +1299,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                         <h2 class="text-2xl font-bold text-stone-900">Acesse sua conta</h2>
                         <p class="mt-2 text-sm text-stone-600">Bem-vindo(a) de volta!</p>
                     </div>
-                    <form id="login-form" class="mt-8 space-y-6" onsubmit="return false;">
+                    <div class="mt-8 space-y-6">
                         <div>
                             <label for="email" class="sr-only">E-mail</label>
                             <input id="email" name="email" type="email" autocomplete="email" required 
@@ -1312,9 +1312,9 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                         </div>
                         <p id="login-error" class="text-sm text-red-600 text-center hidden"></p>
                         <div>
-                            <button type="button" id="login-submit-btn" class="primary-btn full-width">Entrar</button>
+                            <button type="button" class="primary-btn full-width" onclick="performLogin()">Entrar</button>
                         </div>
-                    </form>
+                    </div>
                     <p class="text-sm text-center text-stone-600">
                         Não tem uma conta?
                         <button id="show-signup" class="font-medium" style="color: #F1D24B;">Cadastre-se</button>
@@ -1346,46 +1346,8 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                 </div>
             `;
             
-            // Set up login button after form is rendered
-            console.log('Login form rendered, setting up button handler');
-            
-            setTimeout(() => {
-                const loginBtn = document.getElementById('login-submit-btn');
-                if (loginBtn) {
-                    loginBtn.addEventListener('click', function() {
-                        console.log('Login button clicked via addEventListener');
-                        if (typeof window.doLogin === 'function') {
-                            window.doLogin();
-                        } else {
-                            console.error('doLogin function not found!');
-                        }
-                    });
-                    console.log('Login button event listener attached successfully');
-                } else {
-                    console.error('Login button not found!');
-                }
-                
-                // Add Enter key support
-                const emailInput = document.getElementById('email');
-                const passwordInput = document.getElementById('password');
-                
-                [emailInput, passwordInput].forEach(input => {
-                    if (input) {
-                        input.addEventListener('keypress', function(e) {
-                            if (e.key === 'Enter') {
-                                console.log('Enter key pressed, triggering login');
-                                if (typeof window.doLogin === 'function') {
-                                    window.doLogin();
-                                } else {
-                                    console.error('doLogin function not found!');
-                                }
-                            }
-                        });
-                    }
-                });
-                
-                console.log('Enter key listeners added to form inputs');
-            }, 100);
+            // Login form now uses direct onclick - no event listeners needed
+            console.log('Login form rendered with onclick handler');
             
             // Add event listeners for signup functionality
             const signupFormElement = document.getElementById('signup-form-element');
@@ -1435,82 +1397,6 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
             pendingView.classList.add('flex');
         }
         function setActiveNavItem(element) { document.querySelectorAll('#main-navigation .nav-item').forEach(item => item.classList.remove('active')); if (element) element.classList.add('active'); }
-        // Simplified login function - Fixed version
-        window.doLogin = async function() {
-            console.log('=== doLogin function called ===');
-            
-            // Clear logout flag when user manually logs in
-            window.isLoggedOut = false;
-            
-            const email = document.getElementById('email')?.value || '';
-            const password = document.getElementById('password')?.value || '';
-            
-            console.log('Email:', email);
-            console.log('Password provided:', password.length > 0);
-            
-            if (!email || !password) {
-                console.error('Email or password missing');
-                const errorElement = document.getElementById('login-error');
-                if(errorElement) {
-                    errorElement.textContent = 'Por favor, preencha email e senha.';
-                    errorElement.classList.remove('hidden');
-                }
-                return;
-            }
-            
-            // Show loading state
-            const submitButton = document.querySelector('#login-form button');
-            const originalText = submitButton.textContent;
-            submitButton.textContent = 'Entrando...';
-            submitButton.disabled = true;
-            
-            // Clear any previous error messages
-            const errorElement = document.getElementById('login-error');
-            if(errorElement) {
-                errorElement.classList.add('hidden');
-            }
-            
-            try {
-                if (!window.firebaseAuth) {
-                    console.error('Firebase auth not available');
-                    throw new Error('Sistema não inicializado. Recarregue a página.');
-                }
-                
-                console.log('Attempting Firebase login...');
-                const userCredential = await signInWithEmailAndPassword(window.firebaseAuth, email, password);
-                console.log('Login successful for user:', userCredential.user.email);
-                
-                // Success will be handled by onAuthStateChanged
-                return;
-                
-            } catch (error) {
-                console.error('Login error:', error);
-                let errorMessage = "E-mail ou senha inválidos.";
-                
-                if (error.code === 'auth/network-request-failed') {
-                    errorMessage = "Erro de conexão. Verifique sua internet.";
-                } else if (error.code === 'auth/too-many-requests') {
-                    errorMessage = "Muitas tentativas. Tente novamente mais tarde.";
-                } else if (error.code === 'auth/user-not-found') {
-                    errorMessage = "Usuário não encontrado.";
-                } else if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-                    errorMessage = "Senha incorreta.";
-                } else if (error.code === 'auth/invalid-email') {
-                    errorMessage = "E-mail inválido.";
-                } else if (error.code === 'auth/user-disabled') {
-                    errorMessage = "Conta desabilitada. Contate o administrador.";
-                }
-                
-                if(errorElement) {
-                    errorElement.textContent = errorMessage;
-                    errorElement.classList.remove('hidden');
-                }
-            } finally {
-                // Restore button state
-                submitButton.textContent = originalText;
-                submitButton.disabled = false;
-            }
-        }
 
         async function handleLogin(event) {
             return window.doLogin();
@@ -9256,8 +9142,85 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
         window.handleLogin = handleLogin;
         window.renderLoginForm = renderLoginForm;
         
-        // Ensure doLogin is available globally EARLY
-        console.log('Setting up doLogin function globally...');
+        // Simple direct login function
+        window.performLogin = async function() {
+            console.log('=== performLogin function called ===');
+            
+            // Clear logout flag when user manually logs in
+            window.isLoggedOut = false;
+            
+            const email = document.getElementById('email')?.value || '';
+            const password = document.getElementById('password')?.value || '';
+            
+            console.log('Email:', email);
+            console.log('Password provided:', password.length > 0);
+            
+            if (!email || !password) {
+                console.error('Email or password missing');
+                const errorElement = document.getElementById('login-error');
+                if(errorElement) {
+                    errorElement.textContent = 'Por favor, preencha email e senha.';
+                    errorElement.classList.remove('hidden');
+                }
+                return;
+            }
+            
+            // Show loading state
+            const submitButton = document.querySelector('button[onclick="performLogin()"]');
+            const originalText = submitButton.textContent;
+            submitButton.textContent = 'Entrando...';
+            submitButton.disabled = true;
+            
+            // Clear any previous error messages
+            const errorElement = document.getElementById('login-error');
+            if(errorElement) {
+                errorElement.classList.add('hidden');
+            }
+            
+            try {
+                if (!window.firebaseAuth) {
+                    console.error('Firebase auth not available');
+                    throw new Error('Sistema não inicializado. Recarregue a página.');
+                }
+                
+                console.log('Attempting Firebase login...');
+                const userCredential = await signInWithEmailAndPassword(window.firebaseAuth, email, password);
+                console.log('Login successful for user:', userCredential.user.email);
+                
+                // Success will be handled by onAuthStateChanged
+                return;
+                
+            } catch (error) {
+                console.error('Login error:', error);
+                let errorMessage = "E-mail ou senha inválidos.";
+                
+                if (error.code === 'auth/network-request-failed') {
+                    errorMessage = "Erro de conexão. Verifique sua internet.";
+                } else if (error.code === 'auth/too-many-requests') {
+                    errorMessage = "Muitas tentativas. Tente novamente mais tarde.";
+                } else if (error.code === 'auth/user-not-found') {
+                    errorMessage = "Usuário não encontrado.";
+                } else if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+                    errorMessage = "Senha incorreta.";
+                } else if (error.code === 'auth/invalid-email') {
+                    errorMessage = "E-mail inválido.";
+                } else if (error.code === 'auth/user-disabled') {
+                    errorMessage = "Conta desabilitada. Contate o administrador.";
+                }
+                
+                if(errorElement) {
+                    errorElement.textContent = errorMessage;
+                    errorElement.classList.remove('hidden');
+                }
+            } finally {
+                // Restore button state
+                submitButton.textContent = originalText;
+                submitButton.disabled = false;
+            }
+        };
+
+        console.log('performLogin function defined globally');
+        
         window.showSection = function(sectionName) {
             const navItem = document.querySelector(`[data-target="${sectionName}"]`);
             if (navItem) navItem.click();
