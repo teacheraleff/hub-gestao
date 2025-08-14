@@ -2058,7 +2058,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                     <div class="mt-auto pt-4 border-t border-stone-100 flex gap-2">
                         ${vipRecord ? `
                             <button class="primary-btn !text-sm flex-1 text-center" data-action="open-vip-pef" data-id="${vipRecord.id}">PEF</button>
-                            <button class="secondary-btn !text-sm flex-1" data-action="edit-vip" data-id="${vipRecord.id}">Configurar</button>
+                            ${currentUserRole !== 'teacher' ? `<button class="secondary-btn !text-sm flex-1" data-action="edit-vip" data-id="${vipRecord.id}">Configurar</button>` : ''}
                         ` : ''}
                     </div>
                 </div>`}).join('') || '<p class="col-span-full text-center py-10 text-stone-500">Nenhum aluno VIP encontrado.</p>';
