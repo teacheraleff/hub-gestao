@@ -1077,6 +1077,12 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
 
                 onAuthStateChanged(auth, async (user) => {
                     try {
+                        // Check if we explicitly logged out
+                        if (window.isLoggedOut) {
+                            console.log('User is logged out, staying on login screen');
+                            return;
+                        }
+                        
                         if (user && !user.isAnonymous) {
                             await initializeAppWithUser(user);
                         } else if (user && user.isAnonymous) {
@@ -1088,7 +1094,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                             updateWelcomeMessages(currentUserName);
                             showHubView();
                         } else {
-                            // No user - sign in anonymously to enable Firebase sync
+                            // No user - sign in anonymously to enable Firebase sync only if not logged out
                             try {
                                 await signInAnonymously(auth);
                             } catch (authError) {
@@ -1375,18 +1381,31 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
         function setActiveNavItem(element) { document.querySelectorAll('#main-navigation .nav-item').forEach(item => item.classList.remove('active')); if (element) element.classList.add('active'); }
         async function handleLogin(event) {
             event.preventDefault();
+            
+            // Clear logout flag when user manually logs in
+            window.isLoggedOut = false;
+            
             const email = event.target.email.value;
             const password = event.target.password.value;
             try {
                 await signInWithEmailAndPassword(auth, email, password);
             } catch (error) {
                 const errorElement = document.getElementById('login-error');
-                if(errorElement) errorElement.textContent = "E-mail ou senha inválidos.";
+                if(errorElement) {
+                    errorElement.textContent = "E-mail ou senha inválidos.";
+                    errorElement.classList.remove('hidden');
+                }
             }
         }
         async function handleSignUp(event) { event.preventDefault(); const name = event.target.name.value; const email = event.target.email.value; const password = event.target.password.value; try { const cred = await createUserWithEmailAndPassword(auth, email, password); await updateProfile(cred.user, { displayName: name }); await setDoc(doc(db, "users", cred.user.uid), { name, email, role: "pending", createdAt: serverTimestamp() }); await signOut(auth); showSuccessMessage("Cadastro Concluído!", "Sua conta foi criada. Aguarde aprovação de um administrador para acessar."); } catch (error) { showErrorMessage("Erro", "Erro ao criar conta. Verifique o e-mail e a senha."); } }
         async function handleLogout() {
             try {
+                console.log('Starting logout process...');
+                
+                // Set logout flag to prevent automatic re-login
+                window.isLoggedOut = true;
+                window.isDevelopmentMode = false;
+                
                 // Clear current user data but preserve localStorage data
                 currentUserName = null;
                 currentUserRole = null;
@@ -1394,9 +1413,6 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                 
                 // Clear user profile data
                 userProfiles = {};
-                
-                // Clear development mode flag to prevent auto-login
-                window.isDevelopmentMode = false;
                 
                 // Unsubscribe from Firebase listeners to prevent memory leaks
                 allUnsubscribers.forEach(unsubscriber => {
@@ -1428,6 +1444,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
             } catch (error) {
                 console.error('Logout error:', error);
                 // Even if there's an error, force redirect to login
+                window.isLoggedOut = true;
                 window.isDevelopmentMode = false;
                 document.getElementById('hub-view').classList.add('hidden');
                 document.getElementById('pending-view').classList.add('hidden');
@@ -3224,9 +3241,9 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                                                 const totalDue = Number(exp.amount) + Number(exp.extraAmount || 0);
                                                 const paid = Number(exp.paidAmount || 0);
                                                 const remaining = totalDue - paid;
-                                                if (remaining <= 0) return '<span class="text-green-600 font-semibold">● Pago</span>';
-                                                if (paid > 0) return '<span class="text-yellow-600 font-semibold">◐ Parcial</span>';
-                                                return '<span class="text-red-600 font-semibold">○ A pagar</span>';
+                                                if (remaining <= 0) return '<div class="w-3 h-3 rounded-full bg-green-500"></div>';
+                                                if (paid > 0) return '<div class="w-3 h-3 rounded-full bg-yellow-500"></div>';
+                                                return '<div class="w-3 h-3 rounded-full bg-red-500"></div>';
                                             })()}
                                         </td>
                                         <td class="font-medium cursor-pointer" data-action="view-expense" data-id="${exp.id}">${exp.description} ${exp.isFixedSalary && exp.employeeRole ? `<span class="sector-tag">${exp.employeeRole}</span>` : ''}</td>
@@ -9966,10 +9983,11 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                 }
 
                 // Expense filtering
-                if (event.target.matches('[data-expense-filter]')) {
-                    const filter = event.target.dataset.expenseFilter;
+                const expenseFilterButton = event.target.closest('[data-expense-filter]');
+                if (expenseFilterButton) {
+                    const filter = expenseFilterButton.dataset.expenseFilter;
                     document.querySelectorAll('[data-expense-filter]').forEach(btn => btn.classList.remove('active'));
-                    event.target.classList.add('active');
+                    expenseFilterButton.classList.add('active');
                     filterExpenses(filter);
                 }
             });
