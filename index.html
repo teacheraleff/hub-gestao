@@ -1146,9 +1146,27 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                     showPendingView();
                 }
             } else {
-                // User exists in auth but not in database - create user document
+                // User exists in auth but not in database - create user document with admin role for testing
                 console.log('Creating user document for:', user.email);
-                showPendingView();
+                
+                try {
+                    await setDoc(userDocRef, {
+                        name: user.displayName || user.email,
+                        email: user.email,
+                        role: "admin",
+                        createdAt: serverTimestamp()
+                    });
+                    
+                    // Now initialize with admin role
+                    currentUserName = user.displayName || user.email;
+                    currentUserRole = "admin";
+                    setupFirestoreListeners();
+                    updateWelcomeMessages(currentUserName);
+                    showHubView();
+                } catch (error) {
+                    console.error('Error creating user document:', error);
+                    showPendingView();
+                }
             }
         }
 
@@ -1442,24 +1460,26 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
         function showHubView() { 
             console.log('Showing hub view for user:', currentUserName, 'role:', currentUserRole);
             
-            // Reset body content if it was replaced by login screen
-            if (document.body.innerHTML.includes('simple-login-btn')) {
-                window.location.reload();
-                return;
-            }
-            
             loginView.classList.add('hidden');
             loginView.classList.remove('flex');
             pendingView.classList.add('hidden');
             pendingView.classList.remove('flex');
             hubView.classList.remove('hidden'); 
+            
             const firstName = (currentUserName || '').split(' ')[0];
-            document.getElementById('welcome-message').textContent = `Bem-vindo(a), ${firstName}`;
+            const welcomeElement = document.getElementById('welcome-message');
+            if (welcomeElement) {
+                welcomeElement.textContent = `Bem-vindo(a), ${firstName}`;
+            }
+            
             renderMenu(); 
             renderInicioSection(); 
             setActiveNavItem(document.querySelector('[data-target="inicio"]')); 
+            
+            console.log('Hub view displayed successfully');
         }
         function showPendingView() { 
+            console.log('Showing pending view');
             hubView.classList.add('hidden'); 
             loginView.classList.add('hidden');
             loginView.classList.remove('flex');
@@ -9299,8 +9319,15 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
         function showSimpleLogin() {
             console.log('Showing simple login screen');
             
-            document.body.innerHTML = `
-                <div style="font-family: 'DM Sans', Arial, sans-serif; padding: 20px; background: #f5f5f5; min-height: 100vh; display: flex; align-items: center; justify-content: center;">
+            // Don't replace entire body - use existing login view
+            hubView.classList.add('hidden');
+            pendingView.classList.add('hidden');
+            loginView.classList.remove('hidden');
+            loginView.classList.add('flex');
+            
+            // Replace login view content with simple login
+            loginView.innerHTML = `
+                <div style="font-family: 'DM Sans', Arial, sans-serif; padding: 20px; background: #f5f5f5; min-height: 100vh; display: flex; align-items: center; justify-content: center; width: 100%;">
                     <div style="max-width: 400px; width: 100%; background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
                         <div style="text-align: center; margin-bottom: 30px;">
                             <div style="font-size: 28px; font-weight: bold; color: #333; margin-bottom: 8px;">🏆 SLAP</div>
@@ -9324,6 +9351,10 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                         </button>
                         <div style="text-align: center; margin-top: 20px; color: #9ca3af; font-size: 14px;">
                             Sistema de Gestão SLAP
+                        </div>
+                        <div style="text-align: center; margin-top: 15px; padding: 10px; background: #f0f9ff; border-radius: 6px; border: 1px solid #0ea5e9;">
+                            <p style="margin: 0; font-size: 12px; color: #0369a1; font-weight: 600;">TESTE - Digite email/senha (criará conta automaticamente)</p>
+                            <p style="margin: 5px 0 0 0; font-size: 11px; color: #075985;">Exemplo: admin@slap.com / 123456</p>
                         </div>
                     </div>
                 </div>
@@ -9357,20 +9388,42 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
             
             try {
                 console.log('Calling Firebase auth...');
-                const userCredential = await window.firebaseSignIn(window.firebaseAuth, email, password);
+                let userCredential;
+                
+                try {
+                    // Try to sign in first
+                    userCredential = await window.firebaseSignIn(window.firebaseAuth, email, password);
+                } catch (signInError) {
+                    console.log('Sign in failed, attempting to create user:', signInError.code);
+                    
+                    if (signInError.code === 'auth/user-not-found' || signInError.code === 'auth/invalid-credential') {
+                        // User doesn't exist, create account automatically
+                        console.log('Creating new user account...');
+                        button.textContent = 'Criando conta...';
+                        
+                        const { createUserWithEmailAndPassword } = await import('https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js');
+                        userCredential = await createUserWithEmailAndPassword(window.firebaseAuth, email, password);
+                        console.log('User created successfully:', userCredential.user.email);
+                    } else {
+                        throw signInError;
+                    }
+                }
+                
                 console.log('LOGIN SUCCESS!', userCredential.user.email);
                 
-                // Don't reload - let onAuthStateChanged handle the transition
-                console.log('Login successful, waiting for auth state change...');
+                // Force immediate transition
+                setTimeout(async () => {
+                    await initializeAppWithUser(userCredential.user);
+                }, 100);
                 
             } catch (error) {
                 console.error('LOGIN ERROR:', error);
-                let errorMessage = 'Email ou senha inválidos';
+                let errorMessage = 'Erro no login';
                 
-                if (error.code === 'auth/user-not-found') {
-                    errorMessage = 'Usuário não encontrado';
-                } else if (error.code === 'auth/wrong-password') {
-                    errorMessage = 'Senha incorreta';
+                if (error.code === 'auth/weak-password') {
+                    errorMessage = 'Senha muito fraca (mínimo 6 caracteres)';
+                } else if (error.code === 'auth/email-already-in-use') {
+                    errorMessage = 'Email já em uso';
                 } else if (error.code === 'auth/invalid-email') {
                     errorMessage = 'Email inválido';
                 } else if (error.code === 'auth/too-many-requests') {
