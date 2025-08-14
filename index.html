@@ -1290,7 +1290,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                         <h2 class="text-2xl font-bold text-stone-900">Acesse sua conta</h2>
                         <p class="mt-2 text-sm text-stone-600">Bem-vindo(a) de volta!</p>
                     </div>
-                    <form id="login-form" class="mt-8 space-y-6">
+                    <form id="login-form" class="mt-8 space-y-6" onsubmit="return false;">
                         <div>
                             <label for="email" class="sr-only">E-mail</label>
                             <input id="email" name="email" type="email" autocomplete="email" required 
@@ -1303,7 +1303,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                         </div>
                         <p id="login-error" class="text-sm text-red-600 text-center hidden"></p>
                         <div>
-                            <button type="submit" class="primary-btn full-width">Entrar</button>
+                            <button type="button" onclick="doLogin()" class="primary-btn full-width">Entrar</button>
                         </div>
                     </form>
                     <p class="text-sm text-center text-stone-600">
@@ -1337,16 +1337,8 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                 </div>
             `;
             
-            // Add event listeners for the login form
-            setTimeout(() => {
-                const loginForm = document.getElementById('login-form');
-                if (loginForm) {
-                    loginForm.addEventListener('submit', handleLogin);
-                    console.log('Login form event listener added successfully');
-                } else {
-                    console.error('Login form not found!');
-                }
-            }, 100);
+            // Login form is now handled by onclick event
+            console.log('Login form rendered with direct onclick handler');
             
             // Add event listeners for signup functionality
             const signupFormElement = document.getElementById('signup-form-element');
@@ -1396,40 +1388,62 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
             pendingView.classList.add('flex');
         }
         function setActiveNavItem(element) { document.querySelectorAll('#main-navigation .nav-item').forEach(item => item.classList.remove('active')); if (element) element.classList.add('active'); }
-        async function handleLogin(event) {
-            console.log('handleLogin called');
-            event.preventDefault();
+        // Simplified login function
+        window.doLogin = async function() {
+            console.log('doLogin called');
             
             // Clear logout flag when user manually logs in
             window.isLoggedOut = false;
             
-            const email = event.target.email.value;
-            const password = event.target.password.value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
             
             console.log('Attempting login with email:', email);
             
             // Show loading state
-            const submitButton = event.target.querySelector('button[type="submit"]');
+            const submitButton = document.querySelector('#login-form button');
             const originalText = submitButton.textContent;
             submitButton.textContent = 'Entrando...';
             submitButton.disabled = true;
             
+            // Clear any previous error messages
+            const errorElement = document.getElementById('login-error');
+            if(errorElement) {
+                errorElement.classList.add('hidden');
+            }
+            
             try {
                 if (!auth) {
-                    throw new Error('Firebase auth not initialized');
+                    console.error('Firebase auth not initialized');
+                    throw new Error('Sistema não inicializado. Recarregue a página.');
                 }
-                await signInWithEmailAndPassword(auth, email, password);
-                console.log('Login successful');
+                
+                console.log('Firebase auth available, attempting login...');
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                console.log('Login successful for user:', userCredential.user.email);
+                
+                // Success will be handled by onAuthStateChanged
+                return;
+                
             } catch (error) {
                 console.error('Login error:', error);
-                const errorElement = document.getElementById('login-error');
+                let errorMessage = "E-mail ou senha inválidos.";
+                
+                if (error.code === 'auth/network-request-failed') {
+                    errorMessage = "Erro de conexão. Verifique sua internet.";
+                } else if (error.code === 'auth/too-many-requests') {
+                    errorMessage = "Muitas tentativas. Tente novamente mais tarde.";
+                } else if (error.code === 'auth/user-not-found') {
+                    errorMessage = "Usuário não encontrado.";
+                } else if (error.code === 'auth/wrong-password') {
+                    errorMessage = "Senha incorreta.";
+                } else if (error.code === 'auth/invalid-email') {
+                    errorMessage = "E-mail inválido.";
+                } else if (error.message) {
+                    errorMessage = error.message;
+                }
+                
                 if(errorElement) {
-                    let errorMessage = "E-mail ou senha inválidos.";
-                    if (error.code === 'auth/network-request-failed') {
-                        errorMessage = "Erro de conexão. Verifique sua internet.";
-                    } else if (error.code === 'auth/too-many-requests') {
-                        errorMessage = "Muitas tentativas. Tente novamente mais tarde.";
-                    }
                     errorElement.textContent = errorMessage;
                     errorElement.classList.remove('hidden');
                 }
@@ -1438,6 +1452,10 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                 submitButton.textContent = originalText;
                 submitButton.disabled = false;
             }
+        }
+
+        async function handleLogin(event) {
+            return window.doLogin();
         }
         async function handleSignUp(event) { event.preventDefault(); const name = event.target.name.value; const email = event.target.email.value; const password = event.target.password.value; try { const cred = await createUserWithEmailAndPassword(auth, email, password); await updateProfile(cred.user, { displayName: name }); await setDoc(doc(db, "users", cred.user.uid), { name, email, role: "pending", createdAt: serverTimestamp() }); await signOut(auth); showSuccessMessage("Cadastro Concluído!", "Sua conta foi criada. Aguarde aprovação de um administrador para acessar."); } catch (error) { showErrorMessage("Erro", "Erro ao criar conta. Verifique o e-mail e a senha."); } }
         async function handleLogout() {
