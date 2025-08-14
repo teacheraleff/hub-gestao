@@ -2836,20 +2836,26 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                 return null;
             }).filter(Boolean).sort((a, b) => a.effectiveDueDate - b.effectiveDueDate);
 
-            const totalToPay = monthlyExpenses
-                .filter(exp => !exp.isPaid)
+            // Calcular valor total de todas as despesas
+            const totalExpensesBase = monthlyExpenses
                 .reduce((sum, exp) => sum + Number(exp.amount) + Number(exp.extraAmount || 0), 0);
 
-            // Total despesas mostra apenas valores não pagos
-            const totalExpenses = totalToPay;
-
-            // Calcular valores pagos para deduzir do total
+            // Calcular todos os valores pagos (incluindo valores parciais digitados)
             const totalPaidValues = monthlyExpenses
-                .filter(exp => exp.isPaid && exp.paidAmount)
-                .reduce((sum, exp) => sum + Number(exp.paidAmount), 0);
+                .reduce((sum, exp) => {
+                    if (exp.paidAmount && exp.paidAmount > 0) {
+                        return sum + Number(exp.paidAmount);
+                    }
+                    return sum;
+                }, 0);
 
-            // Ajustar total a pagar considerando valores parciais pagos
-            const adjustedTotalToPay = totalToPay - totalPaidValues;
+            // Total a pagar = Total das despesas - Valores já pagos
+            const totalToPay = totalExpensesBase - totalPaidValues;
+            
+            // Total despesas para o card (apenas não pagas)
+            const totalExpenses = monthlyExpenses
+                .filter(exp => !exp.isPaid)
+                .reduce((sum, exp) => sum + Number(exp.amount) + Number(exp.extraAmount || 0), 0);
 
             const totalPaid = monthlyExpenses
                 .filter(exp => exp.isPaid)
@@ -2950,8 +2956,9 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                         </table>
                     </div>
                     <div class="data-total">
-                        <p>Total a Pagar: ${adjustedTotalToPay.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                        <p>Total a Pagar: ${totalToPay.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
                         ${totalPaidValues > 0 ? `<p class="text-green-600 text-sm mt-1">Valores Pagos: ${totalPaidValues.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>` : ''}
+                        <p class="text-stone-500 text-xs mt-1">Total Base: ${totalExpensesBase.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
                     </div>
                 </section>
             `;
