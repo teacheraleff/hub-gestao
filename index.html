@@ -1440,6 +1440,14 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
         }
 
         function showHubView() { 
+            console.log('Showing hub view for user:', currentUserName, 'role:', currentUserRole);
+            
+            // Reset body content if it was replaced by login screen
+            if (document.body.innerHTML.includes('simple-login-btn')) {
+                window.location.reload();
+                return;
+            }
+            
             loginView.classList.add('hidden');
             loginView.classList.remove('flex');
             pendingView.classList.add('hidden');
@@ -9352,8 +9360,8 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                 const userCredential = await window.firebaseSignIn(window.firebaseAuth, email, password);
                 console.log('LOGIN SUCCESS!', userCredential.user.email);
                 
-                // Reload page to show authenticated state
-                window.location.reload();
+                // Don't reload - let onAuthStateChanged handle the transition
+                console.log('Login successful, waiting for auth state change...');
                 
             } catch (error) {
                 console.error('LOGIN ERROR:', error);
