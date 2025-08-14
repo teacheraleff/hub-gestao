@@ -1082,9 +1082,11 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                 
                 // Make auth globally available for debugging
                 window.firebaseAuth = auth;
+                window.firebaseSignIn = signInWithEmailAndPassword;
                 
                 // Firebase is ready for authentication
                 console.log('Firebase ready for email/password authentication');
+                console.log('signInWithEmailAndPassword available:', typeof signInWithEmailAndPassword);
 
                 onAuthStateChanged(auth, async (user) => {
                     try {
@@ -1105,7 +1107,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                             updateWelcomeMessages(currentUserName);
                             showHubView();
                         } else {
-                            // No user - show login form instead of falling back to dev mode
+                            // No user - show login form
                             renderLoginForm();
                             loginView.classList.remove('hidden');
                             loginView.classList.add('flex');
@@ -1312,7 +1314,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                         </div>
                         <p id="login-error" class="text-sm text-red-600 text-center hidden"></p>
                         <div>
-                            <button type="button" class="primary-btn full-width" onclick="performLogin()">Entrar</button>
+                            <button type="button" class="primary-btn full-width" onclick="console.log('BUTTON CLICKED!'); performLogin();">Entrar</button>
                         </div>
                     </div>
                     <p class="text-sm text-center text-stone-600">
@@ -9166,7 +9168,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
             }
             
             // Show loading state
-            const submitButton = document.querySelector('button[onclick="performLogin()"]');
+            const submitButton = document.querySelector('button[onclick*="performLogin"]');
             const originalText = submitButton.textContent;
             submitButton.textContent = 'Entrando...';
             submitButton.disabled = true;
@@ -9184,8 +9186,12 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                 }
                 
                 console.log('Attempting Firebase login...');
-                const userCredential = await signInWithEmailAndPassword(window.firebaseAuth, email, password);
+                console.log('Using Firebase Auth object:', window.firebaseAuth);
+                console.log('signInWithEmailAndPassword function:', signInWithEmailAndPassword);
+                
+                const userCredential = await window.firebaseSignIn(window.firebaseAuth, email, password);
                 console.log('Login successful for user:', userCredential.user.email);
+                console.log('User credential:', userCredential);
                 
                 // Success will be handled by onAuthStateChanged
                 return;
