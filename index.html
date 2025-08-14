@@ -1107,11 +1107,9 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                             updateWelcomeMessages(currentUserName);
                             showHubView();
                         } else {
-                            // No user - show login form
-                            renderLoginForm();
-                            loginView.classList.remove('hidden');
-                            loginView.classList.add('flex');
-                            hubView.classList.add('hidden');
+                            // No user - redirect to simple login page
+                            console.log('No user found, redirecting to simple login');
+                            window.location.href = '/login-simple.html';
                         }
                     } catch (error) {
                         console.error("Error in auth state change:", error);
@@ -1125,11 +1123,8 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
 
             } catch (error) {
                 console.error("Error initializing Firebase:", error);
-                renderLoginForm();
-                loginView.classList.remove('hidden');
-                loginView.classList.add('flex');
-                hubView.classList.add('hidden');
-                showErrorMessage("Erro de Conexão", "Não foi possível conectar ao Firebase. Verifique sua conexão.");
+                console.log('Firebase error, redirecting to simple login');
+                window.location.href = '/login-simple.html';
             }
         }
 
