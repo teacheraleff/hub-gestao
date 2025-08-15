@@ -4256,6 +4256,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
 
         async function saveAllPefLessons(unitId, pefType) {
             try {
+                console.log("saveAllPefLessons called with:", unitId, pefType);
                 showSuccessMessage("Salvando...", "Processando todas as aulas. Aguarde...");
                 
                 let savedCount = 0;
@@ -10952,7 +10953,11 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                             }
                         },
                         'save-pef-lesson': () => savePefLesson(unitId, lessonNumber),
-                        'save-all-pef-lessons': () => saveAllPefLessons(id, status),
+                        'save-all-pef-lessons': () => {
+                            const unitId = actionTarget.getAttribute('data-unit-id');
+                            const pefType = actionTarget.getAttribute('data-pef-type');
+                            saveAllPefLessons(unitId, pefType);
+                        },
                         'add-campanha': () => {
                             console.log('add-campanha action triggered');
                             openCampanhaForm();
