@@ -463,8 +463,6 @@
         const hubView = document.getElementById('hub-view');
         const pendingView = document.getElementById('pending-view');
 
-
-
         let db, auth, storage, userId, currentUserName, currentUserRole;
         let usersData = [], students = [], turmas = [], vips = [], attendance = [], tasks = [], events = [], collaborators = [], schedules = [], expenses = [], cps = [], dojoRanking = [], dojoMissions = [], fluxos = [];
         let userProfiles = {};
@@ -496,6 +494,8 @@
             loadDemoData();
             updateWelcomeMessages(currentUserName);
             showHubView();
+            renderInicioSection();
+            renderMenu();
         }
 
         // Sistema de Backup dos CPs para proteger dados do usuário
@@ -1126,37 +1126,6 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
             getCollectionListener('dojo_missions', dojoMissions, renderDojoSection, (ref) => query(ref, orderBy("points", "desc")));
             getCollectionListener('fluxos', fluxos, renderFluxosSection);
 
-            // Load guidelines with real-time updates for all users
-            if (db) {
-                const guidelinesRef = doc(db, `artifacts/${appId}/public/data`, 'guidelines');
-                const unsubscribeGuidelines = onSnapshot(guidelinesRef, (docSnap) => {
-                    console.log('Guidelines snapshot received:', docSnap.exists());
-                    if (docSnap.exists()) {
-                        const data = docSnap.data();
-                        console.log('Guidelines data from Firebase:', data);
-                        // Extract guidelines structure from Firebase
-                        const { lastUpdated, updatedBy, ...cleanGuidelines } = data;
-                        guidelines = {
-                            goodPractices: cleanGuidelines.goodPractices || [],
-                            prohibitedItems: cleanGuidelines.prohibitedItems || []
-                        };
-                        console.log('Guidelines sincronizadas do Firebase para todos os usuários!');
-                        
-                        // Re-render if we're on the guidelines section
-                        const activePageId = contentArea.firstElementChild?.id;
-                        if (activePageId === 'diretrizes-section') {
-                            renderDiretrizesSection();
-                        }
-                    } else {
-                        console.log('No guidelines document found in Firebase');
-                        loadGuidelines(); // Fallback to local loading
-                    }
-                }, (error) => {
-                    console.error('Error listening to guidelines:', error);
-                    loadGuidelines(); // Fallback to local loading
-                });
-                allUnsubscribers.push(unsubscribeGuidelines);
-            }
             
             // Load monthly highlight with real-time updates
             if (db) {
@@ -8678,40 +8647,19 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
 
         async function saveGuidelines() {
             try {
-                if (window.isDevelopmentMode || !db) {
-                    // In development mode, simulate Firebase structure
-                    console.log('Modo desenvolvimento: salvando diretrizes com estrutura Firebase');
-                    const dataToSave = {
-                        ...guidelines,
-                        lastUpdated: new Date().toISOString(),
-                        updatedBy: currentUserName || 'Admin'
-                    };
-                    localStorage.setItem('slap-guidelines', JSON.stringify(dataToSave));
-                    showSuccessMessage("Diretrizes salvas com sucesso!");
+                if (!db) {
+                    // Local storage fallback
+                    localStorage.setItem('slap-guidelines', JSON.stringify(guidelines));
                 } else {
-                    // Save to Firebase with timestamp
-                    console.log('Salvando diretrizes no Firebase para todos os usuários...');
+                    // Save to Firebase
                     const docRef = doc(db, `artifacts/${appId}/public/data`, 'guidelines');
-                    const dataToSave = {
-                        goodPractices: guidelines.goodPractices || [],
-                        prohibitedItems: guidelines.prohibitedItems || [],
-                        lastUpdated: serverTimestamp(),
-                        updatedBy: currentUserName || 'Admin'
-                    };
-                    await setDoc(docRef, dataToSave);
-                    console.log('Diretrizes salvas no Firebase com sucesso!');
-                    showSuccessMessage("Diretrizes sincronizadas para todos os usuários!");
+                    await setDoc(docRef, guidelines);
+                    console.log('Guidelines saved to Firebase successfully');
                 }
             } catch (error) {
                 console.error('Error saving guidelines:', error);
                 // Fallback to localStorage if Firebase fails
-                const fallbackData = {
-                    ...guidelines,
-                    lastUpdated: new Date().toISOString(),
-                    updatedBy: currentUserName || 'Admin'
-                };
-                localStorage.setItem('slap-guidelines', JSON.stringify(fallbackData));
-                showErrorMessage("Erro ao sincronizar", "Diretrizes salvas localmente. Erro: " + error.message);
+                localStorage.setItem('slap-guidelines', JSON.stringify(guidelines));
             }
         }
 
