@@ -21,6 +21,26 @@
             color: #F1D24B;
             font-weight: 600;
         }
+        .tab-btn {
+            padding: 8px 16px;
+            border: 2px solid #e5e7eb;
+            background-color: #f9fafb;
+            color: #6b7280;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .tab-btn:hover {
+            background-color: #f3f4f6;
+            border-color: #d1d5db;
+        }
+        .tab-btn.active {
+            background-color: #F1D24B;
+            color: #44403c;
+            border-color: #F1D24B;
+            font-weight: 600;
+        }
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; z-index: 9999; opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s; }
         .modal-overlay.visible { opacity: 1; visibility: visible; }
         .modal-content { background-color: white; padding: 2rem; border-radius: 0.75rem; width: 90%; max-width: 800px; max-height: 90vh; overflow-y: auto; transform: scale(0.95); transition: transform 0.3s; }
@@ -1989,7 +2009,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                     </div>
                     <div class="mt-auto pt-4 border-t border-stone-100 flex gap-2">
                         ${canManage ? `<button class="secondary-btn !text-sm flex-1" data-action="edit-turma" data-id="${t.id}">Editar</button>` : ''}
-                        <button class="primary-btn !text-sm flex-1 text-center" data-action="open-turma-pef" data-id="${t.id}">PEF</button>
+                        <button class="primary-btn !text-sm flex-1 flex items-center justify-center" data-action="open-turma-pef" data-id="${t.id}">PEF</button>
                     </div>
                 </div>`}).join('') || '<p class="col-span-full text-center py-10 text-stone-500">Nenhuma turma encontrada.</p>';
         }
@@ -2073,7 +2093,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                     </div>
                     <div class="mt-auto pt-4 border-t border-stone-100 flex gap-2">
                         ${vipRecord ? `
-                            <button class="primary-btn !text-sm flex-1 text-center" data-action="open-vip-pef" data-id="${vipRecord.id}">PEF</button>
+                            <button class="primary-btn !text-sm flex-1 flex items-center justify-center" data-action="open-vip-pef" data-id="${vipRecord.id}">PEF</button>
                             ${currentUserRole !== 'teacher' ? `<button class="secondary-btn !text-sm flex-1" data-action="edit-vip" data-id="${vipRecord.id}">Configurar</button>` : ''}
                         ` : ''}
                     </div>
@@ -2264,7 +2284,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                             </div>
                             <div class="mt-auto pt-4 border-t border-stone-100 flex gap-2">
                                 ${canManage ? `<button class="secondary-btn !text-sm flex-1" data-action="edit-turma" data-id="${t.id}">Editar</button>` : ''}
-                                <button class="primary-btn !text-sm flex-1 text-center" data-action="open-turma-pef" data-id="${t.id}">PEF</button>
+                                <button class="primary-btn !text-sm flex-1 flex items-center justify-center" data-action="open-turma-pef" data-id="${t.id}">PEF</button>
                             </div>
                         </div>`}).join('') || '<p class="col-span-full text-center py-10 text-stone-500">Nenhuma turma encontrada.</p>'}
                     </div>
@@ -2488,47 +2508,136 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
             document.getElementById('main-title').textContent = 'Lista de Tarefas'; 
             document.getElementById('main-description').textContent = 'Gerencie e acompanhe as tarefas da equipe.'; 
 
-            const collaboratorOptions = collaborators.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+            const isAdmin = currentUserRole === 'admin';
+            let filterHtml = '';
+
+            if (isAdmin) {
+                // Admin vê todos os filtros incluindo colaboradores
+                const collaboratorOptions = collaborators.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+                filterHtml = `
+                    <div class="grade-select-container flex-grow">
+                        <label for="task-filter" class="block text-sm font-medium text-stone-700 mb-1">Filtrar por colaborador:</label>
+                        <select id="task-filter" class="grade-select">
+                            <option value="all">Todos</option>
+                            ${collaboratorOptions}
+                        </select>
+                    </div>
+                `;
+            } else {
+                // Usuários não-admin veem apenas abas para suas tarefas e delegadas por eles
+                filterHtml = `
+                    <div class="flex gap-2 mb-4">
+                        <button id="tab-minhas-tarefas" class="tab-btn active" onclick="switchTaskTab('minhas')">Minhas Tarefas</button>
+                        <button id="tab-delegadas-por-mim" class="tab-btn" onclick="switchTaskTab('delegadas')">Delegadas por Mim</button>
+                    </div>
+                `;
+            }
 
             contentArea.innerHTML = `
                 <div id="tasks-section">
                     <div class="flex justify-between items-center mb-6 flex-wrap gap-4">
-                        <div class="grade-select-container flex-grow">
-                             <label for="task-filter" class="block text-sm font-medium text-stone-700 mb-1">Filtrar por colaborador:</label>
-                             <select id="task-filter" class="grade-select">
-                                <option value="all">Todos</option>
-                                ${collaboratorOptions}
-                            </select>
-                        </div>
+                        ${filterHtml}
                         <div class="flex gap-2">
                             <button class="primary-btn w-auto" data-action="add-task">+ Adicionar Tarefa</button>
                         </div>
                     </div>
                     <div id="task-list-container" class="space-y-4"></div>
                 </div>`; 
-            document.getElementById('task-filter').addEventListener('change', () => updateTaskList());
+            
+            if (isAdmin) {
+                document.getElementById('task-filter').addEventListener('change', () => updateTaskList());
+            }
             updateTaskList(); 
+        }
+
+        let currentTaskTab = 'minhas'; // Para usuários não-admin
+
+        function switchTaskTab(tabType) {
+            currentTaskTab = tabType;
+            // Update tab visual state
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`tab-${tabType === 'minhas' ? 'minhas-tarefas' : 'delegadas-por-mim'}`).classList.add('active');
+            updateTaskList();
         }
 
         function updateTaskList() { 
             const container = document.getElementById('task-list-container'); 
             if (!container) return; 
 
-            const filterValue = document.getElementById('task-filter')?.value || 'all';
-            let filteredTasks = [...tasks]; 
+            const isAdmin = currentUserRole === 'admin';
+            let filteredTasks = [...tasks];
 
-            if (filterValue !== 'all') {
-                filteredTasks = tasks.filter(task => task.assignedTo && task.assignedTo.includes(filterValue));
+            if (isAdmin) {
+                // Admin vê filtro por colaborador
+                const filterValue = document.getElementById('task-filter')?.value || 'all';
+                if (filterValue !== 'all') {
+                    filteredTasks = tasks.filter(task => task.assignedTo && task.assignedTo.includes(filterValue));
+                }
+            } else {
+                // Usuários não-admin veem suas tarefas ou delegadas por eles
+                if (currentTaskTab === 'minhas') {
+                    // Tarefas atribuídas para o usuário atual
+                    filteredTasks = tasks.filter(task => 
+                        task.assignedTo && task.assignedTo.includes(currentUserName)
+                    );
+                } else {
+                    // Tarefas delegadas pelo usuário atual
+                    filteredTasks = tasks.filter(task => 
+                        task.assignedBy === currentUserName
+                    );
+                }
             }
 
             filteredTasks.sort((a, b) => a.completed - b.completed || new Date(a.deadline) - new Date(b.deadline)); 
-            if (filteredTasks.length === 0) { container.innerHTML = `<div class="text-center p-8 bg-white rounded-lg"><p class="text-stone-500">Nenhuma tarefa encontrada para este filtro.</p></div>`; return; } 
+            
+            if (filteredTasks.length === 0) { 
+                const message = isAdmin ? 'Nenhuma tarefa encontrada para este filtro.' : 
+                    (currentTaskTab === 'minhas' ? 'Você não tem tarefas atribuídas.' : 'Você não delegou nenhuma tarefa.');
+                container.innerHTML = `<div class="text-center p-8 bg-white rounded-lg"><p class="text-stone-500">${message}</p></div>`; 
+                return; 
+            } 
+            
             container.innerHTML = filteredTasks.map(task => { 
                 const deadlineDate = new Date(task.deadline + 'T00:00:00'); 
                 const isOverdue = !task.completed && deadlineDate < new Date(); 
                 const deadlineClass = isOverdue ? 'deadline-overdue' : ''; 
                 const formattedDate = formatDateBR(task.deadline); 
-                return `<div class="task-card flex items-start gap-4 ${task.completed ? 'completed' : ''}"><input type="checkbox" data-action="toggle-task" data-id="${task.id}" class="mt-1.5 h-5 w-5 rounded border-gray-300 text-yellow-500 focus:ring-yellow-400" ${task.completed ? 'checked' : ''}><div class="flex-1"><p class="text-stone-800 font-medium">${task.description}</p><div class="mt-3 flex flex-wrap justify-between items-center gap-4"><div class="flex items-center gap-2 flex-wrap"><span class="text-xs text-stone-500">Para:</span>${(task.assignedTo || []).map(name => `<span class="user-tag" style="background-color: #e5e7eb; color: #374151;">${name}</span>`).join('')}${task.assignedBy ? `<span class="text-xs text-stone-500 ml-3">Adicionado por:</span><span class="user-tag" style="background-color: #F1D24B; color: #44403c;">${task.assignedBy}</span>` : ''}</div><div class="text-right"><span class="text-xs text-stone-500">Prazo</span><p class="deadline-text ${deadlineClass}">${formattedDate}</p></div></div></div><button class="task-delete-btn" data-action="delete-item" data-collection="tasks" data-id="${task.id}"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button></div>`; 
+                const priorityTagsMap = {
+                    'urgente': { 
+                        text: 'Urgente', 
+                        class: 'bg-red-100 text-red-800',
+                        icon: '<svg class="w-3 h-3 mr-1" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L13.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L10.91 8.26L12 2Z"/></svg>'
+                    },
+                    'prioridade': { 
+                        text: 'Prioridade', 
+                        class: 'bg-yellow-100 text-yellow-800',
+                        icon: '<svg class="w-3 h-3 mr-1" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>'
+                    },
+                    'curto-prazo': { 
+                        text: 'Curto Prazo', 
+                        class: 'bg-orange-100 text-orange-800',
+                        icon: '<svg class="w-3 h-3 mr-1" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.5 2 2 6.5 2 12S6.5 22 12 22 22 17.5 22 12 17.5 2 12 2M12 20C7.59 20 4 16.41 4 12S7.59 4 12 4 20 7.59 20 12 16.41 20 12 20M12.5 7H11V13L16.25 16.15L17 14.92L12.5 12.25V7Z"/></svg>'
+                    },
+                    'longo-prazo': { 
+                        text: 'Longo Prazo', 
+                        class: 'bg-blue-100 text-blue-800',
+                        icon: '<svg class="w-3 h-3 mr-1" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H18V1H16V3H8V1H6V3H5C3.89 3 3.01 3.9 3.01 5L3 19C3 20.1 3.89 21 5 21H19C20.1 21 21 20.1 21 19V5C21 3.9 20.1 3 19 3M19 19H5V8H19V19Z"/></svg>'
+                    },
+                    'importante': { 
+                        text: 'Importante', 
+                        class: 'bg-purple-100 text-purple-800',
+                        icon: '<svg class="w-3 h-3 mr-1" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L13.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L10.91 8.26L12 2Z"/></svg>'
+                    },
+                    'rotina': { 
+                        text: 'Rotina', 
+                        class: 'bg-gray-100 text-gray-800',
+                        icon: '<svg class="w-3 h-3 mr-1" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4V2A10 10 0 0 0 2 12H4A8 8 0 0 1 12 4Z"/></svg>'
+                    }
+                };
+                const priorityTag = task.priority && priorityTagsMap[task.priority] ? 
+                    `<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${priorityTagsMap[task.priority].class}">${priorityTagsMap[task.priority].icon}${priorityTagsMap[task.priority].text}</span>` : '';
+                
+                return `<div class="task-card flex items-start gap-4 ${task.completed ? 'completed' : ''}" data-action="view-task" data-id="${task.id}"><input type="checkbox" data-action="toggle-task" data-id="${task.id}" class="mt-1.5 h-5 w-5 rounded border-gray-300 text-yellow-500 focus:ring-yellow-400" ${task.completed ? 'checked' : ''} onclick="event.stopPropagation()"><div class="flex-1 cursor-pointer"><div class="flex items-start justify-between mb-1"><h4 class="text-stone-800 font-semibold">${task.title || 'Sem título'}</h4>${priorityTag}</div><p class="text-stone-600 text-sm mb-2">${task.description}</p><div class="flex flex-wrap justify-between items-center gap-4"><div class="flex items-center gap-2 flex-wrap"><span class="text-xs text-stone-500">Para:</span>${(task.assignedTo || []).map(name => `<span class="user-tag" style="background-color: #e5e7eb; color: #374151;">${name}</span>`).join('')}${task.assignedBy ? `<span class="text-xs text-stone-500 ml-3">Adicionado por:</span><span class="user-tag" style="background-color: #F1D24B; color: #44403c;">${task.assignedBy}</span>` : ''}</div><div class="text-right"><span class="text-xs text-stone-500">Prazo</span><p class="deadline-text ${deadlineClass}">${formattedDate}</p></div></div></div><button class="task-delete-btn" data-action="delete-item" data-collection="tasks" data-id="${task.id}" onclick="event.stopPropagation()"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button></div>`; 
             }).join(''); 
         }
 
@@ -3039,13 +3148,13 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                                     <h4 class="text-lg font-bold text-stone-800">${nivel.title}</h4>
                                     ${canEdit ? `
                                     <div class="flex gap-1">
-                                        <button class="secondary-btn text-xs p-1" data-action="edit-nivel" data-id="${nivel.id}" onclick="event.stopPropagation()" title="Editar nível">
+                                        <button class="secondary-btn text-xs p-1" onclick="openNivelForm('${nivel.id}'); event.stopPropagation();" title="Editar nível">
                                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                                 <path d="M20 14.66V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h6"/>
                                                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                                             </svg>
                                         </button>
-                                        <button class="danger-btn text-xs p-1" data-action="delete-nivel" data-id="${nivel.id}" onclick="event.stopPropagation()" title="Excluir nível">
+                                        <button class="danger-btn text-xs p-1" onclick="deleteNivelCP('${nivel.id}'); event.stopPropagation();" title="Excluir nível">
                                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                                 <path d="M3 6h18"/>
                                                 <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
@@ -3060,16 +3169,21 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                                         'Nenhuma aula cadastrada'
                                     }
                                 </div>
+                                ${nivel.tags && nivel.tags.length > 0 ? `
+                                <div class="flex flex-wrap gap-1 mb-3">
+                                    ${nivel.tags.map(tag => `<span class="keyword-tag">${tag}</span>`).join('')}
+                                </div>
+                                ` : ''}
                                 <div class="flex justify-between items-center text-xs text-stone-500">
                                     <span>Clique para ver aulas</span>
                                     ${canEdit ? `
                                     <div class="flex gap-1">
-                                        <button class="secondary-btn text-xs p-1" data-action="reorder-nivel" data-id="${nivel.id}" data-direction="up" ${index === 0 ? 'disabled' : ''} onclick="event.stopPropagation()" title="Mover para cima">
+                                        <button class="secondary-btn text-xs p-1" ${index === 0 ? 'disabled' : ''} onclick="reorderCPLevel('${nivel.id}', 'up'); event.stopPropagation();" title="Mover para cima">
                                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                                 <path d="M18 15l-6-6-6 6"/>
                                             </svg>
                                         </button>
-                                        <button class="secondary-btn text-xs p-1" data-action="reorder-nivel" data-id="${nivel.id}" data-direction="down" ${index === cps.length - 1 ? 'disabled' : ''} onclick="event.stopPropagation()" title="Mover para baixo">
+                                        <button class="secondary-btn text-xs p-1" ${index === cps.length - 1 ? 'disabled' : ''} onclick="reorderCPLevel('${nivel.id}', 'down'); event.stopPropagation();" title="Mover para baixo">
                                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                                 <path d="M6 9l6 6 6-6"/>
                                             </svg>
@@ -4442,25 +4556,152 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
             const collaboratorOptions = collaborators.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
             console.log('Collaborator options:', collaboratorOptions);
 
+            const collaboratorCheckboxes = collaborators.map(c => `
+                <div class="flex items-center">
+                    <input type="checkbox" id="collaborator-${c.id || c.name.replace(/\s+/g, '')}" name="assignedTo" value="${c.name}" class="h-4 w-4 rounded text-yellow-500">
+                    <label for="collaborator-${c.id || c.name.replace(/\s+/g, '')}" class="ml-2 text-sm">${c.name}</label>
+                </div>
+            `).join('');
+
             document.getElementById('form-modal-content-area').innerHTML = `
                 <form id="form-modal-body" class="space-y-4">
                     <div><label class="font-medium text-sm">Título da Tarefa</label><input type="text" id="task-title" class="form-input" required placeholder="Ex: Revisar material do nível A1"></div>
                     <div><label class="font-medium text-sm">Descrição</label><textarea id="task-description" rows="4" class="form-input" required placeholder="Detalhes sobre a tarefa..."></textarea></div>
-                    <div><label class="font-medium text-sm">Prazo Final</label><input type="date" id="task-deadline" class="form-input" required></div>
-                    <div><label class="font-medium text-sm">Atribuir para (selecione um ou mais)</label><select id="task-assignedTo" class="form-input" multiple required>${collaboratorOptions}</select></div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><label class="font-medium text-sm">Prazo Final</label><input type="date" id="task-deadline" class="form-input" required></div>
+                        <div>
+                            <label class="font-medium text-sm">Prioridade/Tag</label>
+                            <select id="task-priority" class="form-input">
+                                <option value="">Sem tag</option>
+                                <option value="urgente">Urgente</option>
+                                <option value="prioridade">Prioridade</option>
+                                <option value="curto-prazo">Curto Prazo</option>
+                                <option value="longo-prazo">Longo Prazo</option>
+                                <option value="importante">Importante</option>
+                                <option value="rotina">Rotina</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="font-medium text-sm mb-3 block">Atribuir para (selecione um ou mais)</label>
+                        <div class="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-3">
+                            ${collaboratorCheckboxes}
+                        </div>
+                    </div>
                     <div class="text-right"><button type="submit" class="primary-btn w-auto">Salvar Tarefa</button></div>
                 </form>`;
             document.getElementById('form-modal-body').onsubmit = saveTask;
             document.getElementById('form-modal').classList.add('visible');
             console.log('Task form modal should be visible now');
         }
+
+        function openTaskModal(taskId) {
+            clearModalHeaderButtons();
+            const task = tasks.find(t => t.id === taskId);
+            if (!task) return;
+            
+            const deadlineDate = new Date(task.deadline + 'T00:00:00');
+            const isOverdue = !task.completed && deadlineDate < new Date();
+            const deadlineClass = isOverdue ? 'text-red-600' : 'text-stone-600';
+            const formattedDate = formatDateBR(task.deadline);
+            
+            document.getElementById('form-modal-title').textContent = task.title || 'Tarefa sem título';
+            
+            const priorityTagsMap = {
+                'urgente': { 
+                    text: 'Urgente', 
+                    class: 'bg-red-100 text-red-800',
+                    icon: '<svg class="w-4 h-4 mr-1.5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L13.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L10.91 8.26L12 2Z"/></svg>'
+                },
+                'prioridade': { 
+                    text: 'Prioridade', 
+                    class: 'bg-yellow-100 text-yellow-800',
+                    icon: '<svg class="w-4 h-4 mr-1.5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>'
+                },
+                'curto-prazo': { 
+                    text: 'Curto Prazo', 
+                    class: 'bg-orange-100 text-orange-800',
+                    icon: '<svg class="w-4 h-4 mr-1.5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.5 2 2 6.5 2 12S6.5 22 12 22 22 17.5 22 12 17.5 2 12 2M12 20C7.59 20 4 16.41 4 12S7.59 4 12 4 20 7.59 20 12 16.41 20 12 20M12.5 7H11V13L16.25 16.15L17 14.92L12.5 12.25V7Z"/></svg>'
+                },
+                'longo-prazo': { 
+                    text: 'Longo Prazo', 
+                    class: 'bg-blue-100 text-blue-800',
+                    icon: '<svg class="w-4 h-4 mr-1.5" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H18V1H16V3H8V1H6V3H5C3.89 3 3.01 3.9 3.01 5L3 19C3 20.1 3.89 21 5 21H19C20.1 21 21 20.1 21 19V5C21 3.9 20.1 3 19 3M19 19H5V8H19V19Z"/></svg>'
+                },
+                'importante': { 
+                    text: 'Importante', 
+                    class: 'bg-purple-100 text-purple-800',
+                    icon: '<svg class="w-4 h-4 mr-1.5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L13.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L10.91 8.26L12 2Z"/></svg>'
+                },
+                'rotina': { 
+                    text: 'Rotina', 
+                    class: 'bg-gray-100 text-gray-800',
+                    icon: '<svg class="w-4 h-4 mr-1.5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4V2A10 10 0 0 0 2 12H4A8 8 0 0 1 12 4Z"/></svg>'
+                }
+            };
+            const priorityTag = task.priority && priorityTagsMap[task.priority] ? 
+                `<span class="inline-flex items-center px-2.5 py-1.5 rounded-full text-sm font-medium ${priorityTagsMap[task.priority].class}">${priorityTagsMap[task.priority].icon}${priorityTagsMap[task.priority].text}</span>` : '';
+
+            document.getElementById('form-modal-content-area').innerHTML = `
+                <div class="space-y-4">
+                    <div class="mb-4">
+                        <h3 class="text-2xl font-bold text-stone-800 leading-tight mb-2">${task.title || 'Sem título'}</h3>
+                        <div class="flex items-center gap-2 mb-3">
+                            <span class="status-tag ${task.completed ? 'status-aprovado' : 'status-pendente'}">${task.completed ? 'Concluída' : 'Pendente'}</span>
+                            ${isOverdue && !task.completed ? '<span class="status-tag status-rejeitado">Atrasada</span>' : ''}
+                            ${priorityTag}
+                        </div>
+                    </div>
+                    
+                    <div class="bg-stone-50 rounded-lg p-4 mb-4">
+                        <h4 class="font-semibold text-stone-700 mb-2">Descrição</h4>
+                        <p class="text-stone-600 leading-relaxed">${task.description}</p>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        <div>
+                            <h4 class="font-semibold text-stone-700 mb-2">Atribuída para</h4>
+                            <div class="flex flex-wrap gap-1">
+                                ${(task.assignedTo || []).map(name => `<span class="user-tag" style="background-color: #e5e7eb; color: #374151;">${name}</span>`).join('')}
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-stone-700 mb-2">Prazo</h4>
+                            <p class="font-medium ${deadlineClass}">${formattedDate}</p>
+                        </div>
+                    </div>
+                    
+                    ${task.assignedBy ? `
+                    <div class="text-sm">
+                        <h4 class="font-semibold text-stone-700 mb-1">Criada por</h4>
+                        <span class="user-tag" style="background-color: #F1D24B; color: #44403c;">${task.assignedBy}</span>
+                    </div>
+                    ` : ''}
+                    
+                    <div class="border-t pt-4 flex justify-between items-center">
+                        <div class="flex items-center gap-3">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" ${task.completed ? 'checked' : ''} 
+                                       class="h-4 w-4 rounded text-yellow-500"
+                                       onchange="toggleTaskCompletion('${task.id}', this.checked)">
+                                <span class="text-sm font-medium text-stone-700">Marcar como ${task.completed ? 'pendente' : 'concluída'}</span>
+                            </label>
+                        </div>
+                        <button class="primary-btn" data-action="close-modal">Fechar</button>
+                    </div>
+                </div>
+            `;
+            document.getElementById('form-modal').classList.add('visible');
+        }
         async function saveTask(event) {
             event.preventDefault();
+            const assignedToCheckboxes = Array.from(document.querySelectorAll('input[name="assignedTo"]:checked')).map(cb => cb.value);
             const data = {
                 title: document.getElementById('task-title').value,
                 description: document.getElementById('task-description').value,
                 deadline: document.getElementById('task-deadline').value,
-                assignedTo: Array.from(document.getElementById('task-assignedTo').selectedOptions).map(o => o.value),
+                priority: document.getElementById('task-priority').value,
+                assignedTo: assignedToCheckboxes,
                 assignedBy: currentUserName || 'Admin',
                 createdAt: serverTimestamp(),
                 completed: false
@@ -5115,6 +5356,18 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
             document.getElementById('form-modal').classList.add('visible');
         }
 
+        function deleteNivelCP(nivelId) {
+            if (!confirm('Tem certeza que deseja excluir este nível? Esta ação não pode ser desfeita.')) return;
+            createCPsBackup();
+            const index = cps.findIndex(n => n.id === nivelId);
+            if (index !== -1) {
+                cps.splice(index, 1);
+                localStorage.setItem('demo-cps', JSON.stringify(cps));
+                renderCPsSection();
+                showSuccessMessage("Sucesso", "Nível excluído com sucesso!");
+            }
+        }
+
         function openNivelForm(nivelId = null) {
             clearModalHeaderButtons();
             const nivel = nivelId ? cps.find(n => n.id === nivelId) : null;
@@ -5123,6 +5376,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                 <form id="form-modal-body" class="space-y-4">
                     <input type="hidden" id="nivel-id" value="${nivelId || ''}">
                     <div><label class="font-medium text-sm">Título do Nível</label><input type="text" id="nivel-title" class="form-input" required value="${nivel?.title || ''}"></div>
+                    <div><label class="font-medium text-sm">Tags (separadas por vírgula)</label><input type="text" id="nivel-tags" class="form-input" placeholder="Ex: iniciante, básico, conversação" value="${nivel?.tags ? nivel.tags.join(', ') : ''}"></div>
                     <div class="text-right"><button type="submit" class="primary-btn w-auto">Salvar</button></div>
                 </form>
             `;
@@ -5139,6 +5393,9 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
             
             const nivelId = document.getElementById('nivel-id').value;
             const title = document.getElementById('nivel-title').value;
+            const tagsInput = document.getElementById('nivel-tags').value;
+            const tags = tagsInput ? tagsInput.split(',').map(tag => tag.trim()).filter(tag => tag) : [];
+            
             if (!title) { showErrorMessage("Erro", "O título é obrigatório."); return; }
 
             // Para dados locais (demo)
@@ -5146,6 +5403,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                 const nivel = cps.find(n => n.id === nivelId);
                 if (nivel) {
                     nivel.title = title;
+                    nivel.tags = tags;
                     localStorage.setItem('demo-cps', JSON.stringify(cps));
                     showSuccessMessage("Sucesso", "Nível atualizado.");
                     renderCPsSection();
@@ -5155,6 +5413,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                 const newNivel = {
                     id: 'nivel_' + Date.now(),
                     title: title,
+                    tags: tags,
                     lessons: [],
                     order: cps.length
                 };
@@ -7474,14 +7733,14 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                                     </div>
                                     ${currentUserRole === 'admin' || currentUserRole === 'pedagogico' ? `
                                         <div class="flex gap-1" onclick="event.stopPropagation();">
-                                            <button data-action="edit-fluxo" data-id="${fluxo.id}" 
+                                            <button onclick="openFluxoForm('${fluxo.id}'); event.stopPropagation();" 
                                                     class="opacity-50 group-hover:opacity-100 transition-opacity p-1 hover:bg-stone-100 rounded"
                                                     title="Editar fluxo">
                                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                                     <path d="M20 14.66V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h6M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                                                 </svg>
                                             </button>
-                                            <button data-action="delete-fluxo" data-id="${fluxo.id}" 
+                                            <button onclick="deleteFluxo('${fluxo.id}'); event.stopPropagation();" 
                                                     class="opacity-50 group-hover:opacity-100 transition-opacity p-1 hover:bg-red-100 rounded text-red-600"
                                                     title="Excluir fluxo">
                                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -8697,6 +8956,15 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
         window.startQuiz = startQuiz;
         window.checkTimeConflict = checkTimeConflict;
         window.toggleCampanhaFinalizada = toggleCampanhaFinalizada;
+        window.deleteFluxo = deleteFluxo;
+        window.openFluxoForm = openFluxoForm;
+        window.openNivelForm = openNivelForm;
+        window.openNivelModal = openNivelModal;
+        window.deleteNivelCP = deleteNivelCP;
+        window.reorderCPLevel = reorderCPLevel;
+        window.switchTaskTab = switchTaskTab;
+        window.openTaskModal = openTaskModal;
+        window.toggleTaskCompletion = toggleTaskCompletion;
         window.showSection = function(sectionName) {
             const navItem = document.querySelector(`[data-target="${sectionName}"]`);
             if (navItem) navItem.click();
@@ -9383,6 +9651,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                         },
 
                         'add-task': openTaskForm,
+                        'view-task': () => openTaskModal(id),
                         'add-collaborator': () => openCollaboratorForm(),
                         'edit-collaborator': () => openCollaboratorForm(id),
                         'edit-monthly-highlight': openMonthlyHighlightForm,
