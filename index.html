@@ -9036,27 +9036,27 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label class="font-medium text-sm">Midterm Test (0-20)</label>
-                            <input type="number" id="midterm-test" class="form-input" min="0" max="20" value="${grades.midtermTest}">
+                            <input type="number" id="midterm-test" class="form-input" min="0" max="20" step="0.1" value="${grades.midtermTest}">
                         </div>
                         <div>
                             <label class="font-medium text-sm">Listening Test (0-20)</label>
-                            <input type="number" id="listening-test" class="form-input" min="0" max="20" value="${grades.listeningTest}">
+                            <input type="number" id="listening-test" class="form-input" min="0" max="20" step="0.1" value="${grades.listeningTest}">
                         </div>
                         <div>
                             <label class="font-medium text-sm">Grammar Test (0-20)</label>
-                            <input type="number" id="grammar-test" class="form-input" min="0" max="20" value="${grades.grammarTest}">
+                            <input type="number" id="grammar-test" class="form-input" min="0" max="20" step="0.1" value="${grades.grammarTest}">
                         </div>
                         <div>
                             <label class="font-medium text-sm">Oral Test (0-20)</label>
-                            <input type="number" id="oral-test" class="form-input" min="0" max="20" value="${grades.oralTest}">
+                            <input type="number" id="oral-test" class="form-input" min="0" max="20" step="0.1" value="${grades.oralTest}">
                         </div>
                         <div>
                             <label class="font-medium text-sm">Participação (0-10)</label>
-                            <input type="number" id="participacao" class="form-input" min="0" max="10" value="${grades.participacao}">
+                            <input type="number" id="participacao" class="form-input" min="0" max="10" step="0.1" value="${grades.participacao}">
                         </div>
                         <div>
                             <label class="font-medium text-sm">Assiduidade (0-10)</label>
-                            <input type="number" id="assiduidade" class="form-input" min="0" max="10" value="${grades.assiduidade}">
+                            <input type="number" id="assiduidade" class="form-input" min="0" max="10" step="0.1" value="${grades.assiduidade}">
                         </div>
                     </div>
                     
@@ -9074,7 +9074,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                     </div>
                     
                     <div class="flex justify-between gap-2">
-                        <button type="button" onclick="exportVipReportCard('${vipId}')" class="secondary-btn">Exportar Report Card</button>
+                        <button type="button" id="export-vip-btn" data-vip-id="${vipId}" class="secondary-btn">Exportar Report Card</button>
                         <div class="flex gap-2">
                             <button type="button" data-action="close-modal" class="secondary-btn">Cancelar</button>
                             <button type="submit" class="primary-btn">Salvar Notas</button>
@@ -9093,6 +9093,17 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
             }, 100);
 
             document.getElementById('notas-form').onsubmit = saveVipGrades;
+            
+            // Add export button event listener
+            setTimeout(() => {
+                const exportBtn = document.getElementById('export-vip-btn');
+                if (exportBtn) {
+                    exportBtn.addEventListener('click', () => {
+                        exportVipReportCard(exportBtn.dataset.vipId);
+                    });
+                }
+            }, 100);
+            
             document.getElementById('form-modal').classList.add('visible');
         }
 
@@ -9134,27 +9145,27 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                             <div class="grid grid-cols-2 gap-4 mb-4">
                                 <div>
                                     <label class="font-medium text-sm">Midterm Test (0-20)</label>
-                                    <input type="number" id="midterm-${student.id}" class="form-input student-grade" min="0" max="20" value="${grades.midtermTest}" data-student="${student.id}">
+                                    <input type="number" id="midterm-${student.id}" class="form-input student-grade" min="0" max="20" step="0.1" value="${grades.midtermTest}" data-student="${student.id}">
                                 </div>
                                 <div>
                                     <label class="font-medium text-sm">Listening Test (0-20)</label>
-                                    <input type="number" id="listening-${student.id}" class="form-input student-grade" min="0" max="20" value="${grades.listeningTest}" data-student="${student.id}">
+                                    <input type="number" id="listening-${student.id}" class="form-input student-grade" min="0" max="20" step="0.1" value="${grades.listeningTest}" data-student="${student.id}">
                                 </div>
                                 <div>
                                     <label class="font-medium text-sm">Grammar Test (0-20)</label>
-                                    <input type="number" id="grammar-${student.id}" class="form-input student-grade" min="0" max="20" value="${grades.grammarTest}" data-student="${student.id}">
+                                    <input type="number" id="grammar-${student.id}" class="form-input student-grade" min="0" max="20" step="0.1" value="${grades.grammarTest}" data-student="${student.id}">
                                 </div>
                                 <div>
                                     <label class="font-medium text-sm">Oral Test (0-20)</label>
-                                    <input type="number" id="oral-${student.id}" class="form-input student-grade" min="0" max="20" value="${grades.oralTest}" data-student="${student.id}">
+                                    <input type="number" id="oral-${student.id}" class="form-input student-grade" min="0" max="20" step="0.1" value="${grades.oralTest}" data-student="${student.id}">
                                 </div>
                                 <div>
                                     <label class="font-medium text-sm">Participação (0-10)</label>
-                                    <input type="number" id="participacao-${student.id}" class="form-input student-grade" min="0" max="10" value="${grades.participacao}" data-student="${student.id}">
+                                    <input type="number" id="participacao-${student.id}" class="form-input student-grade" min="0" max="10" step="0.1" value="${grades.participacao}" data-student="${student.id}">
                                 </div>
                                 <div>
                                     <label class="font-medium text-sm">Assiduidade (0-10)</label>
-                                    <input type="number" id="assiduidade-${student.id}" class="form-input student-grade" min="0" max="10" value="${grades.assiduidade}" data-student="${student.id}">
+                                    <input type="number" id="assiduidade-${student.id}" class="form-input student-grade" min="0" max="10" step="0.1" value="${grades.assiduidade}" data-student="${student.id}">
                                 </div>
                             </div>
                             
@@ -9172,7 +9183,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                     }).join('')}
                     
                     <div class="flex justify-between gap-2 pt-4 border-t">
-                        <button type="button" onclick="exportTurmaReportCard('${turmaId}')" class="secondary-btn">Exportar Report Card</button>
+                        <button type="button" id="export-turma-btn" data-turma-id="${turmaId}" class="secondary-btn">Exportar Report Card</button>
                         <div class="flex gap-2">
                             <button type="button" data-action="close-modal" class="secondary-btn">Cancelar</button>
                             <button type="button" onclick="saveTurmaGrades()" class="primary-btn">Salvar Todas as Notas</button>
@@ -9194,22 +9205,30 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                 turmaStudents.forEach(student => {
                     calculateStudentTotal(student.id);
                 });
+                
+                // Add export button event listener
+                const exportBtn = document.getElementById('export-turma-btn');
+                if (exportBtn) {
+                    exportBtn.addEventListener('click', () => {
+                        exportTurmaReportCard(exportBtn.dataset.turmaId);
+                    });
+                }
             }, 100);
 
             document.getElementById('form-modal').classList.add('visible');
         }
 
         function calculateTotal() {
-            const midterm = parseInt(document.getElementById('midterm-test').value) || 0;
-            const listening = parseInt(document.getElementById('listening-test').value) || 0;
-            const grammar = parseInt(document.getElementById('grammar-test').value) || 0;
-            const oral = parseInt(document.getElementById('oral-test').value) || 0;
-            const participacao = parseInt(document.getElementById('participacao').value) || 0;
-            const assiduidade = parseInt(document.getElementById('assiduidade').value) || 0;
+            const midterm = parseFloat(document.getElementById('midterm-test').value) || 0;
+            const listening = parseFloat(document.getElementById('listening-test').value) || 0;
+            const grammar = parseFloat(document.getElementById('grammar-test').value) || 0;
+            const oral = parseFloat(document.getElementById('oral-test').value) || 0;
+            const participacao = parseFloat(document.getElementById('participacao').value) || 0;
+            const assiduidade = parseFloat(document.getElementById('assiduidade').value) || 0;
             
             const total = midterm + listening + grammar + oral + participacao + assiduidade;
             
-            document.getElementById('total-score').textContent = total;
+            document.getElementById('total-score').textContent = total.toFixed(1);
             
             const statusElement = document.getElementById('approval-status');
             if (total >= 70) {
@@ -9222,16 +9241,16 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
         }
 
         function calculateStudentTotal(studentId) {
-            const midterm = parseInt(document.getElementById(`midterm-${studentId}`).value) || 0;
-            const listening = parseInt(document.getElementById(`listening-${studentId}`).value) || 0;
-            const grammar = parseInt(document.getElementById(`grammar-${studentId}`).value) || 0;
-            const oral = parseInt(document.getElementById(`oral-${studentId}`).value) || 0;
-            const participacao = parseInt(document.getElementById(`participacao-${studentId}`).value) || 0;
-            const assiduidade = parseInt(document.getElementById(`assiduidade-${studentId}`).value) || 0;
+            const midterm = parseFloat(document.getElementById(`midterm-${studentId}`).value) || 0;
+            const listening = parseFloat(document.getElementById(`listening-${studentId}`).value) || 0;
+            const grammar = parseFloat(document.getElementById(`grammar-${studentId}`).value) || 0;
+            const oral = parseFloat(document.getElementById(`oral-${studentId}`).value) || 0;
+            const participacao = parseFloat(document.getElementById(`participacao-${studentId}`).value) || 0;
+            const assiduidade = parseFloat(document.getElementById(`assiduidade-${studentId}`).value) || 0;
             
             const total = midterm + listening + grammar + oral + participacao + assiduidade;
             
-            document.getElementById(`total-${studentId}`).textContent = total;
+            document.getElementById(`total-${studentId}`).textContent = total.toFixed(1);
             
             const statusElement = document.getElementById(`status-${studentId}`);
             if (total >= 70) {
@@ -9248,12 +9267,12 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
             const vipId = document.getElementById('vip-id').value;
             
             const grades = {
-                midtermTest: parseInt(document.getElementById('midterm-test').value) || 0,
-                listeningTest: parseInt(document.getElementById('listening-test').value) || 0,
-                grammarTest: parseInt(document.getElementById('grammar-test').value) || 0,
-                oralTest: parseInt(document.getElementById('oral-test').value) || 0,
-                participacao: parseInt(document.getElementById('participacao').value) || 0,
-                assiduidade: parseInt(document.getElementById('assiduidade').value) || 0
+                midtermTest: parseFloat(document.getElementById('midterm-test').value) || 0,
+                listeningTest: parseFloat(document.getElementById('listening-test').value) || 0,
+                grammarTest: parseFloat(document.getElementById('grammar-test').value) || 0,
+                oralTest: parseFloat(document.getElementById('oral-test').value) || 0,
+                participacao: parseFloat(document.getElementById('participacao').value) || 0,
+                assiduidade: parseFloat(document.getElementById('assiduidade').value) || 0
             };
             
             try {
@@ -9292,9 +9311,9 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                 }
                 
                 if (fieldType === 'participacao' || fieldType === 'assiduidade') {
-                    studentGrades[studentId][fieldType] = parseInt(input.value) || 0;
+                    studentGrades[studentId][fieldType] = parseFloat(input.value) || 0;
                 } else {
-                    studentGrades[studentId][fieldType + 'Test'] = parseInt(input.value) || 0;
+                    studentGrades[studentId][fieldType + 'Test'] = parseFloat(input.value) || 0;
                 }
             });
             
@@ -9349,7 +9368,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
             // Update grades with current form values if available
             Object.keys(formElements).forEach(key => {
                 if (formElements[key]) {
-                    grades[key] = parseInt(formElements[key].value) || 0;
+                    grades[key] = parseFloat(formElements[key].value) || 0;
                 }
             });
 
@@ -9466,7 +9485,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
 
                             <div class="total-section">
                                 <div>Pontuação Total</div>
-                                <div class="total-score">${total}/100</div>
+                                <div class="total-score">${total.toFixed(1)}/100</div>
                                 <div class="status ${status.toLowerCase()}">${status}</div>
                                 <p style="margin-top: 15px; color: #666;">
                                     ${status === 'APROVADO' ? 
@@ -9529,7 +9548,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                 const grades = { ...storedGrades };
                 Object.keys(formElements).forEach(key => {
                     if (formElements[key]) {
-                        grades[key] = parseInt(formElements[key].value) || 0;
+                        grades[key] = parseFloat(formElements[key].value) || 0;
                     }
                 });
 
@@ -9624,7 +9643,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                                                 <td class="score">${grades.oralTest}</td>
                                                 <td class="score">${grades.participacao}</td>
                                                 <td class="score">${grades.assiduidade}</td>
-                                                <td class="total-column">${total}</td>
+                                                <td class="total-column">${total.toFixed(1)}</td>
                                                 <td class="status ${status.toLowerCase()}">${status}</td>
                                             </tr>
                                         `).join('')}
