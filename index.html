@@ -9205,6 +9205,13 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                                 <div class="mt-1">
                                     <span id="status-${student.id}" class="font-medium"></span>
                                 </div>
+                                <div class="mt-2 pt-2 border-t flex justify-end">
+                                    <button type="button" class="individual-export-btn bg-yellow-500 hover:bg-yellow-600 text-gray-900 px-3 py-1 rounded text-sm font-medium" 
+                                            data-student-id="${student.id}" data-turma-id="${turmaId}"
+                                            onclick="exportIndividualStudentFromTurma('${student.id}', '${turmaId}')">
+                                        Export Individual
+                                    </button>
+                                </div>
                             </div>
                         </div>
                         `;
@@ -9868,7 +9875,6 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                                             <th>Attendance<br>(0-10)</th>
                                             <th>Final Score<br>(0-100)</th>
                                             <th>Status</th>
-                                            <th>Export</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -9883,11 +9889,6 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                                                 <td class="score">${grades.assiduidade.toFixed(1)}</td>
                                                 <td class="total-column">${total.toFixed(1)}</td>
                                                 <td class="status ${status.toLowerCase()}">${status === 'APROVADO' ? 'APPROVED' : 'NOT APPROVED'}</td>
-                                                <td style="text-align: center;">
-                                                    <button class="export-individual-btn" data-student-id="${student.id}" data-turma-id="${turma.id}" style="background: #F1D24B; color: #1a202c; border: none; padding: 6px 12px; font-size: 0.8em; font-weight: 600; cursor: pointer; border-radius: 4px;">
-                                                        Export
-                                                    </button>
-                                                </td>
                                             </tr>
                                         `).join('')}
                                     </tbody>
@@ -9931,17 +9932,6 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
             `;
 
             openHtmlInNewWindow(`Report Card - ${turma.name}`, reportHtml);
-            
-            // Add event listeners for individual export buttons
-            setTimeout(() => {
-                document.querySelectorAll('.export-individual-btn').forEach(btn => {
-                    btn.addEventListener('click', function() {
-                        const studentId = this.getAttribute('data-student-id');
-                        const turmaId = this.getAttribute('data-turma-id');
-                        exportIndividualStudentFromTurma(studentId, turmaId);
-                    });
-                });
-            }, 500);
         }
         
         function exportIndividualStudentFromTurma(studentId, turmaId) {
