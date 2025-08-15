@@ -463,10 +463,7 @@
         const hubView = document.getElementById('hub-view');
         const pendingView = document.getElementById('pending-view');
 
-        // Helper function for timestamps that works in dev and prod mode
-        function getTimestamp() {
-            return db ? serverTimestamp() : new Date().toISOString();
-        }
+
 
         let db, auth, storage, userId, currentUserName, currentUserRole;
         let usersData = [], students = [], turmas = [], vips = [], attendance = [], tasks = [], events = [], collaborators = [], schedules = [], expenses = [], cps = [], dojoRanking = [], dojoMissions = [], fluxos = [];
@@ -499,8 +496,6 @@
             loadDemoData();
             updateWelcomeMessages(currentUserName);
             showHubView();
-            renderInicioSection();
-            renderMenu();
         }
 
         // Sistema de Backup dos CPs para proteger dados do usuário
@@ -999,7 +994,6 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
 
         // --- FIREBASE INITIALIZATION ---
         async function initializeFirebase() {
-            console.log('Firebase initialization started...');
             try {
                 const firebaseConfig = (typeof __firebase_config !== 'undefined' && __firebase_config)
                     ? JSON.parse(__firebase_config)
@@ -1132,7 +1126,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
             getCollectionListener('dojo_missions', dojoMissions, renderDojoSection, (ref) => query(ref, orderBy("points", "desc")));
             getCollectionListener('fluxos', fluxos, renderFluxosSection);
 
-            // Load guidelines with real-time updates
+            // Load guidelines with real-time updates for all users
             if (db) {
                 const guidelinesRef = doc(db, `artifacts/${appId}/public/data`, 'guidelines');
                 const unsubscribeGuidelines = onSnapshot(guidelinesRef, (docSnap) => {
@@ -1140,17 +1134,18 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                     if (docSnap.exists()) {
                         const data = docSnap.data();
                         console.log('Guidelines data from Firebase:', data);
-                        // Remove timestamp fields before setting guidelines
+                        // Extract guidelines structure from Firebase
                         const { lastUpdated, updatedBy, ...cleanGuidelines } = data;
                         guidelines = {
                             goodPractices: cleanGuidelines.goodPractices || [],
                             prohibitedItems: cleanGuidelines.prohibitedItems || []
                         };
+                        console.log('Guidelines sincronizadas do Firebase para todos os usuários!');
                         
                         // Re-render if we're on the guidelines section
                         const activePageId = contentArea.firstElementChild?.id;
                         if (activePageId === 'diretrizes-section') {
-                            renderGuidelines();
+                            renderDiretrizesSection();
                         }
                     } else {
                         console.log('No guidelines document found in Firebase');
@@ -8683,27 +8678,40 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
 
         async function saveGuidelines() {
             try {
-                if (!db) {
-                    // Local storage fallback
-                    console.log('Modo desenvolvimento: salvando diretrizes localmente');
-                    localStorage.setItem('slap-guidelines', JSON.stringify(guidelines));
+                if (window.isDevelopmentMode || !db) {
+                    // In development mode, simulate Firebase structure
+                    console.log('Modo desenvolvimento: salvando diretrizes com estrutura Firebase');
+                    const dataToSave = {
+                        ...guidelines,
+                        lastUpdated: new Date().toISOString(),
+                        updatedBy: currentUserName || 'Admin'
+                    };
+                    localStorage.setItem('slap-guidelines', JSON.stringify(dataToSave));
+                    showSuccessMessage("Diretrizes salvas com sucesso!");
                 } else {
                     // Save to Firebase with timestamp
                     console.log('Salvando diretrizes no Firebase para todos os usuários...');
                     const docRef = doc(db, `artifacts/${appId}/public/data`, 'guidelines');
                     const dataToSave = {
-                        ...guidelines,
-                        lastUpdated: getTimestamp(),
+                        goodPractices: guidelines.goodPractices || [],
+                        prohibitedItems: guidelines.prohibitedItems || [],
+                        lastUpdated: serverTimestamp(),
                         updatedBy: currentUserName || 'Admin'
                     };
                     await setDoc(docRef, dataToSave);
-                    console.log('Diretrizes salvas no Firebase com sucesso');
+                    console.log('Diretrizes salvas no Firebase com sucesso!');
+                    showSuccessMessage("Diretrizes sincronizadas para todos os usuários!");
                 }
             } catch (error) {
                 console.error('Error saving guidelines:', error);
-                showErrorMessage("Erro", "Erro ao salvar diretrizes: " + error.message);
-                // Local storage fallback on error
-                localStorage.setItem('slap-guidelines', JSON.stringify(guidelines));
+                // Fallback to localStorage if Firebase fails
+                const fallbackData = {
+                    ...guidelines,
+                    lastUpdated: new Date().toISOString(),
+                    updatedBy: currentUserName || 'Admin'
+                };
+                localStorage.setItem('slap-guidelines', JSON.stringify(fallbackData));
+                showErrorMessage("Erro ao sincronizar", "Diretrizes salvas localmente. Erro: " + error.message);
             }
         }
 
@@ -9260,11 +9268,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            console.log('DOM Loaded - Initializing Hub SLAP...');
-            
             const pageRenderers = { 'inicio': renderInicioSection, 'alunos': renderAlunosSection, 'turmas': renderTurmasSection, 'vips': renderVipsSection, 'campanhas': renderCampanhasSection, 'tarefas': renderTarefasSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection, 'colaboradores': renderColaboradoresSection, 'cps': renderCPsSection, 'dojo': renderDojoSection, 'calendario-pedagogico': renderCalendarioPedagogicoSection, 'calendario-marketing': renderCalendarioMarketingSection, 'desafio-pedagogico': renderDesafioPedagogicoSection, 'diretrizes': renderDiretrizesSection, 'fluxos': renderFluxosSection };
-            
-            console.log('Page renderers configured:', Object.keys(pageRenderers));
 
             document.body.addEventListener('click', (event) => {
                 // Close modals when clicking overlay or close button
@@ -9488,12 +9492,10 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
             }, 100);
             
             // Initialize click sound system
-            console.log('Initializing click sounds...');
             initializeClickSound();
             initializeClickSounds();
             observeNewElements();
             
-            console.log('Starting Firebase initialization...');
             initializeFirebase();
         });
     </script>
