@@ -3212,7 +3212,17 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                 <section id="dojo-section" class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
                     <div class="flex justify-between items-center mb-8">
                         <h3 class="text-xl font-bold text-stone-800">Ranking de Competidores</h3>
-                        ${addCompetitorBtn}
+                        <div class="flex gap-3">
+                            <a href="https://res.cloudinary.com/dqfi22uz0/image/upload/v1750388047/REGULAMENTO_DOJO_SLAP.pdf" 
+                               target="_blank" 
+                               class="secondary-btn w-auto flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                </svg>
+                                Regulamento
+                            </a>
+                            ${addCompetitorBtn}
+                        </div>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10 text-center">
@@ -3257,6 +3267,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                                 <tr>
                                     <th>Pos.</th>
                                     <th>Competidor</th>
+                                    <th>Superpower</th>
                                     <th class="text-right">Pontos</th>
                                     ${canEdit ? '<th class="text-center">Ações</th>' : ''}
                                 </tr>
@@ -3289,15 +3300,18 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                                             <span class="font-medium">${c.name}</span>
                                             ${medal}
                                         </td>
+                                        <td>
+                                            ${c.superpower ? `<span class="inline-block px-2 py-1 bg-purple-100 text-purple-700 text-xs font-medium rounded-full border border-purple-200">${c.superpower}</span>` : '<span class="text-stone-400 text-sm">-</span>'}
+                                        </td>
                                         <td class="text-right font-mono font-semibold">${c.points || 0}</td>
                                         ${canEdit ? `
                                         <td class="text-center">
-                                            <button class="secondary-btn" data-action="edit-dojo-points" data-id="${c.id}">Editar</button>
+                                            <button class="secondary-btn" data-action="edit-dojo-competitor" data-id="${c.id}">Editar</button>
                                             <button class="danger-btn ml-2" data-action="delete-item" data-collection="dojo_ranking" data-id="${c.id}">X</button>
                                         </td>
                                         ` : ''}
                                     </tr>
-                                `}).join('') || '<tr><td colspan="4" class="text-center py-10 text-stone-500">Nenhum competidor no Dojo.</td></tr>'}
+                                `}).join('') || '<tr><td colspan="5" class="text-center py-10 text-stone-500">Nenhum competidor no Dojo.</td></tr>'}
                             </tbody>
                         </table>
                     </div>
@@ -5628,6 +5642,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                     <input type="hidden" id="dojo-id" value="${competitorId || ''}">
                     <div><label class="font-medium text-sm">Nome do Competidor</label><input type="text" id="dojo-name" class="form-input" required value="${competitor?.name || ''}"></div>
                     <div><label class="font-medium text-sm">URL da Foto</label><input type="url" id="dojo-photo" class="form-input" required value="${competitor?.photo || ''}"></div>
+                    <div><label class="font-medium text-sm">Superpower (tag roxa divertida)</label><input type="text" id="dojo-superpower" class="form-input" placeholder="Ex: Master do Coffee, Ninja das Planilhas..." value="${competitor?.superpower || ''}"></div>
                     <div><label class="font-medium text-sm">Pontos</label><input type="number" id="dojo-points" class="form-input" required value="${competitor?.points || 0}"></div>
                     <div class="text-right"><button type="submit" class="primary-btn w-auto">Salvar</button></div>
                 </form>
@@ -5642,6 +5657,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
             const data = {
                 name: document.getElementById('dojo-name').value,
                 photo: document.getElementById('dojo-photo').value,
+                superpower: document.getElementById('dojo-superpower').value,
                 points: Number(document.getElementById('dojo-points').value)
             };
             if (!data.name || !data.photo) { showErrorMessage("Erro", "Nome e foto são obrigatórios."); return; }
@@ -5651,6 +5667,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                 } else {
                     await addDoc(collection(db, `artifacts/${appId}/public/data/dojo_ranking`), data);
                 }
+                document.getElementById('form-modal').classList.remove('visible');
                 showSuccessMessage("Sucesso", "Competidor do Dojo salvo.");
             } catch (e) { console.error(e); showErrorMessage("Erro", "Não foi possível salvar o competidor."); }
         }
@@ -8111,6 +8128,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
 
         async function deleteFluxo(fluxoId) {
             console.log('deleteFluxo called with fluxoId:', fluxoId);
+            console.log('Current fluxos before deletion:', fluxos.length);
             if (!confirm('Tem certeza que deseja excluir este fluxo? Esta ação não pode ser desfeita.')) {
                 return;
             }
@@ -8120,8 +8138,10 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                 
                 // Remove from local array
                 const index = fluxos.findIndex(f => f.id === fluxoId);
+                console.log('Found fluxo at index:', index);
                 if (index !== -1) {
                     fluxos.splice(index, 1);
+                    console.log('Fluxo removed, new count:', fluxos.length);
                 }
                 
                 // Save to storage
@@ -8131,7 +8151,8 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                     await deleteDoc(docRef);
                 } else {
                     // Local storage mode
-                    localStorage.setItem('hub_fluxos', JSON.stringify(fluxos));
+                    console.log('Saving fluxos to localStorage after deletion:', fluxos.length);
+                    localStorage.setItem('demo-fluxos', JSON.stringify(fluxos));
                 }
                 
                 // Refresh the display
@@ -9720,6 +9741,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                         'toggle-cp-level': () => { const card = document.getElementById(`nivel-${id}`); if(card) { card.classList.toggle('open'); const icon = card.querySelector('svg'); icon.style.transform = card.classList.contains('open') ? 'rotate(180deg)' : 'rotate(0deg)'; } },
                         'add-dojo-competitor': () => openDojoCompetitorForm(),
                         'edit-dojo-points': () => openDojoPointsForm(id),
+                        'edit-dojo-competitor': () => openDojoCompetitorForm(id),
                         'add-dojo-mission': openDojoMissionForm,
                         'export-alunos-doc': exportAlunosDoc,
                         'export-vip-pef': () => exportVipPef(id),
