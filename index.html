@@ -2010,6 +2010,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                     <div class="mt-auto pt-4 border-t border-stone-100 flex gap-2">
                         ${canManage ? `<button class="secondary-btn !text-sm flex-1" data-action="edit-turma" data-id="${t.id}">Editar</button>` : ''}
                         <button class="primary-btn !text-sm flex-1 flex items-center justify-center" data-action="open-turma-pef" data-id="${t.id}">PEF</button>
+                        <button class="secondary-btn !text-sm flex-1 flex items-center justify-center" data-action="open-turma-notas" data-id="${t.id}">Notas</button>
                     </div>
                 </div>`}).join('') || '<p class="col-span-full text-center py-10 text-stone-500">Nenhuma turma encontrada.</p>';
         }
@@ -2094,6 +2095,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                     <div class="mt-auto pt-4 border-t border-stone-100 flex gap-2">
                         ${vipRecord ? `
                             <button class="primary-btn !text-sm flex-1 flex items-center justify-center" data-action="open-vip-pef" data-id="${vipRecord.id}">PEF</button>
+                            <button class="secondary-btn !text-sm flex-1 flex items-center justify-center" data-action="open-vip-notas" data-id="${vipRecord.id}">Notas</button>
                             ${currentUserRole !== 'teacher' ? `<button class="secondary-btn !text-sm flex-1" data-action="edit-vip" data-id="${vipRecord.id}">Configurar</button>` : ''}
                         ` : ''}
                     </div>
@@ -2285,6 +2287,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                             <div class="mt-auto pt-4 border-t border-stone-100 flex gap-2">
                                 ${canManage ? `<button class="secondary-btn !text-sm flex-1" data-action="edit-turma" data-id="${t.id}">Editar</button>` : ''}
                                 <button class="primary-btn !text-sm flex-1 flex items-center justify-center" data-action="open-turma-pef" data-id="${t.id}">PEF</button>
+                                <button class="secondary-btn !text-sm flex-1 flex items-center justify-center" data-action="open-turma-notas" data-id="${t.id}">Notas</button>
                             </div>
                         </div>`}).join('') || '<p class="col-span-full text-center py-10 text-stone-500">Nenhuma turma encontrada.</p>'}
                     </div>
@@ -7788,15 +7791,15 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                                         </div>
                                     </div>
                                     ${currentUserRole === 'admin' || currentUserRole === 'pedagogico' ? `
-                                        <div class="flex gap-1" onclick="event.stopPropagation();">
-                                            <button onclick="openFluxoForm('${fluxo.id}'); event.stopPropagation();" 
+                                        <div class="flex gap-1">
+                                            <button data-action="edit-fluxo" data-id="${fluxo.id}"
                                                     class="opacity-50 group-hover:opacity-100 transition-opacity p-1 hover:bg-stone-100 rounded"
                                                     title="Editar fluxo">
                                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                                     <path d="M20 14.66V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h6M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                                                 </svg>
                                             </button>
-                                            <button onclick="deleteFluxo('${fluxo.id}'); event.stopPropagation();" 
+                                            <button data-action="delete-fluxo" data-id="${fluxo.id}"
                                                     class="opacity-50 group-hover:opacity-100 transition-opacity p-1 hover:bg-red-100 rounded text-red-600"
                                                     title="Excluir fluxo">
                                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -9006,6 +9009,668 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
             openHtmlInNewWindow("Diretrizes SLAP", docHtml);
         }
 
+        function openVipNotasModal(vipId) {
+            const vip = vips.find(v => v.id === vipId);
+            if (!vip) { showErrorMessage("Erro", "Aluno VIP não encontrado."); return; }
+            const student = students.find(s => s.id === vip.studentId);
+            if (!student) { showErrorMessage("Erro", "Dados do aluno não encontrados."); return; }
+
+            clearModalHeaderButtons();
+            const modalTitle = document.getElementById('form-modal-title');
+            modalTitle.textContent = `Notas: ${student.name}`;
+            
+            // Load existing grades or set defaults
+            const grades = vip.grades || {
+                midtermTest: 0,
+                listeningTest: 0,
+                grammarTest: 0,
+                oralTest: 0,
+                participacao: 0,
+                assiduidade: 0
+            };
+
+            document.getElementById('form-modal-content-area').innerHTML = `
+                <form id="notas-form" class="space-y-4">
+                    <input type="hidden" id="vip-id" value="${vipId}">
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="font-medium text-sm">Midterm Test (0-20)</label>
+                            <input type="number" id="midterm-test" class="form-input" min="0" max="20" value="${grades.midtermTest}">
+                        </div>
+                        <div>
+                            <label class="font-medium text-sm">Listening Test (0-20)</label>
+                            <input type="number" id="listening-test" class="form-input" min="0" max="20" value="${grades.listeningTest}">
+                        </div>
+                        <div>
+                            <label class="font-medium text-sm">Grammar Test (0-20)</label>
+                            <input type="number" id="grammar-test" class="form-input" min="0" max="20" value="${grades.grammarTest}">
+                        </div>
+                        <div>
+                            <label class="font-medium text-sm">Oral Test (0-20)</label>
+                            <input type="number" id="oral-test" class="form-input" min="0" max="20" value="${grades.oralTest}">
+                        </div>
+                        <div>
+                            <label class="font-medium text-sm">Participação (0-10)</label>
+                            <input type="number" id="participacao" class="form-input" min="0" max="10" value="${grades.participacao}">
+                        </div>
+                        <div>
+                            <label class="font-medium text-sm">Assiduidade (0-10)</label>
+                            <input type="number" id="assiduidade" class="form-input" min="0" max="10" value="${grades.assiduidade}">
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6 p-4 bg-stone-50 rounded-lg">
+                        <div class="flex justify-between items-center">
+                            <span class="font-semibold">Total:</span>
+                            <span id="total-score" class="text-xl font-bold">0</span>
+                        </div>
+                        <div class="mt-2">
+                            <span id="approval-status" class="font-medium"></span>
+                        </div>
+                        <div class="text-sm text-stone-600 mt-1">
+                            Necessário 70 pontos para aprovação
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-between gap-2">
+                        <button type="button" onclick="exportVipReportCard('${vipId}')" class="secondary-btn">Exportar Report Card</button>
+                        <div class="flex gap-2">
+                            <button type="button" data-action="close-modal" class="secondary-btn">Cancelar</button>
+                            <button type="submit" class="primary-btn">Salvar Notas</button>
+                        </div>
+                    </div>
+                </form>
+            `;
+            
+            // Add event listeners to calculate total in real time
+            setTimeout(() => {
+                const inputs = ['midterm-test', 'listening-test', 'grammar-test', 'oral-test', 'participacao', 'assiduidade'];
+                inputs.forEach(inputId => {
+                    document.getElementById(inputId).addEventListener('input', calculateTotal);
+                });
+                calculateTotal(); // Initial calculation
+            }, 100);
+
+            document.getElementById('notas-form').onsubmit = saveVipGrades;
+            document.getElementById('form-modal').classList.add('visible');
+        }
+
+        function openTurmaNotasModal(turmaId) {
+            const turma = turmas.find(t => t.id === turmaId);
+            if (!turma) { showErrorMessage("Erro", "Turma não encontrada."); return; }
+
+            clearModalHeaderButtons();
+            const modalTitle = document.getElementById('form-modal-title');
+            modalTitle.textContent = `Notas: ${turma.name}`;
+            
+            // Get students in this class
+            const turmaStudents = students.filter(s => 
+                (turma.studentIds || []).includes(s.id) && (s.modalidade === 'TURMA' || s.modalidade === 'DUPLA')
+            );
+
+            document.getElementById('form-modal-content-area').innerHTML = `
+                <div class="space-y-6 max-h-96 overflow-y-auto">
+                    <input type="hidden" id="turma-id" value="${turmaId}">
+                    
+                    ${turmaStudents.length === 0 ? `
+                        <div class="text-center py-8 text-stone-500">
+                            Nenhum aluno encontrado nesta turma.
+                        </div>
+                    ` : turmaStudents.map(student => {
+                        const grades = (turma.studentGrades && turma.studentGrades[student.id]) || {
+                            midtermTest: 0,
+                            listeningTest: 0,
+                            grammarTest: 0,
+                            oralTest: 0,
+                            participacao: 0,
+                            assiduidade: 0
+                        };
+                        
+                        return `
+                        <div class="border border-stone-200 rounded-lg p-4">
+                            <h4 class="font-semibold text-lg mb-4">${student.name}</h4>
+                            
+                            <div class="grid grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <label class="font-medium text-sm">Midterm Test (0-20)</label>
+                                    <input type="number" id="midterm-${student.id}" class="form-input student-grade" min="0" max="20" value="${grades.midtermTest}" data-student="${student.id}">
+                                </div>
+                                <div>
+                                    <label class="font-medium text-sm">Listening Test (0-20)</label>
+                                    <input type="number" id="listening-${student.id}" class="form-input student-grade" min="0" max="20" value="${grades.listeningTest}" data-student="${student.id}">
+                                </div>
+                                <div>
+                                    <label class="font-medium text-sm">Grammar Test (0-20)</label>
+                                    <input type="number" id="grammar-${student.id}" class="form-input student-grade" min="0" max="20" value="${grades.grammarTest}" data-student="${student.id}">
+                                </div>
+                                <div>
+                                    <label class="font-medium text-sm">Oral Test (0-20)</label>
+                                    <input type="number" id="oral-${student.id}" class="form-input student-grade" min="0" max="20" value="${grades.oralTest}" data-student="${student.id}">
+                                </div>
+                                <div>
+                                    <label class="font-medium text-sm">Participação (0-10)</label>
+                                    <input type="number" id="participacao-${student.id}" class="form-input student-grade" min="0" max="10" value="${grades.participacao}" data-student="${student.id}">
+                                </div>
+                                <div>
+                                    <label class="font-medium text-sm">Assiduidade (0-10)</label>
+                                    <input type="number" id="assiduidade-${student.id}" class="form-input student-grade" min="0" max="10" value="${grades.assiduidade}" data-student="${student.id}">
+                                </div>
+                            </div>
+                            
+                            <div class="p-3 bg-stone-50 rounded-lg">
+                                <div class="flex justify-between items-center">
+                                    <span class="font-semibold">Total:</span>
+                                    <span id="total-${student.id}" class="text-xl font-bold">0</span>
+                                </div>
+                                <div class="mt-1">
+                                    <span id="status-${student.id}" class="font-medium"></span>
+                                </div>
+                            </div>
+                        </div>
+                        `;
+                    }).join('')}
+                    
+                    <div class="flex justify-between gap-2 pt-4 border-t">
+                        <button type="button" onclick="exportTurmaReportCard('${turmaId}')" class="secondary-btn">Exportar Report Card</button>
+                        <div class="flex gap-2">
+                            <button type="button" data-action="close-modal" class="secondary-btn">Cancelar</button>
+                            <button type="button" onclick="saveTurmaGrades()" class="primary-btn">Salvar Todas as Notas</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Add event listeners to calculate totals in real time
+            setTimeout(() => {
+                document.querySelectorAll('.student-grade').forEach(input => {
+                    input.addEventListener('input', (e) => {
+                        const studentId = e.target.dataset.student;
+                        calculateStudentTotal(studentId);
+                    });
+                });
+                
+                // Initial calculations for all students
+                turmaStudents.forEach(student => {
+                    calculateStudentTotal(student.id);
+                });
+            }, 100);
+
+            document.getElementById('form-modal').classList.add('visible');
+        }
+
+        function calculateTotal() {
+            const midterm = parseInt(document.getElementById('midterm-test').value) || 0;
+            const listening = parseInt(document.getElementById('listening-test').value) || 0;
+            const grammar = parseInt(document.getElementById('grammar-test').value) || 0;
+            const oral = parseInt(document.getElementById('oral-test').value) || 0;
+            const participacao = parseInt(document.getElementById('participacao').value) || 0;
+            const assiduidade = parseInt(document.getElementById('assiduidade').value) || 0;
+            
+            const total = midterm + listening + grammar + oral + participacao + assiduidade;
+            
+            document.getElementById('total-score').textContent = total;
+            
+            const statusElement = document.getElementById('approval-status');
+            if (total >= 70) {
+                statusElement.textContent = '✓ APROVADO';
+                statusElement.className = 'font-medium text-green-600';
+            } else {
+                statusElement.textContent = '✗ REPROVADO';
+                statusElement.className = 'font-medium text-red-600';
+            }
+        }
+
+        function calculateStudentTotal(studentId) {
+            const midterm = parseInt(document.getElementById(`midterm-${studentId}`).value) || 0;
+            const listening = parseInt(document.getElementById(`listening-${studentId}`).value) || 0;
+            const grammar = parseInt(document.getElementById(`grammar-${studentId}`).value) || 0;
+            const oral = parseInt(document.getElementById(`oral-${studentId}`).value) || 0;
+            const participacao = parseInt(document.getElementById(`participacao-${studentId}`).value) || 0;
+            const assiduidade = parseInt(document.getElementById(`assiduidade-${studentId}`).value) || 0;
+            
+            const total = midterm + listening + grammar + oral + participacao + assiduidade;
+            
+            document.getElementById(`total-${studentId}`).textContent = total;
+            
+            const statusElement = document.getElementById(`status-${studentId}`);
+            if (total >= 70) {
+                statusElement.textContent = '✓ APROVADO';
+                statusElement.className = 'font-medium text-green-600';
+            } else {
+                statusElement.textContent = '✗ REPROVADO';
+                statusElement.className = 'font-medium text-red-600';
+            }
+        }
+
+        async function saveVipGrades(event) {
+            event.preventDefault();
+            const vipId = document.getElementById('vip-id').value;
+            
+            const grades = {
+                midtermTest: parseInt(document.getElementById('midterm-test').value) || 0,
+                listeningTest: parseInt(document.getElementById('listening-test').value) || 0,
+                grammarTest: parseInt(document.getElementById('grammar-test').value) || 0,
+                oralTest: parseInt(document.getElementById('oral-test').value) || 0,
+                participacao: parseInt(document.getElementById('participacao').value) || 0,
+                assiduidade: parseInt(document.getElementById('assiduidade').value) || 0
+            };
+            
+            try {
+                if (!db) {
+                    // Local storage mode
+                    const vipIndex = vips.findIndex(v => v.id === vipId);
+                    if (vipIndex !== -1) {
+                        vips[vipIndex].grades = grades;
+                        localStorage.setItem('demo-vips', JSON.stringify(vips));
+                    }
+                } else {
+                    // Firebase mode
+                    await updateDoc(doc(db, `artifacts/${appId}/public/data/vips`, vipId), { grades });
+                }
+                
+                document.getElementById('form-modal').classList.remove('visible');
+                showSuccessMessage("Sucesso", "Notas salvas com sucesso!");
+                
+            } catch (error) {
+                console.error('Error saving VIP grades:', error);
+                showErrorMessage("Erro", "Erro ao salvar as notas.");
+            }
+        }
+
+        async function saveTurmaGrades() {
+            const turmaId = document.getElementById('turma-id').value;
+            const studentGrades = {};
+            
+            // Collect all student grades
+            document.querySelectorAll('.student-grade').forEach(input => {
+                const studentId = input.dataset.student;
+                const fieldType = input.id.split('-')[0];
+                
+                if (!studentGrades[studentId]) {
+                    studentGrades[studentId] = {};
+                }
+                
+                if (fieldType === 'participacao' || fieldType === 'assiduidade') {
+                    studentGrades[studentId][fieldType] = parseInt(input.value) || 0;
+                } else {
+                    studentGrades[studentId][fieldType + 'Test'] = parseInt(input.value) || 0;
+                }
+            });
+            
+            try {
+                if (!db) {
+                    // Local storage mode
+                    const turmaIndex = turmas.findIndex(t => t.id === turmaId);
+                    if (turmaIndex !== -1) {
+                        turmas[turmaIndex].studentGrades = studentGrades;
+                        localStorage.setItem('demo-turmas', JSON.stringify(turmas));
+                    }
+                } else {
+                    // Firebase mode
+                    await updateDoc(doc(db, `artifacts/${appId}/public/data/turmas`, turmaId), { studentGrades });
+                }
+                
+                document.getElementById('form-modal').classList.remove('visible');
+                showSuccessMessage("Sucesso", "Notas da turma salvas com sucesso!");
+                
+            } catch (error) {
+                console.error('Error saving turma grades:', error);
+                showErrorMessage("Erro", "Erro ao salvar as notas da turma.");
+            }
+        }
+
+        function exportVipReportCard(vipId) {
+            const vip = vips.find(v => v.id === vipId);
+            if (!vip) { showErrorMessage("Erro", "Aluno VIP não encontrado."); return; }
+            const student = students.find(s => s.id === vip.studentId);
+            if (!student) { showErrorMessage("Erro", "Dados do aluno não encontrados."); return; }
+
+            // Get current grades from form or stored data
+            const grades = vip.grades || {
+                midtermTest: 0,
+                listeningTest: 0,
+                grammarTest: 0,
+                oralTest: 0,
+                participacao: 0,
+                assiduidade: 0
+            };
+
+            // Try to get current values from form if open
+            const formElements = {
+                midtermTest: document.getElementById('midterm-test'),
+                listeningTest: document.getElementById('listening-test'),
+                grammarTest: document.getElementById('grammar-test'),
+                oralTest: document.getElementById('oral-test'),
+                participacao: document.getElementById('participacao'),
+                assiduidade: document.getElementById('assiduidade')
+            };
+
+            // Update grades with current form values if available
+            Object.keys(formElements).forEach(key => {
+                if (formElements[key]) {
+                    grades[key] = parseInt(formElements[key].value) || 0;
+                }
+            });
+
+            const total = grades.midtermTest + grades.listeningTest + grades.grammarTest + grades.oralTest + grades.participacao + grades.assiduidade;
+            const status = total >= 70 ? 'APROVADO' : 'REPROVADO';
+            const teacher = collaborators.find(c => c.id === vip.teacherId);
+
+            const reportHtml = `
+                <!DOCTYPE html>
+                <html lang="pt-br">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>Report Card - ${student.name}</title>
+                    <style>
+                        * { margin: 0; padding: 0; box-sizing: border-box; }
+                        body { font-family: 'Arial', sans-serif; line-height: 1.6; color: #333; background: #f8f9fa; }
+                        .container { max-width: 800px; margin: 20px auto; background: white; border-radius: 10px; box-shadow: 0 0 20px rgba(0,0,0,0.1); overflow: hidden; }
+                        .header { background: linear-gradient(135deg, #F1D24B, #FF5C3D); color: white; padding: 30px; text-align: center; }
+                        .header h1 { font-size: 2.5em; margin-bottom: 10px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+                        .header h2 { font-size: 1.2em; opacity: 0.9; }
+                        .content { padding: 40px; }
+                        .student-info { background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 30px; }
+                        .student-info h3 { color: #FF5C3D; margin-bottom: 15px; }
+                        .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
+                        .info-item { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #eee; }
+                        .grades-section { margin-bottom: 30px; }
+                        .grades-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                        .grades-table th, .grades-table td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+                        .grades-table th { background: #F1D24B; color: #333; font-weight: bold; }
+                        .grades-table tr:hover { background: #f8f9fa; }
+                        .score { font-weight: bold; color: #FF5C3D; }
+                        .total-section { background: #f8f9fa; padding: 20px; border-radius: 8px; text-align: center; margin: 20px 0; }
+                        .total-score { font-size: 2em; font-weight: bold; color: #FF5C3D; }
+                        .status { font-size: 1.5em; font-weight: bold; margin-top: 10px; }
+                        .status.aprovado { color: #28a745; }
+                        .status.reprovado { color: #dc3545; }
+                        .footer { background: #343a40; color: white; padding: 20px; text-align: center; }
+                        .print-btn { background: #FF5C3D; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 10px; }
+                        .print-btn:hover { background: #e04a2f; }
+                        @media print { .print-btn { display: none; } }
+                    </style>
+                </head>
+                <body>
+                    <div class="container">
+                        <div class="header">
+                            <h1>REPORT CARD</h1>
+                            <h2>SLAP English School</h2>
+                        </div>
+                        
+                        <div class="content">
+                            <div class="student-info">
+                                <h3>Informações do Aluno</h3>
+                                <div class="info-grid">
+                                    <div class="info-item"><span>Nome:</span><strong>${student.name}</strong></div>
+                                    <div class="info-item"><span>Modalidade:</span><strong>VIP</strong></div>
+                                    <div class="info-item"><span>Professor:</span><strong>${teacher?.name || 'N/A'}</strong></div>
+                                    <div class="info-item"><span>Nível:</span><strong>${vip.level || 'N/A'}</strong></div>
+                                    <div class="info-item"><span>Data do Relatório:</span><strong>${new Date().toLocaleDateString('pt-BR')}</strong></div>
+                                </div>
+                            </div>
+
+                            <div class="grades-section">
+                                <h3 style="color: #FF5C3D; margin-bottom: 15px;">Avaliações Detalhadas</h3>
+                                <table class="grades-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Avaliação</th>
+                                            <th>Pontuação Máxima</th>
+                                            <th>Pontuação Obtida</th>
+                                            <th>Porcentagem</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>Midterm Test</td>
+                                            <td>20</td>
+                                            <td class="score">${grades.midtermTest}</td>
+                                            <td>${(grades.midtermTest / 20 * 100).toFixed(1)}%</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Listening Test</td>
+                                            <td>20</td>
+                                            <td class="score">${grades.listeningTest}</td>
+                                            <td>${(grades.listeningTest / 20 * 100).toFixed(1)}%</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Grammar Test</td>
+                                            <td>20</td>
+                                            <td class="score">${grades.grammarTest}</td>
+                                            <td>${(grades.grammarTest / 20 * 100).toFixed(1)}%</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Oral Test</td>
+                                            <td>20</td>
+                                            <td class="score">${grades.oralTest}</td>
+                                            <td>${(grades.oralTest / 20 * 100).toFixed(1)}%</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Participação</td>
+                                            <td>10</td>
+                                            <td class="score">${grades.participacao}</td>
+                                            <td>${(grades.participacao / 10 * 100).toFixed(1)}%</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Assiduidade</td>
+                                            <td>10</td>
+                                            <td class="score">${grades.assiduidade}</td>
+                                            <td>${(grades.assiduidade / 10 * 100).toFixed(1)}%</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div class="total-section">
+                                <div>Pontuação Total</div>
+                                <div class="total-score">${total}/100</div>
+                                <div class="status ${status.toLowerCase()}">${status}</div>
+                                <p style="margin-top: 15px; color: #666;">
+                                    ${status === 'APROVADO' ? 
+                                        'Parabéns! O aluno atingiu a pontuação mínima para aprovação.' : 
+                                        'O aluno não atingiu a pontuação mínima de 70 pontos para aprovação.'}
+                                </p>
+                            </div>
+
+                            <div style="text-align: center; margin-top: 30px;">
+                                <button class="print-btn" onclick="window.print()">🖨️ Imprimir Report Card</button>
+                            </div>
+                        </div>
+
+                        <div class="footer">
+                            <p>SLAP English School - Sistema de Gestão Acadêmica</p>
+                            <p>Gerado em ${new Date().toLocaleString('pt-BR')}</p>
+                        </div>
+                    </div>
+                </body>
+                </html>
+            `;
+
+            openHtmlInNewWindow(`Report Card - ${student.name}`, reportHtml);
+        }
+
+        function exportTurmaReportCard(turmaId) {
+            const turma = turmas.find(t => t.id === turmaId);
+            if (!turma) { showErrorMessage("Erro", "Turma não encontrada."); return; }
+
+            const turmaStudents = students.filter(s => 
+                (turma.studentIds || []).includes(s.id) && (s.modalidade === 'TURMA' || s.modalidade === 'DUPLA')
+            );
+
+            if (turmaStudents.length === 0) {
+                showErrorMessage("Erro", "Nenhum aluno encontrado nesta turma.");
+                return;
+            }
+
+            // Collect current grades from form or stored data
+            const studentsWithGrades = turmaStudents.map(student => {
+                const storedGrades = (turma.studentGrades && turma.studentGrades[student.id]) || {
+                    midtermTest: 0,
+                    listeningTest: 0,
+                    grammarTest: 0,
+                    oralTest: 0,
+                    participacao: 0,
+                    assiduidade: 0
+                };
+
+                // Try to get current values from form if open
+                const formElements = {
+                    midtermTest: document.getElementById(`midterm-${student.id}`),
+                    listeningTest: document.getElementById(`listening-${student.id}`),
+                    grammarTest: document.getElementById(`grammar-${student.id}`),
+                    oralTest: document.getElementById(`oral-${student.id}`),
+                    participacao: document.getElementById(`participacao-${student.id}`),
+                    assiduidade: document.getElementById(`assiduidade-${student.id}`)
+                };
+
+                const grades = { ...storedGrades };
+                Object.keys(formElements).forEach(key => {
+                    if (formElements[key]) {
+                        grades[key] = parseInt(formElements[key].value) || 0;
+                    }
+                });
+
+                const total = grades.midtermTest + grades.listeningTest + grades.grammarTest + grades.oralTest + grades.participacao + grades.assiduidade;
+                const status = total >= 70 ? 'APROVADO' : 'REPROVADO';
+
+                return { student, grades, total, status };
+            });
+
+            const reportHtml = `
+                <!DOCTYPE html>
+                <html lang="pt-br">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>Report Card - ${turma.name}</title>
+                    <style>
+                        * { margin: 0; padding: 0; box-sizing: border-box; }
+                        body { font-family: 'Arial', sans-serif; line-height: 1.6; color: #333; background: #f8f9fa; }
+                        .container { max-width: 1200px; margin: 20px auto; background: white; border-radius: 10px; box-shadow: 0 0 20px rgba(0,0,0,0.1); overflow: hidden; }
+                        .header { background: linear-gradient(135deg, #F1D24B, #FF5C3D); color: white; padding: 30px; text-align: center; }
+                        .header h1 { font-size: 2.5em; margin-bottom: 10px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+                        .header h2 { font-size: 1.2em; opacity: 0.9; }
+                        .content { padding: 40px; }
+                        .turma-info { background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 30px; }
+                        .turma-info h3 { color: #FF5C3D; margin-bottom: 15px; }
+                        .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
+                        .info-item { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #eee; }
+                        .grades-table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 0.9em; }
+                        .grades-table th, .grades-table td { padding: 8px; text-align: center; border: 1px solid #ddd; }
+                        .grades-table th { background: #F1D24B; color: #333; font-weight: bold; }
+                        .grades-table tr:nth-child(even) { background: #f8f9fa; }
+                        .student-name { text-align: left !important; font-weight: bold; }
+                        .score { font-weight: bold; }
+                        .total-column { background: #fff3cd !important; font-weight: bold; }
+                        .status { font-weight: bold; }
+                        .status.aprovado { color: #28a745; }
+                        .status.reprovado { color: #dc3545; }
+                        .summary { background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; }
+                        .summary-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; text-align: center; }
+                        .stat-item { background: white; padding: 15px; border-radius: 8px; }
+                        .stat-number { font-size: 2em; font-weight: bold; color: #FF5C3D; }
+                        .footer { background: #343a40; color: white; padding: 20px; text-align: center; }
+                        .print-btn { background: #FF5C3D; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 10px; }
+                        .print-btn:hover { background: #e04a2f; }
+                        @media print { .print-btn { display: none; } }
+                    </style>
+                </head>
+                <body>
+                    <div class="container">
+                        <div class="header">
+                            <h1>REPORT CARD - TURMA</h1>
+                            <h2>SLAP English School</h2>
+                        </div>
+                        
+                        <div class="content">
+                            <div class="turma-info">
+                                <h3>Informações da Turma</h3>
+                                <div class="info-grid">
+                                    <div class="info-item"><span>Turma:</span><strong>${turma.name}</strong></div>
+                                    <div class="info-item"><span>Professor:</span><strong>${turma.teacherName}</strong></div>
+                                    <div class="info-item"><span>Nível:</span><strong>${turma.level}</strong></div>
+                                    <div class="info-item"><span>Semestre:</span><strong>${turma.semestre || 'N/A'}</strong></div>
+                                    <div class="info-item"><span>Total de Alunos:</span><strong>${studentsWithGrades.length}</strong></div>
+                                    <div class="info-item"><span>Data do Relatório:</span><strong>${new Date().toLocaleDateString('pt-BR')}</strong></div>
+                                </div>
+                            </div>
+
+                            <div class="grades-section">
+                                <h3 style="color: #FF5C3D; margin-bottom: 15px;">Notas Detalhadas por Aluno</h3>
+                                <table class="grades-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Aluno</th>
+                                            <th>Midterm<br>(0-20)</th>
+                                            <th>Listening<br>(0-20)</th>
+                                            <th>Grammar<br>(0-20)</th>
+                                            <th>Oral<br>(0-20)</th>
+                                            <th>Participação<br>(0-10)</th>
+                                            <th>Assiduidade<br>(0-10)</th>
+                                            <th>Total<br>(0-100)</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${studentsWithGrades.map(({ student, grades, total, status }) => `
+                                            <tr>
+                                                <td class="student-name">${student.name}</td>
+                                                <td class="score">${grades.midtermTest}</td>
+                                                <td class="score">${grades.listeningTest}</td>
+                                                <td class="score">${grades.grammarTest}</td>
+                                                <td class="score">${grades.oralTest}</td>
+                                                <td class="score">${grades.participacao}</td>
+                                                <td class="score">${grades.assiduidade}</td>
+                                                <td class="total-column">${total}</td>
+                                                <td class="status ${status.toLowerCase()}">${status}</td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div class="summary">
+                                <h3 style="color: #FF5C3D; margin-bottom: 15px;">Resumo da Turma</h3>
+                                <div class="summary-stats">
+                                    <div class="stat-item">
+                                        <div class="stat-number">${studentsWithGrades.filter(s => s.status === 'APROVADO').length}</div>
+                                        <div>Aprovados</div>
+                                    </div>
+                                    <div class="stat-item">
+                                        <div class="stat-number">${studentsWithGrades.filter(s => s.status === 'REPROVADO').length}</div>
+                                        <div>Reprovados</div>
+                                    </div>
+                                    <div class="stat-item">
+                                        <div class="stat-number">${(studentsWithGrades.reduce((sum, s) => sum + s.total, 0) / studentsWithGrades.length).toFixed(1)}</div>
+                                        <div>Média da Turma</div>
+                                    </div>
+                                    <div class="stat-item">
+                                        <div class="stat-number">${((studentsWithGrades.filter(s => s.status === 'APROVADO').length / studentsWithGrades.length) * 100).toFixed(1)}%</div>
+                                        <div>Taxa de Aprovação</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style="text-align: center; margin-top: 30px;">
+                                <button class="print-btn" onclick="window.print()">🖨️ Imprimir Report Card</button>
+                            </div>
+                        </div>
+
+                        <div class="footer">
+                            <p>SLAP English School - Sistema de Gestão Acadêmica</p>
+                            <p>Gerado em ${new Date().toLocaleString('pt-BR')}</p>
+                        </div>
+                    </div>
+                </body>
+                </html>
+            `;
+
+            openHtmlInNewWindow(`Report Card - ${turma.name}`, reportHtml);
+        }
+
         // Make functions globally accessible
         window.filterGuidelines = filterGuidelines;
         window.changeMonth = changeMonth;
@@ -9674,6 +10339,8 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                         'add-vip': () => openVipForm(),
                         'edit-vip': () => openVipForm(id),
                         'open-vip-pef': () => openVipPefModal(id),
+                        'open-vip-notas': () => openVipNotasModal(id),
+                        'open-turma-notas': () => openTurmaNotasModal(id),
                         'mark-attendance': () => {
                             const button = actionTarget;
                             const group = button.closest('.pef-status-btn-group');
