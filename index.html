@@ -4166,7 +4166,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
 
             modalContentArea.innerHTML = `
                 <div class="flex justify-center mb-4">
-                    <button class="primary-btn w-auto" data-action="save-all-pef-lessons" data-unit-id="${turmaId}" data-pef-type="turma">
+                    <button type="button" class="primary-btn w-auto" data-action="save-all-pef-lessons" data-unit-id="${turmaId}" data-pef-type="turma" onclick="console.log('Button clicked directly!'); saveAllPefLessons('${turmaId}', 'turma');">
                         <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
                         </svg>
@@ -4242,7 +4242,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
 
             modalContentArea.innerHTML = `
                 <div class="flex justify-center mb-4">
-                    <button class="primary-btn w-auto" data-action="save-all-pef-lessons" data-unit-id="${vipId}" data-pef-type="vip">
+                    <button type="button" class="primary-btn w-auto" data-action="save-all-pef-lessons" data-unit-id="${vipId}" data-pef-type="vip" onclick="console.log('VIP Button clicked directly!'); saveAllPefLessons('${vipId}', 'vip');">
                         <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
                         </svg>
@@ -10954,8 +10954,11 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                         },
                         'save-pef-lesson': () => savePefLesson(unitId, lessonNumber),
                         'save-all-pef-lessons': () => {
+                            console.log("save-all-pef-lessons handler triggered");
+                            console.log("actionTarget:", actionTarget);
                             const unitId = actionTarget.getAttribute('data-unit-id');
                             const pefType = actionTarget.getAttribute('data-pef-type');
+                            console.log("unitId:", unitId, "pefType:", pefType);
                             saveAllPefLessons(unitId, pefType);
                         },
                         'add-campanha': () => {
