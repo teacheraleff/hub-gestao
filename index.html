@@ -463,6 +463,11 @@
         const hubView = document.getElementById('hub-view');
         const pendingView = document.getElementById('pending-view');
 
+        // Helper function for timestamps that works in dev and prod mode
+        function getTimestamp() {
+            return db ? serverTimestamp() : new Date().toISOString();
+        }
+
         let db, auth, storage, userId, currentUserName, currentUserRole;
         let usersData = [], students = [], turmas = [], vips = [], attendance = [], tasks = [], events = [], collaborators = [], schedules = [], expenses = [], cps = [], dojoRanking = [], dojoMissions = [], fluxos = [];
         let userProfiles = {};
@@ -8687,7 +8692,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                     const docRef = doc(db, `artifacts/${appId}/public/data`, 'guidelines');
                     const dataToSave = {
                         ...guidelines,
-                        lastUpdated: serverTimestamp(),
+                        lastUpdated: getTimestamp(),
                         updatedBy: currentUserName || 'Admin'
                     };
                     await setDoc(docRef, dataToSave);
