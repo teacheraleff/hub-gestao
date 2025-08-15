@@ -1126,6 +1126,36 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
             getCollectionListener('dojo_missions', dojoMissions, renderDojoSection, (ref) => query(ref, orderBy("points", "desc")));
             getCollectionListener('fluxos', fluxos, renderFluxosSection);
 
+            // Load guidelines with real-time updates
+            if (db) {
+                const guidelinesRef = doc(db, `artifacts/${appId}/public/data`, 'guidelines');
+                const unsubscribeGuidelines = onSnapshot(guidelinesRef, (docSnap) => {
+                    console.log('Guidelines snapshot received:', docSnap.exists());
+                    if (docSnap.exists()) {
+                        const data = docSnap.data();
+                        console.log('Guidelines data from Firebase:', data);
+                        // Remove timestamp fields before setting guidelines
+                        const { lastUpdated, updatedBy, ...cleanGuidelines } = data;
+                        guidelines = {
+                            goodPractices: cleanGuidelines.goodPractices || [],
+                            prohibitedItems: cleanGuidelines.prohibitedItems || []
+                        };
+                        
+                        // Re-render if we're on the guidelines section
+                        const activePageId = contentArea.firstElementChild?.id;
+                        if (activePageId === 'diretrizes-section') {
+                            renderGuidelines();
+                        }
+                    } else {
+                        console.log('No guidelines document found in Firebase');
+                        loadGuidelines(); // Fallback to local loading
+                    }
+                }, (error) => {
+                    console.error('Error listening to guidelines:', error);
+                    loadGuidelines(); // Fallback to local loading
+                });
+                allUnsubscribers.push(unsubscribeGuidelines);
+            }
             
             // Load monthly highlight with real-time updates
             if (db) {
@@ -8649,16 +8679,24 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
             try {
                 if (!db) {
                     // Local storage fallback
+                    console.log('Modo desenvolvimento: salvando diretrizes localmente');
                     localStorage.setItem('slap-guidelines', JSON.stringify(guidelines));
                 } else {
-                    // Save to Firebase
+                    // Save to Firebase with timestamp
+                    console.log('Salvando diretrizes no Firebase para todos os usuários...');
                     const docRef = doc(db, `artifacts/${appId}/public/data`, 'guidelines');
-                    await setDoc(docRef, guidelines);
-                    console.log('Guidelines saved to Firebase successfully');
+                    const dataToSave = {
+                        ...guidelines,
+                        lastUpdated: serverTimestamp(),
+                        updatedBy: currentUserName || 'Admin'
+                    };
+                    await setDoc(docRef, dataToSave);
+                    console.log('Diretrizes salvas no Firebase com sucesso');
                 }
             } catch (error) {
                 console.error('Error saving guidelines:', error);
-                // Fallback to localStorage if Firebase fails
+                showErrorMessage("Erro", "Erro ao salvar diretrizes: " + error.message);
+                // Local storage fallback on error
                 localStorage.setItem('slap-guidelines', JSON.stringify(guidelines));
             }
         }
