@@ -9219,19 +9219,33 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
         }
 
         function calculateTotal() {
-            const midterm = parseFloat(document.getElementById('midterm-test').value) || 0;
-            const listening = parseFloat(document.getElementById('listening-test').value) || 0;
-            const grammar = parseFloat(document.getElementById('grammar-test').value) || 0;
-            const oral = parseFloat(document.getElementById('oral-test').value) || 0;
-            const participacao = parseFloat(document.getElementById('participacao').value) || 0;
-            const assiduidade = parseFloat(document.getElementById('assiduidade').value) || 0;
-            
+            const midtermEl = document.getElementById('midterm-test');
+            const listeningEl = document.getElementById('listening-test');
+            const grammarEl = document.getElementById('grammar-test');
+            const oralEl = document.getElementById('oral-test');
+            const participacaoEl = document.getElementById('participacao');
+            const assiduidadeEl = document.getElementById('assiduidade');
+
+            const midterm = parseFloat(midtermEl.value) || 0;
+            const listening = parseFloat(listeningEl.value) || 0;
+            const grammar = parseFloat(grammarEl.value) || 0;
+            const oral = parseFloat(oralEl.value) || 0;
+            const participacao = parseFloat(participacaoEl.value) || 0;
+            const assiduidade = parseFloat(assiduidadeEl.value) || 0;
+
+            // Check if any field is empty or zero
+            const hasEmptyFields = !midtermEl.value || !listeningEl.value || !grammarEl.value || 
+                                 !oralEl.value || !participacaoEl.value || !assiduidadeEl.value;
+
             const total = midterm + listening + grammar + oral + participacao + assiduidade;
             
             document.getElementById('total-score').textContent = total.toFixed(1);
             
             const statusElement = document.getElementById('approval-status');
-            if (total >= 70) {
+            if (hasEmptyFields) {
+                statusElement.textContent = '⏳ PENDENTE';
+                statusElement.className = 'font-medium text-yellow-600';
+            } else if (total >= 70) {
                 statusElement.textContent = '✓ APROVADO';
                 statusElement.className = 'font-medium text-green-600';
             } else {
@@ -9241,19 +9255,33 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
         }
 
         function calculateStudentTotal(studentId) {
-            const midterm = parseFloat(document.getElementById(`midterm-${studentId}`).value) || 0;
-            const listening = parseFloat(document.getElementById(`listening-${studentId}`).value) || 0;
-            const grammar = parseFloat(document.getElementById(`grammar-${studentId}`).value) || 0;
-            const oral = parseFloat(document.getElementById(`oral-${studentId}`).value) || 0;
-            const participacao = parseFloat(document.getElementById(`participacao-${studentId}`).value) || 0;
-            const assiduidade = parseFloat(document.getElementById(`assiduidade-${studentId}`).value) || 0;
+            const midtermEl = document.getElementById(`midterm-${studentId}`);
+            const listeningEl = document.getElementById(`listening-${studentId}`);
+            const grammarEl = document.getElementById(`grammar-${studentId}`);
+            const oralEl = document.getElementById(`oral-${studentId}`);
+            const participacaoEl = document.getElementById(`participacao-${studentId}`);
+            const assiduidadeEl = document.getElementById(`assiduidade-${studentId}`);
+
+            const midterm = parseFloat(midtermEl.value) || 0;
+            const listening = parseFloat(listeningEl.value) || 0;
+            const grammar = parseFloat(grammarEl.value) || 0;
+            const oral = parseFloat(oralEl.value) || 0;
+            const participacao = parseFloat(participacaoEl.value) || 0;
+            const assiduidade = parseFloat(assiduidadeEl.value) || 0;
+            
+            // Check if any field is empty
+            const hasEmptyFields = !midtermEl.value || !listeningEl.value || !grammarEl.value || 
+                                 !oralEl.value || !participacaoEl.value || !assiduidadeEl.value;
             
             const total = midterm + listening + grammar + oral + participacao + assiduidade;
             
             document.getElementById(`total-${studentId}`).textContent = total.toFixed(1);
             
             const statusElement = document.getElementById(`status-${studentId}`);
-            if (total >= 70) {
+            if (hasEmptyFields) {
+                statusElement.textContent = '⏳ PENDENTE';
+                statusElement.className = 'font-medium text-yellow-600';
+            } else if (total >= 70) {
                 statusElement.textContent = '✓ APROVADO';
                 statusElement.className = 'font-medium text-green-600';
             } else {
@@ -9373,7 +9401,12 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
             });
 
             const total = grades.midtermTest + grades.listeningTest + grades.grammarTest + grades.oralTest + grades.participacao + grades.assiduidade;
-            const status = total >= 70 ? 'APROVADO' : 'REPROVADO';
+            
+            // Check if any grade is missing or zero (indicating incomplete assessment)
+            const hasIncompleteGrades = grades.midtermTest === 0 || grades.listeningTest === 0 || grades.grammarTest === 0 || 
+                                       grades.oralTest === 0 || grades.participacao === 0 || grades.assiduidade === 0;
+            
+            const status = hasIncompleteGrades ? 'PENDENTE' : (total >= 70 ? 'APROVADO' : 'REPROVADO');
             const teacher = collaborators.find(c => c.id === vip.teacherId);
 
             const reportHtml = `
@@ -9594,7 +9627,12 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                 });
 
                 const total = grades.midtermTest + grades.listeningTest + grades.grammarTest + grades.oralTest + grades.participacao + grades.assiduidade;
-                const status = total >= 70 ? 'APROVADO' : 'REPROVADO';
+                
+                // Check if any grade is missing or zero
+                const hasIncompleteGrades = grades.midtermTest === 0 || grades.listeningTest === 0 || grades.grammarTest === 0 || 
+                                           grades.oralTest === 0 || grades.participacao === 0 || grades.assiduidade === 0;
+                
+                const status = hasIncompleteGrades ? 'PENDENTE' : (total >= 70 ? 'APROVADO' : 'REPROVADO');
 
                 return { student, grades, total, status };
             });
@@ -9810,7 +9848,12 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
             };
             
             const total = grades.midtermTest + grades.listeningTest + grades.grammarTest + grades.oralTest + grades.participacao + grades.assiduidade;
-            const status = total >= 70 ? 'APROVADO' : 'REPROVADO';
+            
+            // Check if any grade is missing or zero
+            const hasIncompleteGrades = grades.midtermTest === 0 || grades.listeningTest === 0 || grades.grammarTest === 0 || 
+                                       grades.oralTest === 0 || grades.participacao === 0 || grades.assiduidade === 0;
+            
+            const status = hasIncompleteGrades ? 'PENDENTE' : (total >= 70 ? 'APROVADO' : 'REPROVADO');
             
             const teacher = employees.find(emp => emp.name === turma.teacherName);
             
