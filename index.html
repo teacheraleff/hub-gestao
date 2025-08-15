@@ -999,6 +999,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
 
         // --- FIREBASE INITIALIZATION ---
         async function initializeFirebase() {
+            console.log('Firebase initialization started...');
             try {
                 const firebaseConfig = (typeof __firebase_config !== 'undefined' && __firebase_config)
                     ? JSON.parse(__firebase_config)
@@ -9259,7 +9260,11 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
         }
 
         document.addEventListener('DOMContentLoaded', () => {
+            console.log('DOM Loaded - Initializing Hub SLAP...');
+            
             const pageRenderers = { 'inicio': renderInicioSection, 'alunos': renderAlunosSection, 'turmas': renderTurmasSection, 'vips': renderVipsSection, 'campanhas': renderCampanhasSection, 'tarefas': renderTarefasSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection, 'colaboradores': renderColaboradoresSection, 'cps': renderCPsSection, 'dojo': renderDojoSection, 'calendario-pedagogico': renderCalendarioPedagogicoSection, 'calendario-marketing': renderCalendarioMarketingSection, 'desafio-pedagogico': renderDesafioPedagogicoSection, 'diretrizes': renderDiretrizesSection, 'fluxos': renderFluxosSection };
+            
+            console.log('Page renderers configured:', Object.keys(pageRenderers));
 
             document.body.addEventListener('click', (event) => {
                 // Close modals when clicking overlay or close button
@@ -9483,10 +9488,12 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
             }, 100);
             
             // Initialize click sound system
+            console.log('Initializing click sounds...');
             initializeClickSound();
             initializeClickSounds();
             observeNewElements();
             
+            console.log('Starting Firebase initialization...');
             initializeFirebase();
         });
     </script>
