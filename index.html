@@ -2637,7 +2637,8 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                 const priorityTag = task.priority && priorityTagsMap[task.priority] ? 
                     `<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${priorityTagsMap[task.priority].class}">${priorityTagsMap[task.priority].icon}${priorityTagsMap[task.priority].text}</span>` : '';
                 
-                return `<div class="task-card flex items-start gap-4 ${task.completed ? 'completed' : ''}" data-action="view-task" data-id="${task.id}"><input type="checkbox" data-action="toggle-task" data-id="${task.id}" class="mt-1.5 h-5 w-5 rounded border-gray-300 text-yellow-500 focus:ring-yellow-400" ${task.completed ? 'checked' : ''} onclick="event.stopPropagation()"><div class="flex-1 cursor-pointer"><div class="flex items-start justify-between mb-1"><h4 class="text-stone-800 font-semibold">${task.title || 'Sem título'}</h4>${priorityTag}</div><p class="text-stone-600 text-sm mb-2">${task.description}</p><div class="flex flex-wrap justify-between items-center gap-4"><div class="flex items-center gap-2 flex-wrap"><span class="text-xs text-stone-500">Para:</span>${(task.assignedTo || []).map(name => `<span class="user-tag" style="background-color: #e5e7eb; color: #374151;">${name}</span>`).join('')}${task.assignedBy ? `<span class="text-xs text-stone-500 ml-3">Adicionado por:</span><span class="user-tag" style="background-color: #F1D24B; color: #44403c;">${task.assignedBy}</span>` : ''}</div><div class="text-right"><span class="text-xs text-stone-500">Prazo</span><p class="deadline-text ${deadlineClass}">${formattedDate}</p></div></div></div><button class="task-delete-btn" data-action="delete-item" data-collection="tasks" data-id="${task.id}" onclick="event.stopPropagation()"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button></div>`; 
+                const canEdit = currentUserRole === 'admin' || task.assignedBy === currentUserName;
+                return `<div class="task-card flex items-start gap-4 ${task.completed ? 'completed' : ''}" data-action="view-task" data-id="${task.id}"><input type="checkbox" data-action="toggle-task" data-id="${task.id}" class="mt-1.5 h-5 w-5 rounded border-gray-300 text-yellow-500 focus:ring-yellow-400" ${task.completed ? 'checked' : ''} onclick="event.stopPropagation()"><div class="flex-1 cursor-pointer"><div class="flex items-start justify-between mb-1"><h4 class="text-stone-800 font-semibold">${task.title || 'Sem título'}</h4>${priorityTag}</div><p class="text-stone-600 text-sm mb-2">${task.description}</p><div class="flex flex-wrap justify-between items-center gap-4"><div class="flex items-center gap-2 flex-wrap"><span class="text-xs text-stone-500">Para:</span>${(task.assignedTo || []).map(name => `<span class="user-tag" style="background-color: #e5e7eb; color: #374151;">${name}</span>`).join('')}${task.assignedBy ? `<span class="text-xs text-stone-500 ml-3">Adicionado por:</span><span class="user-tag" style="background-color: #F1D24B; color: #44403c;">${task.assignedBy}</span>` : ''}</div><div class="text-right"><span class="text-xs text-stone-500">Prazo</span><p class="deadline-text ${deadlineClass}">${formattedDate}</p></div></div></div><div class="flex gap-1">${canEdit ? `<button class="text-stone-400 hover:text-stone-600" data-action="edit-task" data-id="${task.id}" onclick="event.stopPropagation()" title="Editar tarefa"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="m18.5 2.5 3 3L12 15l-4 1 1-4L18.5 2.5z"></path></svg></button>` : ''}<button class="task-delete-btn" data-action="delete-item" data-collection="tasks" data-id="${task.id}" onclick="event.stopPropagation()" title="Excluir tarefa"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button></div></div>`; 
             }).join(''); 
         }
 
@@ -3215,8 +3216,8 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10 text-center">
-                        <div class="p-4 rounded-lg border-2 border-stone-300 bg-stone-50 order-2 md:order-1">
-                            <h4 class="font-bold text-lg text-amber-500 flex items-center gap-2">
+                        <div class="p-4 rounded-lg border-2 border-stone-300 bg-stone-50 order-2 md:order-1 flex flex-col items-center justify-center">
+                            <h4 class="font-bold text-lg text-amber-500 flex items-center justify-center gap-2 mb-2">
                                 <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                     <circle cx="12" cy="8" r="6" fill="#C0C0C0" stroke="#A8A8A8" stroke-width="2"/>
                                     <rect x="10" y="14" width="4" height="8" fill="#A8A8A8"/>
@@ -3224,10 +3225,10 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                                 </svg>
                                 2º Lugar
                             </h4>
-                            <p class="text-stone-600">Alexa Echo Dot + R$500 </p>
+                            <p class="text-stone-600 text-center">Alexa Echo Dot + R$500 </p>
                         </div>
-                        <div class="p-4 rounded-lg border-2 border-yellow-400 bg-yellow-50 transform md:scale-110 order-1 md:order-2">
-                            <h4 class="font-bold text-lg text-yellow-500 flex items-center gap-2">
+                        <div class="p-4 rounded-lg border-2 border-yellow-400 bg-yellow-50 transform md:scale-110 order-1 md:order-2 flex flex-col items-center justify-center">
+                            <h4 class="font-bold text-lg text-yellow-500 flex items-center justify-center gap-2 mb-2">
                                 <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                     <circle cx="12" cy="8" r="6" fill="#FFD700" stroke="#DAA520" stroke-width="2"/>
                                     <rect x="10" y="14" width="4" height="8" fill="#DAA520"/>
@@ -3235,10 +3236,10 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                                 </svg>
                                 1º Lugar
                             </h4>
-                            <p class="text-stone-700 font-semibold">R$1000 + jantar + folga</p>
+                            <p class="text-stone-700 font-semibold text-center">R$1000 + jantar + folga</p>
                         </div>
-                        <div class="p-4 rounded-lg border-2 border-amber-600 bg-stone-50 order-3 md:order-3">
-                            <h4 class="font-bold text-lg text-amber-700 flex items-center gap-2">
+                        <div class="p-4 rounded-lg border-2 border-amber-600 bg-stone-50 order-3 md:order-3 flex flex-col items-center justify-center">
+                            <h4 class="font-bold text-lg text-amber-700 flex items-center justify-center gap-2 mb-2">
                                 <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                     <circle cx="12" cy="8" r="6" fill="#CD7F32" stroke="#8B4513" stroke-width="2"/>
                                     <rect x="10" y="14" width="4" height="8" fill="#8B4513"/>
@@ -3246,7 +3247,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                                 </svg>
                                 3º Lugar
                             </h4>
-                            <p class="text-stone-600">R$250 + mimo</p>
+                            <p class="text-stone-600 text-center">R$250 + mimo</p>
                         </div>
                     </div>
 
@@ -4547,38 +4548,46 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
 
 
 
-        function openTaskForm() {
-            console.log('openTaskForm called');
+        function openTaskForm(taskId = null) {
+            console.log('openTaskForm called', taskId ? `editing task ${taskId}` : 'creating new task');
             clearModalHeaderButtons();
-            document.getElementById('form-modal-title').textContent = "Adicionar Nova Tarefa";
+            
+            const isEditing = !!taskId;
+            const task = isEditing ? tasks.find(t => t.id === taskId) : null;
+            
+            document.getElementById('form-modal-title').textContent = isEditing ? "Editar Tarefa" : "Adicionar Nova Tarefa";
             
             // Show all collaborators instead of filtering by sectors - more flexible
             const collaboratorOptions = collaborators.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
             console.log('Collaborator options:', collaboratorOptions);
 
-            const collaboratorCheckboxes = collaborators.map(c => `
-                <div class="flex items-center">
-                    <input type="checkbox" id="collaborator-${c.id || c.name.replace(/\s+/g, '')}" name="assignedTo" value="${c.name}" class="h-4 w-4 rounded text-yellow-500">
-                    <label for="collaborator-${c.id || c.name.replace(/\s+/g, '')}" class="ml-2 text-sm">${c.name}</label>
-                </div>
-            `).join('');
+            const collaboratorCheckboxes = collaborators.map(c => {
+                const isChecked = isEditing && task && task.assignedTo && task.assignedTo.includes(c.name) ? 'checked' : '';
+                return `
+                    <div class="flex items-center">
+                        <input type="checkbox" id="collaborator-${c.id || c.name.replace(/\s+/g, '')}" name="assignedTo" value="${c.name}" class="h-4 w-4 rounded text-yellow-500" ${isChecked}>
+                        <label for="collaborator-${c.id || c.name.replace(/\s+/g, '')}" class="ml-2 text-sm">${c.name}</label>
+                    </div>
+                `;
+            }).join('');
 
             document.getElementById('form-modal-content-area').innerHTML = `
                 <form id="form-modal-body" class="space-y-4">
-                    <div><label class="font-medium text-sm">Título da Tarefa</label><input type="text" id="task-title" class="form-input" required placeholder="Ex: Revisar material do nível A1"></div>
-                    <div><label class="font-medium text-sm">Descrição</label><textarea id="task-description" rows="4" class="form-input" required placeholder="Detalhes sobre a tarefa..."></textarea></div>
+                    <input type="hidden" id="task-id" value="${taskId || ''}">
+                    <div><label class="font-medium text-sm">Título da Tarefa</label><input type="text" id="task-title" class="form-input" required placeholder="Ex: Revisar material do nível A1" value="${task?.title || ''}"></div>
+                    <div><label class="font-medium text-sm">Descrição</label><textarea id="task-description" rows="4" class="form-input" required placeholder="Detalhes sobre a tarefa...">${task?.description || ''}</textarea></div>
                     <div class="grid grid-cols-2 gap-4">
-                        <div><label class="font-medium text-sm">Prazo Final</label><input type="date" id="task-deadline" class="form-input" required></div>
+                        <div><label class="font-medium text-sm">Prazo Final</label><input type="date" id="task-deadline" class="form-input" required value="${task?.deadline || ''}"></div>
                         <div>
                             <label class="font-medium text-sm">Prioridade/Tag</label>
                             <select id="task-priority" class="form-input">
                                 <option value="">Sem tag</option>
-                                <option value="urgente">Urgente</option>
-                                <option value="prioridade">Prioridade</option>
-                                <option value="curto-prazo">Curto Prazo</option>
-                                <option value="longo-prazo">Longo Prazo</option>
-                                <option value="importante">Importante</option>
-                                <option value="rotina">Rotina</option>
+                                <option value="urgente" ${task?.priority === 'urgente' ? 'selected' : ''}>Urgente</option>
+                                <option value="prioridade" ${task?.priority === 'prioridade' ? 'selected' : ''}>Prioridade</option>
+                                <option value="curto-prazo" ${task?.priority === 'curto-prazo' ? 'selected' : ''}>Curto Prazo</option>
+                                <option value="longo-prazo" ${task?.priority === 'longo-prazo' ? 'selected' : ''}>Longo Prazo</option>
+                                <option value="importante" ${task?.priority === 'importante' ? 'selected' : ''}>Importante</option>
+                                <option value="rotina" ${task?.priority === 'rotina' ? 'selected' : ''}>Rotina</option>
                             </select>
                         </div>
                     </div>
@@ -4588,7 +4597,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                             ${collaboratorCheckboxes}
                         </div>
                     </div>
-                    <div class="text-right"><button type="submit" class="primary-btn w-auto">Salvar Tarefa</button></div>
+                    <div class="text-right"><button type="submit" class="primary-btn w-auto">${isEditing ? 'Atualizar Tarefa' : 'Salvar Tarefa'}</button></div>
                 </form>`;
             document.getElementById('form-modal-body').onsubmit = saveTask;
             document.getElementById('form-modal').classList.add('visible');
@@ -4687,7 +4696,12 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                                 <span class="text-sm font-medium text-stone-700">Marcar como ${task.completed ? 'pendente' : 'concluída'}</span>
                             </label>
                         </div>
-                        <button class="primary-btn" data-action="close-modal">Fechar</button>
+                        <div class="flex gap-2">
+                            ${(currentUserRole === 'admin' || task.assignedBy === currentUserName) ? `
+                            <button class="secondary-btn" data-action="edit-task" data-id="${task.id}">Editar</button>
+                            ` : ''}
+                            <button class="primary-btn" data-action="close-modal">Fechar</button>
+                        </div>
                     </div>
                 </div>
             `;
@@ -4695,24 +4709,49 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
         }
         async function saveTask(event) {
             event.preventDefault();
+            const taskId = document.getElementById('task-id').value;
+            const isEditing = !!taskId;
             const assignedToCheckboxes = Array.from(document.querySelectorAll('input[name="assignedTo"]:checked')).map(cb => cb.value);
+            
             const data = {
                 title: document.getElementById('task-title').value,
                 description: document.getElementById('task-description').value,
                 deadline: document.getElementById('task-deadline').value,
                 priority: document.getElementById('task-priority').value,
                 assignedTo: assignedToCheckboxes,
-                assignedBy: currentUserName || 'Admin',
-                createdAt: serverTimestamp(),
-                completed: false
+                updatedAt: serverTimestamp()
             };
-            if (!data.title || !data.description || !data.deadline || data.assignedTo.length === 0) { showErrorMessage("Erro de Validação", "Por favor, preencha todos os campos obrigatórios."); return; }
-            if (!db) { console.warn("Offline mode."); closeFormModal(); return; }
+            
+            if (!isEditing) {
+                data.assignedBy = currentUserName || 'Admin';
+                data.createdAt = serverTimestamp();
+                data.completed = false;
+            }
+            
+            if (!data.title || !data.description || !data.deadline || data.assignedTo.length === 0) { 
+                showErrorMessage("Erro de Validação", "Por favor, preencha todos os campos obrigatórios."); 
+                return; 
+            }
+            
+            if (!db) { 
+                console.warn("Offline mode."); 
+                closeFormModal(); 
+                return; 
+            }
+            
             try {
-                await addDoc(collection(db, `artifacts/${appId}/public/data/tasks`), data);
-                showSuccessMessage("Sucesso!", "Tarefa adicionada.");
+                if (isEditing) {
+                    await updateDoc(doc(db, `artifacts/${appId}/public/data/tasks`, taskId), data);
+                    showSuccessMessage("Sucesso!", "Tarefa atualizada com sucesso.");
+                } else {
+                    await addDoc(collection(db, `artifacts/${appId}/public/data/tasks`), data);
+                    showSuccessMessage("Sucesso!", "Tarefa adicionada com sucesso.");
+                }
                 closeFormModal();
-            } catch (error) { console.error("Error saving task:", error); showErrorMessage("Erro", "Falha ao salvar a tarefa."); }
+            } catch (error) { 
+                console.error("Error saving task:", error); 
+                showErrorMessage("Erro", "Falha ao salvar a tarefa."); 
+            }
         }
 
         function openCollaboratorForm(collaboratorId = null) {
@@ -8296,29 +8335,37 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
 
         async function loadGuidelines() {
             try {
+                console.log('loadGuidelines called, db is:', !!db, 'appId:', appId);
                 let loadedGuidelines = null;
                 
                 if (!db) {
                     // Local storage mode
+                    console.log('Loading guidelines from localStorage');
                     const savedGuidelines = localStorage.getItem('slap-guidelines');
                     if (savedGuidelines) {
                         loadedGuidelines = JSON.parse(savedGuidelines);
+                        console.log('Guidelines loaded from localStorage:', loadedGuidelines);
                     }
                 } else {
                     // Firebase mode
                     try {
+                        console.log('Attempting to load guidelines from Firebase...');
                         const docRef = doc(db, `artifacts/${appId}/public/data`, 'guidelines');
                         const docSnap = await getDoc(docRef);
                         if (docSnap.exists()) {
                             loadedGuidelines = docSnap.data();
-                            console.log('Guidelines loaded from Firebase successfully');
+                            console.log('Guidelines loaded from Firebase successfully:', loadedGuidelines);
+                        } else {
+                            console.log('No guidelines document found in Firebase');
                         }
                     } catch (firebaseError) {
                         console.error('Error loading from Firebase:', firebaseError);
                         // Fallback to localStorage
+                        console.log('Falling back to localStorage...');
                         const savedGuidelines = localStorage.getItem('slap-guidelines');
                         if (savedGuidelines) {
                             loadedGuidelines = JSON.parse(savedGuidelines);
+                            console.log('Guidelines loaded from localStorage fallback:', loadedGuidelines);
                         }
                     }
                 }
@@ -8972,11 +9019,14 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
 
         async function saveGuidelines() {
             try {
+                console.log('saveGuidelines called, db is:', !!db, 'appId:', appId);
                 if (!db) {
                     // Local storage fallback
+                    console.log('Using localStorage fallback for guidelines');
                     localStorage.setItem('slap-guidelines', JSON.stringify(guidelines));
                 } else {
                     // Save to Firebase
+                    console.log('Attempting to save guidelines to Firebase...');
                     const docRef = doc(db, `artifacts/${appId}/public/data`, 'guidelines');
                     await setDoc(docRef, guidelines);
                     console.log('Guidelines saved to Firebase successfully');
@@ -8984,6 +9034,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
             } catch (error) {
                 console.error('Error saving guidelines:', error);
                 // Fallback to localStorage if Firebase fails
+                console.log('Falling back to localStorage due to error');
                 localStorage.setItem('slap-guidelines', JSON.stringify(guidelines));
             }
         }
@@ -9563,7 +9614,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                 }
 
                 const navTarget = event.target.closest('.nav-item');
-                if (navTarget && !navTarget.disabled) {
+                if (navTarget && !navTarget.disabled && !event.target.closest('[data-action]')) {
                     const pageKey = navTarget.dataset.target;
                     
                     if (pageKey && pageRenderers[pageKey]) {
@@ -9583,14 +9634,13 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
 
                 const actionTarget = event.target.closest('[data-action]');
                 if (actionTarget) {
-                    // Don't interfere with navigation clicks that don't have data-action
-                    if (actionTarget.closest('.nav-item') && !actionTarget.dataset.action) {
-                        return;
-                    }
+                    // Prevent navigation interference with action buttons
+                    event.stopPropagation();
                     
                     if(actionTarget.closest('.modal-content') && !['close-modal', 'export-vip-pef', 'export-turma-pef'].includes(actionTarget.dataset.action)) event.stopPropagation();
 
                     const { action, id, collection, nivelId, aulaIndex, direction, unitId, lessonNumber, status } = actionTarget.dataset;
+                    console.log('Action triggered:', action, 'ID:', id);
                     const actionHandlers = {
                         'open-signup': openSignUpModal,
                         'add-aluno': () => openAlunoForm(),
@@ -9651,6 +9701,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                         },
 
                         'add-task': openTaskForm,
+                        'edit-task': () => openTaskForm(id),
                         'view-task': () => openTaskModal(id),
                         'add-collaborator': () => openCollaboratorForm(),
                         'edit-collaborator': () => openCollaboratorForm(id),
@@ -9738,7 +9789,10 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                         'debug-sync-status': debugSyncStatus,
                     };
                     if (actionHandlers[action]) {
+                        console.log('Executing action:', action);
                         actionHandlers[action]();
+                    } else {
+                        console.warn('No handler found for action:', action);
                     }
                 }
 
