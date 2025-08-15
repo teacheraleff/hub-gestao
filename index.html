@@ -4164,7 +4164,17 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                 `;
             }
 
-            modalContentArea.innerHTML = `<div>${lessonsHtml}</div>`;
+            modalContentArea.innerHTML = `
+                <div class="flex justify-center mb-4">
+                    <button class="primary-btn w-auto" data-action="save-all-pef-lessons" data-unit-id="${turmaId}" data-pef-type="turma">
+                        <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                        </svg>
+                        Salvar Todas as Aulas
+                    </button>
+                </div>
+                <div>${lessonsHtml}</div>
+            `;
             modal.classList.add('visible');
         }
 
@@ -4230,8 +4240,114 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                 `;
             }
 
-            modalContentArea.innerHTML = `<div>${lessonsHtml}</div>`;
+            modalContentArea.innerHTML = `
+                <div class="flex justify-center mb-4">
+                    <button class="primary-btn w-auto" data-action="save-all-pef-lessons" data-unit-id="${vipId}" data-pef-type="vip">
+                        <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                        </svg>
+                        Salvar Todas as Aulas
+                    </button>
+                </div>
+                <div>${lessonsHtml}</div>
+            `;
             modal.classList.add('visible');
+        }
+
+        async function saveAllPefLessons(unitId, pefType) {
+            try {
+                showSuccessMessage("Salvando...", "Processando todas as aulas. Aguarde...");
+                
+                let savedCount = 0;
+                const totalLessons = 40;
+                
+                for (let lessonNumber = 1; lessonNumber <= totalLessons; lessonNumber++) {
+                    const lessonRow = document.getElementById(`lesson-row-${unitId}-${lessonNumber}`);
+                    if (!lessonRow) continue;
+                    
+                    const date = lessonRow.querySelector('.lesson-date').value;
+                    // Skip lessons without date (empty lessons)
+                    if (!date) continue;
+                    
+                    const topic = lessonRow.querySelector('.lesson-topic').value;
+                    const notes = lessonRow.querySelector('.lesson-notes').value;
+                    
+                    const studentAttendance = {};
+                    const studentRows = lessonRow.querySelectorAll('.pef-student-attendance-row');
+                    studentRows.forEach(row => {
+                        const studentId = row.dataset.studentId;
+                        const activeButton = row.querySelector('.pef-status-btn-group button.active');
+                        const status = activeButton ? activeButton.dataset.status : '';
+                        if (studentId) {
+                            studentAttendance[studentId] = status;
+                        }
+                    });
+                    
+                    const attendanceRef = doc(db, `artifacts/${appId}/public/data/attendance`, unitId);
+                    
+                    try {
+                        await updateDoc(attendanceRef, {
+                            [`lessons.${lessonNumber}`]: {
+                                date: date,
+                                topic: topic,
+                                notes: notes,
+                                students: studentAttendance
+                            }
+                        });
+                        savedCount++;
+                    } catch (error) {
+                        console.error(`Error saving lesson ${lessonNumber}:`, error);
+                        // Continue with other lessons even if one fails
+                    }
+                }
+                
+                // Update local data
+                let attendanceIndex = attendance.findIndex(a => a.id === unitId);
+                if (attendanceIndex === -1) {
+                    attendance.push({ id: unitId, lessons: {} });
+                    attendanceIndex = attendance.length - 1;
+                }
+                
+                if (!attendance[attendanceIndex].lessons) {
+                    attendance[attendanceIndex].lessons = {};
+                }
+                
+                // Update local attendance data for each saved lesson
+                for (let lessonNumber = 1; lessonNumber <= totalLessons; lessonNumber++) {
+                    const lessonRow = document.getElementById(`lesson-row-${unitId}-${lessonNumber}`);
+                    if (!lessonRow) continue;
+                    
+                    const date = lessonRow.querySelector('.lesson-date').value;
+                    if (!date) continue;
+                    
+                    const topic = lessonRow.querySelector('.lesson-topic').value;
+                    const notes = lessonRow.querySelector('.lesson-notes').value;
+                    
+                    const studentAttendance = {};
+                    const studentRows = lessonRow.querySelectorAll('.pef-student-attendance-row');
+                    studentRows.forEach(row => {
+                        const studentId = row.dataset.studentId;
+                        const activeButton = row.querySelector('.pef-status-btn-group button.active');
+                        const status = activeButton ? activeButton.dataset.status : '';
+                        if (studentId) {
+                            studentAttendance[studentId] = status;
+                        }
+                    });
+                    
+                    attendance[attendanceIndex].lessons[lessonNumber] = {
+                        date: date,
+                        topic: topic,
+                        notes: notes,
+                        students: studentAttendance
+                    };
+                }
+                
+                showSuccessMessage("Sucesso!", `${savedCount} aulas salvas com sucesso.`);
+                
+            } catch (error) {
+                console.error("Error saving all lessons:", error);
+                showErrorMessage("Erro", "Falha ao salvar todas as aulas. Algumas aulas podem ter sido salvas.");
+            }
         }
 
         async function savePefLesson(unitId, lessonNumber) {
@@ -10836,6 +10952,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                             }
                         },
                         'save-pef-lesson': () => savePefLesson(unitId, lessonNumber),
+                        'save-all-pef-lessons': () => saveAllPefLessons(id, status),
                         'add-campanha': () => {
                             console.log('add-campanha action triggered');
                             openCampanhaForm();
