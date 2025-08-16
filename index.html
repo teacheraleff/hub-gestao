@@ -2298,7 +2298,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
             document.getElementById('main-title').textContent = 'Alunos VIP';
             document.getElementById('main-description').textContent = 'Gerencie alunos VIP e registre suas presenças.';
 
-            const canManage = ['admin', 'pedagogico', 'ap', 'financeiro', 'teacher'].includes(currentUserRole);
+            const canManage = ['admin', 'pedagogico', 'ap', 'financeiro'].includes(currentUserRole);
             
             let itemsToDisplay = getFilteredVips();
             
