@@ -4166,7 +4166,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
 
             modalContentArea.innerHTML = `
                 <div class="flex justify-center mb-4">
-                    <button type="button" class="primary-btn w-auto" data-action="save-all-pef-lessons" data-unit-id="${turmaId}" data-pef-type="turma" onclick="console.log('Button clicked directly!'); saveAllPefLessons('${turmaId}', 'turma');">
+                    <button type="button" id="save-all-turma-lessons-btn" class="primary-btn w-auto">
                         <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
                         </svg>
@@ -4176,6 +4176,17 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                 <div>${lessonsHtml}</div>
             `;
             modal.classList.add('visible');
+            
+            // Add event listener after DOM is updated
+            setTimeout(() => {
+                const saveAllBtn = document.getElementById('save-all-turma-lessons-btn');
+                if (saveAllBtn) {
+                    saveAllBtn.addEventListener('click', function() {
+                        console.log('Turma save all button clicked');
+                        saveAllPefLessons('${turmaId}', 'turma');
+                    });
+                }
+            }, 100);
         }
 
         function openVipPefModal(vipId) {
@@ -4242,7 +4253,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
 
             modalContentArea.innerHTML = `
                 <div class="flex justify-center mb-4">
-                    <button type="button" class="primary-btn w-auto" data-action="save-all-pef-lessons" data-unit-id="${vipId}" data-pef-type="vip" onclick="console.log('VIP Button clicked directly!'); saveAllPefLessons('${vipId}', 'vip');">
+                    <button type="button" id="save-all-vip-lessons-btn" class="primary-btn w-auto">
                         <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
                         </svg>
@@ -4252,6 +4263,17 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                 <div>${lessonsHtml}</div>
             `;
             modal.classList.add('visible');
+            
+            // Add event listener after DOM is updated
+            setTimeout(() => {
+                const saveAllBtn = document.getElementById('save-all-vip-lessons-btn');
+                if (saveAllBtn) {
+                    saveAllBtn.addEventListener('click', function() {
+                        console.log('VIP save all button clicked');
+                        saveAllPefLessons('${vipId}', 'vip');
+                    });
+                }
+            }, 100);
         }
 
         async function saveAllPefLessons(unitId, pefType) {
@@ -7865,9 +7887,17 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
             contentArea.innerHTML = `
                 <div class="space-y-6">
                     <div class="flex flex-col sm:flex-row justify-between items-start gap-4">
-                        <div class="flex-1">
+                        <div class="flex gap-4 flex-1">
                             <input type="text" id="fluxos-search" placeholder="Buscar fluxos..." 
                                    class="form-input max-w-sm" onkeyup="filterFluxos()">
+                            <select id="fluxos-setor-filter" class="form-input max-w-48" onchange="filterFluxos()">
+                                <option value="">Todos os setores</option>
+                                <option value="PEDAGÓGICO">Pedagógico</option>
+                                <option value="COMERCIAL">Comercial</option>
+                                <option value="FINANCEIRO">Financeiro</option>
+                                <option value="MARKETING">Marketing</option>
+                                <option value="ADMINISTRATIVO">Administrativo</option>
+                            </select>
                         </div>
                         ${currentUserRole === 'admin' || currentUserRole === 'pedagogico' ? `
                             <button data-action="add-fluxo" class="primary-btn">
@@ -7973,12 +8003,24 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
 
         function filterFluxos() {
             const searchTerm = document.getElementById('fluxos-search').value.toLowerCase();
+            const selectedSetor = document.getElementById('fluxos-setor-filter').value;
             const container = document.getElementById('fluxos-container');
             const cards = container.querySelectorAll('.base-card');
             
             cards.forEach(card => {
                 const text = card.textContent.toLowerCase();
-                card.style.display = text.includes(searchTerm) ? 'block' : 'none';
+                const matchesSearch = text.includes(searchTerm);
+                
+                // Check if card matches selected sector
+                let matchesSetor = true;
+                if (selectedSetor) {
+                    const setorTags = card.querySelectorAll('.px-2.py-1.text-xs.font-medium.rounded-full');
+                    matchesSetor = Array.from(setorTags).some(tag => 
+                        tag.textContent.trim().toUpperCase() === selectedSetor
+                    );
+                }
+                
+                card.style.display = (matchesSearch && matchesSetor) ? 'block' : 'none';
             });
         }
 
@@ -8255,36 +8297,61 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
             
             try {
                 playButtonClick();
+                console.log('Starting deletion process...');
                 
                 // Remove from local array
                 const index = fluxos.findIndex(f => f.id === fluxoId);
                 console.log('Found fluxo at index:', index);
                 if (index !== -1) {
                     fluxos.splice(index, 1);
-                    console.log('Fluxo removed, new count:', fluxos.length);
+                    console.log('Fluxo removed from local array, new count:', fluxos.length);
+                } else {
+                    console.error('Fluxo not found in local array');
+                    throw new Error('Fluxo não encontrado na lista local');
                 }
                 
                 // Save to storage
+                console.log('Checking storage type. db:', typeof db, 'appId:', appId);
                 if (typeof db !== 'undefined' && db) {
                     // Firebase mode
-                    const docRef = doc(db, `artifacts/${appId}/public/data/fluxos`, fluxoId);
-                    await deleteDoc(docRef);
+                    console.log('Using Firebase mode for deletion');
+                    try {
+                        const docRef = doc(db, `artifacts/${appId}/public/data/fluxos`, fluxoId);
+                        console.log('Document reference created:', docRef);
+                        await deleteDoc(docRef);
+                        console.log('Firebase document deleted successfully');
+                    } catch (firebaseError) {
+                        console.error('Firebase deletion error:', firebaseError);
+                        throw firebaseError;
+                    }
                 } else {
                     // Local storage mode
-                    console.log('Saving fluxos to localStorage after deletion:', fluxos.length);
+                    console.log('Using localStorage mode for deletion');
                     localStorage.setItem('demo-fluxos', JSON.stringify(fluxos));
+                    console.log('Saved to localStorage, new count:', fluxos.length);
                 }
                 
                 // Refresh the display
+                console.log('Refreshing display...');
                 renderFluxosSection();
                 
                 playSuccessSound();
                 showSuccessMessage("Fluxo Excluído", "Fluxo removido com sucesso!");
+                console.log('Deletion completed successfully');
                 
             } catch (error) {
                 console.error('Error deleting fluxo:', error);
+                console.error('Error details:', error.message, error.stack);
                 playErrorSound();
-                showErrorMessage("Erro", "Erro ao excluir fluxo. Tente novamente.");
+                showErrorMessage("Erro", `Erro ao excluir fluxo: ${error.message}`);
+                
+                // Restore the fluxo in case of error
+                if (index !== -1) {
+                    console.log('Restoring fluxo to local array after error');
+                    // We need to get the original fluxo data to restore it
+                    // For now, just refresh the section to reload data
+                    renderFluxosSection();
+                }
             }
         }
 
@@ -9541,79 +9608,144 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
         }
 
         async function saveVipGrades(event) {
-            event.preventDefault();
-            const vipId = document.getElementById('vip-id').value;
+            if (event) event.preventDefault();
+            console.log('saveVipGrades called');
+            
+            const vipIdInput = document.getElementById('vip-id');
+            if (!vipIdInput) {
+                console.error('vip-id input not found');
+                showErrorMessage("Erro", "ID do VIP não encontrado.");
+                return;
+            }
+            
+            const vipId = vipIdInput.value;
+            console.log('Saving grades for VIP:', vipId);
+            
+            const gradeElements = {
+                midtermTest: document.getElementById('midterm-test'),
+                listeningTest: document.getElementById('listening-test'),
+                grammarTest: document.getElementById('grammar-test'),
+                oralTest: document.getElementById('oral-test'),
+                participacao: document.getElementById('participacao'),
+                assiduidade: document.getElementById('assiduidade')
+            };
+            
+            // Check if all grade elements exist
+            const missingElements = Object.keys(gradeElements).filter(key => !gradeElements[key]);
+            if (missingElements.length > 0) {
+                console.error('Missing grade elements:', missingElements);
+                showErrorMessage("Erro", "Alguns campos de nota não foram encontrados.");
+                return;
+            }
             
             const grades = {
-                midtermTest: parseFloat(document.getElementById('midterm-test').value) || 0,
-                listeningTest: parseFloat(document.getElementById('listening-test').value) || 0,
-                grammarTest: parseFloat(document.getElementById('grammar-test').value) || 0,
-                oralTest: parseFloat(document.getElementById('oral-test').value) || 0,
-                participacao: parseFloat(document.getElementById('participacao').value) || 0,
-                assiduidade: parseFloat(document.getElementById('assiduidade').value) || 0
+                midtermTest: parseFloat(gradeElements.midtermTest.value) || 0,
+                listeningTest: parseFloat(gradeElements.listeningTest.value) || 0,
+                grammarTest: parseFloat(gradeElements.grammarTest.value) || 0,
+                oralTest: parseFloat(gradeElements.oralTest.value) || 0,
+                participacao: parseFloat(gradeElements.participacao.value) || 0,
+                assiduidade: parseFloat(gradeElements.assiduidade.value) || 0
             };
+            
+            console.log('Collected VIP grades:', grades);
             
             try {
                 if (!db) {
                     // Local storage mode
+                    console.log('Using localStorage mode for VIP');
                     const vipIndex = vips.findIndex(v => v.id === vipId);
+                    console.log('Found VIP at index:', vipIndex);
                     if (vipIndex !== -1) {
                         vips[vipIndex].grades = grades;
                         localStorage.setItem('demo-vips', JSON.stringify(vips));
+                        console.log('VIP grades saved to localStorage');
+                    } else {
+                        throw new Error('VIP não encontrado');
                     }
                 } else {
                     // Firebase mode
-                    await updateDoc(doc(db, `artifacts/${appId}/public/data/vips`, vipId), { grades });
+                    console.log('Using Firebase mode for VIP');
+                    const docRef = doc(db, `artifacts/${appId}/public/data/vips`, vipId);
+                    await updateDoc(docRef, { grades });
+                    console.log('VIP grades saved to Firebase');
                 }
                 
                 document.getElementById('form-modal').classList.remove('visible');
                 showSuccessMessage("Sucesso", "Notas salvas com sucesso!");
+                console.log('VIP save completed successfully');
                 
             } catch (error) {
                 console.error('Error saving VIP grades:', error);
-                showErrorMessage("Erro", "Erro ao salvar as notas.");
+                showErrorMessage("Erro", `Erro ao salvar as notas: ${error.message}`);
             }
         }
 
         async function saveTurmaGrades() {
-            const turmaId = document.getElementById('turma-id').value;
+            console.log('saveTurmaGrades called');
+            const turmaIdInput = document.getElementById('turma-id');
+            if (!turmaIdInput) {
+                console.error('turma-id input not found');
+                showErrorMessage("Erro", "ID da turma não encontrado.");
+                return;
+            }
+            
+            const turmaId = turmaIdInput.value;
+            console.log('Saving grades for turma:', turmaId);
+            
             const studentGrades = {};
             
             // Collect all student grades
-            document.querySelectorAll('.student-grade').forEach(input => {
+            const gradeInputs = document.querySelectorAll('.student-grade');
+            console.log('Found grade inputs:', gradeInputs.length);
+            
+            gradeInputs.forEach(input => {
                 const studentId = input.dataset.student;
                 const fieldType = input.id.split('-')[0];
+                const value = parseFloat(input.value) || 0;
+                
+                console.log(`Processing ${fieldType} for student ${studentId}: ${value}`);
                 
                 if (!studentGrades[studentId]) {
                     studentGrades[studentId] = {};
                 }
                 
                 if (fieldType === 'participacao' || fieldType === 'assiduidade') {
-                    studentGrades[studentId][fieldType] = parseFloat(input.value) || 0;
+                    studentGrades[studentId][fieldType] = value;
                 } else {
-                    studentGrades[studentId][fieldType + 'Test'] = parseFloat(input.value) || 0;
+                    studentGrades[studentId][fieldType + 'Test'] = value;
                 }
             });
+            
+            console.log('Collected student grades:', studentGrades);
             
             try {
                 if (!db) {
                     // Local storage mode
+                    console.log('Using localStorage mode');
                     const turmaIndex = turmas.findIndex(t => t.id === turmaId);
+                    console.log('Found turma at index:', turmaIndex);
                     if (turmaIndex !== -1) {
                         turmas[turmaIndex].studentGrades = studentGrades;
                         localStorage.setItem('demo-turmas', JSON.stringify(turmas));
+                        console.log('Saved to localStorage');
+                    } else {
+                        throw new Error('Turma não encontrada');
                     }
                 } else {
                     // Firebase mode
-                    await updateDoc(doc(db, `artifacts/${appId}/public/data/turmas`, turmaId), { studentGrades });
+                    console.log('Using Firebase mode');
+                    const docRef = doc(db, `artifacts/${appId}/public/data/turmas`, turmaId);
+                    await updateDoc(docRef, { studentGrades });
+                    console.log('Saved to Firebase');
                 }
                 
                 document.getElementById('form-modal').classList.remove('visible');
                 showSuccessMessage("Sucesso", "Notas da turma salvas com sucesso!");
+                console.log('Save completed successfully');
                 
             } catch (error) {
                 console.error('Error saving turma grades:', error);
-                showErrorMessage("Erro", "Erro ao salvar as notas da turma.");
+                showErrorMessage("Erro", `Erro ao salvar as notas: ${error.message}`);
             }
         }
 
