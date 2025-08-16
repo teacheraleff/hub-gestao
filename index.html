@@ -8296,7 +8296,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
             }
             
             try {
-                playButtonClick();
+                playClickSound();
                 console.log('Starting deletion process...');
                 
                 // Remove from local array
@@ -9548,14 +9548,20 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
             let totalLessons = 0;
             let presentLessons = 0;
             
-            // Count all lessons that have been registered (VIP uses same structure)
+            // Count all lessons that have been registered for VIP
             for (let i = 1; i <= 40; i++) {
                 const lessonData = unitAttendance.lessons[i];
-                if (lessonData && lessonData.date) { // VIP lessons just need date to be considered registered
+                if (lessonData && lessonData.date) { // VIP lessons with date are considered registered
                     totalLessons++;
-                    // For VIP, if lesson exists with date, assume present unless explicitly marked absent
-                    // This is a simplification - you might want to adjust based on actual VIP attendance tracking
-                    presentLessons++;
+                    
+                    // Check the actual status - VIPs use same structure as turmas but simpler
+                    const status = lessonData.status;
+                    if (status === 'P') {
+                        presentLessons++;
+                    } else if (status === 'PP') {
+                        presentLessons += 0.5; // Partial presence counts as 0.5
+                    }
+                    // 'F' or undefined counts as 0 (absent)
                 }
             }
             
@@ -9563,10 +9569,11 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                 return null; // No lessons registered yet
             }
             
-            // For VIPs, we'll assume high attendance unless there's specific absence tracking
             // Calculate attendance percentage and convert to 0-10 scale
             const attendancePercentage = presentLessons / totalLessons;
             const attendanceScore = Math.round(attendancePercentage * 10 * 10) / 10; // Round to 1 decimal
+            
+            console.log(`VIP ${vipId}: ${presentLessons}/${totalLessons} = ${attendancePercentage.toFixed(2)} = ${attendanceScore}`);
             
             return Math.min(10, Math.max(0, attendanceScore)); // Ensure within 0-10 range
         }
@@ -9704,6 +9711,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                 const value = parseFloat(input.value) || 0;
                 
                 console.log(`Processing ${fieldType} for student ${studentId}: ${value}`);
+                console.log(`Input ID: ${input.id}, Input value: ${input.value}, Dataset student: ${input.dataset.student}`);
                 
                 if (!studentGrades[studentId]) {
                     studentGrades[studentId] = {};
@@ -9711,8 +9719,10 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                 
                 if (fieldType === 'participacao' || fieldType === 'assiduidade') {
                     studentGrades[studentId][fieldType] = value;
+                    console.log(`Saved ${fieldType} = ${value} for student ${studentId}`);
                 } else {
                     studentGrades[studentId][fieldType + 'Test'] = value;
+                    console.log(`Saved ${fieldType}Test = ${value} for student ${studentId}`);
                 }
             });
             
