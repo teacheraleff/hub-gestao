@@ -7870,6 +7870,45 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
         // Make it globally accessible for console usage
         window.bulkImportGuidelines = bulkImportGuidelines;
 
+        // Migration function to move guidelines from localStorage to Firebase
+        async function migrateGuidelinesToFirebase() {
+            try {
+                console.log('Starting guidelines migration to Firebase...');
+                
+                if (!db) {
+                    console.error('Firebase not available for migration');
+                    return false;
+                }
+
+                // Check if there are guidelines in localStorage
+                const localGuidelines = localStorage.getItem('slap-guidelines');
+                if (!localGuidelines) {
+                    console.log('No guidelines found in localStorage to migrate');
+                    return false;
+                }
+
+                const parsedGuidelines = JSON.parse(localGuidelines);
+                console.log('Found guidelines in localStorage:', parsedGuidelines);
+
+                // Save to Firebase
+                const docRef = doc(db, `artifacts/${appId}/public/data`, 'guidelines');
+                await setDoc(docRef, parsedGuidelines);
+                console.log('Guidelines successfully migrated to Firebase');
+
+                // Remove from localStorage after successful migration
+                localStorage.removeItem('slap-guidelines');
+                console.log('Guidelines removed from localStorage');
+
+                return true;
+            } catch (error) {
+                console.error('Error migrating guidelines to Firebase:', error);
+                return false;
+            }
+        }
+
+        // Make migration function globally accessible
+        window.migrateGuidelinesToFirebase = migrateGuidelinesToFirebase;
+
         function renderFluxosSection() {
             document.getElementById('main-title').textContent = 'Fluxos';
             document.getElementById('main-description').textContent = 'Processos organizacionais da empresa';
@@ -8227,13 +8266,22 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                 </form>
             `;
 
-            document.getElementById('form-modal').classList.add('visible');
+            const formModal = document.getElementById('form-modal');
+            if (formModal) {
+                formModal.classList.add('visible');
+            } else {
+                console.error('form-modal element not found');
+                return;
+            }
 
             // Form submission handler
-            document.getElementById('fluxo-form').addEventListener('submit', (e) => {
-                e.preventDefault();
-                saveFluxo(fluxoId);
-            });
+            const fluxoForm = document.getElementById('fluxo-form');
+            if (fluxoForm) {
+                fluxoForm.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    saveFluxo(fluxoId);
+                });
+            }
         }
 
         function addPasso() {
@@ -8544,6 +8592,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
         async function loadGuidelines() {
             try {
                 console.log('loadGuidelines called, db is:', !!db, 'appId:', appId);
+                console.log('Firebase detection - db type:', typeof db, 'db value:', db);
                 let loadedGuidelines = null;
                 
                 if (!db) {
@@ -10433,6 +10482,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
         window.deleteFluxo = deleteFluxo;
         window.openFluxoForm = openFluxoForm;
         window.saveTurmaGrades = saveTurmaGrades;
+        window.filterFluxos = filterFluxos;
         window.openNivelForm = openNivelForm;
         window.openNivelModal = openNivelModal;
         window.deleteNivelCP = deleteNivelCP;
@@ -10448,6 +10498,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
         async function saveGuidelines() {
             try {
                 console.log('saveGuidelines called, db is:', !!db, 'appId:', appId);
+                console.log('Firebase detection for save - db type:', typeof db, 'db value:', db);
                 if (!db) {
                     // Local storage fallback
                     console.log('Using localStorage fallback for guidelines');
