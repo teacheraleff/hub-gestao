@@ -2559,7 +2559,10 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
             currentTaskTab = tabType;
             // Update tab visual state
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-            document.getElementById(`tab-${tabType === 'minhas' ? 'minhas-tarefas' : 'delegadas-por-mim'}`).classList.add('active');
+            const targetTab = document.getElementById(`tab-${tabType === 'minhas' ? 'minhas-tarefas' : 'delegadas-por-mim'}`);
+            if (targetTab) {
+                targetTab.classList.add('active');
+            }
             updateTaskList();
         }
 
@@ -2594,8 +2597,14 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
             filteredTasks.sort((a, b) => a.completed - b.completed || new Date(a.deadline) - new Date(b.deadline)); 
             
             if (filteredTasks.length === 0) { 
-                const message = isAdmin ? 'Nenhuma tarefa encontrada para este filtro.' : 
-                    (currentTaskTab === 'minhas' ? 'Você não tem tarefas atribuídas.' : 'Você não delegou nenhuma tarefa.');
+                let message;
+                if (isAdmin) {
+                    message = 'Nenhuma tarefa encontrada para este filtro.';
+                } else if (currentTaskTab === 'minhas') {
+                    message = 'Você não tem tarefas atribuídas no momento.';
+                } else {
+                    message = 'Você não delegou nenhuma tarefa ainda.<br><br>Clique em "+ Adicionar Tarefa" para delegar uma nova tarefa para sua equipe.';
+                }
                 container.innerHTML = `<div class="text-center p-8 bg-white rounded-lg"><p class="text-stone-500">${message}</p></div>`; 
                 return; 
             } 
