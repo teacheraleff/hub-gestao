@@ -137,8 +137,6 @@
         .danger-btn { background-color: #ef4444; color: white; padding: 0.5rem 1rem; border-radius: 0.375rem; font-weight: 600; transition: background-color 0.2s; border: none; cursor: pointer; }
         .danger-btn:hover { background-color: #dc2626; }
 
-        /* --- CPs Styles --- */
-        .cp-level-card { background-color: #fff; border-radius: 0.75rem; margin-bottom: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid #e7e5e4; }
         .cp-level-header { padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
         .cp-level-content { padding: 0 1.5rem; max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out, padding-bottom 0.3s ease-out; }
         .cp-level-card.open .cp-level-content { max-height: 6000px; padding-bottom: 1.5rem; }
@@ -484,7 +482,7 @@
         const pendingView = document.getElementById('pending-view');
 
         let db, auth, storage, userId, currentUserName, currentUserRole;
-        let usersData = [], students = [], turmas = [], vips = [], attendance = [], tasks = [], events = [], collaborators = [], schedules = [], expenses = [], cps = [], dojoRanking = [], dojoMissions = [], fluxos = [];
+        let usersData = [], students = [], turmas = [], vips = [], attendance = [], tasks = [], events = [], collaborators = [], schedules = [], expenses = [], dojoRanking = [], dojoMissions = [], fluxos = [];
         let userProfiles = {};
         let monthlyHighlight = {
             name: 'João Silva',
@@ -511,513 +509,23 @@
             document.getElementById('profile-picture').src = 'https://res.cloudinary.com/dqfi22uz0/image/upload/v1749349751/DBB440C2-684E-4DCF-9CD3-B2DDC18F1E53_3_vgocga.jpg';
 
             // Initialize with demo data
-            loadDemoData();
+            // loadDemoData(); // Function removed with CPs cleanup
             updateWelcomeMessages(currentUserName);
             showHubView();
             renderInicioSection();
             renderMenu();
         }
 
-        // Sistema de Backup dos CPs para proteger dados do usuário
-        function createCPsBackup() {
-            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-            const currentCps = localStorage.getItem('demo-cps');
-            
-            if (currentCps && currentCps !== '[]') {
-                // Criar backup automático
-                localStorage.setItem(`backup-cps-${timestamp}`, currentCps);
-                
-                // Manter apenas os 10 backups mais recentes
-                const allKeys = Object.keys(localStorage);
-                const backupKeys = allKeys.filter(key => key.startsWith('backup-cps-')).sort();
-                
-                if (backupKeys.length > 10) {
-                    for (let i = 0; i < backupKeys.length - 10; i++) {
-                        localStorage.removeItem(backupKeys[i]);
-                    }
-                }
-                
-                console.log(`Backup dos CPs criado: backup-cps-${timestamp}`);
-            }
-        }
 
-        function restoreCPsFromBackup(backupKey = null) {
-            if (!backupKey) {
-                // Encontrar o backup mais recente
-                const allKeys = Object.keys(localStorage);
-                const backupKeys = allKeys.filter(key => key.startsWith('backup-cps-')).sort();
-                backupKey = backupKeys[backupKeys.length - 1];
-            }
-            
-            if (backupKey) {
-                const backupData = localStorage.getItem(backupKey);
-                if (backupData) {
-                    localStorage.setItem('demo-cps', backupData);
-                    cps = JSON.parse(backupData);
-                    console.log(`CPs restaurados do backup: ${backupKey}`);
-                    return true;
-                }
-            }
-            return false;
-        }
 
-        function exportCPsBackup() {
-            const currentCps = localStorage.getItem('demo-cps');
-            if (currentCps) {
-                const timestamp = new Date().toISOString().split('T')[0];
-                const blob = new Blob([currentCps], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `backup-cps-${timestamp}.json`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-                showSuccessMessage("Backup Exportado", "Backup dos CPs baixado com sucesso!");
-            }
-        }
 
         function safeDeleteItem(collection, id, itemName = 'item') {
-            // Criar backup automático antes de deletar dados críticos dos CPs
-            if (collection === 'cps') {
-                createCPsBackup();
-                console.log("Backup automático criado antes de deletar CP");
-                
-                const nivel = cps.find(cp => cp.id === id);
-                const confirmMessage = `ATENÇÃO: Você está prestes a deletar o nível "${nivel?.title || id}" dos CPs. 
-                
-Um backup foi criado automaticamente.
-                
-Esta operação não pode ser desfeita. Deseja continuar?`;
-                
-                if (!confirm(confirmMessage)) {
-                    showInfoMessage("Operação Cancelada", "O nível não foi deletado.");
-                    return;
-                }
-            }
             
             // Continuar com a operação de deletar
             deleteItem(collection, id);
         }
 
-        function safeCPOperation(operation, message = "Esta operação modificará os CPs") {
-            // Criar backup automático antes de operações críticas
-            createCPsBackup();
-            console.log("Backup automático criado antes da operação:", operation);
-            
-            if (confirm(`${message}. Um backup foi criado automaticamente. Deseja continuar?`)) {
-                return true;
-            }
-            return false;
-        }
 
-        // Função de emergência para recuperar CPs do backup mais recente
-        // Use no console: restoreLatestCPsBackup()
-        function restoreLatestCPsBackup() {
-            const allKeys = Object.keys(localStorage);
-            const backupKeys = allKeys.filter(key => key.startsWith('backup-cps-')).sort();
-            
-            if (backupKeys.length === 0) {
-                console.log("Nenhum backup encontrado!");
-                return false;
-            }
-            
-            const latestBackup = backupKeys[backupKeys.length - 1];
-            const backupData = localStorage.getItem(latestBackup);
-            
-            if (backupData) {
-                localStorage.setItem('demo-cps', backupData);
-                cps = JSON.parse(backupData);
-                renderCPsSection();
-                console.log(`CPs restaurados do backup: ${latestBackup}`);
-                showSuccessMessage("Backup Restaurado", `CPs recuperados do backup: ${latestBackup}`);
-                return true;
-            }
-            
-            console.log("Erro ao restaurar backup!");
-            return false;
-        }
-
-        // Função para listar todos os backups disponíveis
-        // Use no console: listCPsBackups()
-        function listCPsBackups() {
-            const allKeys = Object.keys(localStorage);
-            const backupKeys = allKeys.filter(key => key.startsWith('backup-cps-')).sort();
-            
-            console.log("=== BACKUPS DE CPs DISPONÍVEIS ===");
-            backupKeys.forEach((key, index) => {
-                const timestamp = key.replace('backup-cps-', '');
-                const data = JSON.parse(localStorage.getItem(key) || '[]');
-                console.log(`${index + 1}. ${timestamp} - ${data.length} níveis`);
-            });
-            
-            if (backupKeys.length === 0) {
-                console.log("Nenhum backup encontrado!");
-            }
-            
-            return backupKeys;
-        }
-
-        function loadDemoData() {
-            // Load demo data from localStorage or create default data
-            students = JSON.parse(localStorage.getItem('demo-students') || '[]');
-
-            turmas = JSON.parse(localStorage.getItem('demo-turmas') || '[]');
-            vips = JSON.parse(localStorage.getItem('demo-vips') || '[]');
-            tasks = JSON.parse(localStorage.getItem('demo-tasks') || '[]');
-            events = JSON.parse(localStorage.getItem('demo-events') || '[]');
-            calendarEvents = JSON.parse(localStorage.getItem('demo-calendar-events') || '[]');
-
-            collaborators = JSON.parse(localStorage.getItem('demo-collaborators') || '[]');
-            schedules = JSON.parse(localStorage.getItem('demo-schedules') || '[]');
-            fluxos = JSON.parse(localStorage.getItem('demo-fluxos') || '[]');
-            expenses = JSON.parse(localStorage.getItem('demo-expenses') || '[]');
-            cps = JSON.parse(localStorage.getItem('demo-cps') || '[]');
-
-            // Create automatic backup of CPs data
-            createCPsBackup();
-
-            // Initialize CPs with sample data if empty
-            if (cps.length === 0) {
-                cps = [
-                    {
-                        id: 'nivel_beginner',
-                        title: 'Beginner',
-                        lessons: [
-                            {
-                                title: 'Greetings and Introductions',
-                                topic: 'Basic greetings, introducing yourself and others',
-                                keywords: ['hello', 'goodbye', 'name', 'nice to meet you', 'introductions']
-                            },
-                            {
-                                title: 'Numbers and Age',
-                                topic: 'Numbers 1-100, talking about age',
-                                keywords: ['numbers', 'age', 'how old', 'counting', 'years old']
-                            },
-                            {
-                                title: 'Family Members',
-                                topic: 'Family vocabulary and relationships',
-                                keywords: ['family', 'mother', 'father', 'sister', 'brother', 'parents']
-                            }
-                        ]
-                    },
-                    {
-                        id: 'nivel_elementary',
-                        title: 'Elementary',
-                        lessons: [
-                            {
-                                title: 'Present Simple - Daily Routines',
-                                topic: 'Present simple tense with daily activities',
-                                keywords: ['present simple', 'daily routine', 'wake up', 'breakfast', 'work']
-                            },
-                            {
-                                title: 'Food and Drinks',
-                                topic: 'Food vocabulary and expressing preferences',
-                                keywords: ['food', 'drink', 'like', 'dislike', 'restaurant', 'menu']
-                            }
-                        ]
-                    },
-                    {
-                        id: 'nivel_preintermediate',
-                        title: 'Pre-Intermediate',
-                        lessons: [
-                            {
-                                title: 'Past Simple - Life Events',
-                                topic: 'Past simple tense for completed actions',
-                                keywords: ['past simple', 'yesterday', 'last week', 'childhood', 'memories']
-                            },
-                            {
-                                title: 'Future Plans - Going to',
-                                topic: 'Expressing future plans and intentions',
-                                keywords: ['going to', 'future plans', 'intentions', 'weekend', 'vacation']
-                            }
-                        ]
-                    }
-                ];
-                localStorage.setItem('demo-cps', JSON.stringify(cps));
-            }
-
-            // Initialize with sample data if empty
-            if (students.length === 0) {
-                students = [
-                    { id: '1', name: 'Maria Silva', email: 'maria@exemplo.com', phone: '(11) 98765-4321', status: 'ativo', modalidade: 'VIP' },
-                    { id: '2', name: 'João Santos', email: 'joao@exemplo.com', phone: '(11) 87654-3210', status: 'ativo', modalidade: 'TURMA' },
-                    { id: '3', name: 'Ana Costa', email: 'ana@exemplo.com', phone: '(11) 99988-7766', status: 'ativo', modalidade: 'VIP' },
-                    { id: '4', name: 'Carlos Lima', email: 'carlos@exemplo.com', phone: '(11) 88877-6655', status: 'ativo', modalidade: 'VIP' },
-                    { id: '5', name: 'Beatriz Alves', email: 'beatriz@exemplo.com', phone: '(11) 77766-5544', status: 'ativo', modalidade: 'VIP' },
-                    { id: '6', name: 'Ricardo Ferreira', email: 'ricardo@exemplo.com', phone: '(11) 66655-4433', status: 'ativo', modalidade: 'VIP' },
-                    { id: '7', name: 'Camila Rocha', email: 'camila@exemplo.com', phone: '(11) 55544-3322', status: 'ativo', modalidade: 'VIP' },
-                    { id: '8', name: 'Eduardo Souza', email: 'eduardo@exemplo.com', phone: '(11) 44433-2211', status: 'ativo', modalidade: 'VIP' }
-                ];
-                localStorage.setItem('demo-students', JSON.stringify(students));
-            }
-            
-            if (turmas.length === 0) {
-                turmas = [
-                    { id: 'turma1', name: 'Turma Intermediate A', teacherName: 'Jaynni', level: 'Intermediate', studentsCount: 8 },
-                    { id: 'turma2', name: 'Turma Advanced B', teacherName: 'Felipe', level: 'Advanced', studentsCount: 6 },
-                    { id: 'turma3', name: 'Turma Beginner C', teacherName: 'Areli', level: 'Beginner', studentsCount: 10 },
-                    { id: 'turma4', name: 'Turma Upper-Int D', teacherName: 'Victor', level: 'Upper-Intermediate', studentsCount: 7 },
-                    { id: 'turma5', name: 'Turma Elementary E', teacherName: 'Anael', level: 'Elementary', studentsCount: 9 },
-                    { id: 'turma6', name: 'Turma Pre-Int F', teacherName: 'Gabriella', level: 'Pre-Intermediate', studentsCount: 8 }
-                ];
-                localStorage.setItem('demo-turmas', JSON.stringify(turmas));
-            }
-            
-            if (vips.length === 0) {
-                const today = new Date();
-                const in15Days = new Date(today.getTime() + 15 * 24 * 60 * 60 * 1000);
-                const in45Days = new Date(today.getTime() + 45 * 24 * 60 * 60 * 1000);
-                const expired10DaysAgo = new Date(today.getTime() - 10 * 24 * 60 * 60 * 1000);
-                const expired5DaysAgo = new Date(today.getTime() - 5 * 24 * 60 * 60 * 1000);
-                
-                vips = [
-                    { 
-                        id: 'vip1', 
-                        studentId: '1', 
-                        studentName: 'Maria Silva',
-                        teacherName: 'Jaynni', 
-                        teacherId: 'teacher1',
-                        level: 'Intermediate',
-                        endDate: in15Days.toISOString().split('T')[0], // A finalizar em 15 dias
-                        observacoes: 'Aluna muito dedicada, prefere aulas no período da manhã. Tem facilidade com conversação mas precisa reforçar gramática.'
-                    },
-                    { 
-                        id: 'vip2', 
-                        studentId: '3', 
-                        studentName: 'Ana Costa',
-                        teacherName: 'Felipe', 
-                        teacherId: 'teacher2',
-                        level: 'Advanced',
-                        endDate: expired10DaysAgo.toISOString().split('T')[0], // Expirado há 10 dias
-                        observacoes: 'Estudante focada em inglês para negócios. Disponível apenas após 18h. Gosta de materiais práticos e situações reais.'
-                    },
-                    { 
-                        id: 'vip3', 
-                        studentId: '4', 
-                        studentName: 'Carlos Lima',
-                        teacherName: 'Areli', 
-                        teacherId: 'teacher3',
-                        level: 'Beginner',
-                        endDate: expired5DaysAgo.toISOString().split('T')[0], // Expirado há 5 dias
-                        observacoes: 'Primeiro contato com inglês. Bastante ansioso mas muito esforçado. Precisa de muito encorajamento e paciência.'
-                    },
-                    { 
-                        id: 'vip4', 
-                        studentId: '5', 
-                        studentName: 'Beatriz Alves',
-                        teacherName: 'Victor', 
-                        teacherId: 'teacher4',
-                        level: 'Upper-Intermediate',
-                        endDate: in45Days.toISOString().split('T')[0], // Mais de 30 dias para finalizar
-                        observacoes: 'Aluna com bom nível de inglês, focada em aperfeiçoamento da pronúncia. Muito participativa nas aulas.'
-                    },
-                    { 
-                        id: 'vip5', 
-                        studentId: '6', 
-                        studentName: 'Ricardo Ferreira',
-                        teacherName: 'Anael', 
-                        teacherId: 'teacher5',
-                        level: 'Elementary',
-                        endDate: in15Days.toISOString().split('T')[0], // A finalizar em 15 dias
-                        observacoes: 'Estudante dedicado, mas com dificuldades na expressão oral. Precisa de mais prática de conversação.'
-                    },
-                    { 
-                        id: 'vip6', 
-                        studentId: '7', 
-                        studentName: 'Camila Rocha',
-                        teacherName: 'Gabriella', 
-                        teacherId: 'teacher6',
-                        level: 'Pre-Intermediate',
-                        endDate: expired5DaysAgo.toISOString().split('T')[0], // Expirado há 5 dias
-                        observacoes: 'Aluna jovem, muito motivada. Aprende rapidamente e gosta de desafios. Boa com tecnologia.'
-                    },
-                    { 
-                        id: 'vip7', 
-                        studentId: '8', 
-                        studentName: 'Eduardo Souza',
-                        teacherName: 'Jaynni', 
-                        teacherId: 'teacher1',
-                        level: 'Intermediate',
-                        endDate: in45Days.toISOString().split('T')[0], // Mais de 30 dias para finalizar
-                        observacoes: 'Profissional da área de TI, precisa de inglês técnico. Disponível apenas nos finais de semana.'
-                    }
-                ];
-                localStorage.setItem('demo-vips', JSON.stringify(vips));
-            }
-            
-            if (collaborators.length === 0) {
-                collaborators = [
-                    { id: 'teacher1', name: 'Jaynni', sectors: ['professor'], email: 'jaynni@slapingles.com' },
-                    { id: 'teacher2', name: 'Felipe', sectors: ['professor'], email: 'felipe@slapingles.com' },
-                    { id: 'teacher3', name: 'Areli', sectors: ['professor'], email: 'areli@slapingles.com' },
-                    { id: 'teacher4', name: 'Victor', sectors: ['professor'], email: 'victor@slapingles.com' },
-                    { id: 'teacher5', name: 'Anael', sectors: ['professor'], email: 'anael@slapingles.com' },
-                    { id: 'teacher6', name: 'Gabriella', sectors: ['professor'], email: 'gabriella@slapingles.com' },
-                    { id: 'admin1', name: 'Admin SLAP', sectors: ['admin'], email: 'admin@slapingles.com' }
-                ];
-                localStorage.setItem('demo-collaborators', JSON.stringify(collaborators));
-            }
-            
-            if (schedules.length === 0) {
-                schedules = [
-                    // Jaynni's schedule
-                    { id: 'sched1', teacher: 'Jaynni', student: 'Maria Silva', level: 'Intermediate', day: 'Segunda', startTime: '08:00', endTime: '09:00', type: 'vip' },
-                    { id: 'sched2', teacher: 'Jaynni', student: 'Eduardo Souza', level: 'Intermediate', day: 'Terça', startTime: '10:00', endTime: '11:00', type: 'vip' },
-                    { id: 'sched3', teacher: 'Jaynni', student: 'Turma Intermediate A', level: 'Intermediate', day: 'Quarta', startTime: '14:00', endTime: '15:30', type: 'turma' },
-                    { id: 'sched4', teacher: 'Jaynni', student: 'Break', level: '', day: 'Quinta', startTime: '15:00', endTime: '15:30', type: 'break' },
-                    
-                    // Felipe's schedule 
-                    { id: 'sched5', teacher: 'Felipe', student: 'Ana Costa', level: 'Advanced', day: 'Segunda', startTime: '18:00', endTime: '19:00', type: 'vip' },
-                    { id: 'sched6', teacher: 'Felipe', student: 'Turma Advanced B', level: 'Advanced', day: 'Terça', startTime: '19:00', endTime: '20:30', type: 'turma' },
-                    { id: 'sched7', teacher: 'Felipe', student: 'Break', level: '', day: 'Quarta', startTime: '18:30', endTime: '19:00', type: 'break' },
-                    
-                    // Areli's schedule
-                    { id: 'sched8', teacher: 'Areli', student: 'Carlos Lima', level: 'Beginner', day: 'Segunda', startTime: '09:00', endTime: '10:00', type: 'vip' },
-                    { id: 'sched9', teacher: 'Areli', student: 'Turma Beginner C', level: 'Beginner', day: 'Terça', startTime: '16:00', endTime: '17:30', type: 'turma' },
-                    { id: 'sched10', teacher: 'Areli', student: 'Break', level: '', day: 'Quinta', startTime: '10:00', endTime: '10:30', type: 'break' },
-                    
-                    // Victor's schedule
-                    { id: 'sched11', teacher: 'Victor', student: 'Beatriz Alves', level: 'Upper-Intermediate', day: 'Segunda', startTime: '20:00', endTime: '21:00', type: 'vip' },
-                    { id: 'sched12', teacher: 'Victor', student: 'Turma Upper-Int D', level: 'Upper-Intermediate', day: 'Quarta', startTime: '19:00', endTime: '20:30', type: 'turma' },
-                    
-                    // Anael's schedule - CORRIGIDO PARA 19 HORAS SEMANAIS
-                    { id: 'sched13', teacher: 'Anael', student: 'Ricardo Ferreira', level: 'Elementary', day: 'Segunda', startTime: '07:00', endTime: '08:00', type: 'vip' },
-                    { id: 'sched13b', teacher: 'Anael', student: 'Aula VIP 2', level: 'Elementary', day: 'Segunda', startTime: '08:30', endTime: '09:30', type: 'vip' },
-                    { id: 'sched13c', teacher: 'Anael', student: 'Aula VIP 3', level: 'Elementary', day: 'Segunda', startTime: '14:00', endTime: '15:00', type: 'vip' },
-                    { id: 'sched13d', teacher: 'Anael', student: 'Aula VIP 4', level: 'Elementary', day: 'Segunda', startTime: '19:00', endTime: '20:00', type: 'vip' },
-                    { id: 'sched14', teacher: 'Anael', student: 'Break', level: '', day: 'Segunda', startTime: '08:00', endTime: '08:30', type: 'break' },
-                    { id: 'sched15', teacher: 'Anael', student: 'Turma Elementary E', level: 'Elementary', day: 'Terça', startTime: '13:00', endTime: '14:30', type: 'turma' },
-                    { id: 'sched15b', teacher: 'Anael', student: 'Aula VIP 5', level: 'Elementary', day: 'Terça', startTime: '15:30', endTime: '16:30', type: 'vip' },
-                    { id: 'sched15c', teacher: 'Anael', student: 'Aula VIP 6', level: 'Elementary', day: 'Terça', startTime: '17:00', endTime: '18:00', type: 'vip' },
-                    { id: 'sched15d', teacher: 'Anael', student: 'Aula VIP 7', level: 'Elementary', day: 'Terça', startTime: '20:00', endTime: '21:00', type: 'vip' },
-                    { id: 'sched16', teacher: 'Anael', student: 'Break', level: '', day: 'Terça', startTime: '14:30', endTime: '15:00', type: 'break' },
-                    { id: 'sched17', teacher: 'Anael', student: 'Aula Extra', level: 'Elementary', day: 'Quarta', startTime: '11:00', endTime: '12:00', type: 'vip' },
-                    { id: 'sched17b', teacher: 'Anael', student: 'Aula VIP 8', level: 'Elementary', day: 'Quarta', startTime: '16:00', endTime: '17:00', type: 'vip' },
-                    { id: 'sched17c', teacher: 'Anael', student: 'Aula VIP 9', level: 'Elementary', day: 'Quarta', startTime: '18:00', endTime: '19:00', type: 'vip' },
-                    { id: 'sched18', teacher: 'Anael', student: 'Turma Elementary E', level: 'Elementary', day: 'Quinta', startTime: '13:00', endTime: '14:30', type: 'turma' },
-                    { id: 'sched18b', teacher: 'Anael', student: 'Aula VIP 10', level: 'Elementary', day: 'Quinta', startTime: '15:30', endTime: '16:30', type: 'vip' },
-                    { id: 'sched18c', teacher: 'Anael', student: 'Aula VIP 11', level: 'Elementary', day: 'Quinta', startTime: '19:00', endTime: '20:00', type: 'vip' },
-                    { id: 'sched19', teacher: 'Anael', student: 'Aula Individual', level: 'Elementary', day: 'Sexta', startTime: '16:00', endTime: '17:00', type: 'vip' },
-                    { id: 'sched19b', teacher: 'Anael', student: 'Aula VIP 12', level: 'Elementary', day: 'Sexta', startTime: '14:00', endTime: '15:00', type: 'vip' },
-                    { id: 'sched19c', teacher: 'Anael', student: 'Aula VIP 13', level: 'Elementary', day: 'Sexta', startTime: '18:00', endTime: '19:00', type: 'vip' },
-                    
-                    // Gabriella's schedule
-                    { id: 'sched20', teacher: 'Gabriella', student: 'Camila Rocha', level: 'Pre-Intermediate', day: 'Segunda', startTime: '15:00', endTime: '16:00', type: 'vip' },
-                    { id: 'sched21', teacher: 'Gabriella', student: 'Turma Pre-Int F', level: 'Pre-Intermediate', day: 'Quarta', startTime: '17:00', endTime: '18:30', type: 'turma' },
-                    { id: 'sched22', teacher: 'Gabriella', student: 'Break', level: '', day: 'Sexta', startTime: '16:00', endTime: '16:30', type: 'break' }
-                ];
-                localStorage.setItem('demo-schedules', JSON.stringify(schedules));
-            }
-            
-            if (fluxos.length === 0) {
-                fluxos = [
-                    {
-                        id: 'fluxo1',
-                        titulo: 'Teste de Nível',
-                        setor: 'PEDAGÓGICO',
-                        descricao: 'Processo completo para avaliação do nível de inglês dos candidatos',
-                        passos: [
-                            'Recebimento da solicitação de teste via WhatsApp ou site',
-                            'Agendamento do teste com o candidato',
-                            'Aplicação do teste oral (15-20 minutos)',
-                            'Aplicação do teste escrito (20-30 minutos)',
-                            'Análise dos resultados pelo coordenador pedagógico',
-                            'Elaboração do relatório de nível',
-                            'Envio do resultado para o candidato',
-                            'Direcionamento para a modalidade adequada'
-                        ],
-                        responsavel: 'Coordenação Pedagógica',
-                        prazo: '2 dias úteis',
-                        documentos: ['Formulário de teste', 'Relatório de avaliação', 'E-mail padrão de resultado']
-                    },
-                    {
-                        id: 'fluxo2',
-                        titulo: 'Matrícula de Novo Aluno',
-                        setores: ['COMERCIAL', 'PEDAGÓGICO', 'FINANCEIRO'],
-                        setor: 'COMERCIAL',
-                        descricao: 'Processo de matrícula e integração de novos estudantes',
-                        passos: [
-                            'Primeiro contato e apresentação da escola',
-                            'Teste de nível (se necessário)',
-                            'Apresentação das modalidades disponíveis',
-                            'Negociação de valores e condições',
-                            'Preenchimento da ficha de matrícula',
-                            'Assinatura do contrato',
-                            'Processamento do pagamento',
-                            'Cadastro no sistema',
-                            'Encaminhamento para o professor responsável',
-                            'Agendamento da primeira aula'
-                        ],
-                        responsavel: 'Consultores Comerciais',
-                        prazo: '3 dias úteis',
-                        documentos: ['Ficha de matrícula', 'Contrato', 'Comprovante de pagamento']
-                    },
-                    {
-                        id: 'fluxo3',
-                        titulo: 'Reagendamento de Aulas',
-                        setor: 'PEDAGÓGICO',
-                        descricao: 'Processo para reagendamento de aulas VIP e em grupo',
-                        passos: [
-                            'Solicitação de reagendamento pelo aluno',
-                            'Verificação da disponibilidade do professor',
-                            'Consulta à agenda geral da escola',
-                            'Proposta de novos horários disponíveis',
-                            'Confirmação com o aluno',
-                            'Atualização na agenda do professor',
-                            'Atualização no sistema de controle',
-                            'Confirmação por WhatsApp/e-mail'
-                        ],
-                        responsavel: 'Coordenação Pedagógica',
-                        prazo: '24 horas',
-                        documentos: ['Comprovante de reagendamento', 'Atualização de agenda']
-                    },
-                    {
-                        id: 'fluxo4',
-                        titulo: 'Processo de Pagamento',
-                        setor: 'FINANCEIRO',
-                        descricao: 'Fluxo completo de processamento e controle de pagamentos',
-                        passos: [
-                            'Recebimento da confirmação de pagamento',
-                            'Verificação no sistema bancário',
-                            'Conciliação com a fatura emitida',
-                            'Atualização do status no sistema',
-                            'Baixa da cobrança (se aplicável)',
-                            'Envio de comprovante para o aluno',
-                            'Registro na planilha de controle financeiro',
-                            'Arquivamento dos documentos'
-                        ],
-                        responsavel: 'Setor Financeiro',
-                        prazo: '1 dia útil',
-                        documentos: ['Comprovante de pagamento', 'Relatório financeiro', 'Recibo']
-                    },
-                    {
-                        id: 'fluxo5',
-                        titulo: 'Campanha de Marketing',
-                        setores: ['MARKETING', 'COMERCIAL'],
-                        setor: 'MARKETING',
-                        descricao: 'Processo de criação e execução de campanhas publicitárias',
-                        passos: [
-                            'Definição do objetivo da campanha',
-                            'Análise do público-alvo',
-                            'Criação do briefing criativo',
-                            'Desenvolvimento do conceito',
-                            'Produção de materiais (posts, stories, vídeos)',
-                            'Aprovação interna dos materiais',
-                            'Programação e publicação',
-                            'Monitoramento de métricas',
-                            'Relatório de resultados',
-                            'Análise de ROI e ajustes futuros'
-                        ],
-                        responsavel: 'Equipe de Marketing',
-                        prazo: '7-14 dias',
-                        documentos: ['Briefing', 'Materiais criativos', 'Relatório de performance']
-                    }
-                ];
-                localStorage.setItem('demo-fluxos', JSON.stringify(fluxos));
-            }
-        }
 
         // --- FIREBASE INITIALIZATION ---
         async function initializeFirebase() {
@@ -1142,13 +650,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
 
 
 
-            getCollectionListener('cps', cps, () => {
-                const activePageId = contentArea.firstElementChild?.id;
-                if (activePageId === 'cps-section') renderCPsSection();
-                if (['alunos-section', 'turmas-section', 'vips-section', 'grade-section'].includes(activePageId)) {
-                    document.querySelector(`#main-navigation [data-target="${activePageId.replace('-section', '')}"]`)?.click();
-                }
-            }, (ref) => query(ref, orderBy("order")));
+
             getCollectionListener('dojo_ranking', dojoRanking, renderDojoSection);
             getCollectionListener('dojo_missions', dojoMissions, renderDojoSection, (ref) => query(ref, orderBy("points", "desc")));
             getCollectionListener('fluxos', fluxos, renderFluxosSection);
@@ -3148,77 +2650,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
 
 
 
-        function renderCPsSection() {
-            document.getElementById('main-title').textContent = 'Cronogramas Pedagógicos (CPs)';
-            document.getElementById('main-description').textContent = 'Gerencie os níveis e aulas dos cursos.';
-            const canEdit = ['pedagogico', 'ap', 'admin'].includes(currentUserRole);
-            const addNivelBtn = canEdit ? `<button class="primary-btn w-auto" data-action="add-nivel">+ Adicionar Nível</button>` : '';
 
-            contentArea.innerHTML = `
-                <section id="cps-section">
-                    <div class="flex justify-between items-center mb-6 flex-wrap gap-4">
-                        <h3 class="text-xl font-bold text-stone-800">Níveis do Curso</h3>
-                        <div class="flex gap-2">
-                           <button class="secondary-btn w-auto" data-action="export-cps-doc">Exportar CPs</button>
-                           ${addNivelBtn}
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        ${cps.map((nivel, index) => `
-                            <div class="base-card hover:shadow-lg transition-shadow cursor-pointer" data-action="view-nivel" data-id="${nivel.id}">
-                                <div class="flex justify-between items-start mb-3">
-                                    <h4 class="text-lg font-bold text-stone-800">${nivel.title}</h4>
-                                    ${canEdit ? `
-                                    <div class="flex gap-1">
-                                        <button class="secondary-btn text-xs p-1" onclick="openNivelForm('${nivel.id}'); event.stopPropagation();" title="Editar nível">
-                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                <path d="M20 14.66V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h6"/>
-                                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                                            </svg>
-                                        </button>
-                                        <button class="danger-btn text-xs p-1" onclick="deleteNivelCP('${nivel.id}'); event.stopPropagation();" title="Excluir nível">
-                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                <path d="M3 6h18"/>
-                                                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
-                                                <path d="M8 6V4c0-1 1-2 2-2h4c-1 0 2 1 2 2v2"/>
-                                            </svg>
-                                        </button>
-                                    </div>` : ''}
-                                </div>
-                                <div class="text-sm text-stone-600 mb-3">
-                                    ${(nivel.lessons && nivel.lessons.length > 0) ? 
-                                        `${nivel.lessons.length} aula${nivel.lessons.length !== 1 ? 's' : ''} cadastrada${nivel.lessons.length !== 1 ? 's' : ''}` : 
-                                        'Nenhuma aula cadastrada'
-                                    }
-                                </div>
-                                ${nivel.tags && nivel.tags.length > 0 ? `
-                                <div class="flex flex-wrap gap-1 mb-3">
-                                    ${nivel.tags.map(tag => `<span class="keyword-tag">${tag}</span>`).join('')}
-                                </div>
-                                ` : ''}
-                                <div class="flex justify-between items-center text-xs text-stone-500">
-                                    <span>Clique para ver aulas</span>
-                                    ${canEdit ? `
-                                    <div class="flex gap-1">
-                                        <button class="secondary-btn text-xs p-1" ${index === 0 ? 'disabled' : ''} onclick="reorderCPLevel('${nivel.id}', 'up'); event.stopPropagation();" title="Mover para cima">
-                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                <path d="M18 15l-6-6-6 6"/>
-                                            </svg>
-                                        </button>
-                                        <button class="secondary-btn text-xs p-1" ${index === cps.length - 1 ? 'disabled' : ''} onclick="reorderCPLevel('${nivel.id}', 'down'); event.stopPropagation();" title="Mover para baixo">
-                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                <path d="M6 9l6 6 6-6"/>
-                                            </svg>
-                                        </button>
-                                    </div>` : ''}
-                                </div>
-                            </div>
-                        `).join('')}
-                        ${cps.length === 0 ? '<div class="col-span-full text-center py-10 text-stone-500">Nenhum nível cadastrado ainda.</div>' : ''}
-                    </div>
-                </section>
-            `;
-        }
 
         function renderDojoSection() {
             document.getElementById('main-title').textContent = 'SLAP Dojo';
@@ -3467,7 +2899,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                     <div>
                         <label class="font-medium text-sm">Níveis Cursados</label>
                         <div id="aluno-levels-checkboxes" class="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-y-2 gap-x-4 max-h-40 overflow-y-auto p-2 border rounded-md">
-                            ${cps.map(cp => `
+                            ${[].map(cp => `
                                 <div class="flex items-center">
                                     <input type="checkbox" id="level-${cp.id}" name="completedLevels" value="${cp.title}" class="h-4 w-4 rounded text-yellow-500 focus:ring-yellow-400" ${aluno?.completedLevels?.includes(cp.title) ? 'checked' : ''}>
                                     <label for="level-${cp.id}" class="ml-2 text-sm">${cp.title}</label>
@@ -3719,7 +3151,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
             document.getElementById('form-modal-title').textContent = turma ? "Editar Turma" : "Adicionar Nova Turma";
 
             const teacherOptions = collaborators.filter(c => c.sectors?.includes('professor')).map(c => `<option value="${c.id}" data-name="${c.name}" ${turma?.teacherId === c.id ? 'selected' : ''}>${c.name}</option>`).join('');
-            const levelOptions = cps.map(cp => `<option value="${cp.title}" ${turma?.level === cp.title ? 'selected' : ''}>${cp.title}</option>`).join('') + `<option value="outro">Outro (especificar)</option>`;
+            const levelOptions = ['Beginner', 'Elementary', 'Pre-Intermediate', 'Intermediate', 'Upper-Intermediate', 'Advanced'].map(level => `<option value="${level}" ${turma?.level === level ? 'selected' : ''}>${level}</option>`).join('') + `<option value="outro">Outro (especificar)</option>`;
 
             // Get students already allocated to other classes (excluding current class if editing)
             const allocatedStudentIds = getStudentsAllocatedToOtherTurmas(turmaId);
@@ -3832,7 +3264,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
             document.getElementById('form-modal-title').textContent = vip ? "Editar VIP" : "Adicionar Novo VIP";
 
             const teacherOptions = collaborators.filter(c => c.sectors?.includes('professor')).map(c => `<option value="${c.id}" data-name="${c.name}" ${vip?.teacherId === c.id ? 'selected' : ''}>${c.name}</option>`).join('');
-            const levelOptions = cps.map(cp => `<option value="${cp.title}" ${vip?.level === cp.title ? 'selected' : ''}>${cp.title}</option>`).join('') + `<option value="outro">Outro (especificar)</option>`;
+            const levelOptions = [].map(cp => `<option value="${cp.title}" ${vip?.level === cp.title ? 'selected' : ''}>${cp.title}</option>`).join('') + `<option value="outro">Outro (especificar)</option>`;
             
             // Available VIP students (modalidade VIP and not already registered as VIP, or current VIP being edited)
             const availableVipStudents = students.filter(s => s.modalidade === 'VIP' && (!vips.find(v => v.studentId === s.id) || vip?.studentId === s.id));
@@ -5110,7 +4542,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
             const teacherOptions = collaborators.filter(c => c.sectors && c.sectors.includes('professor')).map(c => `<option value="${c.name}" ${schedule?.teacher === c.name ? 'selected' : ''}>${c.name}</option>`).join('');
             const dayOptions = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Seg/Qua", "Ter/Qui"].map(d => `<option value="${d}" ${schedule?.day === d ? 'selected' : ''}>${d}</option>`).join('');
             const typeOptions = ["vip", "turma", "break"].map(t => `<option value="${t}" ${schedule?.type === t ? 'selected' : ''}>${t === 'break' ? 'BREAK' : t.toUpperCase()}</option>`).join('');
-            const levelOptions = cps.map(cp => `<option value="${cp.title}" ${schedule?.level === cp.title ? 'selected' : ''}>${cp.title}</option>`).join('') + `<option value="outro">Outro (especificar)</option>`;
+            const levelOptions = [].map(cp => `<option value="${cp.title}" ${schedule?.level === cp.title ? 'selected' : ''}>${cp.title}</option>`).join('') + `<option value="outro">Outro (especificar)</option>`;
 
             let formHtml = `<form id="form-modal-body" class="space-y-4">
                 <input type="hidden" id="schedule-id" value="${scheduleId || ''}">
@@ -5512,294 +4944,11 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
 
 
 
-        function openNivelModal(nivelId) {
-            const nivel = cps.find(n => n.id === nivelId);
-            if (!nivel) {
-                showErrorMessage("Erro", "Nível não encontrado.");
-                return;
-            }
 
-            const canEdit = ['pedagogico', 'ap', 'admin'].includes(currentUserRole);
 
-            document.getElementById('form-modal-title').textContent = nivel.title;
-            document.getElementById('form-modal-content-area').innerHTML = `
-                <div class="space-y-4">
-                    <div class="flex justify-between items-center mb-4">
-                        <p class="text-stone-600">
-                            ${nivel.lessons && nivel.lessons.length > 0 ? 
-                                `${nivel.lessons.length} aula${nivel.lessons.length !== 1 ? 's' : ''} cadastrada${nivel.lessons.length !== 1 ? 's' : ''}` : 
-                                'Nenhuma aula cadastrada'
-                            }
-                        </p>
-                        ${canEdit ? `<button class="primary-btn text-xs" data-action="add-aula" data-nivel-id="${nivelId}">+ Adicionar Aula</button>` : ''}
-                    </div>
-                    <div class="max-h-96 overflow-y-auto space-y-3">
-                        ${nivel.lessons && nivel.lessons.length > 0 ? nivel.lessons.map((aula, index) => `
-                            <div class="p-4 bg-stone-50 rounded-lg border">
-                                <div class="flex justify-between items-start mb-2">
-                                    <h5 class="font-semibold text-stone-800">${index + 1}. ${aula.title}</h5>
-                                    ${canEdit ? `
-                                    <div class="flex gap-1">
-                                        <button class="secondary-btn text-xs p-1" data-action="reorder-aula" data-nivel-id="${nivelId}" data-aula-index="${index}" data-direction="up" ${index === 0 ? 'disabled' : ''} title="Mover para cima">
-                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                <path d="M18 15l-6-6-6 6"/>
-                                            </svg>
-                                        </button>
-                                        <button class="secondary-btn text-xs p-1" data-action="reorder-aula" data-nivel-id="${nivelId}" data-aula-index="${index}" data-direction="down" ${index === nivel.lessons.length - 1 ? 'disabled' : ''} title="Mover para baixo">
-                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                <path d="M6 9l6 6 6-6"/>
-                                            </svg>
-                                        </button>
-                                        <button class="secondary-btn text-xs p-1" data-action="edit-aula" data-nivel-id="${nivelId}" data-aula-index="${index}" title="Editar aula">
-                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                <path d="M20 14.66V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h6"/>
-                                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                                            </svg>
-                                        </button>
-                                        <button class="danger-btn text-xs p-1" data-action="delete-aula" data-nivel-id="${nivelId}" data-aula-index="${index}" title="Excluir aula">
-                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                <path d="M3 6h18"/>
-                                                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
-                                                <path d="M8 6V4c0-1 1-2 2-2h4c-1 0 2 1 2 2v2"/>
-                                            </svg>
-                                        </button>
-                                    </div>` : ''}
-                                </div>
-                                <p class="text-sm text-stone-600 mb-2">${aula.topic}</p>
-                                <div class="flex flex-wrap gap-1">
-                                    ${(aula.keywords || []).map(k => `<span class="keyword-tag">${k}</span>`).join('')}
-                                </div>
-                            </div>
-                        `).join('') : '<div class="text-center py-8 text-stone-500">Nenhuma aula cadastrada ainda.</div>'}
-                    </div>
-                </div>
-            `;
-            document.getElementById('form-modal').classList.add('visible');
-        }
 
-        function deleteNivelCP(nivelId) {
-            if (!confirm('Tem certeza que deseja excluir este nível? Esta ação não pode ser desfeita.')) return;
-            createCPsBackup();
-            const index = cps.findIndex(n => n.id === nivelId);
-            if (index !== -1) {
-                cps.splice(index, 1);
-                localStorage.setItem('demo-cps', JSON.stringify(cps));
-                renderCPsSection();
-                showSuccessMessage("Sucesso", "Nível excluído com sucesso!");
-            }
-        }
+        // Dojo Functions
 
-        function openNivelForm(nivelId = null) {
-            clearModalHeaderButtons();
-            const nivel = nivelId ? cps.find(n => n.id === nivelId) : null;
-            document.getElementById('form-modal-title').textContent = nivel ? 'Editar Nível' : 'Adicionar Novo Nível';
-            document.getElementById('form-modal-content-area').innerHTML = `
-                <form id="form-modal-body" class="space-y-4">
-                    <input type="hidden" id="nivel-id" value="${nivelId || ''}">
-                    <div><label class="font-medium text-sm">Título do Nível</label><input type="text" id="nivel-title" class="form-input" required value="${nivel?.title || ''}"></div>
-                    <div><label class="font-medium text-sm">Tags (separadas por vírgula)</label><input type="text" id="nivel-tags" class="form-input" placeholder="Ex: iniciante, básico, conversação" value="${nivel?.tags ? nivel.tags.join(', ') : ''}"></div>
-                    <div class="text-right"><button type="submit" class="primary-btn w-auto">Salvar</button></div>
-                </form>
-            `;
-            document.getElementById('form-modal-body').onsubmit = saveNivel;
-            document.getElementById('form-modal').classList.add('visible');
-        }
-
-        async function saveNivel(event) {
-            event.preventDefault();
-            
-            // Criar backup automático antes da operação
-            createCPsBackup();
-            console.log("Backup automático criado antes de salvar nível");
-            
-            const nivelId = document.getElementById('nivel-id').value;
-            const title = document.getElementById('nivel-title').value;
-            const tagsInput = document.getElementById('nivel-tags').value;
-            const tags = tagsInput ? tagsInput.split(',').map(tag => tag.trim()).filter(tag => tag) : [];
-            
-            if (!title) { showErrorMessage("Erro", "O título é obrigatório."); return; }
-
-            // Para dados locais (demo)
-            if (nivelId) {
-                const nivel = cps.find(n => n.id === nivelId);
-                if (nivel) {
-                    nivel.title = title;
-                    nivel.tags = tags;
-                    localStorage.setItem('demo-cps', JSON.stringify(cps));
-                    showSuccessMessage("Sucesso", "Nível atualizado.");
-                    renderCPsSection();
-                    closeFormModal();
-                }
-            } else {
-                const newNivel = {
-                    id: 'nivel_' + Date.now(),
-                    title: title,
-                    tags: tags,
-                    lessons: [],
-                    order: cps.length
-                };
-                cps.push(newNivel);
-                localStorage.setItem('demo-cps', JSON.stringify(cps));
-                showSuccessMessage("Sucesso", "Nível adicionado.");
-                renderCPsSection();
-                closeFormModal();
-            }
-        }
-
-        function openAulaForm(nivelId, aulaIndex = null) {
-            clearModalHeaderButtons();
-            const nivel = cps.find(n => n.id === nivelId);
-            const aula = (aulaIndex !== null && nivel && nivel.lessons) ? nivel.lessons[aulaIndex] : null;
-            document.getElementById('form-modal-title').textContent = aula ? 'Editar Aula' : 'Adicionar Nova Aula';
-            document.getElementById('form-modal-content-area').innerHTML = `
-                <form id="form-modal-body" class="space-y-4">
-                    <input type="hidden" id="aula-nivel-id" value="${nivelId}">
-                    <input type="hidden" id="aula-index" value="${aulaIndex !== null ? aulaIndex : ''}">
-                    <div><label class="font-medium text-sm">Título da Aula</label><input type="text" id="aula-title" class="form-input" required value="${aula?.title || ''}"></div>
-                    <div><label class="font-medium text-sm">Tema/Descrição</label><textarea id="aula-topic" class="form-input" rows="3" required>${aula?.topic || ''}</textarea></div>
-                    <div><label class="font-medium text-sm">Palavras-chave (separadas por vírgula)</label><input type="text" id="aula-keywords" class="form-input" value="${(aula?.keywords || []).join(', ')}"></div>
-                    <div class="text-right"><button type="submit" class="primary-btn w-auto">Salvar</button></div>
-                </form>
-            `;
-            document.getElementById('form-modal-body').onsubmit = saveAula;
-            document.getElementById('form-modal').classList.add('visible');
-        }
-
-        async function saveAula(event) {
-            event.preventDefault();
-            
-            // Criar backup automático antes da operação
-            createCPsBackup();
-            console.log("Backup automático criado antes de salvar aula");
-            
-            const nivelId = document.getElementById('aula-nivel-id').value;
-            const aulaIndex = document.getElementById('aula-index').value;
-            const title = document.getElementById('aula-title').value;
-            const topic = document.getElementById('aula-topic').value;
-            const keywordsString = document.getElementById('aula-keywords').value;
-            const keywords = keywordsString.split(',').map(k => k.trim()).filter(Boolean);
-
-            // Para dados locais (demo)
-            const nivel = cps.find(n => n.id === nivelId);
-            if (!nivel) {
-                showErrorMessage("Erro", "Nível não encontrado.");
-                return;
-            }
-
-            if (!nivel.lessons) {
-                nivel.lessons = [];
-            }
-
-            const aulaData = { title, topic, keywords };
-
-            if (aulaIndex !== '') {
-                // Editando aula existente
-                nivel.lessons[parseInt(aulaIndex)] = aulaData;
-            } else {
-                // Adicionando nova aula
-                nivel.lessons.push(aulaData);
-            }
-
-            localStorage.setItem('demo-cps', JSON.stringify(cps));
-            showSuccessMessage("Sucesso", aulaIndex !== '' ? "Aula atualizada." : "Aula adicionada.");
-            closeFormModal();
-            // Se o modal de nível estava aberto, reabrir para mostrar as aulas atualizadas
-            if (document.getElementById('form-modal').classList.contains('visible')) {
-                setTimeout(() => openNivelModal(nivelId), 300);
-            } else {
-                renderCPsSection();
-            }
-
-            const novaAula = {
-                title: document.getElementById('aula-title').value,
-                topic: document.getElementById('aula-topic').value,
-                keywords: keywords
-            };
-
-            try {
-                if (aulaIndex) { // Edit existing lesson
-                    const nivelDoc = await getDoc(nivelRef);
-                    const lessons = nivelDoc.data().lessons;
-                    lessons[aulaIndex] = novaAula;
-                    await updateDoc(nivelRef, { lessons });
-                } else { // Add new lesson
-                    await updateDoc(nivelRef, { lessons: arrayUnion(novaAula) });
-                }
-                showSuccessMessage("Sucesso", "Aula salva.");
-            } catch (e) { console.error(e); showErrorMessage("Erro", "Não foi possível salvar a aula."); }
-        }
-
-        async function deleteAula(nivelId, aulaIndex) {
-            // Criar backup automático antes da operação
-            createCPsBackup();
-            console.log("Backup automático criado antes de deletar aula");
-            
-            const nivel = cps.find(n => n.id === nivelId);
-            if (!nivel || !nivel.lessons || !nivel.lessons[aulaIndex]) {
-                showErrorMessage("Erro", "Aula não encontrada.");
-                return;
-            }
-
-            const aulaTitle = nivel.lessons[aulaIndex].title;
-            if (!confirm(`Deseja realmente deletar a aula "${aulaTitle}"?`)) {
-                return;
-            }
-
-            // Para dados locais (demo)
-            nivel.lessons.splice(aulaIndex, 1);
-            localStorage.setItem('demo-cps', JSON.stringify(cps));
-            showSuccessMessage("Sucesso", "Aula removida.");
-            
-            // Reabrir o modal do nível
-            setTimeout(() => openNivelModal(nivelId), 300);
-        }
-
-        async function reorderAula(nivelId, aulaIndex, direction) {
-            // Criar backup automático antes da operação
-            createCPsBackup();
-            console.log("Backup automático criado antes de reordenar aula");
-            
-            const nivel = cps.find(c => c.id === nivelId);
-            if (!nivel || !nivel.lessons || nivel.lessons.length === 0) return;
-
-            const currentIndex = parseInt(aulaIndex);
-            const otherIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
-            
-            if (otherIndex < 0 || otherIndex >= nivel.lessons.length) return;
-
-            // Create a copy of the lessons array
-            const newLessons = [...nivel.lessons];
-            
-            // Swap the lessons
-            [newLessons[currentIndex], newLessons[otherIndex]] = [newLessons[otherIndex], newLessons[currentIndex]];
-
-            // Para dados locais (demo)
-            nivel.lessons = newLessons;
-            localStorage.setItem('demo-cps', JSON.stringify(cps));
-            showSuccessMessage("Sucesso!", "Ordem das aulas atualizada!");
-            
-            // Reabrir o modal do nível
-            setTimeout(() => openNivelModal(nivelId), 300);
-        }
-
-        async function reorderCPLevel(levelId, direction) {
-            // Criar backup automático antes da operação
-            createCPsBackup();
-            console.log("Backup automático criado antes de reordenar nível");
-            
-            const currentIndex = cps.findIndex(c => c.id === levelId);
-            if (currentIndex === -1) return;
-
-            const otherIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
-            if (otherIndex < 0 || otherIndex >= cps.length) return;
-
-            // Para dados locais (demo) - trocar posições no array
-            [cps[currentIndex], cps[otherIndex]] = [cps[otherIndex], cps[currentIndex]];
-            
-            localStorage.setItem('demo-cps', JSON.stringify(cps));
-            renderCPsSection();
-            showSuccessMessage("Sucesso!", "Ordem dos níveis atualizada!");
-        }
 
         function openDojoCompetitorForm(competitorId = null) {
             clearModalHeaderButtons();
@@ -7153,63 +6302,6 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
             openHtmlInNewWindow(`PEF Individual - ${student.name}`, docHtml);
         }
 
-        function exportCPsDoc() {
-            if (cps.length === 0) {
-                showErrorMessage("Exportação Falhou", "Não há Cronogramas Pedagógicos para exportar.");
-                return;
-            }
-
-            let CPsHtml = '';
-            cps.forEach(nivel => {
-                CPsHtml += `<h2>Nível: ${nivel.title}</h2>`;
-                const lessonsHtml = (nivel.lessons && nivel.lessons.length > 0)
-                    ? nivel.lessons.map((aula, index) => `
-                        <tr>
-                            <td>${index + 1}</td>
-                            <td>${aula.title}</td>
-                            <td>${aula.topic}</td>
-                            <td>${(aula.keywords || []).join(', ')}</td>
-                        </tr>
-                    `).join('')
-                    : '<tr><td colspan="4">Nenhuma aula cadastrada.</td></tr>';
-
-                CPsHtml += `
-                    <table>
-                        <thead>
-                            <tr>
-                                <th style="width:5%;">#</th>
-                                <th style="width:25%;">Título da Aula</th>
-                                <th>Tema/Descrição</th>
-                                <th style="width:20%;">Palavras-chave</th>
-                            </tr>
-                        </thead>
-                        <tbody>${lessonsHtml}</tbody>
-                    </table>
-                `;
-            });
-
-             const docHtml = `
-                <html>
-                <head>
-                    <title>Cronogramas Pedagógicos (CPs) - SLAP</title>
-                    <style>
-                        body { font-family: sans-serif; margin: 2rem; }
-                        h1 { color: #333; border-bottom: 2px solid #F1D24B; padding-bottom: 0.5rem; }
-                        h2 { color: #444; margin-top: 2.5rem; border-bottom: 1px solid #ddd; padding-bottom: 0.25rem; }
-                        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
-                        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; vertical-align: top; }
-                        th { background-color: #f2f2f2; }
-                    </style>
-                </head>
-                <body>
-                    <h1>Cronogramas Pedagógicos (CPs) - SLAP</h1>
-                    ${CPsHtml}
-                </body>
-                </html>
-            `;
-
-            openHtmlInNewWindow("Cronogramas Pedagógicos (CPs)", docHtml);
-        }
 
         // --- Debug Functions ---
         function debugSyncStatus() {
@@ -11815,10 +10907,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
         window.openFluxoForm = openFluxoForm;
         window.saveTurmaGrades = saveTurmaGrades;
         window.filterFluxos = filterFluxos;
-        window.openNivelForm = openNivelForm;
-        window.openNivelModal = openNivelModal;
-        window.deleteNivelCP = deleteNivelCP;
-        window.reorderCPLevel = reorderCPLevel;
+
         window.switchTaskTab = switchTaskTab;
         window.openTaskModal = openTaskModal;
         window.toggleTaskCompletion = toggleTaskCompletion;
@@ -12231,7 +11320,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
 
                 { key: 'fluxos', label: 'Fluxos', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="7.5 4.21 12 6.81 16.5 4.21"></polyline><polyline points="7.5 19.79 7.5 14.6 3 12"></polyline><polyline points="21 12 16.5 14.6 16.5 19.79"></polyline><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>', roles: ['admin', 'pedagogico'] },
                 { key: 'tarefas', label: 'Tarefas', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>', roles: ['admin', 'am', 'ap', 'pedagogico', 'financeiro', 'teacher'] },
-                { key: 'cps', label: 'CPs', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>', roles: ['admin', 'pedagogico', 'ap'] },
+
                 { key: 'campanhas', label: 'Campanhas', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>', roles: ['admin', 'am', 'ap', 'pedagogico'] },
 
                 { key: 'colaboradores', label: 'Colaboradores', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>', roles: ['admin', 'pedagogico', 'financeiro'] },
@@ -12403,7 +11492,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            const pageRenderers = { 'inicio': renderInicioSection, 'alunos': renderAlunosSection, 'turmas': renderTurmasSection, 'vips': renderVipsSection, 'campanhas': renderCampanhasSection, 'tarefas': renderTarefasSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection, 'colaboradores': renderColaboradoresSection, 'cps': renderCPsSection, 'dojo': renderDojoSection, 'calendario-pedagogico': renderCalendarioPedagogicoSection, 'calendario-marketing': renderCalendarioMarketingSection, 'desafio-pedagogico': renderDesafioPedagogicoSection, 'fluxos': renderFluxosSection };
+            const pageRenderers = { 'inicio': renderInicioSection, 'alunos': renderAlunosSection, 'turmas': renderTurmasSection, 'vips': renderVipsSection, 'campanhas': renderCampanhasSection, 'tarefas': renderTarefasSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection, 'colaboradores': renderColaboradoresSection, 'dojo': renderDojoSection, 'calendario-pedagogico': renderCalendarioPedagogicoSection, 'calendario-marketing': renderCalendarioMarketingSection, 'desafio-pedagogico': renderDesafioPedagogicoSection, 'fluxos': renderFluxosSection };
 
             document.body.addEventListener('click', (event) => {
                 // Close modals when clicking overlay or close button
@@ -12538,7 +11627,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                         'delete-item': () => safeDeleteItem(collection, id),
                         'close-modal': closeFormModal,
 
-                        'toggle-cp-level': () => { const card = document.getElementById(`nivel-${id}`); if(card) { card.classList.toggle('open'); const icon = card.querySelector('svg'); icon.style.transform = card.classList.contains('open') ? 'rotate(180deg)' : 'rotate(0deg)'; } },
+
                         'add-dojo-competitor': () => openDojoCompetitorForm(),
                         'edit-dojo-points': () => openDojoPointsForm(id),
                         'edit-dojo-competitor': () => openDojoCompetitorForm(id),
@@ -12556,26 +11645,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                             const studentId = actionTarget.dataset.studentId;
                             exportStudentReportCardFromTurma(studentId, turmaId);
                         },
-                        'export-cps-doc': exportCPsDoc,
-                        'view-nivel': () => openNivelModal(id),
-                        'add-nivel': () => openNivelForm(),
-                        'edit-nivel': () => openNivelForm(id),
-                        'delete-nivel': () => {
-                            if (!confirm('Tem certeza que deseja excluir este nível? Esta ação não pode ser desfeita.')) return;
-                            createCPsBackup();
-                            const index = cps.findIndex(n => n.id === id);
-                            if (index !== -1) {
-                                cps.splice(index, 1);
-                                localStorage.setItem('demo-cps', JSON.stringify(cps));
-                                renderCPsSection();
-                                showSuccessMessage("Sucesso", "Nível excluído com sucesso!");
-                            }
-                        },
-                        'reorder-nivel': () => reorderCPLevel(id, direction),
-                        'add-aula': () => openAulaForm(nivelId),
-                        'edit-aula': () => openAulaForm(nivelId, aulaIndex),
-                        'delete-aula': () => deleteAula(nivelId, aulaIndex),
-                        'reorder-aula': () => reorderAula(nivelId, aulaIndex, direction),
+
                         'add-calendar-event': openCalendarEventForm,
                         'view-calendar-event': () => viewCalendarEvent(id),
                         'edit-calendar-event': () => {
