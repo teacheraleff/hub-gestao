@@ -2997,7 +2997,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
             // Total a pagar = Total das despesas - Valores já pagos
             const totalToPay = totalExpensesBase - totalPaidValues;
             
-            // Total despesas para o card (apenas não pagas)
+            // Total despesas pendentes (apenas não pagas) - para exibição no card
             const totalExpenses = monthlyExpenses
                 .filter(exp => !exp.isPaid)
                 .reduce((sum, exp) => sum + Number(exp.amount) + Number(exp.extraAmount || 0), 0);
@@ -3011,7 +3011,9 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                 return sum + parseFloat(student.amountReceived || student.amountPaid || 0);
             }, 0);
 
-            const profit = totalRevenue - totalExpenses;
+            // CORREÇÃO: Lucro real = Receita - TODAS as despesas efetivas (pagas + valores pagos parciais + despesas pendentes)
+            const totalEffectiveExpenses = totalPaidValues + totalExpenses;
+            const profit = totalRevenue - totalEffectiveExpenses;
 
             contentArea.innerHTML = `
                 <!-- Cards de Resumo Financeiro -->
@@ -3034,7 +3036,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                     <div class="base-card bg-gradient-to-r from-red-50 to-red-100 border-red-200">
                         <div class="flex items-start justify-between">
                             <div class="flex-1 min-w-0 pr-4">
-                                <p class="text-sm font-medium text-red-600">Total Despesas</p>
+                                <p class="text-sm font-medium text-red-600">Despesas Pendentes</p>
                                 <p class="text-2xl font-bold text-red-700 mt-1">${totalExpenses.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
                             </div>
                             <div class="flex-shrink-0">
@@ -5932,56 +5934,224 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
             }
 
             const statusMap = { 'P': 'Presente', 'F': 'Falta', 'PP': 'Presença Parcial', '': 'Não Registrado' };
-            let tableRows = '';
+            let lessonsHtml = '';
+
             for (let i = 1; i <= 40; i++) {
                 const lessonData = unitAttendance?.lessons?.[i] || {};
                 const studentStatus = lessonData.students?.[student.id] || '';
-                tableRows += `
-                    <tr>
-                        <td>${i}</td>
-                        <td>${lessonData.date || ''}</td>
-                        <td>${statusMap[studentStatus]}</td>
-                        <td>${lessonData.topic || ''}</td>
-                        <td>${lessonData.notes || ''}</td>
-                    </tr>
+                
+                const statusBadgeClass = studentStatus === 'P' ? 'status-presente' : 
+                                       studentStatus === 'F' ? 'status-falta' : 
+                                       studentStatus === 'PP' ? 'status-parcial' : 'status-nao-registrado';
+                const statusText = statusMap[studentStatus];
+
+                lessonsHtml += `
+                    <div class="lesson-card">
+                        <div class="lesson-header">
+                            <div class="lesson-number">Aula ${i}</div>
+                            <div class="lesson-date">${lessonData.date || 'Data não informada'}</div>
+                        </div>
+                        <div class="lesson-content">
+                            <div class="topic-section">
+                                <strong>Tema:</strong> ${lessonData.topic || 'Não informado'}
+                            </div>
+                            <div class="status-section">
+                                <span class="status-badge ${statusBadgeClass}">${statusText}</span>
+                            </div>
+                            ${lessonData.notes ? `<div class="notes-section"><strong>Observações:</strong> ${lessonData.notes}</div>` : ''}
+                        </div>
+                    </div>
                 `;
             }
 
             const docHtml = `
-                <html>
+                <!DOCTYPE html>
+                <html lang="pt-br">
                 <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
                     <title>PEF - ${student.name}</title>
                     <style>
-                        body { font-family: sans-serif; margin: 2rem; }
-                        h1, h2 { color: #333; }
-                        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
-                        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-                        th { background-color: #f2f2f2; }
-                        .header-info p { margin: 4px 0; }
+                        * { margin: 0; padding: 0; box-sizing: border-box; }
+                        body { 
+                            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+                            line-height: 1.6; 
+                            color: #333; 
+                            background-color: #f8f9fa;
+                        }
+                        .container {
+                            max-width: 800px;
+                            margin: 0 auto;
+                            background: white;
+                            min-height: 100vh;
+                        }
+                        .header {
+                            background: linear-gradient(135deg, #F1D24B 0%, #E8C547 100%);
+                            color: #333;
+                            padding: 2rem;
+                            text-align: center;
+                            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                        }
+                        .header h1 {
+                            font-size: 2rem;
+                            font-weight: 700;
+                            margin-bottom: 0.5rem;
+                        }
+                        .header p {
+                            font-size: 1.1rem;
+                            opacity: 0.8;
+                        }
+                        .info-card {
+                            background: white;
+                            margin: 2rem;
+                            padding: 2rem;
+                            border-radius: 12px;
+                            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+                            border-left: 4px solid #F1D24B;
+                        }
+                        .info-grid {
+                            display: grid;
+                            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                            gap: 1rem;
+                        }
+                        .info-item {
+                            padding: 0.5rem 0;
+                        }
+                        .info-item strong {
+                            color: #2c3e50;
+                            display: block;
+                            margin-bottom: 0.25rem;
+                            font-weight: 600;
+                        }
+                        .info-value {
+                            color: #555;
+                            font-size: 1.1rem;
+                        }
+                        .content {
+                            padding: 0 2rem 2rem;
+                        }
+                        .lesson-card {
+                            background: white;
+                            border: 1px solid #e9ecef;
+                            border-radius: 10px;
+                            margin-bottom: 1rem;
+                            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+                            transition: all 0.3s ease;
+                        }
+                        .lesson-card:hover {
+                            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+                            transform: translateY(-2px);
+                        }
+                        .lesson-header {
+                            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+                            padding: 1rem;
+                            border-bottom: 1px solid #dee2e6;
+                            border-radius: 10px 10px 0 0;
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                        }
+                        .lesson-number {
+                            font-weight: 700;
+                            color: #495057;
+                            font-size: 1.1rem;
+                        }
+                        .lesson-date {
+                            color: #6c757d;
+                            font-size: 0.95rem;
+                        }
+                        .lesson-content {
+                            padding: 1rem;
+                        }
+                        .topic-section, .notes-section {
+                            margin-bottom: 0.75rem;
+                        }
+                        .topic-section strong, .notes-section strong {
+                            color: #2c3e50;
+                            margin-right: 0.5rem;
+                        }
+                        .status-section {
+                            margin-top: 1rem;
+                        }
+                        .status-badge {
+                            display: inline-block;
+                            padding: 0.4rem 1rem;
+                            border-radius: 25px;
+                            font-size: 0.85rem;
+                            font-weight: 600;
+                            text-transform: uppercase;
+                            letter-spacing: 0.5px;
+                        }
+                        .status-presente {
+                            background-color: #d4edda;
+                            color: #155724;
+                            border: 1px solid #c3e6cb;
+                        }
+                        .status-falta {
+                            background-color: #f8d7da;
+                            color: #721c24;
+                            border: 1px solid #f5c6cb;
+                        }
+                        .status-parcial {
+                            background-color: #fff3cd;
+                            color: #856404;
+                            border: 1px solid #ffeaa7;
+                        }
+                        .status-nao-registrado {
+                            background-color: #e2e3e5;
+                            color: #383d41;
+                            border: 1px solid #d6d8db;
+                        }
+                        .footer {
+                            text-align: center;
+                            padding: 2rem;
+                            color: #6c757d;
+                            border-top: 1px solid #e9ecef;
+                            margin-top: 2rem;
+                        }
+                        @media print {
+                            body { background-color: white; }
+                            .lesson-card { break-inside: avoid; }
+                        }
                     </style>
                 </head>
                 <body>
-                    <h1>Relatório de Presença e Frequência (PEF)</h1>
-                    <div class="header-info">
-                        <p><strong>Aluno:</strong> ${student.name}</p>
-                        <p><strong>Professor:</strong> ${vip.teacherName}</p>
-                        <p><strong>Nível:</strong> ${vip.level}</p>
-                        <p><strong>Semestre:</strong> ${vip.semestre || 'N/A'}</p>
+                    <div class="container">
+                        <div class="header">
+                            <h1>PEF - Relatório Individual</h1>
+                            <p>Sistema de Presença e Frequência</p>
+                        </div>
+                        
+                        <div class="info-card">
+                            <div class="info-grid">
+                                <div class="info-item">
+                                    <strong>Aluno</strong>
+                                    <div class="info-value">${student.name}</div>
+                                </div>
+                                <div class="info-item">
+                                    <strong>Professor</strong>
+                                    <div class="info-value">${vip.teacherName}</div>
+                                </div>
+                                <div class="info-item">
+                                    <strong>Nível</strong>
+                                    <div class="info-value">${vip.level}</div>
+                                </div>
+                                <div class="info-item">
+                                    <strong>Modalidade</strong>
+                                    <div class="info-value">VIP</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="content">
+                            ${lessonsHtml}
+                        </div>
+                        
+                        <div class="footer">
+                            <p>Relatório gerado automaticamente pelo SLAP Hub</p>
+                            <p>${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}</p>
+                        </div>
                     </div>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Aula</th>
-                                <th>Data</th>
-                                <th>Status</th>
-                                <th>Tema da Aula</th>
-                                <th>Observações</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${tableRows}
-                        </tbody>
-                    </table>
                 </body>
                 </html>
             `;
@@ -9306,40 +9476,38 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                 playClickSound();
                 console.log('Starting deletion process...');
                 
-                // Remove from local array
-                const index = fluxos.findIndex(f => f.id === fluxoId);
-                console.log('Found fluxo at index:', index);
-                if (index !== -1) {
-                    fluxos.splice(index, 1);
-                    console.log('Fluxo removed from local array, new count:', fluxos.length);
-                } else {
+                // Store original fluxo for restoration if needed
+                const fluxoToDelete = fluxos.find(f => f.id === fluxoId);
+                if (!fluxoToDelete) {
                     console.error('Fluxo not found in local array');
                     throw new Error('Fluxo não encontrado na lista local');
                 }
                 
-                // Save to storage
-                console.log('Checking storage type. db:', typeof db, 'appId:', appId);
-                if (typeof db !== 'undefined' && db) {
-                    // Firebase mode
-                    console.log('Using Firebase mode for deletion');
+                // Remove from local array first
+                const index = fluxos.findIndex(f => f.id === fluxoId);
+                fluxos.splice(index, 1);
+                console.log('Fluxo removed from local array, new count:', fluxos.length);
+                
+                // Always save to localStorage (as backup and for offline mode)
+                localStorage.setItem('demo-fluxos', JSON.stringify(fluxos));
+                console.log('Saved to localStorage as backup');
+                
+                // Save to Firebase if available
+                if (typeof db !== 'undefined' && db && appId) {
+                    console.log('Attempting Firebase deletion...');
                     try {
                         const docRef = doc(db, `artifacts/${appId}/public/data/fluxos`, fluxoId);
-                        console.log('Document reference created:', docRef);
                         await deleteDoc(docRef);
                         console.log('Firebase document deleted successfully');
                     } catch (firebaseError) {
-                        console.error('Firebase deletion error:', firebaseError);
-                        throw firebaseError;
+                        console.error('Firebase deletion failed, but localStorage updated:', firebaseError);
+                        // Don't throw here - localStorage is updated, so operation is still valid
                     }
                 } else {
-                    // Local storage mode
-                    console.log('Using localStorage mode for deletion');
-                    localStorage.setItem('demo-fluxos', JSON.stringify(fluxos));
-                    console.log('Saved to localStorage, new count:', fluxos.length);
+                    console.log('Firebase not available, using localStorage only');
                 }
                 
-                // Refresh the display
-                console.log('Refreshing display...');
+                // Refresh the display immediately
                 renderFluxosSection();
                 
                 playSuccessSound();
@@ -9352,12 +9520,13 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                 playErrorSound();
                 showErrorMessage("Erro", `Erro ao excluir fluxo: ${error.message}`);
                 
-                // Restore the fluxo in case of error
-                if (index !== -1) {
-                    console.log('Restoring fluxo to local array after error');
-                    // We need to get the original fluxo data to restore it
-                    // For now, just refresh the section to reload data
+                // Try to reload from storage
+                try {
+                    fluxos = JSON.parse(localStorage.getItem('demo-fluxos') || '[]');
                     renderFluxosSection();
+                    console.log('Restored fluxos from localStorage after error');
+                } catch (restoreError) {
+                    console.error('Failed to restore fluxos:', restoreError);
                 }
             }
         }
