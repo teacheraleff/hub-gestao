@@ -10493,6 +10493,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
             if (!turma) { showErrorMessage("Erro", "Turma não encontrada."); return; }
 
             clearModalHeaderButtons();
+            const modalHeader = document.getElementById('modal-header-container');
             const modalTitle = document.getElementById('form-modal-title');
             modalTitle.textContent = `Notas: ${turma.name}`;
             
@@ -10500,6 +10501,57 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
             const turmaStudents = students.filter(s => 
                 (turma.studentIds || []).includes(s.id) && (s.modalidade === 'TURMA' || s.modalidade === 'DUPLA')
             );
+
+            // Add export buttons to modal header
+            const exportButton = document.createElement('button');
+            exportButton.className = 'secondary-btn w-auto';
+            exportButton.textContent = 'Exportar Report Card Completo';
+            exportButton.id = 'export-turma-btn';
+            exportButton.dataset.turmaId = turmaId;
+            modalHeader.insertBefore(exportButton, modalHeader.querySelector('.modal-close-btn'));
+
+            // Dropdown de exportação individual por aluno
+            const exportStudentDropdown = document.createElement('div');
+            exportStudentDropdown.className = 'relative inline-block ml-2';
+            exportStudentDropdown.innerHTML = `
+                <button type="button" class="secondary-btn w-auto dropdown-toggle" id="export-student-btn-${turmaId}">
+                    Exportar por Aluno
+                    <svg class="w-4 h-4 ml-2 inline" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                    </svg>
+                </button>
+                <div class="dropdown-menu absolute left-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-50 hidden" id="export-student-menu-${turmaId}">
+                    ${turmaStudents.map(student => `
+                        <button type="button" class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded" 
+                                data-action="export-student-report-card" 
+                                data-turma-id="${turmaId}" 
+                                data-student-id="${student.id}">
+                            ${student.name}
+                        </button>
+                    `).join('')}
+                </div>
+            `;
+            modalHeader.insertBefore(exportStudentDropdown, modalHeader.querySelector('.modal-close-btn'));
+
+            // Add JavaScript for dropdown
+            setTimeout(() => {
+                const dropdownBtn = document.getElementById(`export-student-btn-${turmaId}`);
+                const dropdownMenu = document.getElementById(`export-student-menu-${turmaId}`);
+                
+                if (dropdownBtn && dropdownMenu) {
+                    dropdownBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        dropdownMenu.classList.toggle('hidden');
+                    });
+                    
+                    // Close dropdown when clicking outside
+                    document.addEventListener('click', (e) => {
+                        if (!exportStudentDropdown.contains(e.target)) {
+                            dropdownMenu.classList.add('hidden');
+                        }
+                    });
+                }
+            }, 100);
 
             document.getElementById('form-modal-content-area').innerHTML = `
                 <div class="space-y-6 max-h-96 overflow-y-auto">
@@ -10566,12 +10618,7 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                                 <div class="mt-1">
                                     <span id="status-${student.id}" class="font-medium"></span>
                                 </div>
-                                <div class="mt-2 pt-2 border-t flex justify-end">
-                                    <button type="button" class="individual-export-btn bg-yellow-500 hover:bg-yellow-600 text-gray-900 px-3 py-1 rounded text-sm font-medium" 
-                                            data-student-id="${student.id}" data-turma-id="${turmaId}">
-                                        Export Individual
-                                    </button>
-                                </div>
+
                             </div>
                         </div>
                         `;
@@ -10594,12 +10641,9 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                         </div>
                     </div>` : ''}
                     
-                    <div class="flex justify-between gap-2 pt-4 border-t">
-                        <button type="button" id="export-turma-btn" data-turma-id="${turmaId}" class="secondary-btn">Exportar Report Card</button>
-                        <div class="flex gap-2">
-                            <button type="button" data-action="close-modal" class="secondary-btn">Cancelar</button>
-                            <button type="button" onclick="saveTurmaGrades()" class="primary-btn">Salvar Todas as Notas</button>
-                        </div>
+                    <div class="flex justify-end gap-2 pt-4 border-t">
+                        <button type="button" data-action="close-modal" class="secondary-btn">Cancelar</button>
+                        <button type="button" onclick="saveTurmaGrades()" class="primary-btn">Salvar Todas as Notas</button>
                     </div>
                 </div>
             `;
@@ -10625,17 +10669,6 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                         exportTurmaReportCard(exportBtn.dataset.turmaId);
                     });
                 }
-                
-                // Add individual export button event listeners
-                const individualExportBtns = document.querySelectorAll('.individual-export-btn');
-                individualExportBtns.forEach(btn => {
-                    btn.addEventListener('click', function() {
-                        const studentId = this.getAttribute('data-student-id');
-                        const turmaId = this.getAttribute('data-turma-id');
-                        console.log('Individual export clicked:', studentId, turmaId);
-                        exportIndividualStudentFromTurma(studentId, turmaId);
-                    });
-                });
             }, 100);
 
             document.getElementById('form-modal').classList.add('visible');
@@ -11145,6 +11178,177 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                         <div class="footer">
                             <div class="footer-title">SLAP English School</div>
                             <div class="footer-date">Generated on ${new Date().toLocaleString('pt-BR')}</div>
+                        </div>
+                    </div>
+                </body>
+                </html>
+            `;
+
+            openHtmlInNewWindow(`Report Card - ${student.name}`, reportHtml);
+        }
+
+        function exportStudentReportCardFromTurma(studentId, turmaId) {
+            const turma = turmas.find(t => t.id === turmaId);
+            const student = students.find(s => s.id === studentId);
+            
+            if (!turma || !student) {
+                showErrorMessage("Erro", "Dados não encontrados.");
+                return;
+            }
+
+            // Get student grades from turma
+            const grades = (turma.studentGrades && turma.studentGrades[studentId]) || {
+                midtermTest: 0,
+                listeningTest: 0,
+                grammarTest: 0,
+                oralTest: 0,
+                participacao: 0,
+                assiduidade: 0
+            };
+
+            const total = grades.midtermTest + grades.listeningTest + grades.grammarTest + grades.oralTest + grades.participacao + grades.assiduidade;
+            
+            // Check if any grade is missing or zero (indicating incomplete assessment)
+            const hasIncompleteGrades = grades.midtermTest === 0 || grades.listeningTest === 0 || grades.grammarTest === 0 || 
+                                       grades.oralTest === 0 || grades.participacao === 0 || grades.assiduidade === 0;
+            
+            const status = hasIncompleteGrades ? 'PENDENTE' : (total >= 70 ? 'APROVADO' : 'REPROVADO');
+
+            const reportHtml = `
+                <!DOCTYPE html>
+                <html lang="pt-br">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>Report Card - ${student.name}</title>
+                    <style>
+                        * { margin: 0; padding: 0; box-sizing: border-box; }
+                        body { font-family: 'DM Sans', 'Arial', sans-serif; line-height: 1.5; color: #2d3748; background: #ffffff; }
+                        .container { max-width: 800px; margin: 0 auto; background: white; }
+                        .header { background: #F1D24B; padding: 40px 40px 30px 40px; position: relative; }
+                        .logo-section { display: flex; align-items: center; justify-content: center; margin-bottom: 20px; }
+                        .logo { width: 80px; height: 80px; background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+                        .school-info { text-align: left; }
+                        .school-name { font-size: 2.2em; font-weight: 700; color: #1a202c; letter-spacing: -0.02em; }
+                        .school-subtitle { font-size: 1.1em; color: #4a5568; font-weight: 400; margin-top: 5px; }
+                        .report-title { text-align: center; font-size: 1.4em; font-weight: 600; color: #1a202c; margin-top: 25px; letter-spacing: 0.05em; }
+                        .content { padding: 40px; }
+                        .student-info { border: 2px solid #F1D24B; padding: 25px; margin-bottom: 30px; }
+                        .student-info h3 { color: #1a202c; font-size: 1.2em; margin-bottom: 20px; font-weight: 600; }
+                        .info-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+                        .info-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; }
+                        .info-label { color: #4a5568; font-weight: 500; }
+                        .info-value { color: #1a202c; font-weight: 600; }
+                        .grades-section { margin-bottom: 30px; }
+                        .grades-section h3 { color: #1a202c; font-size: 1.2em; margin-bottom: 20px; font-weight: 600; }
+                        .grades-table { width: 100%; border-collapse: collapse; }
+                        .grades-table th { background: #F1D24B; color: #1a202c; font-weight: 600; padding: 15px 12px; text-align: left; font-size: 0.95em; }
+                        .grades-table td { padding: 15px 12px; border-bottom: 1px solid #e2e8f0; }
+                        .grades-table tr:last-child td { border-bottom: none; }
+                        .status-badge { display: inline-block; padding: 8px 16px; border-radius: 20px; font-weight: 600; font-size: 0.9em; text-transform: uppercase; letter-spacing: 0.5px; }
+                        .status-aprovado { background: #c6f6d5; color: #276749; }
+                        .status-reprovado { background: #fed7d7; color: #c53030; }
+                        .status-pendente { background: #fef5e7; color: #b7791f; }
+                        .footer { text-align: center; padding: 30px; color: #718096; border-top: 1px solid #e2e8f0; margin-top: 30px; }
+                        @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+                    </style>
+                </head>
+                <body>
+                    <div class="container">
+                        <div class="header">
+                            <div class="logo-section">
+                                <div class="logo">
+                                    <div style="font-size: 2em; font-weight: bold; color: #F1D24B;">S</div>
+                                </div>
+                                <div class="school-info">
+                                    <div class="school-name">SLAP English</div>
+                                    <div class="school-subtitle">School of Language and Professional Skills</div>
+                                </div>
+                            </div>
+                            <div class="report-title">BOLETIM INDIVIDUAL</div>
+                        </div>
+                        
+                        <div class="content">
+                            <div class="student-info">
+                                <h3>Informações do Aluno</h3>
+                                <div class="info-grid">
+                                    <div class="info-item">
+                                        <span class="info-label">Nome:</span>
+                                        <span class="info-value">${student.name}</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">Turma:</span>
+                                        <span class="info-value">${turma.name}</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">Professor:</span>
+                                        <span class="info-value">${turma.teacherName}</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">Nível:</span>
+                                        <span class="info-value">${turma.level}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="grades-section">
+                                <h3>Avaliações</h3>
+                                <table class="grades-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Componente</th>
+                                            <th>Nota</th>
+                                            <th>Peso</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>Midterm Test</td>
+                                            <td>${grades.midtermTest}</td>
+                                            <td>/20</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Listening Test</td>
+                                            <td>${grades.listeningTest}</td>
+                                            <td>/20</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Grammar Test</td>
+                                            <td>${grades.grammarTest}</td>
+                                            <td>/20</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Oral Test</td>
+                                            <td>${grades.oralTest}</td>
+                                            <td>/20</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Participação</td>
+                                            <td>${grades.participacao}</td>
+                                            <td>/10</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Assiduidade</td>
+                                            <td>${grades.assiduidade}</td>
+                                            <td>/10</td>
+                                        </tr>
+                                        <tr style="background: #f7fafc; font-weight: 600;">
+                                            <td><strong>TOTAL</strong></td>
+                                            <td><strong>${total.toFixed(1)}</strong></td>
+                                            <td><strong>/100</strong></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                                
+                                <div style="margin-top: 25px; text-align: center;">
+                                    <span class="status-badge status-${status.toLowerCase()}">${status}</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="footer">
+                            <p>SLAP English - Sistema de Avaliação Acadêmica</p>
+                            <p>Relatório gerado em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}</p>
                         </div>
                     </div>
                 </body>
@@ -12346,6 +12550,11 @@ Esta operação não pode ser desfeita. Deseja continuar?`;
                             const turmaId = actionTarget.dataset.turmaId;
                             const studentId = actionTarget.dataset.studentId;
                             exportStudentPef(turmaId, studentId);
+                        },
+                        'export-student-report-card': () => {
+                            const turmaId = actionTarget.dataset.turmaId;
+                            const studentId = actionTarget.dataset.studentId;
+                            exportStudentReportCardFromTurma(studentId, turmaId);
                         },
                         'export-cps-doc': exportCPsDoc,
                         'view-nivel': () => openNivelModal(id),
