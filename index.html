@@ -2699,6 +2699,12 @@
                          <h3 class="text-xl font-bold text-stone-800">Despesas de ${monthName.charAt(0).toUpperCase() + monthName.slice(1)}</h3>
                          <button class="primary-btn w-auto" data-action="add-expense">+ Nova Despesa</button>
                     </div>
+                    
+                    <div class="flex gap-2 mb-6" id="expenses-filter-buttons">
+                        <button class="secondary-btn filter-btn active" data-filter="todos">Todos</button>
+                        <button class="secondary-btn filter-btn" data-filter="fixo">Fixos</button>
+                        <button class="secondary-btn filter-btn" data-filter="variavel">Variáveis</button>
+                    </div>
                     <div class="overflow-x-auto">
                         <table class="data-table">
                             <thead>
@@ -2714,9 +2720,13 @@
                             </thead>
                             <tbody id="expenses-list">
                                 ${monthlyExpenses.length > 0 ? monthlyExpenses.map(exp => `
-                                    <tr class="${exp.isPaid ? 'paid' : ''}">
+                                    <tr class="${exp.isPaid ? 'paid' : ''}" data-expense-type="${exp.tipo || 'variavel'}">
                                         <td class="text-center"><input type="checkbox" data-action="toggle-expense" data-id="${exp.id}" class="h-5 w-5 rounded border-gray-300 text-yellow-500 focus:ring-yellow-400" ${exp.isPaid ? 'checked' : ''}></td>
-                                        <td class="font-medium cursor-pointer" data-action="view-expense" data-id="${exp.id}">${exp.description} ${exp.isFixedSalary && exp.employeeRole ? `<span class="sector-tag">${exp.employeeRole}</span>` : ''}</td>
+                                        <td class="font-medium cursor-pointer" data-action="view-expense" data-id="${exp.id}">
+                                            ${exp.description} 
+                                            ${exp.isFixedSalary && exp.employeeRole ? `<span class="sector-tag">${exp.employeeRole}</span>` : ''}
+                                            <span class="inline-block ml-2 px-2 py-1 text-xs rounded-full ${exp.tipo === 'fixo' ? 'bg-blue-100 text-blue-800' : 'bg-orange-100 text-orange-800'}">${exp.tipo === 'fixo' ? 'Fixo' : 'Variável'}</span>
+                                        </td>
                                         <td class="cursor-pointer" data-action="view-expense" data-id="${exp.id}">${formatDateBR(exp.effectiveDueDate)}</td>
                                         <td class="text-right font-mono cursor-pointer" data-action="view-expense" data-id="${exp.id}">${Number(exp.amount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
                                         <td class="text-right font-mono cursor-pointer" data-action="view-expense" data-id="${exp.id}">${Number(exp.extraAmount || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
@@ -2736,6 +2746,35 @@
                     </div>
                 </section>
             `;
+            
+            // Adicionar event listeners para os filtros de despesas
+            setTimeout(() => {
+                const filterButtons = document.querySelectorAll('#expenses-filter-buttons .filter-btn');
+                filterButtons.forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        // Remove active class from all buttons
+                        filterButtons.forEach(b => b.classList.remove('active'));
+                        // Add active class to clicked button
+                        e.target.classList.add('active');
+                        
+                        const filter = e.target.dataset.filter;
+                        filterExpensesByType(filter);
+                    });
+                });
+            }, 100);
+        }
+        
+        // Function to filter expenses by type
+        function filterExpensesByType(filter) {
+            const rows = document.querySelectorAll('#expenses-list tr[data-expense-type]');
+            rows.forEach(row => {
+                const expenseType = row.dataset.expenseType;
+                if (filter === 'todos') {
+                    row.style.display = '';
+                } else {
+                    row.style.display = expenseType === filter ? '' : 'none';
+                }
+            });
         }
 
 
@@ -4872,6 +4911,14 @@
                 <form id="form-modal-body" class="space-y-4">
                     <input type="hidden" id="expense-id" value="${expenseId || ''}">
                     <div><label class="font-medium text-sm">Descrição</label><input type="text" id="expense-description" class="form-input" required value="${expense?.description || ''}"></div>
+                    
+                    <div>
+                        <label class="font-medium text-sm">Tipo de Despesa</label>
+                        <select id="expense-tipo" class="form-input" required>
+                            <option value="variavel" ${!expense?.tipo || expense?.tipo === 'variavel' ? 'selected' : ''}>Variável</option>
+                            <option value="fixo" ${expense?.tipo === 'fixo' ? 'selected' : ''}>Fixo</option>
+                        </select>
+                    </div>
 
                     <div id="due-date-container" class="${expense?.isFixedSalary ? 'hidden' : ''}">
                         <label class="font-medium text-sm">Vencimento</label>
@@ -4911,6 +4958,7 @@
             const isFixedSalary = document.getElementById('expense-isFixedSalary').checked;
             const data = {
                 description: document.getElementById('expense-description').value,
+                tipo: document.getElementById('expense-tipo').value,
                 amount: document.getElementById('expense-amount').value,
                 extraAmount: document.getElementById('expense-extraAmount').value || 0,
                 paidAmount: document.getElementById('expense-paidAmount').value || 0,
