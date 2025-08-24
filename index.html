@@ -718,7 +718,6 @@
 
             getCollectionListener('dojo_ranking', dojoRanking, renderDojoSection);
             getCollectionListener('dojo_missions', dojoMissions, renderDojoSection, (ref) => query(ref, orderBy("points", "desc")));
-            // getCollectionListener('fluxos', fluxos, renderFluxosSection); // Fluxos section removed
 
             
             // Load monthly highlight with real-time updates
@@ -6706,7 +6705,7 @@
         async function deleteCalendarEvent(eventId) {
             // Check if user has permission to delete events
             if (currentUserRole === 'teacher') {
-                showErrorMessage("Acesso Negado", "Usuários com role 'teacher' não podem apagar eventos.");
+                showErrorMessage("Acesso Negado", "Usuários com role 'teacher' não podem apagar esta item.");
                 return;
             }
 
@@ -8380,13 +8379,12 @@
             }
 
             // Reload guidelines after import
-            await loadGuidelines();
             
             // Show results
             if (errorCount === 0) {
-                showSuccessMessage("Importação Concluída", `${successCount} diretrizes importadas com sucesso!`);
+                showSuccessMessage("Importação Concluída", `${successCount} itens importados com sucesso!`);
             } else {
-                showErrorMessage("Importação Parcial", `${successCount} diretrizes importadas. ${errorCount} falharam.`);
+                showErrorMessage("Importação Parcial", `${successCount} itens importados. ${errorCount} falharam.`);
             }
         }
 
@@ -8490,243 +8488,10 @@
 
 
 
-        function renderDiretrizesSection() {
-            document.getElementById('main-title').textContent = 'Diretrizes SLAP';
-            const contentArea = document.getElementById('content-area');
-
-            contentArea.innerHTML = `
-                <div class="max-w-6xl mx-auto">
-                    <div class="mb-6 flex justify-between items-center">
-                        <input type="text" id="guidelines-search" class="guidelines-search" 
-                               placeholder="Buscar diretrizes..." 
-                               oninput="filterGuidelines(this.value)">
-                        <div class="flex gap-2">
-                            <button class="secondary-btn w-auto" data-action="export-guidelines">
-                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                </svg>
-                                Exportar Diretrizes
-                            </button>
-                            ${['admin', 'pedagogico', 'ap'].includes(currentUserRole) ? `
-                            <button class="primary-btn w-auto" data-action="add-guideline">
-                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-                                </svg>
-                                Adicionar Diretriz
-                            </button>
-                            ` : ''}
-                        </div>
-                    </div>
-
-                    <div class="grid md:grid-cols-2 gap-6">
-                        <div>
-                            <h2 class="text-xl font-bold text-green-600 mb-4 flex items-center">
-                                <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                </svg>
-                                Boas Práticas
-                            </h2>
-                            <div id="good-practices-container">
-                                <!-- Good practices will be rendered here -->
-                            </div>
-                            <div id="good-practices-pagination" class="pagination-controls mt-4">
-                                <!-- Pagination controls will be rendered here -->
-                            </div>
-                        </div>
-
-                        <div>
-                            <h2 class="text-xl font-bold text-red-600 mb-4 flex items-center">
-                                <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                                </svg>
-                                Itens Proibidos
-                            </h2>
-                            <div id="prohibited-items-container">
-                                <!-- Prohibited items will be rendered here -->
-                            </div>
-                            <div id="prohibited-items-pagination" class="pagination-controls mt-4">
-                                <!-- Pagination controls will be rendered here -->
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Guideline Modal -->
-                    <div id="guideline-modal" class="modal-overlay">
-                        <div class="modal-content max-w-md">
-                            <div class="modal-header">
-                                <h4 id="guideline-modal-title">Nova Diretriz</h4>
-                                <button data-action="close-guideline-modal" class="modal-close-btn">&times;</button>
-                            </div>
-                            <form id="guideline-form">
-                                <div class="space-y-4">
-                                    <div>
-                                        <label class="font-medium text-sm">Tipo</label>
-                                        <select id="guideline-type" class="form-input" required>
-                                            <option value="good-practice">Boa Prática</option>
-                                            <option value="prohibited">Item Proibido</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label class="font-medium text-sm">Título</label>
-                                        <input type="text" id="guideline-title" class="form-input" required>
-                                    </div>
-                                    <div>
-                                        <label class="font-medium text-sm">Descrição</label>
-                                        <textarea id="guideline-description" rows="4" class="form-input" required></textarea>
-                                    </div>
-                                    <div class="flex justify-end gap-2">
-                                        <button type="button" data-action="close-guideline-modal" class="secondary-btn">Cancelar</button>
-                                        <button type="submit" class="primary-btn w-auto">Salvar</button>
-                                    </div>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
 
 
-            `;
 
-            loadGuidelines();
-        }
 
-        let guidelines = {
-            goodPractices: [],
-            prohibitedItems: []
-        };
-
-        // Pagination variables for guidelines
-        let guidelinesPagination = {
-            goodPractices: { currentPage: 1, itemsPerPage: 6 },
-            prohibitedItems: { currentPage: 1, itemsPerPage: 6 }
-        };
-
-        async function loadGuidelines() {
-            try {
-                console.log('loadGuidelines called, db is:', !!db, 'appId:', appId);
-                console.log('Firebase detection - db type:', typeof db, 'db value:', db);
-                let loadedGuidelines = null;
-                
-                if (!db) {
-                    // Local storage mode
-                    console.log('Loading guidelines from localStorage');
-                    const savedGuidelines = localStorage.getItem('slap-guidelines');
-                    if (savedGuidelines) {
-                        loadedGuidelines = JSON.parse(savedGuidelines);
-                        console.log('Guidelines loaded from localStorage:', loadedGuidelines);
-                    }
-                } else {
-                    // Firebase mode
-                    try {
-                        console.log('Attempting to load guidelines from Firebase...');
-                        const docRef = doc(db, `artifacts/${appId}/public/data`, 'guidelines');
-                        const docSnap = await getDoc(docRef);
-                        if (docSnap.exists()) {
-                            loadedGuidelines = docSnap.data();
-                            console.log('Guidelines loaded from Firebase successfully:', loadedGuidelines);
-                        } else {
-                            console.log('No guidelines document found in Firebase');
-                        }
-                    } catch (firebaseError) {
-                        console.error('Error loading from Firebase:', firebaseError);
-                        // Fallback to localStorage
-                        console.log('Falling back to localStorage...');
-                        const savedGuidelines = localStorage.getItem('slap-guidelines');
-                        if (savedGuidelines) {
-                            loadedGuidelines = JSON.parse(savedGuidelines);
-                            console.log('Guidelines loaded from localStorage fallback:', loadedGuidelines);
-                        }
-                    }
-                }
-
-                if (loadedGuidelines) {
-                    guidelines = loadedGuidelines;
-                } else {
-                    // Default guidelines if none exist
-                    guidelines = {
-                        goodPractices: [
-                            { id: '1', title: 'Pontualidade nas Aulas', description: 'Sempre chegue às aulas com pelo menos 5 minutos de antecedência para preparar o ambiente e receber os alunos adequadamente.' },
-                            { id: '2', title: 'Feedback Construtivo', description: 'Ofereça feedback específico e encorajador aos alunos, focando em aspectos que podem ser melhorados.' },
-                            { id: '3', title: 'Material Organizado', description: 'Mantenha todos os materiais didáticos organizados e facilmente acessíveis durante as aulas.' },
-                            { id: '4', title: 'Comunicação Clara', description: 'Use linguagem simples e clara, adaptando a complexidade ao nível dos alunos.' }
-                        ],
-                        prohibitedItems: [
-                            { id: '1', title: 'Uso de Celular Durante Aulas', description: 'É proibido o uso de dispositivos móveis para fins pessoais durante o período de aula.' },
-                            { id: '2', title: 'Linguagem Inadequada', description: 'Evite o uso de gírias excessivas ou linguagem informal que possa prejudicar o aprendizado.' },
-                            { id: '3', title: 'Atraso Frequente', description: 'Atrasos constantes são inaceitáveis e prejudicam o andamento das atividades pedagógicas.' },
-                            { id: '4', title: 'Material Não Aprovado', description: 'Não utilize materiais didáticos que não tenham sido aprovados pela coordenação pedagógica.' }
-                        ]
-                    };
-                    await saveGuidelines();
-                }
-                renderGuidelines();
-            } catch (error) {
-                console.error('Error in loadGuidelines:', error);
-                // Final fallback - use defaults
-                guidelines = {
-                    goodPractices: [],
-                    prohibitedItems: []
-                };
-                renderGuidelines();
-            }
-        }
-
-        function renderGuidelines(filter = '') {
-            const goodPracticesContainer = document.getElementById('good-practices-container');
-            const prohibitedItemsContainer = document.getElementById('prohibited-items-container');
-
-            const filteredGoodPractices = guidelines.goodPractices.filter(item => 
-                item.title.toLowerCase().includes(filter.toLowerCase()) || 
-                item.description.toLowerCase().includes(filter.toLowerCase())
-            );
-
-            const filteredProhibitedItems = guidelines.prohibitedItems.filter(item => 
-                item.title.toLowerCase().includes(filter.toLowerCase()) || 
-                item.description.toLowerCase().includes(filter.toLowerCase())
-            );
-
-            // When filtering, reset pagination to page 1
-            if (filter) {
-                guidelinesPagination.goodPractices.currentPage = 1;
-                guidelinesPagination.prohibitedItems.currentPage = 1;
-            }
-
-            // Render Good Practices with pagination
-            renderGuidelineSection(
-                'goodPractices', 
-                filteredGoodPractices, 
-                goodPracticesContainer, 
-                document.getElementById('good-practices-pagination'),
-                'good-practice',
-                'text-green-600'
-            );
-
-            // Render Prohibited Items with pagination
-            renderGuidelineSection(
-                'prohibitedItems', 
-                filteredProhibitedItems, 
-                prohibitedItemsContainer, 
-                document.getElementById('prohibited-items-pagination'),
-                'prohibited',
-                'text-red-600'
-            );
-
-            // Show/hide sections based on search results
-            const goodPracticesSection = document.querySelector('.grid > div:first-child');
-            const prohibitedSection = document.querySelector('.grid > div:last-child');
-
-            if (filter && filteredGoodPractices.length === 0) {
-                goodPracticesSection.style.display = 'none';
-            } else {
-                goodPracticesSection.style.display = 'block';
-            }
-
-            if (filter && filteredProhibitedItems.length === 0) {
-                prohibitedSection.style.display = 'none';
-            } else {
-                prohibitedSection.style.display = 'block';
-            }
-        }
 
         function renderGuidelineSection(type, items, container, paginationContainer, cardClass, iconColorClass) {
             const pagination = guidelinesPagination[type];
@@ -8828,31 +8593,8 @@
             }
         }
 
-        function editGuidelineItem(type, realIndex) {
-            openGuidelineForm(type, realIndex);
-        }
 
-        async function deleteGuidelineItem(type, realIndex) {
-            const itemTitle = guidelines[type][realIndex].title;
 
-            if (confirm(`Tem certeza que deseja excluir "${itemTitle}"?`)) {
-                guidelines[type].splice(realIndex, 1);
-                await saveGuidelines();
-
-                // Adjust current page if necessary
-                const pagination = guidelinesPagination[type];
-                const totalPages = Math.ceil(guidelines[type].length / pagination.itemsPerPage);
-                if (pagination.currentPage > totalPages && totalPages > 0) {
-                    pagination.currentPage = totalPages;
-                }
-
-                renderGuidelines(document.getElementById('guidelines-search').value);
-            }
-        }
-
-        function filterGuidelines(searchTerm) {
-            renderGuidelines(searchTerm);
-        }
 
         function openGuidelineForm(type = null, index = null) {
             const modal = document.getElementById('guideline-modal');
@@ -8892,9 +8634,6 @@
         }
 
         // Legacy function kept for compatibility - redirects to new function
-        function deleteGuideline(type, index) {
-            deleteGuidelineItem(type, index);
-        }
 
 
 
@@ -9201,7 +8940,7 @@
                 <head>
                     <meta charset="UTF-8">
                     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                    <title>Diretrizes SLAP - Documento Completo</title>
+                    <title>Documento SLAP</title>
                     <style>
                         body { font-family: 'Arial', sans-serif; margin: 20px; line-height: 1.6; }
                         h1 { color: #333; text-align: center; margin-bottom: 30px; }
@@ -9225,11 +8964,11 @@
                     </style>
                 </head>
                 <body>
-                    <h1>Diretrizes SLAP - Documento Completo</h1>
+                    <h1>Documento SLAP</h1>
                     <div class="header-info">
                         <p>Data de Exportação: ${formatDateBR(new Date())}</p>
-                        <p>Total de Diretrizes: ${allGuidelines.length}</p>
-                        <p>Boas Práticas: ${guidelines.goodPractices ? guidelines.goodPractices.length : 0} | Itens Proibidos: ${guidelines.prohibitedItems ? guidelines.prohibitedItems.length : 0}</p>
+                        <p>Total de Itens: ${allGuidelines.length}</p>
+                        <p>Itens: ${guidelines.goodPractices ? guidelines.goodPractices.length : 0}</p>
                     </div>
                     <table>
                         <thead>
@@ -9245,13 +8984,13 @@
                     </table>
                     <div style="margin-top: 30px; text-align: center; color: #666; font-size: 12px;">
                         <p>Documento gerado pelo Hub SLAP - Speaking Like a Pro</p>
-                        <p>Este documento contém as diretrizes oficiais da escola para orientação dos colaboradores.</p>
+                        <p>Este documento contém informações oficiais da escola.</p>
                     </div>
                 </body>
                 </html>
             `;
 
-            openHtmlInNewWindow("Diretrizes SLAP", docHtml);
+            openHtmlInNewWindow("Documento SLAP", docHtml);
         }
 
         function openVipNotasModal(vipId) {
@@ -10678,15 +10417,11 @@
         }
 
         // Make functions globally accessible
-        window.filterGuidelines = filterGuidelines;
         window.changeMonth = changeMonth;
         window.viewCalendarEvent = viewCalendarEvent;
         window.openCalendarEventForm = openCalendarEventForm;
         window.openGuidelineForm = openGuidelineForm;
         window.saveGuideline = saveGuideline;
-        window.deleteGuideline = deleteGuideline;
-        window.deleteGuidelineItem = deleteGuidelineItem;
-        window.editGuidelineItem = editGuidelineItem;
         window.changeGuidelinePage = changeGuidelinePage;
         window.exportAlunosDoc = exportAlunosDoc;
         window.exportGuidelinesDoc = exportGuidelinesDoc;
@@ -10695,7 +10430,6 @@
         window.startQuiz = startQuiz;
         window.checkTimeConflict = checkTimeConflict;
         window.toggleCampanhaFinalizada = toggleCampanhaFinalizada;
-        // Fluxos functions removed
         window.saveTurmaGrades = saveTurmaGrades;
 
         window.switchTaskTab = switchTaskTab;
@@ -10706,28 +10440,6 @@
             if (navItem) navItem.click();
         };
 
-        async function saveGuidelines() {
-            try {
-                console.log('saveGuidelines called, db is:', !!db, 'appId:', appId);
-                console.log('Firebase detection for save - db type:', typeof db, 'db value:', db);
-                if (!db) {
-                    // Local storage fallback
-                    console.log('Using localStorage fallback for guidelines');
-                    localStorage.setItem('slap-guidelines', JSON.stringify(guidelines));
-                } else {
-                    // Save to Firebase
-                    console.log('Attempting to save guidelines to Firebase...');
-                    const docRef = doc(db, `artifacts/${appId}/public/data`, 'guidelines');
-                    await setDoc(docRef, guidelines);
-                    console.log('Guidelines saved to Firebase successfully');
-                }
-            } catch (error) {
-                console.error('Error saving guidelines:', error);
-                // Fallback to localStorage if Firebase fails
-                console.log('Falling back to localStorage due to error');
-                localStorage.setItem('slap-guidelines', JSON.stringify(guidelines));
-            }
-        }
 
         // --- Fortune Cookie Functions ---
         // Fortune cookie phrases - 60 phrases for daily rotation
@@ -10870,7 +10582,7 @@
         function openCalendarEventForm(eventId = null) {
             // Check if user has permission to create/edit events
             if (currentUserRole === 'teacher') {
-                showErrorMessage("Acesso Negado", "Usuários com role 'teacher' não podem criar ou editar eventos.");
+                showErrorMessage("Acesso Negado", "Usuários com role 'teacher' não podem criar ou editar este item.");
                 return;
             }
 
@@ -11101,9 +10813,9 @@
                 { key: 'dojo', label: 'Dojo', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>', roles: ['admin', 'pedagogico', 'ap', 'teacher', 'am'] },
                 
                 { key: 'alunos', label: 'Alunos', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>', roles: ['admin', 'pedagogico', 'ap', 'financeiro', 'teacher', 'am'] },
-                { key: 'turmas', label: 'Turmas', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>', roles: ['admin', 'pedagogico', 'ap', 'teacher', 'am'] },
-                { key: 'vips', label: 'VIPs', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20a6 6 0 0 0-12 0"/><circle cx="12" cy="10" r="4"/><circle cx="12" cy="12" r="10"/></svg>', roles: ['admin', 'pedagogico', 'ap', 'teacher', 'am'] },
-                { key: 'grade', label: 'Grade', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" x2="16" y1="2" y2="6"></line><line x1="8" x2="8" y1="2" y2="6"></line><line x1="3" x2="21" y1="10" y2="10"></line></svg>', roles: ['admin', 'pedagogico', 'ap', 'teacher', 'am'] },
+                { key: 'turmas', label: 'Turmas', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>', roles: ['admin', 'pedagogico', 'ap', 'teacher', 'am', 'financeiro'] },
+                { key: 'vips', label: 'VIPs', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20a6 6 0 0 0-12 0"/><circle cx="12" cy="10" r="4"/><circle cx="12" cy="12" r="10"/></svg>', roles: ['admin', 'pedagogico', 'ap', 'teacher', 'am', 'financeiro'] },
+                { key: 'grade', label: 'Grade', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" x2="16" y1="2" y2="6"></line><line x1="8" x2="8" y1="2" y2="6"></line><line x1="3" x2="21" y1="10" y2="10"></line></svg>', roles: ['admin', 'pedagogico', 'ap', 'teacher', 'am', 'financeiro'] },
                 { key: 'calendario-pedagogico', label: 'Calendário Pedagógico', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>', roles: ['admin', 'pedagogico', 'ap', 'teacher', 'am'] },
                 { key: 'calendario-marketing', label: 'Calendário Marketing', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>', roles: ['admin', 'ap', 'am', 'teacher'] },
                 { key: 'desafio-pedagogico', label: 'Desafio Pedagógico', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>', roles: ['admin', 'pedagogico', 'ap', 'teacher', 'am'] },
@@ -11111,7 +10823,7 @@
                 
                 { key: 'campanhas', label: 'Campanhas', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>', roles: ['admin', 'ap', 'am'] },
                 
-                { key: 'colaboradores', label: 'Colaboradores', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>', roles: ['admin', 'ap'] },
+                { key: 'colaboradores', label: 'Colaboradores', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>', roles: ['admin', 'ap', 'financeiro'] },
                 
                 { key: 'folha-pagamento', label: 'Despesas', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>', roles: ['admin', 'financeiro'] }
             ];
@@ -11130,18 +10842,10 @@
             document.getElementById('main-title').textContent = 'Mural de Avisos';
             document.getElementById('main-description').textContent = 'Quadro de avisos e comunicados para toda a equipe.';
             
-            console.log('=== RENDERIZANDO MURAL ===');
-            console.log('User role:', currentUserRole);
-            console.log('Total avisos no array:', avisos.length);
-            
             const canCreateNotice = currentUserRole === 'admin';
-            const allowedSectors = getAllowedSectorsForRole(currentUserRole);
-            console.log('Setores permitidos para role:', allowedSectors);
-            
             const filteredAvisos = getFilteredAvisos();
-            console.log('Avisos após filtro de role:', filteredAvisos.length);
-            
             const visibleSectorTags = getVisibleSectorTags();
+            const allowedSectors = getAllowedSectorsForRole(currentUserRole);
             
             // Calculate total count for "Todos" button based on role-filtered avisos
             const totalRoleFilteredAvisos = avisos.filter(aviso => 
@@ -11224,32 +10928,20 @@
         }
 
         function getFilteredAvisos() {
-            console.log('getFilteredAvisos() - Avisos totais:', avisos.length);
             let filteredAvisos = avisos;
             
             // Apply role-based filtering first
             const allowedSectors = getAllowedSectorsForRole(currentUserRole);
-            console.log('getFilteredAvisos() - Setores permitidos:', allowedSectors);
-            
-            filteredAvisos = avisos.filter(aviso => {
-                const temSetorPermitido = aviso.setor.some(setor => allowedSectors.includes(setor));
-                console.log(`Aviso "${aviso.titulo}" - setores: ${aviso.setor.join(',')} - permitido: ${temSetorPermitido}`);
-                return temSetorPermitido;
-            });
-            
-            console.log('getFilteredAvisos() - Avisos após filtro de role:', filteredAvisos.length);
+            filteredAvisos = avisos.filter(aviso => 
+                aviso.setor.some(setor => allowedSectors.includes(setor))
+            );
             
             // Then apply user's selected filter
             if (muralFilter === 'todos') {
-                console.log('getFilteredAvisos() - Filtro "todos" aplicado');
                 return filteredAvisos.sort((a, b) => new Date(b.dataPublicacao) - new Date(a.dataPublicacao));
             }
-            
-            console.log('getFilteredAvisos() - Filtro específico aplicado:', muralFilter);
-            const finalFiltered = filteredAvisos.filter(aviso => aviso.setor.includes(muralFilter))
+            return filteredAvisos.filter(aviso => aviso.setor.includes(muralFilter))
                                  .sort((a, b) => new Date(b.dataPublicacao) - new Date(a.dataPublicacao));
-            console.log('getFilteredAvisos() - Avisos finais:', finalFiltered.length);
-            return finalFiltered;
         }
 
         function getAllowedSectorsForRole(role) {
@@ -11321,12 +11013,6 @@
             const checkboxes = document.querySelectorAll('.aviso-setor-checkbox:checked');
             const setorSelecionado = Array.from(checkboxes).map(cb => cb.value);
 
-            console.log('=== SALVANDO NOVO AVISO ===');
-            console.log('Título:', titulo);
-            console.log('Conteúdo:', conteudo);
-            console.log('Setores selecionados:', setorSelecionado);
-            console.log('User role:', currentUserRole);
-
             if (!titulo || !conteudo || setorSelecionado.length === 0) {
                 showErrorMessage("Erro", "Todos os campos são obrigatórios e pelo menos um setor deve ser selecionado.");
                 return;
@@ -11343,20 +11029,15 @@
                 dataCriacao: new Date().toISOString()
             };
 
-            console.log('Novo aviso criado:', novoAviso);
-
             try {
                 if (!db) {
                     // Development mode
                     avisos.unshift(novoAviso);
                     localStorage.setItem('hub-avisos', JSON.stringify(avisos));
-                    console.log('Aviso saved locally (development mode)');
-                    console.log('Total avisos após salvar:', avisos.length);
                 } else {
                     // Production mode
                     const avisoRef = doc(db, `artifacts/${appId}/public/data/avisos`, novoAviso.id);
                     await setDoc(avisoRef, novoAviso);
-                    console.log('Aviso saved to Firebase');
                 }
 
                 document.getElementById('form-modal').classList.remove('visible');
@@ -11657,12 +11338,12 @@
             const pagePermissions = {
                 'inicio': ['admin', 'pedagogico', 'ap', 'financeiro', 'teacher', 'am'], // Dashboard - everyone
                 'alunos': ['admin', 'pedagogico', 'ap', 'financeiro', 'teacher', 'am'], // Students - everyone  
-                'turmas': ['admin', 'pedagogico', 'ap', 'teacher', 'am'], // Classes - no financeiro
-                'vips': ['admin', 'pedagogico', 'ap', 'teacher', 'am'], // VIPs - accessible to teachers
+                'turmas': ['admin', 'pedagogico', 'ap', 'teacher', 'am', 'financeiro'], // Classes - no financeiro
+                'vips': ['admin', 'pedagogico', 'ap', 'teacher', 'am', 'financeiro'], // VIPs - accessible to teachers
                 'campanhas': ['admin', 'ap', 'am'], // Campaigns - marketing only
-                'grade': ['admin', 'pedagogico', 'ap', 'teacher', 'am'], // Schedule - no financeiro
+                'grade': ['admin', 'pedagogico', 'ap', 'teacher', 'am', 'financeiro'], // Schedule - no financeiro
                 'folha-pagamento': ['admin', 'financeiro'], // Payroll/Expenses - FINANCIAL ONLY
-                'colaboradores': ['admin', 'ap'], // Collaborators - admin and AP only
+                'colaboradores': ['admin', 'ap', 'financeiro'], // Collaborators - admin, AP and financeiro
                 'dojo': ['admin', 'pedagogico', 'ap', 'teacher', 'am'], // Dojo - everyone except financeiro
                 'calendario-pedagogico': ['admin', 'pedagogico', 'ap', 'teacher', 'am'], // Pedagogical calendar
                 'calendario-marketing': ['admin', 'ap', 'am', 'teacher'], // Marketing calendar
@@ -11824,7 +11505,7 @@
                         'view-calendar-event': () => viewCalendarEvent(id),
                         'edit-calendar-event': () => {
                             if (currentUserRole === 'teacher') {
-                                showErrorMessage("Acesso Negado", "Usuários com role 'teacher' não podem editar eventos.");
+                                showErrorMessage("Acesso Negado", "Usuários com role 'teacher' não podem editar este item.");
                                 return;
                             }
                             openCalendarEventForm(id);
@@ -11833,7 +11514,7 @@
                         'view-marketing-event': () => viewMarketingEvent(id),
                         'edit-marketing-event': () => {
                             if (!['admin', 'am', 'pedagogico', 'financeiro'].includes(currentUserRole)) {
-                                showErrorMessage("Acesso Negado", "Apenas admins, marketing managers, pedagógico e financeiro podem editar eventos de marketing.");
+                                showErrorMessage("Acesso Negado", "Apenas admins, marketing managers, pedagógico e financeiro podem editar este item.");
                                 return;
                             }
                             // Close any existing modal first
