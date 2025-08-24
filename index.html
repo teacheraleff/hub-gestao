@@ -482,7 +482,8 @@
         const pendingView = document.getElementById('pending-view');
 
         let db, auth, storage, userId, currentUserName, currentUserRole;
-        let usersData = [], students = [], turmas = [], vips = [], attendance = [], tasks = [], events = [], collaborators = [], schedules = [], expenses = [], dojoRanking = [], dojoMissions = [];
+        let usersData = [], students = [], turmas = [], vips = [], attendance = [], tasks = [], events = [], collaborators = [], schedules = [], expenses = [], dojoRanking = [], dojoMissions = [], avisos = [];
+        let muralFilter = 'todos';
         let userProfiles = {};
         let monthlyHighlight = {
             name: 'João Silva',
@@ -496,6 +497,16 @@
         // Pagination state
         let currentPage = 1;
         let itemsPerPage = 20;
+        
+        // Sector tags for mural announcements
+        const setorTags = [
+            { value: 'teachers', label: 'Teachers', color: '#10B981' },
+            { value: 'pedagogico', label: 'Pedagógico', color: '#3B82F6' },
+            { value: 'comercial', label: 'Comercial', color: '#F59E0B' },
+            { value: 'financeiro', label: 'Financeiro', color: '#EF4444' },
+            { value: 'marketing', label: 'Marketing', color: '#8B5CF6' },
+            { value: 'administrativo', label: 'Administrativo', color: '#6B7280' }
+        ];
 
         // --- DEVELOPMENT MODE FUNCTIONS ---
         function startAppInDevelopmentMode() {
@@ -509,15 +520,55 @@
             document.getElementById('profile-picture').src = 'https://res.cloudinary.com/dqfi22uz0/image/upload/v1749349751/DBB440C2-684E-4DCF-9CD3-B2DDC18F1E53_3_vgocga.jpg';
 
             // Initialize with demo data
-            // loadDemoData(); // Function removed with CPs cleanup
+            loadDemoMuralData();
             updateWelcomeMessages(currentUserName);
             showHubView();
             renderInicioSection();
             renderMenu();
         }
 
-
-
+        function loadDemoMuralData() {
+            // Load mural avisos from localStorage or create demo data
+            const savedAvisos = localStorage.getItem('hub-avisos');
+            if (savedAvisos) {
+                avisos = JSON.parse(savedAvisos);
+            } else {
+                // Create demo avisos
+                avisos = [
+                    {
+                        id: 'aviso_demo_1',
+                        titulo: 'Reunião Pedagógica - Janeiro 2025',
+                        conteudo: 'Reunião geral da equipe pedagógica para alinhamento das estratégias do mês. Todos os professores e coordenadores devem comparecer.',
+                        setor: ['pedagogico', 'teachers'],
+                        autorId: 'demo-user',
+                        autorNome: 'Admin SLAP',
+                        dataPublicacao: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
+                        dataCriacao: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
+                    },
+                    {
+                        id: 'aviso_demo_2',
+                        titulo: 'Nova Campanha de Marketing',
+                        conteudo: 'Lançamento da nova campanha de marketing para captação de alunos. Detalhes sobre as estratégias e metas serão discutidos na próxima reunião.',
+                        setor: ['marketing', 'comercial'],
+                        autorId: 'demo-user',
+                        autorNome: 'Admin SLAP',
+                        dataPublicacao: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
+                        dataCriacao: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString()
+                    },
+                    {
+                        id: 'aviso_demo_3',
+                        titulo: 'Atualização Administrativa - Horários de Funcionamento',
+                        conteudo: 'Informamos que a partir da próxima semana, os horários de funcionamento serão estendidos. Novos horários: Segunda a Sexta: 7h às 22h, Sábados: 8h às 18h.',
+                        setor: ['administrativo'],
+                        autorId: 'demo-user',
+                        autorNome: 'Admin SLAP',
+                        dataPublicacao: new Date().toISOString(), // Today
+                        dataCriacao: new Date().toISOString()
+                    }
+                ];
+                localStorage.setItem('hub-avisos', JSON.stringify(avisos));
+            }
+        }
 
         function safeDeleteItem(collection, id, itemName = 'item') {
             
@@ -646,7 +697,10 @@
             getCollectionListener('schedules', schedules, () => {
                  if (contentArea.firstElementChild?.id === 'grade-section') renderGradeSection();
             });
-            getCollectionListener('expenses', expenses, renderFolhaPagamentoSection);
+            getCollectionListener('expenses', expenses, () => {
+                const activePageId = contentArea.firstElementChild?.id;
+                if (activePageId === 'folha-pagamento-section') renderFolhaPagamentoSection();
+            });
 
 
 
@@ -727,8 +781,18 @@
             const firstName = (currentUserName || '').split(' ')[0];
             document.getElementById('welcome-message').textContent = `Bem-vindo(a), ${firstName}`;
             renderMenu(); 
-            renderInicioSection(); 
-            setActiveNavItem(document.querySelector('[data-target="inicio"]')); 
+            
+            // FORCE dashboard load and prevent interference from Firebase listeners
+            setTimeout(() => {
+                renderInicioSection(); 
+                setActiveNavItem(document.querySelector('[data-target="inicio"]')); 
+            }, 50);
+            
+            // Additional safeguard - force dashboard after Firebase data loads
+            setTimeout(() => {
+                renderInicioSection(); 
+                setActiveNavItem(document.querySelector('[data-target="inicio"]')); 
+            }, 500);
         }
         function showPendingView() { 
             hubView.classList.add('hidden'); 
@@ -11027,11 +11091,12 @@
                 
                 { key: 'alunos', label: 'Alunos', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>', roles: ['admin', 'pedagogico', 'ap', 'financeiro', 'teacher', 'am'] },
                 { key: 'turmas', label: 'Turmas', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>', roles: ['admin', 'pedagogico', 'ap', 'teacher', 'am'] },
-                { key: 'vips', label: 'VIPs', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20a6 6 0 0 0-12 0"/><circle cx="12" cy="10" r="4"/><circle cx="12" cy="12" r="10"/></svg>', roles: ['admin', 'pedagogico', 'ap', 'am'] },
+                { key: 'vips', label: 'VIPs', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20a6 6 0 0 0-12 0"/><circle cx="12" cy="10" r="4"/><circle cx="12" cy="12" r="10"/></svg>', roles: ['admin', 'pedagogico', 'ap', 'teacher', 'am'] },
                 { key: 'grade', label: 'Grade', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" x2="16" y1="2" y2="6"></line><line x1="8" x2="8" y1="2" y2="6"></line><line x1="3" x2="21" y1="10" y2="10"></line></svg>', roles: ['admin', 'pedagogico', 'ap', 'teacher', 'am'] },
                 { key: 'calendario-pedagogico', label: 'Calendário Pedagógico', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>', roles: ['admin', 'pedagogico', 'ap', 'teacher', 'am'] },
                 { key: 'calendario-marketing', label: 'Calendário Marketing', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>', roles: ['admin', 'ap', 'am'] },
                 { key: 'desafio-pedagogico', label: 'Desafio Pedagógico', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>', roles: ['admin', 'pedagogico', 'ap', 'teacher', 'am'] },
+                { key: 'mural', label: 'Mural', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 3h16a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M8 7h8"/><path d="M8 11h8"/><path d="M8 15h5"/></svg>', roles: ['admin', 'pedagogico', 'ap', 'financeiro', 'teacher', 'am'] },
                 
                 { key: 'campanhas', label: 'Campanhas', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>', roles: ['admin', 'ap', 'am'] },
                 
@@ -11040,13 +11105,356 @@
                 { key: 'folha-pagamento', label: 'Despesas', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>', roles: ['admin', 'financeiro'] }
             ];
 
-            const menuItemsHTML = menuItems
-                .filter(item => hasAccessToPage(item.key, currentUserRole))
+            const filteredItems = menuItems.filter(item => hasAccessToPage(item.key, currentUserRole));
+            
+            const menuItemsHTML = filteredItems
                 .map(item => `<button data-target="${item.key}" class="nav-item w-full text-left px-4 py-2.5 rounded-lg flex items-center font-semibold">${item.icon}${item.label}</button>`)
                 .join('');
 
             mainNav.innerHTML = menuItemsHTML;
         }
+
+        // --- MURAL SECTION ---
+        function renderMuralSection() {
+            document.getElementById('main-title').textContent = 'Mural de Avisos';
+            document.getElementById('main-description').textContent = 'Quadro de avisos e comunicados para toda a equipe.';
+            
+            const canCreateNotice = currentUserRole === 'admin';
+            const filteredAvisos = getFilteredAvisos();
+            const visibleSectorTags = getVisibleSectorTags();
+            const allowedSectors = getAllowedSectorsForRole(currentUserRole);
+            
+            // Calculate total count for "Todos" button based on role-filtered avisos
+            const totalRoleFilteredAvisos = avisos.filter(aviso => 
+                aviso.setor.some(setor => allowedSectors.includes(setor))
+            );
+            
+            contentArea.innerHTML = `
+                <div id="mural-section" class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                        <div class="flex flex-wrap gap-2">
+                            <button onclick="setMuralFilter('todos')" class="secondary-btn ${muralFilter === 'todos' ? 'active' : ''}">
+                                Todos (${totalRoleFilteredAvisos.length})
+                            </button>
+                            ${visibleSectorTags.map(tag => `
+                                <button onclick="setMuralFilter('${tag.value}')" class="secondary-btn ${muralFilter === tag.value ? 'active' : ''}" style="background-color: ${muralFilter === tag.value ? tag.color : ''}; color: ${muralFilter === tag.value ? 'white' : ''};">
+                                    ${tag.label} (${totalRoleFilteredAvisos.filter(a => a.setor.includes(tag.value)).length})
+                                </button>
+                            `).join('')}
+                        </div>
+                        ${canCreateNotice ? `
+                            <button onclick="openNovoAvisoModal()" class="primary-btn">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                                </svg>
+                                Novo Aviso
+                            </button>
+                        ` : ''}
+                    </div>
+
+                    <div class="space-y-4">
+                        ${filteredAvisos.length === 0 ? `
+                            <div class="text-center py-8 text-stone-500">
+                                <svg class="w-16 h-16 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10m0 0V6a2 2 0 00-2-2H9a2 2 0 00-2 2v2m0 0v10a2 2 0 002 2h6a2 2 0 002-2V8M9 12h6"/>
+                                </svg>
+                                <p class="text-lg font-medium">Nenhum aviso encontrado</p>
+                                <p class="text-sm">
+                                    ${muralFilter === 'todos' ? 
+                                        'Ainda não há avisos no mural.' : 
+                                        `Nenhum aviso encontrado para o setor ${setorTags.find(t => t.value === muralFilter)?.label || muralFilter}.`
+                                    }
+                                </p>
+                            </div>
+                        ` : filteredAvisos.map(aviso => `
+                            <div class="base-card">
+                                <div class="flex justify-between items-start mb-3">
+                                    <div class="flex-1">
+                                        <h3 class="text-lg font-semibold text-stone-800 mb-2">${aviso.titulo}</h3>
+                                        <div class="flex flex-wrap gap-2 mb-3">
+                                            ${aviso.setor.map(setor => {
+                                                const tag = setorTags.find(t => t.value === setor);
+                                                return tag ? `<span class="px-2 py-1 rounded-full text-xs font-medium" style="background-color: ${tag.color}20; color: ${tag.color};">${tag.label}</span>` : '';
+                                            }).join('')}
+                                        </div>
+                                        <p class="text-stone-600 leading-relaxed">${aviso.conteudo}</p>
+                                    </div>
+                                    ${canCreateNotice ? `
+                                        <div class="flex gap-2 ml-4">
+                                            <button onclick="editarAviso('${aviso.id}')" class="text-stone-400 hover:text-stone-600 transition-colors">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                                </svg>
+                                            </button>
+                                            <button onclick="deletarAviso('${aviso.id}')" class="text-stone-400 hover:text-red-600 transition-colors">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    ` : ''}
+                                </div>
+                                <div class="flex justify-end items-center text-sm text-stone-500 pt-3 border-t border-stone-100">
+                                    <span>${formatDateBR(aviso.dataPublicacao)}</span>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function getFilteredAvisos() {
+            let filteredAvisos = avisos;
+            
+            // Apply role-based filtering first
+            const allowedSectors = getAllowedSectorsForRole(currentUserRole);
+            filteredAvisos = avisos.filter(aviso => 
+                aviso.setor.some(setor => allowedSectors.includes(setor))
+            );
+            
+            // Then apply user's selected filter
+            if (muralFilter === 'todos') {
+                return filteredAvisos.sort((a, b) => new Date(b.dataPublicacao) - new Date(a.dataPublicacao));
+            }
+            return filteredAvisos.filter(aviso => aviso.setor.includes(muralFilter))
+                                 .sort((a, b) => new Date(b.dataPublicacao) - new Date(a.dataPublicacao));
+        }
+
+        function getAllowedSectorsForRole(role) {
+            const roleFilters = {
+                'am': ['marketing'],
+                'ap': ['teachers', 'pedagogico'],
+                'pedagogico': ['teachers', 'pedagogico'],
+                'financeiro': ['financeiro', 'administrativo'],
+                'admin': ['teachers', 'pedagogico', 'comercial', 'financeiro', 'marketing', 'administrativo'],
+                'teacher': ['teachers', 'pedagogico', 'comercial', 'financeiro', 'marketing', 'administrativo']
+            };
+            return roleFilters[role] || [];
+        }
+
+        function getVisibleSectorTags() {
+            const allowedSectors = getAllowedSectorsForRole(currentUserRole);
+            return setorTags.filter(tag => allowedSectors.includes(tag.value));
+        }
+
+        function setMuralFilter(filter) {
+            muralFilter = filter;
+            renderMuralSection();
+        }
+
+        function openNovoAvisoModal() {
+            clearModalHeaderButtons();
+            document.getElementById('form-modal-title').textContent = "Novo Aviso";
+            
+            document.getElementById('form-modal-content-area').innerHTML = `
+                <form id="aviso-form" class="space-y-4">
+                    <div>
+                        <label class="font-medium text-sm">Título do Aviso</label>
+                        <input type="text" id="aviso-titulo" class="form-input" required placeholder="Ex: Reunião de equipe, Atualização importante...">
+                    </div>
+                    
+                    <div>
+                        <label class="font-medium text-sm">Conteúdo</label>
+                        <textarea id="aviso-conteudo" class="form-input" rows="6" required placeholder="Escreva o conteúdo do aviso aqui..."></textarea>
+                    </div>
+                    
+                    <div>
+                        <label class="font-medium text-sm">Setores (Selecione um ou mais)</label>
+                        <div class="grid grid-cols-2 gap-3 mt-2">
+                            ${setorTags.map(tag => `
+                                <label class="flex items-center space-x-2 cursor-pointer">
+                                    <input type="checkbox" value="${tag.value}" class="aviso-setor-checkbox" />
+                                    <span class="px-3 py-1 rounded-full text-xs font-medium" style="background-color: ${tag.color}20; color: ${tag.color};">${tag.label}</span>
+                                </label>
+                            `).join('')}
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-end gap-2 pt-4">
+                        <button type="button" data-action="close-modal" class="secondary-btn">Cancelar</button>
+                        <button type="submit" class="primary-btn">Publicar Aviso</button>
+                    </div>
+                </form>
+            `;
+
+            document.getElementById('aviso-form').onsubmit = salvarAviso;
+            document.getElementById('form-modal').classList.add('visible');
+        }
+
+        async function salvarAviso(event) {
+            event.preventDefault();
+            
+            const titulo = document.getElementById('aviso-titulo').value;
+            const conteudo = document.getElementById('aviso-conteudo').value;
+            const checkboxes = document.querySelectorAll('.aviso-setor-checkbox:checked');
+            const setorSelecionado = Array.from(checkboxes).map(cb => cb.value);
+
+            if (!titulo || !conteudo || setorSelecionado.length === 0) {
+                showErrorMessage("Erro", "Todos os campos são obrigatórios e pelo menos um setor deve ser selecionado.");
+                return;
+            }
+
+            const novoAviso = {
+                id: 'aviso_' + Date.now(),
+                titulo: titulo,
+                conteudo: conteudo,
+                setor: setorSelecionado,
+                autorId: userId,
+                autorNome: currentUserName,
+                dataPublicacao: new Date().toISOString(),
+                dataCriacao: new Date().toISOString()
+            };
+
+            try {
+                if (!db) {
+                    // Development mode
+                    avisos.unshift(novoAviso);
+                    localStorage.setItem('hub-avisos', JSON.stringify(avisos));
+                    console.log('Aviso saved locally (development mode)');
+                } else {
+                    // Production mode
+                    const avisoRef = doc(db, `artifacts/${appId}/public/data/avisos`, novoAviso.id);
+                    await setDoc(avisoRef, novoAviso);
+                    console.log('Aviso saved to Firebase');
+                }
+
+                document.getElementById('form-modal').classList.remove('visible');
+                renderMuralSection();
+                showSuccessMessage("Sucesso!", "Aviso publicado com sucesso!");
+                playSuccessSound();
+            } catch (error) {
+                console.error("Error saving aviso:", error);
+                showErrorMessage("Erro", "Erro ao publicar aviso: " + error.message);
+                playErrorSound();
+            }
+        }
+
+        function editarAviso(avisoId) {
+            const aviso = avisos.find(a => a.id === avisoId);
+            if (!aviso) return;
+
+            clearModalHeaderButtons();
+            document.getElementById('form-modal-title').textContent = "Editar Aviso";
+            
+            document.getElementById('form-modal-content-area').innerHTML = `
+                <form id="aviso-edit-form" class="space-y-4">
+                    <div>
+                        <label class="font-medium text-sm">Título do Aviso</label>
+                        <input type="text" id="aviso-titulo-edit" class="form-input" required value="${aviso.titulo}">
+                    </div>
+                    
+                    <div>
+                        <label class="font-medium text-sm">Conteúdo</label>
+                        <textarea id="aviso-conteudo-edit" class="form-input" rows="6" required>${aviso.conteudo}</textarea>
+                    </div>
+                    
+                    <div>
+                        <label class="font-medium text-sm">Setores (Selecione um ou mais)</label>
+                        <div class="grid grid-cols-2 gap-3 mt-2">
+                            ${setorTags.map(tag => `
+                                <label class="flex items-center space-x-2 cursor-pointer">
+                                    <input type="checkbox" value="${tag.value}" class="aviso-setor-checkbox-edit" ${aviso.setor.includes(tag.value) ? 'checked' : ''} />
+                                    <span class="px-3 py-1 rounded-full text-xs font-medium" style="background-color: ${tag.color}20; color: ${tag.color};">${tag.label}</span>
+                                </label>
+                            `).join('')}
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-end gap-2 pt-4">
+                        <button type="button" data-action="close-modal" class="secondary-btn">Cancelar</button>
+                        <button type="submit" class="primary-btn">Salvar Alterações</button>
+                    </div>
+                </form>
+            `;
+
+            document.getElementById('aviso-edit-form').onsubmit = (e) => updateAviso(e, avisoId);
+            document.getElementById('form-modal').classList.add('visible');
+        }
+
+        async function updateAviso(event, avisoId) {
+            event.preventDefault();
+            
+            const titulo = document.getElementById('aviso-titulo-edit').value;
+            const conteudo = document.getElementById('aviso-conteudo-edit').value;
+            const checkboxes = document.querySelectorAll('.aviso-setor-checkbox-edit:checked');
+            const setorSelecionado = Array.from(checkboxes).map(cb => cb.value);
+
+            if (!titulo || !conteudo || setorSelecionado.length === 0) {
+                showErrorMessage("Erro", "Todos os campos são obrigatórios e pelo menos um setor deve ser selecionado.");
+                return;
+            }
+
+            try {
+                const avisoIndex = avisos.findIndex(a => a.id === avisoId);
+                if (avisoIndex === -1) return;
+
+                const avisoAtualizado = {
+                    ...avisos[avisoIndex],
+                    titulo: titulo,
+                    conteudo: conteudo,
+                    setor: setorSelecionado,
+                    dataEdicao: new Date().toISOString()
+                };
+
+                if (!db) {
+                    // Development mode
+                    avisos[avisoIndex] = avisoAtualizado;
+                    localStorage.setItem('hub-avisos', JSON.stringify(avisos));
+                    console.log('Aviso updated locally (development mode)');
+                } else {
+                    // Production mode
+                    const avisoRef = doc(db, `artifacts/${appId}/public/data/avisos`, avisoId);
+                    await setDoc(avisoRef, avisoAtualizado);
+                    console.log('Aviso updated in Firebase');
+                }
+
+                document.getElementById('form-modal').classList.remove('visible');
+                renderMuralSection();
+                showSuccessMessage("Sucesso!", "Aviso atualizado com sucesso!");
+                playSuccessSound();
+            } catch (error) {
+                console.error("Error updating aviso:", error);
+                showErrorMessage("Erro", "Erro ao atualizar aviso: " + error.message);
+                playErrorSound();
+            }
+        }
+
+        async function deletarAviso(avisoId) {
+            if (!confirm("Tem certeza que deseja excluir este aviso? Esta ação não pode ser desfeita.")) {
+                return;
+            }
+
+            try {
+                if (!db) {
+                    // Development mode
+                    const index = avisos.findIndex(a => a.id === avisoId);
+                    if (index > -1) {
+                        avisos.splice(index, 1);
+                        localStorage.setItem('hub-avisos', JSON.stringify(avisos));
+                        console.log('Aviso deleted locally (development mode)');
+                    }
+                } else {
+                    // Production mode
+                    const avisoRef = doc(db, `artifacts/${appId}/public/data/avisos`, avisoId);
+                    await deleteDoc(avisoRef);
+                    console.log('Aviso deleted from Firebase');
+                }
+
+                renderMuralSection();
+                showSuccessMessage("Sucesso!", "Aviso excluído com sucesso!");
+            } catch (error) {
+                console.error("Error deleting aviso:", error);
+                showErrorMessage("Erro", "Erro ao excluir aviso: " + error.message);
+                playErrorSound();
+            }
+        }
+
+        // Make functions global
+        window.setMuralFilter = setMuralFilter;
+        window.openNovoAvisoModal = openNovoAvisoModal;
+        window.editarAviso = editarAviso;
+        window.deletarAviso = deletarAviso;
 
         // --- SUBTLE MOUSE CLICK SOUND SYSTEM ---
         let audioContext;
@@ -11209,7 +11617,7 @@
                 'inicio': ['admin', 'pedagogico', 'ap', 'financeiro', 'teacher', 'am'], // Dashboard - everyone
                 'alunos': ['admin', 'pedagogico', 'ap', 'financeiro', 'teacher', 'am'], // Students - everyone  
                 'turmas': ['admin', 'pedagogico', 'ap', 'teacher', 'am'], // Classes - no financeiro
-                'vips': ['admin', 'pedagogico', 'ap', 'am'], // VIPs - restricted (no teacher, no financeiro)
+                'vips': ['admin', 'pedagogico', 'ap', 'teacher', 'am'], // VIPs - accessible to teachers
                 'campanhas': ['admin', 'ap', 'am'], // Campaigns - marketing only
                 'grade': ['admin', 'pedagogico', 'ap', 'teacher', 'am'], // Schedule - no financeiro
                 'folha-pagamento': ['admin', 'financeiro'], // Payroll/Expenses - FINANCIAL ONLY
@@ -11217,14 +11625,15 @@
                 'dojo': ['admin', 'pedagogico', 'ap', 'teacher', 'am'], // Dojo - everyone except financeiro
                 'calendario-pedagogico': ['admin', 'pedagogico', 'ap', 'teacher', 'am'], // Pedagogical calendar
                 'calendario-marketing': ['admin', 'ap', 'am'], // Marketing calendar
-                'desafio-pedagogico': ['admin', 'pedagogico', 'ap', 'teacher', 'am'] // Pedagogical challenges
+                'desafio-pedagogico': ['admin', 'pedagogico', 'ap', 'teacher', 'am'], // Pedagogical challenges
+                'mural': ['admin', 'pedagogico', 'ap', 'financeiro', 'teacher', 'am'] // Mural - everyone can access
             };
             
             return pagePermissions[pageKey]?.includes(userRole) || false;
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            const pageRenderers = { 'inicio': renderInicioSection, 'alunos': renderAlunosSection, 'turmas': renderTurmasSection, 'vips': renderVipsSection, 'campanhas': renderCampanhasSection, 'tarefas': renderTarefasSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection, 'colaboradores': renderColaboradoresSection, 'dojo': renderDojoSection, 'calendario-pedagogico': renderCalendarioPedagogicoSection, 'calendario-marketing': renderCalendarioMarketingSection, 'desafio-pedagogico': renderDesafioPedagogicoSection };
+            const pageRenderers = { 'inicio': renderInicioSection, 'alunos': renderAlunosSection, 'turmas': renderTurmasSection, 'vips': renderVipsSection, 'campanhas': renderCampanhasSection, 'tarefas': renderTarefasSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection, 'colaboradores': renderColaboradoresSection, 'dojo': renderDojoSection, 'calendario-pedagogico': renderCalendarioPedagogicoSection, 'calendario-marketing': renderCalendarioMarketingSection, 'desafio-pedagogico': renderDesafioPedagogicoSection, 'mural': renderMuralSection };
 
             document.body.addEventListener('click', (event) => {
                 // Close modals when clicking overlay or close button
@@ -11437,13 +11846,13 @@
             document.getElementById('logout-button').addEventListener('click', handleLogout);
             document.getElementById('pending-logout').addEventListener('click', handleLogout);
             
-            // Always load dashboard on startup
+            // Always load dashboard on startup - FORCE INICIO SECTION
             window.navigationTimeout = setTimeout(() => {
-                const dashboardButton = document.querySelector('[data-target="inicio"]');
-                if (dashboardButton) {
-                    dashboardButton.click();
-                }
-            }, 100);
+                // Force dashboard render regardless of other listeners
+                renderInicioSection(); 
+                setActiveNavItem(document.querySelector('[data-target="inicio"]'));
+                console.log('Dashboard forced to load on startup');
+            }, 200);
             
             // Initialize click sound system
             initializeClickSound();
