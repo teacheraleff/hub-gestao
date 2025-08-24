@@ -505,7 +505,8 @@
             { value: 'comercial', label: 'Comercial', color: '#F59E0B' },
             { value: 'financeiro', label: 'Financeiro', color: '#EF4444' },
             { value: 'marketing', label: 'Marketing', color: '#8B5CF6' },
-            { value: 'administrativo', label: 'Administrativo', color: '#6B7280' }
+            { value: 'administrativo', label: 'Administrativo', color: '#6B7280' },
+            { value: 'geral', label: 'Geral', color: '#F1D24B' }
         ];
 
         // --- DEVELOPMENT MODE FUNCTIONS ---
@@ -557,9 +558,9 @@
                     },
                     {
                         id: 'aviso_demo_3',
-                        titulo: 'Atualização Administrativa - Horários de Funcionamento',
+                        titulo: 'Comunicado Geral - Horários de Funcionamento',
                         conteudo: 'Informamos que a partir da próxima semana, os horários de funcionamento serão estendidos. Novos horários: Segunda a Sexta: 7h às 22h, Sábados: 8h às 18h.',
-                        setor: ['administrativo'],
+                        setor: ['geral'],
                         autorId: 'demo-user',
                         autorNome: 'Admin SLAP',
                         dataPublicacao: new Date().toISOString(), // Today
@@ -11094,7 +11095,7 @@
                 { key: 'vips', label: 'VIPs', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20a6 6 0 0 0-12 0"/><circle cx="12" cy="10" r="4"/><circle cx="12" cy="12" r="10"/></svg>', roles: ['admin', 'pedagogico', 'ap', 'teacher', 'am'] },
                 { key: 'grade', label: 'Grade', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" x2="16" y1="2" y2="6"></line><line x1="8" x2="8" y1="2" y2="6"></line><line x1="3" x2="21" y1="10" y2="10"></line></svg>', roles: ['admin', 'pedagogico', 'ap', 'teacher', 'am'] },
                 { key: 'calendario-pedagogico', label: 'Calendário Pedagógico', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>', roles: ['admin', 'pedagogico', 'ap', 'teacher', 'am'] },
-                { key: 'calendario-marketing', label: 'Calendário Marketing', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>', roles: ['admin', 'ap', 'am'] },
+                { key: 'calendario-marketing', label: 'Calendário Marketing', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>', roles: ['admin', 'ap', 'am', 'teacher'] },
                 { key: 'desafio-pedagogico', label: 'Desafio Pedagógico', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>', roles: ['admin', 'pedagogico', 'ap', 'teacher', 'am'] },
                 { key: 'mural', label: 'Mural', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 3h16a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M8 7h8"/><path d="M8 11h8"/><path d="M8 15h5"/></svg>', roles: ['admin', 'pedagogico', 'ap', 'financeiro', 'teacher', 'am'] },
                 
@@ -11223,12 +11224,12 @@
 
         function getAllowedSectorsForRole(role) {
             const roleFilters = {
-                'am': ['marketing'],
-                'ap': ['teachers', 'pedagogico'],
-                'pedagogico': ['teachers', 'pedagogico'],
-                'financeiro': ['financeiro', 'administrativo'],
-                'admin': ['teachers', 'pedagogico', 'comercial', 'financeiro', 'marketing', 'administrativo'],
-                'teacher': ['teachers', 'pedagogico', 'comercial', 'financeiro', 'marketing', 'administrativo']
+                'am': ['marketing', 'geral'],
+                'ap': ['teachers', 'pedagogico', 'geral'],
+                'pedagogico': ['teachers', 'pedagogico', 'geral'],
+                'financeiro': ['financeiro', 'administrativo', 'geral'],
+                'admin': ['teachers', 'pedagogico', 'comercial', 'financeiro', 'marketing', 'administrativo', 'geral'],
+                'teacher': ['teachers', 'pedagogico', 'comercial', 'financeiro', 'marketing', 'administrativo', 'geral']
             };
             return roleFilters[role] || [];
         }
@@ -11455,6 +11456,7 @@
         window.openNovoAvisoModal = openNovoAvisoModal;
         window.editarAviso = editarAviso;
         window.deletarAviso = deletarAviso;
+        
 
         // --- SUBTLE MOUSE CLICK SOUND SYSTEM ---
         let audioContext;
@@ -11624,7 +11626,7 @@
                 'colaboradores': ['admin', 'ap'], // Collaborators - admin and AP only
                 'dojo': ['admin', 'pedagogico', 'ap', 'teacher', 'am'], // Dojo - everyone except financeiro
                 'calendario-pedagogico': ['admin', 'pedagogico', 'ap', 'teacher', 'am'], // Pedagogical calendar
-                'calendario-marketing': ['admin', 'ap', 'am'], // Marketing calendar
+                'calendario-marketing': ['admin', 'ap', 'am', 'teacher'], // Marketing calendar
                 'desafio-pedagogico': ['admin', 'pedagogico', 'ap', 'teacher', 'am'], // Pedagogical challenges
                 'mural': ['admin', 'pedagogico', 'ap', 'financeiro', 'teacher', 'am'] // Mural - everyone can access
             };
