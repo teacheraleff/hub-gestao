@@ -11130,10 +11130,18 @@
             document.getElementById('main-title').textContent = 'Mural de Avisos';
             document.getElementById('main-description').textContent = 'Quadro de avisos e comunicados para toda a equipe.';
             
+            console.log('=== RENDERIZANDO MURAL ===');
+            console.log('User role:', currentUserRole);
+            console.log('Total avisos no array:', avisos.length);
+            
             const canCreateNotice = currentUserRole === 'admin';
-            const filteredAvisos = getFilteredAvisos();
-            const visibleSectorTags = getVisibleSectorTags();
             const allowedSectors = getAllowedSectorsForRole(currentUserRole);
+            console.log('Setores permitidos para role:', allowedSectors);
+            
+            const filteredAvisos = getFilteredAvisos();
+            console.log('Avisos após filtro de role:', filteredAvisos.length);
+            
+            const visibleSectorTags = getVisibleSectorTags();
             
             // Calculate total count for "Todos" button based on role-filtered avisos
             const totalRoleFilteredAvisos = avisos.filter(aviso => 
@@ -11216,20 +11224,32 @@
         }
 
         function getFilteredAvisos() {
+            console.log('getFilteredAvisos() - Avisos totais:', avisos.length);
             let filteredAvisos = avisos;
             
             // Apply role-based filtering first
             const allowedSectors = getAllowedSectorsForRole(currentUserRole);
-            filteredAvisos = avisos.filter(aviso => 
-                aviso.setor.some(setor => allowedSectors.includes(setor))
-            );
+            console.log('getFilteredAvisos() - Setores permitidos:', allowedSectors);
+            
+            filteredAvisos = avisos.filter(aviso => {
+                const temSetorPermitido = aviso.setor.some(setor => allowedSectors.includes(setor));
+                console.log(`Aviso "${aviso.titulo}" - setores: ${aviso.setor.join(',')} - permitido: ${temSetorPermitido}`);
+                return temSetorPermitido;
+            });
+            
+            console.log('getFilteredAvisos() - Avisos após filtro de role:', filteredAvisos.length);
             
             // Then apply user's selected filter
             if (muralFilter === 'todos') {
+                console.log('getFilteredAvisos() - Filtro "todos" aplicado');
                 return filteredAvisos.sort((a, b) => new Date(b.dataPublicacao) - new Date(a.dataPublicacao));
             }
-            return filteredAvisos.filter(aviso => aviso.setor.includes(muralFilter))
+            
+            console.log('getFilteredAvisos() - Filtro específico aplicado:', muralFilter);
+            const finalFiltered = filteredAvisos.filter(aviso => aviso.setor.includes(muralFilter))
                                  .sort((a, b) => new Date(b.dataPublicacao) - new Date(a.dataPublicacao));
+            console.log('getFilteredAvisos() - Avisos finais:', finalFiltered.length);
+            return finalFiltered;
         }
 
         function getAllowedSectorsForRole(role) {
@@ -11301,6 +11321,12 @@
             const checkboxes = document.querySelectorAll('.aviso-setor-checkbox:checked');
             const setorSelecionado = Array.from(checkboxes).map(cb => cb.value);
 
+            console.log('=== SALVANDO NOVO AVISO ===');
+            console.log('Título:', titulo);
+            console.log('Conteúdo:', conteudo);
+            console.log('Setores selecionados:', setorSelecionado);
+            console.log('User role:', currentUserRole);
+
             if (!titulo || !conteudo || setorSelecionado.length === 0) {
                 showErrorMessage("Erro", "Todos os campos são obrigatórios e pelo menos um setor deve ser selecionado.");
                 return;
@@ -11317,12 +11343,15 @@
                 dataCriacao: new Date().toISOString()
             };
 
+            console.log('Novo aviso criado:', novoAviso);
+
             try {
                 if (!db) {
                     // Development mode
                     avisos.unshift(novoAviso);
                     localStorage.setItem('hub-avisos', JSON.stringify(avisos));
                     console.log('Aviso saved locally (development mode)');
+                    console.log('Total avisos após salvar:', avisos.length);
                 } else {
                     // Production mode
                     const avisoRef = doc(db, `artifacts/${appId}/public/data/avisos`, novoAviso.id);
