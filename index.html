@@ -10850,16 +10850,10 @@
             document.getElementById('main-title').textContent = 'Mural de Avisos';
             document.getElementById('main-description').textContent = 'Quadro de avisos e comunicados para toda a equipe.';
             
-            console.log('renderMuralSection - Total avisos:', avisos.length);
-            console.log('renderMuralSection - Current user role:', currentUserRole);
-            
             const canCreateNotice = currentUserRole === 'admin';
             const filteredAvisos = getFilteredAvisos();
             const visibleSectorTags = getVisibleSectorTags();
             const allowedSectors = getAllowedSectorsForRole(currentUserRole);
-            
-            console.log('renderMuralSection - Allowed sectors:', allowedSectors);
-            console.log('renderMuralSection - Filtered avisos:', filteredAvisos.length);
             
             // Calculate total count for "Todos" button based on role-filtered avisos
             const totalRoleFilteredAvisos = avisos.filter(aviso => 
@@ -10944,30 +10938,19 @@
         function getFilteredAvisos() {
             let filteredAvisos = avisos;
             
-            console.log('getFilteredAvisos - Total avisos:', avisos.length);
-            console.log('getFilteredAvisos - Current user role:', currentUserRole);
-            console.log('getFilteredAvisos - Mural filter:', muralFilter);
-            
             // Apply role-based filtering first
             const allowedSectors = getAllowedSectorsForRole(currentUserRole);
-            console.log('getFilteredAvisos - Allowed sectors:', allowedSectors);
             
             filteredAvisos = avisos.filter(aviso => 
                 aviso.setor.some(setor => allowedSectors.includes(setor))
             );
             
-            console.log('getFilteredAvisos - After role filtering:', filteredAvisos.length);
-            
             // Then apply user's selected filter
             if (muralFilter === 'todos') {
-                const result = filteredAvisos.sort((a, b) => new Date(b.dataPublicacao) - new Date(a.dataPublicacao));
-                console.log('getFilteredAvisos - Final result (todos):', result.length);
-                return result;
+                return filteredAvisos.sort((a, b) => new Date(b.dataPublicacao) - new Date(a.dataPublicacao));
             }
-            const result = filteredAvisos.filter(aviso => aviso.setor.includes(muralFilter))
+            return filteredAvisos.filter(aviso => aviso.setor.includes(muralFilter))
                                  .sort((a, b) => new Date(b.dataPublicacao) - new Date(a.dataPublicacao));
-            console.log('getFilteredAvisos - Final result (specific filter):', result.length);
-            return result;
         }
 
         function getAllowedSectorsForRole(role) {
@@ -10993,12 +10976,11 @@
         }
 
         function openNovoAvisoModal() {
-            console.log('openNovoAvisoModal called');
             clearModalHeaderButtons();
             document.getElementById('form-modal-title').textContent = "Novo Aviso";
             
             document.getElementById('form-modal-content-area').innerHTML = `
-                <form id="aviso-form" class="space-y-4">
+                <div class="space-y-4">
                     <div>
                         <label class="font-medium text-sm">Título do Aviso</label>
                         <input type="text" id="aviso-titulo" class="form-input" required placeholder="Ex: Reunião de equipe, Atualização importante...">
@@ -11022,28 +11004,20 @@
                     </div>
                     
                     <div class="flex justify-end gap-2 pt-4">
-                        <button type="button" data-action="close-modal" class="secondary-btn">Cancelar</button>
-                        <button type="button" data-action="salvar-aviso" class="primary-btn">Publicar Aviso</button>
+                        <button type="button" onclick="closeFormModal()" class="secondary-btn">Cancelar</button>
+                        <button type="button" onclick="salvarNovoAviso()" class="primary-btn">Publicar Aviso</button>
                     </div>
-                </form>
+                </div>
             `;
 
-            // Remove form submit handler and use direct button click
-            console.log('Modal form created without submit handler');
             document.getElementById('form-modal').classList.add('visible');
-            console.log('Modal opened and form event attached');
         }
 
-        async function salvarAviso(event) {
-            if (event) event.preventDefault();
-            console.log('salvarAviso function called');
-            
+        async function salvarNovoAviso() {
             const titulo = document.getElementById('aviso-titulo').value;
             const conteudo = document.getElementById('aviso-conteudo').value;
             const checkboxes = document.querySelectorAll('.aviso-setor-checkbox:checked');
             const setorSelecionado = Array.from(checkboxes).map(cb => cb.value);
-
-            console.log('salvarAviso - Setores selecionados:', setorSelecionado);
 
             if (!titulo || !conteudo || setorSelecionado.length === 0) {
                 showErrorMessage("Erro", "Todos os campos são obrigatórios e pelo menos um setor deve ser selecionado.");
@@ -11061,19 +11035,10 @@
                 dataCriacao: new Date().toISOString()
             };
 
-            console.log('salvarAviso - Novo aviso:', novoAviso);
-
             try {
-                if (!db) {
-                    // Development mode
-                    avisos.unshift(novoAviso);
-                    localStorage.setItem('hub-avisos', JSON.stringify(avisos));
-                    console.log('salvarAviso - Aviso salvo no localStorage. Total avisos:', avisos.length);
-                } else {
-                    // Production mode
-                    const avisoRef = doc(db, `artifacts/${appId}/public/data/avisos`, novoAviso.id);
-                    await setDoc(avisoRef, novoAviso);
-                }
+                // Development mode
+                avisos.unshift(novoAviso);
+                localStorage.setItem('hub-avisos', JSON.stringify(avisos));
 
                 document.getElementById('form-modal').classList.remove('visible');
                 renderMuralSection();
@@ -11211,7 +11176,7 @@
         window.openNovoAvisoModal = openNovoAvisoModal;
         window.editarAviso = editarAviso;
         window.deletarAviso = deletarAviso;
-        window.salvarAviso = salvarAviso;
+        window.salvarNovoAviso = salvarNovoAviso;
         
 
         // --- SUBTLE MOUSE CLICK SOUND SYSTEM ---
@@ -11579,7 +11544,6 @@
                         'delete-vip': () => deleteVip(id),
                         'delete-all-vips': deleteAllVips,
                         'open-novo-aviso': () => openNovoAvisoModal(),
-                        'salvar-aviso': () => salvarAviso(),
 
                         'debug-sync-status': debugSyncStatus,
                     };
