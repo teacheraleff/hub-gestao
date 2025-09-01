@@ -528,56 +528,35 @@
             renderMenu();
         }
 
-        function loadDemoMuralData() {
-            // Load mural avisos from localStorage or create demo data
-            const savedAvisos = localStorage.getItem('hub-avisos');
-            if (savedAvisos) {
-                avisos = JSON.parse(savedAvisos);
-            } else {
-                // Create demo avisos
-                avisos = [
-                    {
-                        id: 'aviso_demo_1',
-                        titulo: 'Reunião Pedagógica - Janeiro 2025',
-                        conteudo: 'Reunião geral da equipe pedagógica para alinhamento das estratégias do mês. Todos os professores e coordenadores devem comparecer.',
-                        setor: ['pedagogico', 'teachers'],
-                        autorId: 'demo-user',
-                        autorNome: 'Admin SLAP',
-                        dataPublicacao: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
-                        dataCriacao: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
-                    },
-                    {
-                        id: 'aviso_demo_2',
-                        titulo: 'Nova Campanha de Marketing',
-                        conteudo: 'Lançamento da nova campanha de marketing para captação de alunos. Detalhes sobre as estratégias e metas serão discutidos na próxima reunião.',
-                        setor: ['marketing', 'comercial'],
-                        autorId: 'demo-user',
-                        autorNome: 'Admin SLAP',
-                        dataPublicacao: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
-                        dataCriacao: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString()
-                    },
-                    {
-                        id: 'aviso_demo_3',
-                        titulo: 'Comunicado Geral - Horários de Funcionamento',
-                        conteudo: 'Informamos que a partir da próxima semana, os horários de funcionamento serão estendidos. Novos horários: Segunda a Sexta: 7h às 22h, Sábados: 8h às 18h.',
-                        setor: ['geral'],
-                        autorId: 'demo-user',
-                        autorNome: 'Admin SLAP',
-                        dataPublicacao: new Date().toISOString(), // Today
-                        dataCriacao: new Date().toISOString()
-                    },
-                    {
-                        id: 'aviso_demo_4',
-                        titulo: 'Comunicado para Professores - Material Didático',
-                        conteudo: 'Novos materiais didáticos estão disponíveis na sala dos professores. Incluem: livros atualizados, recursos digitais e guias metodológicos. Favor retirar até sexta-feira.',
-                        setor: ['teachers'],
-                        autorId: 'demo-user',
-                        autorNome: 'Coordenação Acadêmica',
-                        dataPublicacao: new Date().toISOString(), // Today
-                        dataCriacao: new Date().toISOString()
-                    }
-                ];
-                localStorage.setItem('hub-avisos', JSON.stringify(avisos));
+        async function loadDemoMuralData() {
+            // Load mural avisos from server API
+            await loadAvisos();
+        }
+
+        // Load avisos from server API
+        async function loadAvisos() {
+            try {
+                const response = await fetch('/api/avisos');
+                if (response.ok) {
+                    const data = await response.json();
+                    // Convert database fields to expected format
+                    avisos = data.map(aviso => ({
+                        id: aviso.id,
+                        titulo: aviso.titulo,
+                        conteudo: aviso.conteudo,
+                        setor: Array.isArray(aviso.setor) ? aviso.setor : JSON.parse(aviso.setor),
+                        autorId: aviso.autor_id,
+                        autorNome: aviso.autor_nome,
+                        dataPublicacao: aviso.data_publicacao,
+                        dataCriacao: aviso.data_criacao,
+                        dataEdicao: aviso.data_edicao
+                    }));
+                } else {
+                    throw new Error('Failed to load avisos');
+                }
+            } catch (error) {
+                console.error("Error loading avisos:", error);
+                avisos = [];
             }
         }
 
@@ -11142,28 +11121,31 @@
         }
 
         async function deletarAviso(avisoId) {
+            console.log('deletarAviso called with ID:', avisoId);
+            console.log('Total avisos before deletion:', avisos.length);
+            
             if (!confirm("Tem certeza que deseja excluir este aviso? Esta ação não pode ser desfeita.")) {
                 return;
             }
 
             try {
-                if (!db) {
-                    // Development mode
-                    const index = avisos.findIndex(a => a.id === avisoId);
-                    if (index > -1) {
-                        avisos.splice(index, 1);
-                        localStorage.setItem('hub-avisos', JSON.stringify(avisos));
-                        console.log('Aviso deleted locally (development mode)');
-                    }
+                // Development mode - always use localStorage
+                const index = avisos.findIndex(a => a.id === avisoId);
+                console.log('Found aviso at index:', index);
+                
+                if (index > -1) {
+                    avisos.splice(index, 1);
+                    localStorage.setItem('hub-avisos', JSON.stringify(avisos));
+                    console.log('Aviso deleted. Total avisos after deletion:', avisos.length);
                 } else {
-                    // Production mode
-                    const avisoRef = doc(db, `artifacts/${appId}/public/data/avisos`, avisoId);
-                    await deleteDoc(avisoRef);
-                    console.log('Aviso deleted from Firebase');
+                    console.log('Aviso not found with ID:', avisoId);
+                    showErrorMessage("Erro", "Aviso não encontrado.");
+                    return;
                 }
 
                 renderMuralSection();
                 showSuccessMessage("Sucesso!", "Aviso excluído com sucesso!");
+                playSuccessSound();
             } catch (error) {
                 console.error("Error deleting aviso:", error);
                 showErrorMessage("Erro", "Erro ao excluir aviso: " + error.message);
