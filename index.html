@@ -10880,7 +10880,7 @@
                             `).join('')}
                         </div>
                         ${canCreateNotice ? `
-                            <button onclick="openNovoAvisoModal()" class="primary-btn">
+                            <button class="primary-btn" data-action="open-novo-aviso">
                                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
                                 </svg>
@@ -11023,18 +11023,20 @@
                     
                     <div class="flex justify-end gap-2 pt-4">
                         <button type="button" data-action="close-modal" class="secondary-btn">Cancelar</button>
-                        <button type="submit" class="primary-btn">Publicar Aviso</button>
+                        <button type="button" onclick="salvarAviso(event)" class="primary-btn">Publicar Aviso</button>
                     </div>
                 </form>
             `;
 
-            document.getElementById('aviso-form').onsubmit = salvarAviso;
+            // Remove form submit handler and use direct button click
+            console.log('Modal form created without submit handler');
             document.getElementById('form-modal').classList.add('visible');
             console.log('Modal opened and form event attached');
         }
 
         async function salvarAviso(event) {
-            event.preventDefault();
+            if (event) event.preventDefault();
+            console.log('salvarAviso function called');
             
             const titulo = document.getElementById('aviso-titulo').value;
             const conteudo = document.getElementById('aviso-conteudo').value;
@@ -11576,6 +11578,7 @@
                         },
                         'delete-vip': () => deleteVip(id),
                         'delete-all-vips': deleteAllVips,
+                        'open-novo-aviso': () => openNovoAvisoModal(),
 
                         'debug-sync-status': debugSyncStatus,
                     };
