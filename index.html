@@ -1322,7 +1322,6 @@
 
             const totalCount = students.length;
             const activeCount = students.filter(s => s.status === 'Ativo').length;
-            const cancelledCount = students.filter(s => s.status === 'Cancelado').length;
             const pendingCount = students.filter(s => s.status === 'Pendente').length;
             const totalRevenue = students.reduce((sum, student) => {
                 return sum + parseFloat(student.amountReceived || student.amountPaid || 0);
@@ -1330,7 +1329,7 @@
 
             contentArea.innerHTML = `
                 <section id="alunos-section" class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                         <div class="base-card bg-gradient-to-r from-stone-50 to-stone-100 border-stone-200">
                             <div class="flex items-start justify-between">
                                 <div class="flex-1 min-w-0 pr-4">
@@ -1376,21 +1375,6 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="base-card bg-gradient-to-r from-red-50 to-red-100 border-red-200">
-                            <div class="flex items-start justify-between">
-                                <div class="flex-1 min-w-0 pr-4">
-                                    <p class="text-sm font-medium text-red-600">Alunos Cancelados</p>
-                                    <p class="text-2xl font-bold text-red-700 mt-1">${cancelledCount}</p>
-                                </div>
-                                <div class="flex-shrink-0">
-                                    <div class="p-2 bg-red-200 rounded-full">
-                                        <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                        </svg>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
                         ${canViewFinancialInfo ? `
                         <div class="base-card bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200">
                             <div class="flex items-start justify-between">
@@ -1419,7 +1403,6 @@
                             <button class="secondary-btn filter-btn active" data-filter="todos">Todos</button>
                             <button class="secondary-btn filter-btn" data-filter="ativo">Ativos</button>
                             <button class="secondary-btn filter-btn" data-filter="pendente">Pendentes</button>
-                            <button class="secondary-btn filter-btn" data-filter="cancelado">Cancelados</button>
                         </div>
                         <div class="flex gap-2">
                             <button class="secondary-btn w-auto" data-action="export-alunos-doc">Exportar Documento</button>
@@ -2952,7 +2935,6 @@
                                 <tr>
                                     <th>Pos.</th>
                                     <th>Competidor</th>
-                                    <th>Superpower</th>
                                     <th class="text-right">Pontos</th>
                                     ${canEdit ? '<th class="text-center">Ações</th>' : ''}
                                 </tr>
@@ -2986,7 +2968,6 @@
                                             ${medal}
                                         </td>
                                         <td>
-                                            ${c.superpower ? `<span class="inline-block px-2 py-1 bg-purple-100 text-purple-700 text-xs font-medium rounded-full border border-purple-200">${c.superpower}</span>` : '<span class="text-stone-400 text-sm">-</span>'}
                                         </td>
                                         <td class="text-right font-mono font-semibold">${c.points || 0}</td>
                                         ${canEdit ? `
@@ -5260,7 +5241,6 @@
                     <input type="hidden" id="dojo-id" value="${competitorId || ''}">
                     <div><label class="font-medium text-sm">Nome do Competidor</label><input type="text" id="dojo-name" class="form-input" required value="${competitor?.name || ''}"></div>
                     <div><label class="font-medium text-sm">URL da Foto</label><input type="url" id="dojo-photo" class="form-input" required value="${competitor?.photo || ''}"></div>
-                    <div><label class="font-medium text-sm">Superpower (tag roxa divertida)</label><input type="text" id="dojo-superpower" class="form-input" placeholder="Ex: Master do Coffee, Ninja das Planilhas..." value="${competitor?.superpower || ''}"></div>
                     <div><label class="font-medium text-sm">Pontos</label><input type="number" id="dojo-points" class="form-input" required value="${competitor?.points || 0}"></div>
                     <div class="text-right"><button type="submit" class="primary-btn w-auto">Salvar</button></div>
                 </form>
@@ -5275,7 +5255,6 @@
             const data = {
                 name: document.getElementById('dojo-name').value,
                 photo: document.getElementById('dojo-photo').value,
-                superpower: document.getElementById('dojo-superpower').value,
                 points: Number(document.getElementById('dojo-points').value)
             };
             if (!data.name || !data.photo) { showErrorMessage("Erro", "Nome e foto são obrigatórios."); return; }
@@ -8892,7 +8871,7 @@
                     <div class="header-info">
                         <p>Data de Exportação: ${formatDateBR(new Date())}</p>
                         <p>Total de Alunos: ${allStudents.length}</p>
-                        <p>Ativos: ${allStudents.filter(s => s.status === 'Ativo').length} | Cancelados: ${allStudents.filter(s => s.status === 'Cancelado').length} | Outros: ${allStudents.filter(s => s.status !== 'Ativo' && s.status !== 'Cancelado').length}</p>
+                        <p>Ativos: ${allStudents.filter(s => s.status === 'Ativo').length} | Outros: ${allStudents.filter(s => s.status !== 'Ativo').length}</p>
                     </div>
                     <table>
                         <thead>
@@ -10871,10 +10850,16 @@
             document.getElementById('main-title').textContent = 'Mural de Avisos';
             document.getElementById('main-description').textContent = 'Quadro de avisos e comunicados para toda a equipe.';
             
+            console.log('renderMuralSection - Total avisos:', avisos.length);
+            console.log('renderMuralSection - Current user role:', currentUserRole);
+            
             const canCreateNotice = currentUserRole === 'admin';
             const filteredAvisos = getFilteredAvisos();
             const visibleSectorTags = getVisibleSectorTags();
             const allowedSectors = getAllowedSectorsForRole(currentUserRole);
+            
+            console.log('renderMuralSection - Allowed sectors:', allowedSectors);
+            console.log('renderMuralSection - Filtered avisos:', filteredAvisos.length);
             
             // Calculate total count for "Todos" button based on role-filtered avisos
             const totalRoleFilteredAvisos = avisos.filter(aviso => 
@@ -10959,18 +10944,30 @@
         function getFilteredAvisos() {
             let filteredAvisos = avisos;
             
+            console.log('getFilteredAvisos - Total avisos:', avisos.length);
+            console.log('getFilteredAvisos - Current user role:', currentUserRole);
+            console.log('getFilteredAvisos - Mural filter:', muralFilter);
+            
             // Apply role-based filtering first
             const allowedSectors = getAllowedSectorsForRole(currentUserRole);
+            console.log('getFilteredAvisos - Allowed sectors:', allowedSectors);
+            
             filteredAvisos = avisos.filter(aviso => 
                 aviso.setor.some(setor => allowedSectors.includes(setor))
             );
             
+            console.log('getFilteredAvisos - After role filtering:', filteredAvisos.length);
+            
             // Then apply user's selected filter
             if (muralFilter === 'todos') {
-                return filteredAvisos.sort((a, b) => new Date(b.dataPublicacao) - new Date(a.dataPublicacao));
+                const result = filteredAvisos.sort((a, b) => new Date(b.dataPublicacao) - new Date(a.dataPublicacao));
+                console.log('getFilteredAvisos - Final result (todos):', result.length);
+                return result;
             }
-            return filteredAvisos.filter(aviso => aviso.setor.includes(muralFilter))
+            const result = filteredAvisos.filter(aviso => aviso.setor.includes(muralFilter))
                                  .sort((a, b) => new Date(b.dataPublicacao) - new Date(a.dataPublicacao));
+            console.log('getFilteredAvisos - Final result (specific filter):', result.length);
+            return result;
         }
 
         function getAllowedSectorsForRole(role) {
@@ -11042,6 +11039,8 @@
             const checkboxes = document.querySelectorAll('.aviso-setor-checkbox:checked');
             const setorSelecionado = Array.from(checkboxes).map(cb => cb.value);
 
+            console.log('salvarAviso - Setores selecionados:', setorSelecionado);
+
             if (!titulo || !conteudo || setorSelecionado.length === 0) {
                 showErrorMessage("Erro", "Todos os campos são obrigatórios e pelo menos um setor deve ser selecionado.");
                 return;
@@ -11058,11 +11057,14 @@
                 dataCriacao: new Date().toISOString()
             };
 
+            console.log('salvarAviso - Novo aviso:', novoAviso);
+
             try {
                 if (!db) {
                     // Development mode
                     avisos.unshift(novoAviso);
                     localStorage.setItem('hub-avisos', JSON.stringify(avisos));
+                    console.log('salvarAviso - Aviso salvo no localStorage. Total avisos:', avisos.length);
                 } else {
                     // Production mode
                     const avisoRef = doc(db, `artifacts/${appId}/public/data/avisos`, novoAviso.id);
