@@ -11023,7 +11023,7 @@
                     
                     <div class="flex justify-end gap-2 pt-4">
                         <button type="button" data-action="close-modal" class="secondary-btn">Cancelar</button>
-                        <button type="button" onclick="salvarAviso(event)" class="primary-btn">Publicar Aviso</button>
+                        <button type="button" data-action="salvar-aviso" class="primary-btn">Publicar Aviso</button>
                     </div>
                 </form>
             `;
@@ -11579,6 +11579,7 @@
                         'delete-vip': () => deleteVip(id),
                         'delete-all-vips': deleteAllVips,
                         'open-novo-aviso': () => openNovoAvisoModal(),
+                        'salvar-aviso': () => salvarAviso(),
 
                         'debug-sync-status': debugSyncStatus,
                     };
