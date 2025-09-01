@@ -10993,6 +10993,7 @@
         }
 
         function openNovoAvisoModal() {
+            console.log('openNovoAvisoModal called');
             clearModalHeaderButtons();
             document.getElementById('form-modal-title').textContent = "Novo Aviso";
             
@@ -11029,6 +11030,7 @@
 
             document.getElementById('aviso-form').onsubmit = salvarAviso;
             document.getElementById('form-modal').classList.add('visible');
+            console.log('Modal opened and form event attached');
         }
 
         async function salvarAviso(event) {
@@ -11207,6 +11209,7 @@
         window.openNovoAvisoModal = openNovoAvisoModal;
         window.editarAviso = editarAviso;
         window.deletarAviso = deletarAviso;
+        window.salvarAviso = salvarAviso;
         
 
         // --- SUBTLE MOUSE CLICK SOUND SYSTEM ---
