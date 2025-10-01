@@ -783,66 +783,46 @@
                         canViewFinancialInfo ? 'grid-cols-2 md:grid-cols-4' : 'grid-cols-2 md:grid-cols-3'
                     } gap-4">
                         ${!isTeacher ? `
-                        <div class="base-card bg-gradient-to-r from-stone-50 to-stone-100 border-stone-200">
-                            <div class="flex items-start justify-between">
-                                <div class="flex-1 min-w-0 pr-4">
-                                    <p class="text-sm font-medium text-stone-600">Total de Alunos</p>
-                                    <p class="text-2xl font-bold text-stone-700 mt-1">${totalStudents}</p>
-                                </div>
-                                <div class="flex-shrink-0">
-                                    <div class="p-2 bg-stone-200 rounded-full">
-                                        <svg class="w-5 h-5 text-stone-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                                        </svg>
-                                    </div>
-                                </div>
+                        <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-6 rounded-lg border border-stone-200">
+                            <div class="flex items-center justify-between mb-2">
+                                <h3 class="text-sm font-medium text-stone-700 uppercase tracking-wide">Total de Alunos</h3>
+                                <svg class="w-8 h-8 text-stone-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                                </svg>
                             </div>
+                            <p class="text-4xl font-bold text-stone-800">${totalStudents}</p>
+                            <p class="text-xs text-stone-600 mt-1">Total de alunos cadastrados</p>
                         </div>` : ''}
-                        <div class="base-card bg-gradient-to-r from-green-50 to-green-100 border-green-200">
-                            <div class="flex items-start justify-between">
-                                <div class="flex-1 min-w-0 pr-4">
-                                    <p class="text-sm font-medium text-green-600">Alunos Ativos</p>
-                                    <p class="text-2xl font-bold text-green-700 mt-1">${activeStudents}</p>
-                                </div>
-                                <div class="flex-shrink-0">
-                                    <div class="p-2 bg-green-200 rounded-full">
-                                        <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                        </svg>
-                                    </div>
-                                </div>
+                        <div class="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-lg border border-green-200">
+                            <div class="flex items-center justify-between mb-2">
+                                <h3 class="text-sm font-medium text-green-700 uppercase tracking-wide">Alunos Ativos</h3>
+                                <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
                             </div>
+                            <p class="text-4xl font-bold text-stone-800">${activeStudents}</p>
+                            <p class="text-xs text-stone-600 mt-1">Alunos com status ativo</p>
                         </div>
-                        <div class="base-card bg-gradient-to-r from-purple-50 to-purple-100 border-purple-200">
-                            <div class="flex items-start justify-between">
-                                <div class="flex-1 min-w-0 pr-4">
-                                    <p class="text-sm font-medium text-purple-600">Turmas</p>
-                                    <p class="text-2xl font-bold text-purple-700 mt-1">${totalTurmas}</p>
-                                </div>
-                                <div class="flex-shrink-0">
-                                    <div class="p-2 bg-purple-200 rounded-full">
-                                        <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
-                                        </svg>
-                                    </div>
-                                </div>
+                        <div class="bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-lg border border-purple-200">
+                            <div class="flex items-center justify-between mb-2">
+                                <h3 class="text-sm font-medium text-purple-700 uppercase tracking-wide">Turmas</h3>
+                                <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                                </svg>
                             </div>
+                            <p class="text-4xl font-bold text-stone-800">${totalTurmas}</p>
+                            <p class="text-xs text-stone-600 mt-1">Turmas cadastradas</p>
                         </div>
                         ${canViewFinancialInfo ? `
-                        <div class="base-card bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200">
-                            <div class="flex items-start justify-between">
-                                <div class="flex-1 min-w-0 pr-4">
-                                    <p class="text-sm font-medium text-blue-600">Receita Total</p>
-                                    <p class="text-2xl font-bold text-blue-700 mt-1">${formatCurrencyBR(totalRevenue)}</p>
-                                </div>
-                                <div class="flex-shrink-0">
-                                    <div class="p-2 bg-blue-200 rounded-full">
-                                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
-                                        </svg>
-                                    </div>
-                                </div>
+                        <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-lg border border-blue-200">
+                            <div class="flex items-center justify-between mb-2">
+                                <h3 class="text-sm font-medium text-blue-700 uppercase tracking-wide">Receita Total</h3>
+                                <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                                </svg>
                             </div>
+                            <p class="text-4xl font-bold text-stone-800">${formatCurrencyBR(totalRevenue)}</p>
+                            <p class="text-xs text-stone-600 mt-1">Receita acumulada</p>
                         </div>
                         ` : ''}
                     </div>
@@ -1740,28 +1720,37 @@
                 // Get status tag for contract expiration/ending
                 const statusTag = getVipStatusTag(vipRecord);
                 
+                // Check if VIP is finalized
+                const isFinalizado = vipRecord?.finalizado === true;
+                const cardBg = isFinalizado ? 'bg-stone-100' : 'bg-white';
+                const opacity = isFinalizado ? 'opacity-75' : '';
+                const textColor = isFinalizado ? 'text-stone-600' : 'text-stone-800';
+                const textColorLight = isFinalizado ? 'text-stone-500' : 'text-stone-600';
+                const borderColor = isFinalizado ? 'border-stone-200' : 'border-stone-100';
+                
                 return `
-                <div class="base-card flex flex-col" id="vip-card-${student.id}">
+                <div class="base-card flex flex-col ${cardBg} ${opacity} border ${isFinalizado ? 'border-stone-300' : ''}" id="vip-card-${student.id}">
                     <div class="flex-1">
-                        <div class="mb-2">
-                            <h3 class="text-xl font-bold text-stone-800">${student.name}</h3>
+                        <div class="mb-2 flex justify-between items-start">
+                            <h3 class="text-xl font-bold ${textColor}">${student.name}</h3>
+                            ${isFinalizado ? `<span class="px-2 py-1 text-xs font-semibold bg-stone-300 text-stone-700 rounded">FINALIZADO</span>` : ''}
                         </div>
                         <div class="card-content">
-                            <p class="text-sm text-stone-600 mb-2"><strong>Status:</strong> <span class="status-tag status-${(student.status || 'pendente').toLowerCase()}">${student.status || 'Pendente'}</span></p>
-                            ${vipRecord ? `<p class="text-sm text-stone-500 mb-2">Professor: ${teacher?.name || 'N/A'}</p>` : ''}
-                            ${vipRecord ? `<p class="text-sm text-stone-600"><strong>Nível:</strong> ${vipRecord.level || 'N/A'}</p>` : ''}
-                            ${vipRecord && vipRecord.endDate ? `<p class="text-sm text-stone-600"><strong>Finaliza em:</strong> ${formatDateBR(vipRecord.endDate)}</p>` : ''}
-                            ${student.indicacao ? `<p class="text-sm text-stone-600"><strong>Indicação:</strong> ${student.indicacao}</p>` : ''}
+                            <p class="text-sm ${textColorLight} mb-2"><strong>Status:</strong> <span class="status-tag" style="background-color: ${isFinalizado ? '#D1D5DB' : ''}; color: ${isFinalizado ? '#4B5563' : ''};">${student.status || 'Pendente'}</span></p>
+                            ${vipRecord ? `<p class="text-sm ${textColorLight} mb-2">Professor: ${teacher?.name || 'N/A'}</p>` : ''}
+                            ${vipRecord ? `<p class="text-sm ${textColorLight}"><strong>Nível:</strong> ${vipRecord.level || 'N/A'}</p>` : ''}
+                            ${vipRecord && vipRecord.endDate ? `<p class="text-sm ${textColorLight}"><strong>Finaliza em:</strong> ${formatDateBR(vipRecord.endDate)}</p>` : ''}
+                            ${student.indicacao ? `<p class="text-sm ${textColorLight}"><strong>Indicação:</strong> ${student.indicacao}</p>` : ''}
                             ${vipRecord && vipRecord.observacoes ? `
-                                <div class="mt-3 pt-2 border-t border-stone-100">
-                                    <p class="text-sm text-stone-600"><strong>Observações:</strong></p>
+                                <div class="mt-3 pt-2 border-t ${borderColor}">
+                                    <p class="text-sm ${textColorLight}"><strong>Observações:</strong></p>
                                     <p class="text-sm text-stone-500 mt-1 italic">${vipRecord.observacoes}</p>
                                 </div>
                             ` : ''}
-                            ${statusTag}
+                            ${!isFinalizado ? statusTag : ''}
                         </div>
                     </div>
-                    <div class="mt-auto pt-4 border-t border-stone-100 flex gap-2">
+                    <div class="mt-auto pt-4 border-t ${borderColor} flex gap-2">
                         ${vipRecord ? `
                             <button class="primary-btn !text-sm flex-1 flex items-center justify-center" data-action="open-vip-pef" data-id="${vipRecord.id}">PEF</button>
                             <button class="secondary-btn !text-sm flex-1 flex items-center justify-center" data-action="open-vip-notas" data-id="${vipRecord.id}">Notas</button>
@@ -1806,28 +1795,19 @@
                 return `
                 <tr id="student-row-${student.id}" class="cursor-pointer">
                     <td class="font-medium" data-action="view-aluno" data-id="${student.id}">
-                        <div class="flex items-center justify-between">
+                        <div class="flex items-center">
                             <div class="flex flex-col flex-1">
                                 <div>${student.name}</div>
-                                <div class="mt-1 row-content">
+                                <div class="mt-1">
                                     <span class="status-tag status-${(student.modalidade || 'turma').toLowerCase()} text-xs">${student.modalidade || 'TURMA'}</span>
                                     ${student.indicacao ? `<span class="ml-2 text-xs text-stone-500">• ${student.indicacao}</span>` : ''}
                                 </div>
                             </div>
-                            <button onclick="event.stopPropagation(); toggleRowVisibility('student-row-${student.id}')" class="text-stone-400 hover:text-stone-600 transition-colors p-1 ml-2" title="Ocultar/Mostrar informações">
-                                <svg class="w-3.5 h-3.5 eye-icon-open" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                                </svg>
-                                <svg class="w-3.5 h-3.5 eye-icon-closed hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path>
-                                </svg>
-                            </button>
                         </div>
                     </td>
-                    <td class="row-content" data-action="view-aluno" data-id="${student.id}"><span class="status-tag status-${(student.status || 'pendente').toLowerCase()}">${student.status || 'Pendente'}</span></td>
-                    ${canViewFinancialInfo ? `<td class="font-mono row-content" data-action="view-aluno" data-id="${student.id}">R$ ${parseFloat(student.amountPaid || 0).toFixed(2)}</td>` : ''}
-                    ${canViewFinancialInfo ? `<td class="font-mono row-content" data-action="view-aluno" data-id="${student.id}">R$ ${parseFloat(student.amountReceived || student.amountPaid || 0).toFixed(2)}</td>` : `<td class="row-content" data-action="view-aluno" data-id="${student.id}">${student.responsibleName || 'N/A'}</td>`}
+                    <td data-action="view-aluno" data-id="${student.id}"><span class="status-tag status-${(student.status || 'pendente').toLowerCase()}">${student.status || 'Pendente'}</span></td>
+                    ${canViewFinancialInfo ? `<td class="font-mono" data-action="view-aluno" data-id="${student.id}">R$ ${parseFloat(student.amountPaid || 0).toFixed(2)}</td>` : ''}
+                    ${canViewFinancialInfo ? `<td class="font-mono" data-action="view-aluno" data-id="${student.id}">R$ ${parseFloat(student.amountReceived || student.amountPaid || 0).toFixed(2)}</td>` : `<td data-action="view-aluno" data-id="${student.id}">${student.responsibleName || 'N/A'}</td>`}
                 </tr>
                 `;
             }).join('');
@@ -1930,26 +1910,33 @@
                                 (t.studentIds || []).includes(s.id) && (s.modalidade === 'TURMA' || s.modalidade === 'DUPLA')
                             );
                             
+                            // Check if turma is finalized
+                            const isFinalizada = t.finalizada === true;
+                            const cardBg = isFinalizada ? 'bg-stone-100' : 'bg-white';
+                            const opacity = isFinalizada ? 'opacity-75' : '';
+                            const textColor = isFinalizada ? 'text-stone-600' : 'text-stone-800';
+                            
                             return `
-                        <div class="base-card flex flex-col">
+                        <div class="base-card flex flex-col ${cardBg} ${opacity} border ${isFinalizada ? 'border-stone-300' : ''}">
                             <div class="flex-1">
                                 <div class="flex justify-between items-start mb-3">
-                                    <h3 class="text-xl font-bold text-stone-800">${t.name}</h3>
+                                    <h3 class="text-xl font-bold ${textColor}">${t.name}</h3>
+                                    ${isFinalizada ? `<span class="px-2 py-1 text-xs font-semibold bg-stone-300 text-stone-700 rounded">FINALIZADA</span>` : ''}
                                 </div>
                                 <div class="space-y-2 mb-3">
-                                    <p class="text-sm text-stone-600">
+                                    <p class="text-sm ${isFinalizada ? 'text-stone-500' : 'text-stone-600'}">
                                         <strong>Professor:</strong> 
-                                        <span class="status-tag" style="background-color: #E0E7FF; color: #3730A3; font-weight: 500;">${t.teacherName}</span>
+                                        <span class="status-tag" style="background-color: ${isFinalizada ? '#D1D5DB' : '#E0E7FF'}; color: ${isFinalizada ? '#4B5563' : '#3730A3'}; font-weight: 500;">${t.teacherName}</span>
                                     </p>
-                                    <p class="text-sm text-stone-600">
+                                    <p class="text-sm ${isFinalizada ? 'text-stone-500' : 'text-stone-600'}">
                                         <strong>Alunos:</strong> 
-                                        <span class="status-tag" style="background-color: #D1FAE5; color: #065F46; font-weight: 500;">${turmaStudents.length}</span>
+                                        <span class="status-tag" style="background-color: ${isFinalizada ? '#D1D5DB' : '#D1FAE5'}; color: ${isFinalizada ? '#4B5563' : '#065F46'}; font-weight: 500;">${turmaStudents.length}</span>
                                     </p>
-                                    <p class="text-sm text-stone-600"><strong>Nível:</strong> ${t.level}</p>
-                                    <p class="text-sm text-stone-600"><strong>Semestre:</strong> ${t.semestre || 'N/A'}</p>
+                                    <p class="text-sm ${isFinalizada ? 'text-stone-500' : 'text-stone-600'}"><strong>Nível:</strong> ${t.level}</p>
+                                    <p class="text-sm ${isFinalizada ? 'text-stone-500' : 'text-stone-600'}"><strong>Semestre:</strong> ${t.semestre || 'N/A'}</p>
                                 </div>
                             </div>
-                            <div class="mt-auto pt-4 border-t border-stone-100 flex gap-2">
+                            <div class="mt-auto pt-4 border-t ${isFinalizada ? 'border-stone-200' : 'border-stone-100'} flex gap-2">
                                 ${canManage ? `<button class="secondary-btn !text-sm flex-1" data-action="edit-turma" data-id="${t.id}">Editar</button>` : ''}
                                 <button class="primary-btn !text-sm flex-1 flex items-center justify-center" data-action="open-turma-pef" data-id="${t.id}">PEF</button>
                                 <button class="secondary-btn !text-sm flex-1 flex items-center justify-center" data-action="open-turma-notas" data-id="${t.id}">Notas</button>
@@ -2996,6 +2983,87 @@
             const uniqueProfessors = [...new Set(schedules.map(s => s.professor))].filter(p => p && p.trim() !== '');
             const totalProfessors = uniqueProfessors.length;
 
+            // Calcular alunos por professor (VIPs + Turmas)
+            const teachersMap = new Map();
+            
+            // Contar professores das turmas
+            turmas.forEach(turma => {
+                if (turma.teacherName && turma.studentIds && turma.studentIds.length > 0) {
+                    if (!teachersMap.has(turma.teacherName)) {
+                        teachersMap.set(turma.teacherName, { vips: 0, turmas: 0 });
+                    }
+                    teachersMap.get(turma.teacherName).turmas += turma.studentIds.length;
+                }
+            });
+            
+            // Contar professores dos VIPs
+            vips.forEach(vip => {
+                if (vip.teacherName) {
+                    if (!teachersMap.has(vip.teacherName)) {
+                        teachersMap.set(vip.teacherName, { vips: 0, turmas: 0 });
+                    }
+                    teachersMap.get(vip.teacherName).vips += 1;
+                }
+            });
+            
+            // Converter para array e ordenar por total de alunos
+            const teacherStats = Array.from(teachersMap.entries())
+                .map(([name, counts]) => ({
+                    name,
+                    vips: counts.vips,
+                    turmas: counts.turmas,
+                    total: counts.vips + counts.turmas
+                }))
+                .sort((a, b) => b.total - a.total);
+
+            // Calcular assiduidade média geral (VIPs + Turmas) - média ponderada
+            let totalLessonsGlobal = 0;
+            let totalPresentGlobal = 0;
+            
+            // Incluir VIPs com PEF
+            vips.forEach(vip => {
+                const unitAttendance = attendance.find(a => a.id === vip.id);
+                if (unitAttendance && unitAttendance.lessons) {
+                    for (let i = 1; i <= 40; i++) {
+                        const lessonData = unitAttendance.lessons[i];
+                        if (lessonData && lessonData.date) {
+                            totalLessonsGlobal++;
+                            const status = lessonData.status;
+                            if (status === 'P') {
+                                totalPresentGlobal++;
+                            } else if (status === 'PP') {
+                                totalPresentGlobal += 0.5; // Presença parcial conta como 0.5
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Incluir turmas com PEF
+            turmas.forEach(turma => {
+                if (turma.studentIds && turma.studentIds.length > 0) {
+                    const unitAttendance = attendance.find(a => a.id === turma.id);
+                    if (unitAttendance && unitAttendance.lessons) {
+                        turma.studentIds.forEach(studentId => {
+                            for (let i = 1; i <= 40; i++) {
+                                const lessonData = unitAttendance.lessons[i];
+                                if (lessonData && lessonData.students && lessonData.students[studentId]) {
+                                    totalLessonsGlobal++;
+                                    const status = lessonData.students[studentId];
+                                    if (status === 'P') {
+                                        totalPresentGlobal++;
+                                    } else if (status === 'PP') {
+                                        totalPresentGlobal += 0.5; // Presença parcial conta como 0.5
+                                    }
+                                }
+                            }
+                        });
+                    }
+                }
+            });
+            
+            const avgAttendance = totalLessonsGlobal > 0 ? (totalPresentGlobal / totalLessonsGlobal) * 100 : 0;
+
             // Calcular médias de notas (midterm, listening, grammar, oral) das notas registradas em VIPs e Turmas
             const allGrades = [];
             
@@ -3180,6 +3248,21 @@
                             </div>
                             <p class="text-4xl font-bold text-stone-800">${totalProfessors}</p>
                             <p class="text-xs text-stone-600 mt-1">Professores no sistema</p>
+                        </div>
+
+                        <!-- Assiduidade Média Geral -->
+                        <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-6 rounded-lg border border-stone-200">
+                            <div class="flex items-center justify-between mb-2">
+                                <h3 class="text-sm font-medium text-stone-700 uppercase tracking-wide">Assiduidade Média Geral</h3>
+                                <svg class="w-8 h-8 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                            </div>
+                            <p class="text-4xl font-bold text-stone-800">${avgAttendance.toFixed(1)}%</p>
+                            <p class="text-xs text-stone-600 mt-1">VIPs + Turmas</p>
+                            ${totalLessonsGlobal > 0 ? `<div class="mt-2 w-full bg-stone-200 rounded-full h-2">
+                                <div class="bg-teal-500 h-2 rounded-full" style="width: ${Math.min(100, avgAttendance)}%"></div>
+                            </div>` : ''}
                         </div>
                     </div>
 
@@ -3384,6 +3467,75 @@
                                 </div>
                             `;
                         })()}
+                    </div>
+
+                    <!-- Alunos por Professor -->
+                    <div class="mt-6 bg-white p-6 rounded-lg border border-stone-200">
+                        <h3 class="text-lg font-semibold text-stone-800 mb-4">Alunos por Professor</h3>
+                        ${teacherStats.length > 0 ? `
+                            <div class="overflow-x-auto">
+                                <table class="w-full">
+                                    <thead>
+                                        <tr class="border-b border-stone-200">
+                                            <th class="text-left pb-3 text-sm font-semibold text-stone-700">Professor</th>
+                                            <th class="text-center pb-3 text-sm font-semibold text-stone-700">
+                                                <div class="flex items-center justify-center gap-1">
+                                                    <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
+                                                    </svg>
+                                                    <span>VIPs</span>
+                                                </div>
+                                            </th>
+                                            <th class="text-center pb-3 text-sm font-semibold text-stone-700">
+                                                <div class="flex items-center justify-center gap-1">
+                                                    <svg class="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                                                    </svg>
+                                                    <span>Turmas</span>
+                                                </div>
+                                            </th>
+                                            <th class="text-center pb-3 text-sm font-semibold text-stone-700">Total</th>
+                                            <th class="text-center pb-3 text-sm font-semibold text-stone-700">Distribuição</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${teacherStats.map((teacher, index) => {
+                                            const vipPercentage = teacher.total > 0 ? (teacher.vips / teacher.total) * 100 : 0;
+                                            const turmaPercentage = teacher.total > 0 ? (teacher.turmas / teacher.total) * 100 : 0;
+                                            const isTopTeacher = index < 3;
+                                            
+                                            return `
+                                                <tr class="border-b border-stone-100 ${isTopTeacher ? 'bg-yellow-50' : ''}">
+                                                    <td class="py-3 text-sm font-medium text-stone-700">
+                                                        <div class="flex items-center gap-2">
+                                                            ${isTopTeacher ? `<span class="text-yellow-500">🏆</span>` : ''}
+                                                            <span>${teacher.name}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td class="py-3 text-center">
+                                                        <span class="inline-block px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-sm font-bold">${teacher.vips}</span>
+                                                    </td>
+                                                    <td class="py-3 text-center">
+                                                        <span class="inline-block px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-bold">${teacher.turmas}</span>
+                                                    </td>
+                                                    <td class="py-3 text-center">
+                                                        <span class="inline-block px-3 py-1 bg-stone-200 text-stone-800 rounded-full text-sm font-bold">${teacher.total}</span>
+                                                    </td>
+                                                    <td class="py-3">
+                                                        <div class="flex items-center justify-center gap-2">
+                                                            <div class="w-32 bg-stone-200 rounded-full h-3 overflow-hidden flex">
+                                                                ${teacher.vips > 0 ? `<div class="bg-amber-500 h-3" style="width: ${vipPercentage}%" title="VIPs: ${vipPercentage.toFixed(1)}%"></div>` : ''}
+                                                                ${teacher.turmas > 0 ? `<div class="bg-purple-500 h-3" style="width: ${turmaPercentage}%" title="Turmas: ${turmaPercentage.toFixed(1)}%"></div>` : ''}
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            `;
+                                        }).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        ` : '<div class="text-center py-8 text-stone-500">Nenhum professor com alunos cadastrados</div>'}
                     </div>
 
                     <!-- Médias de Notas dos Testes -->
@@ -4371,27 +4523,41 @@
                         <p class="text-base font-bold text-yellow-900 mt-1">${turma.name}</p>
                     </div>` : ''}
                     
-                    <div><label class="font-medium text-sm">Professor</label><select id="turma-teacher" class="form-input" required>${teacherOptions}</select></div>
+                    <div><label class="font-medium text-sm">Professor <span class="text-red-500">*</span></label><select id="turma-teacher" class="form-input" required>${teacherOptions}</select></div>
                     <div>
-                        <label class="font-medium text-sm">Nível</label>
-                        <select id="turma-level" class="form-input" required>${levelOptions}</select>
-                        <input type="text" id="turma-level-custom" class="form-input mt-2 hidden" placeholder="Digite o nível personalizado">
+                        <label class="font-medium text-sm">Nível <span class="text-red-500">*</span></label>
+                        <select id="turma-level" class="form-input" required>
+                            ${(() => {
+                                // Check if the turma has a custom level (not in STANDARD_LEVELS)
+                                const hasCustomLevel = turma && turma.level && !STANDARD_LEVELS.includes(turma.level);
+                                const options = STANDARD_LEVELS.map(level => 
+                                    `<option value="${level}" ${turma?.level === level ? 'selected' : ''}>${level}</option>`
+                                ).join('');
+                                const outroOption = `<option value="outro" ${hasCustomLevel ? 'selected' : ''}>Outro (especificar)</option>`;
+                                return options + outroOption;
+                            })()}
+                        </select>
+                        <input type="text" id="turma-level-custom" class="form-input mt-2 ${turma && turma.level && !STANDARD_LEVELS.includes(turma.level) ? '' : 'hidden'}" 
+                               placeholder="Digite o nível personalizado" 
+                               value="${turma && turma.level && !STANDARD_LEVELS.includes(turma.level) ? turma.level : ''}"
+                               ${turma && turma.level && !STANDARD_LEVELS.includes(turma.level) ? 'required' : ''}>
                     </div>
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="font-medium text-sm">Dias da Semana</label>
+                            <label class="font-medium text-sm">Dias da Semana <span class="text-red-500">*</span></label>
                             <select id="turma-days" class="form-input" required>
-                                <option value="S/Q">Segunda/Quarta (S/Q)</option>
-                                <option value="T/Q">Terça/Quinta (T/Q)</option>
+                                <option value="">Selecione os dias</option>
+                                <option value="S/Q" ${turma?.days === 'S/Q' ? 'selected' : ''}>Segunda/Quarta (S/Q)</option>
+                                <option value="T/Q" ${turma?.days === 'T/Q' ? 'selected' : ''}>Terça/Quinta (T/Q)</option>
                             </select>
                         </div>
                         <div>
-                            <label class="font-medium text-sm">Horário de Início</label>
-                            <input type="time" id="turma-time" class="form-input" required>
+                            <label class="font-medium text-sm">Horário de Início <span class="text-red-500">*</span></label>
+                            <input type="time" id="turma-time" class="form-input" value="${turma?.startTime || ''}" required>
                         </div>
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <div><label class="font-medium text-sm">Semestre</label><input type="text" id="turma-semestre" class="form-input" value="${turma?.semestre || ''}"></div>
+                        <div><label class="font-medium text-sm">Semestre <span class="text-red-500">*</span></label><input type="text" id="turma-semestre" class="form-input" placeholder="Ex: 2025.1" value="${turma?.semestre || ''}" required></div>
                         <div><label class="font-medium text-sm">Data de Início</label><input type="date" id="turma-startDate" class="form-input" value="${turma?.startDate || ''}"></div>
                         <div><label class="font-medium text-sm">Data de Finalização</label><input type="date" id="turma-endDate" class="form-input" value="${turma?.endDate || ''}"></div>
                     </div>
@@ -4402,16 +4568,27 @@
                             ${studentCheckboxes}
                         </div>
                     </div>
-                    <div class="flex justify-end gap-2">
-                        ${turmaId ? `<button type="button" class="danger-btn" data-action="delete-item" data-collection="turmas" data-id="${turmaId}">Excluir</button>` : ''}
-                        <button type="submit" class="primary-btn w-auto">Salvar Turma</button>
+                    <div class="flex justify-between gap-2">
+                        <div class="flex gap-2">
+                            ${turmaId && !turma?.finalizada ? `<button type="button" class="secondary-btn" style="background-color: #6B7280; color: white;" onclick="finalizarTurma('${turmaId}')">Finalizar Turma</button>` : ''}
+                            ${turmaId && turma?.finalizada ? `<span class="px-4 py-2 text-sm font-medium bg-stone-200 text-stone-700 rounded-lg">Turma Finalizada</span>` : ''}
+                        </div>
+                        <div class="flex gap-2">
+                            ${turmaId ? `<button type="button" class="danger-btn" data-action="delete-item" data-collection="turmas" data-id="${turmaId}">Excluir</button>` : ''}
+                            <button type="submit" class="primary-btn w-auto">Salvar Turma</button>
+                        </div>
                     </div>
                 </form>
             `;
             const levelSelect = document.getElementById('turma-level');
             const levelCustomInput = document.getElementById('turma-level-custom');
             levelSelect.addEventListener('change', (e) => {
-                levelCustomInput.classList.toggle('hidden', e.target.value !== 'outro');
+                const isOther = e.target.value === 'outro';
+                levelCustomInput.classList.toggle('hidden', !isOther);
+                levelCustomInput.required = isOther;
+                if (!isOther) {
+                    levelCustomInput.value = '';
+                }
             });
             document.getElementById('form-modal-body').onsubmit = saveTurma;
             document.getElementById('form-modal').classList.add('visible');
@@ -4431,6 +4608,21 @@
             // Get form values for generating the name
             const days = document.getElementById('turma-days').value; // S/Q or T/Q
             const timeInput = document.getElementById('turma-time').value; // HH:MM format
+            const semestre = document.getElementById('turma-semestre').value.trim();
+            
+            // Validação de campos obrigatórios
+            const missingFields = [];
+            if (!selectedTeacherOption.value) missingFields.push('Professor');
+            if (!levelValue || levelValue.trim() === '') missingFields.push('Nível');
+            if (!days) missingFields.push('Dias da Semana');
+            if (!timeInput) missingFields.push('Horário de Início');
+            if (!semestre) missingFields.push('Semestre');
+            
+            if (missingFields.length > 0) {
+                showErrorMessage("Campos obrigatórios faltando", 
+                    `Por favor, preencha o(s) seguinte(s) campo(s):\n• ${missingFields.join('\n• ')}`);
+                return;
+            }
             
             // Format time to just hours (e.g., "19:30" becomes "19h")
             const hours = timeInput ? timeInput.split(':')[0] + 'h' : '';
@@ -4441,23 +4633,22 @@
             // Generate standardized name: "Nível - S/Q | 19h #SL1234"
             const generatedName = `${levelValue} - ${days} | ${hours} #${randomCode}`;
 
+            // Get current turma to preserve finalizada status
+            const currentTurma = turmaId ? turmas.find(t => t.id === turmaId) : null;
+            
             const data = {
                 name: generatedName,
                 teacherId: selectedTeacherOption.value,
                 teacherName: selectedTeacherOption.getAttribute('data-name'),
                 level: levelValue,
                 studentIds: Array.from(document.querySelectorAll('input[name="turma-students"]:checked')).map(cb => cb.value),
-                semestre: document.getElementById('turma-semestre').value,
+                semestre: semestre,
                 startDate: document.getElementById('turma-startDate').value,
                 endDate: document.getElementById('turma-endDate').value,
                 days: days,
-                startTime: timeInput
+                startTime: timeInput,
+                finalizada: currentTurma?.finalizada ?? false // Preserve finalizada status or default to false
             };
-
-            if (!data.teacherId || !levelValue || !days || !timeInput) {
-                showErrorMessage("Erro", "Todos os campos obrigatórios devem ser preenchidos.");
-                return;
-            }
 
             try {
                 if (turmaId) {
@@ -4473,6 +4664,28 @@
                 showErrorMessage("Erro", "Não foi possível salvar a turma.");
             }
         }
+
+        // Global function to finalize a turma
+        async function finalizarTurma(turmaId) {
+            if (!confirm('Tem certeza que deseja finalizar esta turma? A turma ficará marcada como encerrada, mas continuará visível para fins de registro.')) {
+                return;
+            }
+
+            try {
+                await updateDoc(doc(db, `artifacts/${appId}/public/data/turmas`, turmaId), { finalizada: true });
+                showSuccessMessage("Sucesso", "Turma finalizada com sucesso!");
+                document.getElementById('form-modal').classList.remove('visible');
+                // Refresh the turmas list
+                await loadDataFromFirebase();
+                if (currentSection === 'turmas') {
+                    renderTurmasSection();
+                }
+            } catch (error) {
+                console.error("Error finalizing turma:", error);
+                showErrorMessage("Erro", "Não foi possível finalizar a turma.");
+            }
+        }
+        window.finalizarTurma = finalizarTurma;
 
         function openVipForm(vipId = null) {
             clearModalHeaderButtons();
@@ -4494,7 +4707,7 @@
                 <form id="form-modal-body" class="space-y-4">
                     <input type="hidden" id="vip-id" value="${vipId || ''}">
                     <div>
-                        <label class="font-medium text-sm">Aluno VIP</label>
+                        <label class="font-medium text-sm">Aluno VIP <span class="text-red-500">*</span></label>
                         <div class="relative">
                             <input type="text" id="vip-student-search" class="form-input" placeholder="Digite o nome do aluno ou clique na seta para ver a lista..." 
                                    autocomplete="off" value="${vip ? vip.studentName : ''}" required>
@@ -4521,9 +4734,9 @@
                         <input type="text" id="vip-level-custom" class="form-input mt-2 hidden" placeholder="Digite o nível personalizado">
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <div><label class="font-medium text-sm">Semestre</label><input type="text" id="vip-semestre" class="form-input" value="${vip?.semestre || ''}"></div>
-                        <div><label class="font-medium text-sm">Data de Início</label><input type="date" id="vip-startDate" class="form-input" value="${vip?.startDate || ''}"></div>
-                        <div><label class="font-medium text-sm">Data de Finalização</label><input type="date" id="vip-endDate" class="form-input" value="${vip?.endDate || ''}"></div>
+                        <div><label class="font-medium text-sm">Semestre</label><input type="text" id="vip-semestre" class="form-input" placeholder="Ex: 2025.1" value="${vip?.semestre || ''}"></div>
+                        <div><label class="font-medium text-sm">Data de Início <span class="text-red-500">*</span></label><input type="date" id="vip-startDate" class="form-input" value="${vip?.startDate || ''}" required></div>
+                        <div><label class="font-medium text-sm">Data de Finalização <span class="text-red-500">*</span></label><input type="date" id="vip-endDate" class="form-input" value="${vip?.endDate || ''}" required></div>
                     </div>
                     <div>
                         <label class="font-medium text-sm">Observações sobre o aluno</label>
@@ -4532,9 +4745,15 @@
                                 >${vip?.observacoes || ''}</textarea>
                         <p class="text-xs text-gray-500 mt-1">Informações que podem ajudar o professor no acompanhamento do aluno</p>
                     </div>
-                    <div class="flex justify-end gap-2">
-                        ${vipId ? `<button type="button" class="danger-btn" data-action="delete-vip" data-id="${vipId}">Excluir VIP</button>` : ''}
-                        <button type="submit" class="primary-btn w-auto">${vipId ? 'Salvar' : 'Criar VIP'}</button>
+                    <div class="flex justify-between gap-2">
+                        <div class="flex gap-2">
+                            ${vipId && !vip?.finalizado ? `<button type="button" class="secondary-btn" style="background-color: #6B7280; color: white;" onclick="finalizarVip('${vipId}')">Finalizar VIP</button>` : ''}
+                            ${vipId && vip?.finalizado ? `<span class="px-4 py-2 text-sm font-medium bg-stone-200 text-stone-700 rounded-lg">VIP Finalizado</span>` : ''}
+                        </div>
+                        <div class="flex gap-2">
+                            ${vipId ? `<button type="button" class="danger-btn" data-action="delete-vip" data-id="${vipId}">Excluir VIP</button>` : ''}
+                            <button type="submit" class="primary-btn w-auto">${vipId ? 'Salvar' : 'Criar VIP'}</button>
+                        </div>
                     </div>
                 </form>
             `;
@@ -4674,20 +4893,39 @@
             // Get student data from the new search system
             const studentId = document.getElementById('vip-student-id').value;
             const studentName = document.getElementById('vip-student-search').value.trim();
+            const startDate = document.getElementById('vip-startDate').value;
+            const endDate = document.getElementById('vip-endDate').value;
 
             const levelSelect = document.getElementById('vip-level');
             const levelValue = levelSelect.value === 'outro'
                 ? document.getElementById('vip-level-custom').value
                 : levelSelect.value;
 
-            // Validate student selection
-            if (!studentId || !studentName) {
+            // Validação de campos obrigatórios
+            const missingFields = [];
+            if (!studentId || !studentName) missingFields.push('Aluno VIP');
+            if (!startDate) missingFields.push('Data de Início');
+            if (!endDate) missingFields.push('Data de Finalização');
+            
+            if (missingFields.length > 0) {
                 const errorDiv = document.getElementById('vip-student-error');
-                errorDiv.classList.remove('hidden');
-                errorDiv.textContent = 'Selecione um aluno VIP válido';
-                showErrorMessage("Erro", "Selecione um aluno VIP.");
+                if (!studentId || !studentName) {
+                    errorDiv.classList.remove('hidden');
+                    errorDiv.textContent = 'Selecione um aluno VIP válido';
+                }
+                showErrorMessage("Campos obrigatórios faltando", 
+                    `Por favor, preencha o(s) seguinte(s) campo(s):\n• ${missingFields.join('\n• ')}`);
                 return;
             }
+            
+            // Validar se data de finalização é posterior à data de início
+            if (new Date(endDate) <= new Date(startDate)) {
+                showErrorMessage("Erro de validação", "A Data de Finalização deve ser posterior à Data de Início.");
+                return;
+            }
+
+            // Get current VIP to preserve finalizado status
+            const currentVip = vipId ? vips.find(v => v.id === vipId) : null;
 
             const data = {
                 studentId: studentId,
@@ -4699,6 +4937,7 @@
                 observacoes: document.getElementById('vip-observacoes').value.trim(),
                 startDate: document.getElementById('vip-startDate').value,
                 endDate: document.getElementById('vip-endDate').value,
+                finalizado: currentVip?.finalizado ?? false // Preserve finalizado status or default to false
             };
 
             try {
@@ -4715,6 +4954,29 @@
                 showErrorMessage("Erro", "Não foi possível salvar o VIP.");
             }
         }
+
+        // Global function to finalize a VIP
+        async function finalizarVip(vipId) {
+            if (!confirm('Tem certeza que deseja finalizar este VIP? O contrato ficará marcado como concluído, mas continuará visível para fins de registro.')) {
+                return;
+            }
+
+            try {
+                await updateDoc(doc(db, `artifacts/${appId}/public/data/vips`, vipId), { finalizado: true });
+                showSuccessMessage("Sucesso", "VIP finalizado com sucesso!");
+                document.getElementById('form-modal').classList.remove('visible');
+                // Refresh the VIPs list
+                await loadDataFromFirebase();
+                if (currentSection === 'vips') {
+                    renderVipsSection();
+                    updateVipsList();
+                }
+            } catch (error) {
+                console.error("Error finalizing VIP:", error);
+                showErrorMessage("Erro", "Não foi possível finalizar o VIP.");
+            }
+        }
+        window.finalizarVip = finalizarVip;
 
         async function deleteVip(vipId) {
             if (!confirm('Tem certeza que deseja excluir este VIP?')) return;
