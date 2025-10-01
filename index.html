@@ -3238,6 +3238,10 @@
 
                     <h4 class="text-lg font-semibold text-stone-700 border-b pb-2 pt-4">Informações Pessoais</h4>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div><label class="font-medium text-sm">Data de Nascimento</label><input type="date" id="aluno-birthDate" class="form-input" value="${aluno?.birthDate || ''}"></div>
+                        <div><label class="font-medium text-sm">Gênero</label><select id="aluno-gender" class="form-input"><option value="">Selecione</option><option value="Masculino" ${aluno?.gender === 'Masculino' ? 'selected' : ''}>Masculino</option><option value="Feminino" ${aluno?.gender === 'Feminino' ? 'selected' : ''}>Feminino</option></select></div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div><label class="font-medium text-sm">CPF</label><input type="text" id="aluno-cpf" class="form-input" placeholder="000.000.000-00" value="${aluno?.cpf || ''}"></div>
                         <div><label class="font-medium text-sm">Estado Civil</label><select id="aluno-estadoCivil" class="form-input"><option value="">Selecione</option><option value="Solteiro(a)" ${aluno?.estadoCivil === 'Solteiro(a)' ? 'selected' : ''}>Solteiro(a)</option><option value="Casado(a)" ${aluno?.estadoCivil === 'Casado(a)' ? 'selected' : ''}>Casado(a)</option><option value="Divorciado(a)" ${aluno?.estadoCivil === 'Divorciado(a)' ? 'selected' : ''}>Divorciado(a)</option><option value="Viúvo(a)" ${aluno?.estadoCivil === 'Viúvo(a)' ? 'selected' : ''}>Viúvo(a)</option><option value="União Estável" ${aluno?.estadoCivil === 'União Estável' ? 'selected' : ''}>União Estável</option></select></div>
                     </div>
@@ -3356,6 +3360,8 @@
                 responsibleName: isMinor ? document.getElementById('aluno-responsibleName').value : '',
                 responsiblePhone: isMinor ? document.getElementById('aluno-responsiblePhone').value : '',
                 // Personal information fields
+                birthDate: document.getElementById('aluno-birthDate').value,
+                gender: document.getElementById('aluno-gender').value,
                 cpf: document.getElementById('aluno-cpf').value,
                 estadoCivil: document.getElementById('aluno-estadoCivil').value,
                 profissao: document.getElementById('aluno-profissao').value,
@@ -3466,10 +3472,12 @@
                         </div>
                     </div>
 
-                    ${(aluno.cpf || aluno.estadoCivil || aluno.profissao || aluno.endereco) ? `
+                    ${(aluno.birthDate || aluno.gender || aluno.cpf || aluno.estadoCivil || aluno.profissao || aluno.endereco) ? `
                     <div class="mt-4 pt-4 border-t">
                         <h4 class="font-semibold text-stone-700 mb-2">Informações Pessoais</h4>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-stone-600">
+                            ${aluno.birthDate ? `<p><strong>Data de Nascimento:</strong> ${formatDateBR(aluno.birthDate)}</p>` : ''}
+                            ${aluno.gender ? `<p><strong>Gênero:</strong> ${aluno.gender}</p>` : ''}
                             ${aluno.cpf ? `<p><strong>CPF:</strong> ${aluno.cpf}</p>` : ''}
                             ${aluno.estadoCivil ? `<p><strong>Estado Civil:</strong> ${aluno.estadoCivil}</p>` : ''}
                             ${aluno.profissao ? `<p><strong>Profissão:</strong> ${aluno.profissao}</p>` : ''}
@@ -3557,12 +3565,31 @@
             document.getElementById('form-modal-content-area').innerHTML = `
                 <form id="form-modal-body" class="space-y-4">
                     <input type="hidden" id="turma-id" value="${turmaId || ''}">
-                    <div><label class="font-medium text-sm">Nome da Turma</label><input type="text" id="turma-name" class="form-input" required value="${turma?.name || ''}"></div>
+                    <input type="hidden" id="turma-name" value="${turma?.name || ''}">
+                    
+                    ${turma ? `<div class="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                        <p class="text-sm font-medium text-yellow-800">Nome atual da turma:</p>
+                        <p class="text-base font-bold text-yellow-900 mt-1">${turma.name}</p>
+                    </div>` : ''}
+                    
                     <div><label class="font-medium text-sm">Professor</label><select id="turma-teacher" class="form-input" required>${teacherOptions}</select></div>
                     <div>
                         <label class="font-medium text-sm">Nível</label>
                         <select id="turma-level" class="form-input" required>${levelOptions}</select>
                         <input type="text" id="turma-level-custom" class="form-input mt-2 hidden" placeholder="Digite o nível personalizado">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="font-medium text-sm">Dias da Semana</label>
+                            <select id="turma-days" class="form-input" required>
+                                <option value="S/Q">Segunda/Quarta (S/Q)</option>
+                                <option value="T/Q">Terça/Quinta (T/Q)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="font-medium text-sm">Horário de Início</label>
+                            <input type="time" id="turma-time" class="form-input" required>
+                        </div>
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div><label class="font-medium text-sm">Semestre</label><input type="text" id="turma-semestre" class="form-input" value="${turma?.semestre || ''}"></div>
@@ -3602,8 +3629,21 @@
                 ? document.getElementById('turma-level-custom').value
                 : levelSelect.value;
 
+            // Get form values for generating the name
+            const days = document.getElementById('turma-days').value; // S/Q or T/Q
+            const timeInput = document.getElementById('turma-time').value; // HH:MM format
+            
+            // Format time to just hours (e.g., "19:30" becomes "19h")
+            const hours = timeInput ? timeInput.split(':')[0] + 'h' : '';
+            
+            // Generate random code starting with SL
+            const randomCode = 'SL' + Math.floor(1000 + Math.random() * 9000);
+            
+            // Generate standardized name: "Nível - S/Q | 19h #SL1234"
+            const generatedName = `${levelValue} - ${days} | ${hours} #${randomCode}`;
+
             const data = {
-                name: document.getElementById('turma-name').value,
+                name: generatedName,
                 teacherId: selectedTeacherOption.value,
                 teacherName: selectedTeacherOption.getAttribute('data-name'),
                 level: levelValue,
@@ -3611,10 +3651,12 @@
                 semestre: document.getElementById('turma-semestre').value,
                 startDate: document.getElementById('turma-startDate').value,
                 endDate: document.getElementById('turma-endDate').value,
+                days: days,
+                startTime: timeInput
             };
 
-            if (!data.name || !data.teacherId) {
-                showErrorMessage("Erro", "Nome da turma e professor são obrigatórios.");
+            if (!data.teacherId || !levelValue || !days || !timeInput) {
+                showErrorMessage("Erro", "Todos os campos obrigatórios devem ser preenchidos.");
                 return;
             }
 
@@ -4889,14 +4931,33 @@
             const availableLevels = ["Starter 1", "Starter 2", "Freshman 1", "Freshman 2", "Sophomore 1", "Sophomore 2", "Junior 1", "Junior 2", "Senior 1", "Senior 2", "ACC"];
             const levelOptions = availableLevels.map(level => `<option value="${level}" ${schedule?.level === level ? 'selected' : ''}>${level}</option>`).join('') + `<option value="outro">Outro (especificar)</option>`;
 
+            // Get VIP students and turmas for dropdowns
+            const vipStudents = students.filter(s => s.modalidade === 'VIP' && s.status === 'Ativo');
+            const turmasList = turmas.filter(t => t.name);
+
             let formHtml = `<form id="form-modal-body" class="space-y-4">
                 <input type="hidden" id="schedule-id" value="${scheduleId || ''}">
+                
+                <div><label class="font-medium text-sm">Tipo</label><select id="schedule-type" class="form-input" required ${isTeacher ? 'disabled' : ''}>${typeOptions}</select></div>
+                
                 <div class="schedule-student-field">
-                    <label class="font-medium text-sm">Aluno/Turma</label>
-                    <input type="text" id="schedule-student" class="form-input" required value="${schedule?.student || ''}" ${isTeacher ? 'disabled' : ''} list="students-datalist" autocomplete="off">
-                    <datalist id="students-datalist">
-                        ${students.map(s => `<option value="${s.name}">`).join('')}
-                    </datalist>
+                    <label class="font-medium text-sm" id="student-field-label">Aluno/Turma</label>
+                    
+                    <!-- VIP dropdown (hidden by default) -->
+                    <select id="schedule-vip-select" class="form-input hidden" ${isTeacher ? 'disabled' : ''}>
+                        <option value="">Selecione um aluno VIP</option>
+                        ${vipStudents.map(s => `<option value="${s.name}" ${schedule?.student === s.name ? 'selected' : ''}>${s.name}</option>`).join('')}
+                    </select>
+                    
+                    <!-- TURMA dropdown (hidden by default) -->
+                    <select id="schedule-turma-select" class="form-input hidden" ${isTeacher ? 'disabled' : ''}>
+                        <option value="">Selecione uma turma</option>
+                        ${turmasList.map(t => `<option value="${t.name}" ${schedule?.student === t.name ? 'selected' : ''}>${t.name}</option>`).join('')}
+                    </select>
+                    
+                    <!-- Hidden input to store the selected value -->
+                    <input type="hidden" id="schedule-student" value="${schedule?.student || ''}">
+                    
                     <p id="student-duplicate-warning" class="hidden text-sm text-red-600 mt-1">⚠️ Aluno já presente na grade deste professor</p>
                 </div>
                 <div class="schedule-level-field">
@@ -4905,10 +4966,7 @@
                     <input type="text" id="schedule-level-custom" class="form-input mt-2 hidden" placeholder="Digite o nível personalizado" ${isTeacher ? 'disabled' : ''}>
                 </div>
                 <div><label class="font-medium text-sm">Professor</label><select id="schedule-teacher" class="form-input" required ${isTeacher ? 'disabled' : ''}>${teacherOptions}</select></div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div><label class="font-medium text-sm">Dia</label><select id="schedule-day" class="form-input" required ${isTeacher ? 'disabled' : ''}>${dayOptions}</select></div>
-                    <div><label class="font-medium text-sm">Tipo</label><select id="schedule-type" class="form-input" required ${isTeacher ? 'disabled' : ''}>${typeOptions}</select></div>
-                </div>
+                <div><label class="font-medium text-sm">Dia</label><select id="schedule-day" class="form-input" required ${isTeacher ? 'disabled' : ''}>${dayOptions}</select></div>
                 <div class="grid grid-cols-2 gap-4">
                     <div><label class="font-medium text-sm">Início</label><input type="time" id="schedule-start" class="form-input" required value="${schedule?.startTime || ''}" ${isTeacher ? 'disabled' : ''}></div>
                     <div><label class="font-medium text-sm">Fim</label><input type="time" id="schedule-end" class="form-input" required value="${schedule?.endTime || ''}" ${isTeacher ? 'disabled' : ''}></div>
@@ -4932,19 +4990,35 @@
                 const type = document.getElementById('schedule-type').value;
                 const studentField = document.querySelector('.schedule-student-field');
                 const levelField = document.querySelector('.schedule-level-field');
-                const studentInput = document.getElementById('schedule-student');
+                const vipSelect = document.getElementById('schedule-vip-select');
+                const turmaSelect = document.getElementById('schedule-turma-select');
+                const hiddenInput = document.getElementById('schedule-student');
                 const levelSelect = document.getElementById('schedule-level');
+                const fieldLabel = document.getElementById('student-field-label');
 
                 if (type === 'break') {
                     studentField.style.display = 'none';
                     levelField.style.display = 'none';
-                    studentInput.required = false;
-                    levelSelect.required = false;
-                } else {
+                } else if (type === 'vip') {
                     studentField.style.display = 'block';
                     levelField.style.display = 'block';
-                    studentInput.required = true;
-                    levelSelect.required = true;
+                    fieldLabel.textContent = 'Aluno VIP';
+                    vipSelect.classList.remove('hidden');
+                    turmaSelect.classList.add('hidden');
+                    // Sync hidden input with VIP selection
+                    if (vipSelect.value) {
+                        hiddenInput.value = vipSelect.value;
+                    }
+                } else if (type === 'turma') {
+                    studentField.style.display = 'block';
+                    levelField.style.display = 'block';
+                    fieldLabel.textContent = 'Turma';
+                    vipSelect.classList.add('hidden');
+                    turmaSelect.classList.remove('hidden');
+                    // Sync hidden input with Turma selection
+                    if (turmaSelect.value) {
+                        hiddenInput.value = turmaSelect.value;
+                    }
                 }
             }
 
@@ -4989,14 +5063,29 @@
                 );
 
                 if (existingSchedule) {
-                    warning.textContent = `⚠️ Aluno já adicionado na grade do professor ${existingSchedule.teacher}`;
+                    warning.textContent = `⚠️ Aluno/Turma já adicionado na grade do professor ${existingSchedule.teacher}`;
                     warning.classList.remove('hidden');
                 } else {
                     warning.classList.add('hidden');
                 }
             }
 
-            document.getElementById('schedule-type').addEventListener('change', updateFormFields);
+            // Sync VIP select with hidden input
+            document.getElementById('schedule-vip-select').addEventListener('change', (e) => {
+                document.getElementById('schedule-student').value = e.target.value;
+                checkStudentDuplicate();
+            });
+
+            // Sync Turma select with hidden input
+            document.getElementById('schedule-turma-select').addEventListener('change', (e) => {
+                document.getElementById('schedule-student').value = e.target.value;
+                checkStudentDuplicate();
+            });
+
+            document.getElementById('schedule-type').addEventListener('change', () => {
+                updateFormFields();
+                checkStudentDuplicate();
+            });
             document.getElementById('schedule-teacher').addEventListener('change', () => {
                 checkConflicts();
                 checkStudentDuplicate();
@@ -5004,7 +5093,6 @@
             document.getElementById('schedule-day').addEventListener('change', checkConflicts);
             document.getElementById('schedule-start').addEventListener('change', checkConflicts);
             document.getElementById('schedule-end').addEventListener('change', checkConflicts);
-            document.getElementById('schedule-student').addEventListener('input', checkStudentDuplicate);
 
             updateFormFields();
 
@@ -10097,7 +10185,7 @@
         function hasAccessToPage(pageKey, userRole) {
             const pagePermissions = {
                 'inicio': ['admin', 'pedagogico', 'ap', 'financeiro', 'teacher', 'am'], // Dashboard - everyone
-                'alunos': ['admin', 'pedagogico', 'ap', 'financeiro', 'teacher', 'am'], // Students - everyone  
+                'alunos': ['admin', 'pedagogico', 'ap', 'financeiro', 'am'], // Students - no teacher access
                 'turmas': ['admin', 'pedagogico', 'ap', 'teacher', 'am', 'financeiro'], // Classes - no financeiro
                 'vips': ['admin', 'pedagogico', 'ap', 'teacher', 'am', 'financeiro'], // VIPs - accessible to teachers
                 'grade': ['admin', 'pedagogico', 'ap', 'teacher', 'am', 'financeiro'], // Schedule - no financeiro
