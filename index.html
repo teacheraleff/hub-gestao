@@ -1229,10 +1229,17 @@
             const totalRevenue = students.reduce((sum, student) => {
                 return sum + parseFloat(student.amountReceived || student.amountPaid || 0);
             }, 0);
+            
+            // Calcular ticket médio mensal
+            const studentsWithPayment = students.filter(s => parseFloat(s.amountPaid || 0) > 0);
+            const totalPayments = studentsWithPayment.reduce((sum, student) => {
+                return sum + parseFloat(student.amountPaid || 0);
+            }, 0);
+            const averageTicket = studentsWithPayment.length > 0 ? totalPayments / studentsWithPayment.length : 0;
 
             contentArea.innerHTML = `
                 <section id="alunos-section" class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-6">
                         <div class="base-card bg-gradient-to-r from-stone-50 to-stone-100 border-stone-200">
                             <div class="flex items-start justify-between">
                                 <div class="flex-1 min-w-0 pr-4">
@@ -1240,19 +1247,19 @@
                                     <p class="text-2xl font-bold text-stone-700 mt-1">${totalCount}</p>
                                 </div>
                                 <div class="flex-shrink-0">
-                                    <div class="p-2 bg-stone-200 rounded-full">
-                                        <svg class="w-5 h-5 text-stone-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <div class="p-2 bg-indigo-200 rounded-full">
+                                        <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
                                         </svg>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        <div class="base-card bg-gradient-to-r from-green-50 to-green-100 border-green-200">
+                        <div class="base-card bg-gradient-to-r from-stone-50 to-stone-100 border-stone-200">
                             <div class="flex items-start justify-between">
                                 <div class="flex-1 min-w-0 pr-4">
-                                    <p class="text-sm font-medium text-green-600">Alunos Ativos</p>
-                                    <p class="text-2xl font-bold text-green-700 mt-1">${activeCount}</p>
+                                    <p class="text-sm font-medium text-stone-600">Alunos Ativos</p>
+                                    <p class="text-2xl font-bold text-stone-700 mt-1">${activeCount}</p>
                                 </div>
                                 <div class="flex-shrink-0">
                                     <div class="p-2 bg-green-200 rounded-full">
@@ -1263,11 +1270,11 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="base-card bg-gradient-to-r from-yellow-50 to-yellow-100 border-yellow-200">
+                        <div class="base-card bg-gradient-to-r from-stone-50 to-stone-100 border-stone-200">
                             <div class="flex items-start justify-between">
                                 <div class="flex-1 min-w-0 pr-4">
-                                    <p class="text-sm font-medium text-yellow-600">Alunos Pendentes</p>
-                                    <p class="text-2xl font-bold text-yellow-700 mt-1">${pendingCount}</p>
+                                    <p class="text-sm font-medium text-stone-600">Alunos Pendentes</p>
+                                    <p class="text-2xl font-bold text-stone-700 mt-1">${pendingCount}</p>
                                 </div>
                                 <div class="flex-shrink-0">
                                     <div class="p-2 bg-yellow-200 rounded-full">
@@ -1278,11 +1285,11 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="base-card bg-gradient-to-r from-purple-50 to-purple-100 border-purple-200">
+                        <div class="base-card bg-gradient-to-r from-stone-50 to-stone-100 border-stone-200">
                             <div class="flex items-start justify-between">
                                 <div class="flex-1 min-w-0 pr-4">
-                                    <p class="text-sm font-medium text-purple-600">Modalidade VIP</p>
-                                    <p class="text-2xl font-bold text-purple-700 mt-1">${vipCount}</p>
+                                    <p class="text-sm font-medium text-stone-600">Modalidade VIP</p>
+                                    <p class="text-2xl font-bold text-stone-700 mt-1">${vipCount}</p>
                                 </div>
                                 <div class="flex-shrink-0">
                                     <div class="p-2 bg-purple-200 rounded-full">
@@ -1293,11 +1300,11 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="base-card bg-gradient-to-r from-teal-50 to-teal-100 border-teal-200">
+                        <div class="base-card bg-gradient-to-r from-stone-50 to-stone-100 border-stone-200">
                             <div class="flex items-start justify-between">
                                 <div class="flex-1 min-w-0 pr-4">
-                                    <p class="text-sm font-medium text-teal-600">Modalidade Turmas</p>
-                                    <p class="text-2xl font-bold text-teal-700 mt-1">${turmaCount}</p>
+                                    <p class="text-sm font-medium text-stone-600">Modalidade Turmas</p>
+                                    <p class="text-2xl font-bold text-stone-700 mt-1">${turmaCount}</p>
                                 </div>
                                 <div class="flex-shrink-0">
                                     <div class="p-2 bg-teal-200 rounded-full">
@@ -1309,11 +1316,26 @@
                             </div>
                         </div>
                         ${canViewFinancialInfo ? `
-                        <div class="base-card bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200">
+                        <div class="base-card bg-gradient-to-r from-stone-50 to-stone-100 border-stone-200">
                             <div class="flex items-start justify-between">
                                 <div class="flex-1 min-w-0 pr-4">
-                                    <p class="text-sm font-medium text-blue-600">Receita Total</p>
-                                    <p class="text-2xl font-bold text-blue-700 mt-1">${formatCurrencyBR(totalRevenue)}</p>
+                                    <p class="text-sm font-medium text-stone-600">Ticket Médio Mensal</p>
+                                    <p class="text-2xl font-bold text-stone-700 mt-1">${formatCurrencyBR(averageTicket)}</p>
+                                </div>
+                                <div class="flex-shrink-0">
+                                    <div class="p-2 bg-orange-200 rounded-full">
+                                        <svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                                        </svg>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="base-card bg-gradient-to-r from-stone-50 to-stone-100 border-stone-200">
+                            <div class="flex items-start justify-between">
+                                <div class="flex-1 min-w-0 pr-4">
+                                    <p class="text-sm font-medium text-stone-600">Receita Total</p>
+                                    <p class="text-2xl font-bold text-stone-700 mt-1">${formatCurrencyBR(totalRevenue)}</p>
                                 </div>
                                 <div class="flex-shrink-0">
                                     <div class="p-2 bg-blue-200 rounded-full">
@@ -1871,37 +1893,25 @@
                             const turmaStudents = students.filter(s => 
                                 (t.studentIds || []).includes(s.id) && (s.modalidade === 'TURMA' || s.modalidade === 'DUPLA')
                             );
-                            // Separate students by modality
-                            const turmaOnlyStudents = turmaStudents.filter(s => s.modalidade === 'TURMA');
-                            const duplaStudents = turmaStudents.filter(s => s.modalidade === 'DUPLA');
                             
                             return `
                         <div class="base-card flex flex-col">
                             <div class="flex-1">
-                                <div class="flex justify-between items-start mb-2">
+                                <div class="flex justify-between items-start mb-3">
                                     <h3 class="text-xl font-bold text-stone-800">${t.name}</h3>
-                                    <span class="text-sm font-semibold text-stone-600">${turmaStudents.length} aluno(s)</span>
                                 </div>
-                                <p class="text-sm text-stone-500 mb-2">Professor: ${t.teacherName}</p>
-                                <p class="text-sm text-stone-600"><strong>Nível:</strong> ${t.level}</p>
-                                <p class="text-sm text-stone-600"><strong>Semestre:</strong> ${t.semestre || 'N/A'}</p>
-                                
-                                ${turmaStudents.length > 0 ? `
-                                <div class="mt-3 pt-3 border-t border-stone-100">
-                                    <p class="text-xs font-medium text-stone-500 mb-2">Alunos:</p>
-                                    <div class="space-y-1">
-                                        ${turmaOnlyStudents.map(s => `
-                                            <div class="text-xs text-stone-700">${s.name}</div>
-                                        `).join('')}
-                                        ${duplaStudents.map(s => `
-                                            <div class="flex items-center justify-between text-xs">
-                                                <span class="text-stone-700">${s.name}</span>
-                                                <span class="status-tag status-dupla !text-xs !py-1 !px-2">DUPLA</span>
-                                            </div>
-                                        `).join('')}
-                                    </div>
+                                <div class="space-y-2 mb-3">
+                                    <p class="text-sm text-stone-600">
+                                        <strong>Professor:</strong> 
+                                        <span class="status-tag" style="background-color: #E0E7FF; color: #3730A3; font-weight: 500;">${t.teacherName}</span>
+                                    </p>
+                                    <p class="text-sm text-stone-600">
+                                        <strong>Alunos:</strong> 
+                                        <span class="status-tag" style="background-color: #D1FAE5; color: #065F46; font-weight: 500;">${turmaStudents.length}</span>
+                                    </p>
+                                    <p class="text-sm text-stone-600"><strong>Nível:</strong> ${t.level}</p>
+                                    <p class="text-sm text-stone-600"><strong>Semestre:</strong> ${t.semestre || 'N/A'}</p>
                                 </div>
-                                ` : ''}
                             </div>
                             <div class="mt-auto pt-4 border-t border-stone-100 flex gap-2">
                                 ${canManage ? `<button class="secondary-btn !text-sm flex-1" data-action="edit-turma" data-id="${t.id}">Editar</button>` : ''}
@@ -2583,11 +2593,11 @@
             contentArea.innerHTML = `
                 <!-- Cards de Resumo Financeiro -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                    <div class="base-card bg-gradient-to-r from-green-50 to-green-100 border-green-200">
+                    <div class="base-card bg-gradient-to-r from-stone-50 to-stone-100 border-stone-200">
                         <div class="flex items-start justify-between">
                             <div class="flex-1 min-w-0 pr-4">
-                                <p class="text-sm font-medium text-green-600">Receita Total</p>
-                                <p class="text-2xl font-bold text-green-700 mt-1">${totalRevenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                                <p class="text-sm font-medium text-stone-600">Receita Total</p>
+                                <p class="text-2xl font-bold text-stone-700 mt-1">${totalRevenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
                             </div>
                             <div class="flex-shrink-0">
                                 <div class="p-2 bg-green-200 rounded-full">
@@ -2598,11 +2608,11 @@
                             </div>
                         </div>
                     </div>
-                    <div class="base-card bg-gradient-to-r from-red-50 to-red-100 border-red-200">
+                    <div class="base-card bg-gradient-to-r from-stone-50 to-stone-100 border-stone-200">
                         <div class="flex items-start justify-between">
                             <div class="flex-1 min-w-0 pr-4">
-                                <p class="text-sm font-medium text-red-600">Despesas Pendentes</p>
-                                <p class="text-2xl font-bold text-red-700 mt-1">${totalExpenses.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                                <p class="text-sm font-medium text-stone-600">Despesas Pendentes</p>
+                                <p class="text-2xl font-bold text-stone-700 mt-1">${totalExpenses.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
                             </div>
                             <div class="flex-shrink-0">
                                 <div class="p-2 bg-red-200 rounded-full">
@@ -2613,11 +2623,11 @@
                             </div>
                         </div>
                     </div>
-                    <div class="base-card bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200">
+                    <div class="base-card bg-gradient-to-r from-stone-50 to-stone-100 border-stone-200">
                         <div class="flex items-start justify-between">
                             <div class="flex-1 min-w-0 pr-4">
-                                <p class="text-sm font-medium text-blue-600">Lucro</p>
-                                <p class="text-2xl font-bold text-blue-700 mt-1">${profit.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                                <p class="text-sm font-medium text-stone-600">Lucro</p>
+                                <p class="text-2xl font-bold text-stone-700 mt-1">${profit.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
                             </div>
                             <div class="flex-shrink-0">
                                 <div class="p-2 bg-blue-200 rounded-full">
@@ -2967,9 +2977,30 @@
             document.getElementById('form-modal').classList.add('visible');
         }
 
+        // Mapeamento de níveis antigos para novos
+        const levelMapping = {
+            'Basic 1': 'Starter 1',
+            'Basic 2': 'Starter 2',
+            'Pre-intermediate 1': 'Freshman 1',
+            'Pre-intermediate 2': 'Freshman 2',
+            'Intermediate 1': 'Sophomore 1',
+            'Intermediate 2': 'Sophomore 2',
+            'Pre-advanced 1': 'Junior 1',
+            'Pre-advanced 2': 'Junior 2',
+            'Advanced 1': 'Senior 1',
+            'Advanced 2': 'Senior 2',
+            'ACC': 'ACC'
+        };
+
         function openAlunoForm(alunoId = null) {
             clearModalHeaderButtons();
             const aluno = alunoId ? students.find(s => s.id === alunoId) : null;
+            
+            // Mapear níveis antigos para novos se existirem
+            if (aluno && aluno.completedLevels) {
+                aluno.completedLevels = aluno.completedLevels.map(level => levelMapping[level] || level);
+            }
+            
             const canViewFinancialInfo = !['teacher', 'pedagogico', 'ap', 'am'].includes(currentUserRole);
             document.getElementById('form-modal-title').textContent = aluno ? "Editar Aluno" : "Adicionar Novo Aluno";
 
@@ -3039,10 +3070,20 @@
                             </div>
                         </div>
                     </div>
+
+                    <h4 class="text-lg font-semibold text-stone-700 border-b pb-2 pt-4">Informações Pessoais</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div><label class="font-medium text-sm">CPF</label><input type="text" id="aluno-cpf" class="form-input" placeholder="000.000.000-00" value="${aluno?.cpf || ''}"></div>
+                        <div><label class="font-medium text-sm">Estado Civil</label><select id="aluno-estadoCivil" class="form-input"><option value="">Selecione</option><option value="Solteiro(a)" ${aluno?.estadoCivil === 'Solteiro(a)' ? 'selected' : ''}>Solteiro(a)</option><option value="Casado(a)" ${aluno?.estadoCivil === 'Casado(a)' ? 'selected' : ''}>Casado(a)</option><option value="Divorciado(a)" ${aluno?.estadoCivil === 'Divorciado(a)' ? 'selected' : ''}>Divorciado(a)</option><option value="Viúvo(a)" ${aluno?.estadoCivil === 'Viúvo(a)' ? 'selected' : ''}>Viúvo(a)</option><option value="União Estável" ${aluno?.estadoCivil === 'União Estável' ? 'selected' : ''}>União Estável</option></select></div>
+                    </div>
+                    <div><label class="font-medium text-sm">Profissão</label><input type="text" id="aluno-profissao" class="form-input" placeholder="Ex: Engenheiro, Professor, etc." value="${aluno?.profissao || ''}"></div>
+                    <div><label class="font-medium text-sm">Endereço Completo</label><textarea id="aluno-endereco" rows="2" class="form-input" placeholder="Rua, número, complemento, bairro, CEP...">${aluno?.endereco || ''}</textarea></div>
+
+                    <h4 class="text-lg font-semibold text-stone-700 border-b pb-2 pt-4">Níveis e Histórico</h4>
                     <div>
                         <label class="font-medium text-sm">Níveis Cursados</label>
                         <div id="aluno-levels-checkboxes" class="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-y-2 gap-x-4 max-h-40 overflow-y-auto p-2 border rounded-md">
-                            ${['Basic 1', 'Basic 2', 'Pre-intermediate 1', 'Pre-intermediate 2', 'Intermediate 1', 'Intermediate 2', 'Pre-advanced 1', 'Pre-advanced 2', 'Advanced 1', 'Advanced 2', 'ACC'].map((level, index) => `
+                            ${['Starter 1', 'Starter 2', 'Freshman 1', 'Freshman 2', 'Sophomore 1', 'Sophomore 2', 'Junior 1', 'Junior 2', 'Senior 1', 'Senior 2', 'ACC'].map((level, index) => `
                                 <div class="flex items-center">
                                     <input type="checkbox" id="level-${index}" name="completedLevels" value="${level}" class="h-4 w-4 rounded text-yellow-500 focus:ring-yellow-400" ${aluno?.completedLevels?.includes(level) ? 'checked' : ''}>
                                     <label for="level-${index}" class="ml-2 text-sm">${level}</label>
@@ -3149,6 +3190,11 @@
                 isMinor: isMinor,
                 responsibleName: isMinor ? document.getElementById('aluno-responsibleName').value : '',
                 responsiblePhone: isMinor ? document.getElementById('aluno-responsiblePhone').value : '',
+                // Personal information fields
+                cpf: document.getElementById('aluno-cpf').value,
+                estadoCivil: document.getElementById('aluno-estadoCivil').value,
+                profissao: document.getElementById('aluno-profissao').value,
+                endereco: document.getElementById('aluno-endereco').value,
                 // Cancellation fields (only saved if status is Cancelado)
                 cancellationDate: isCancelled ? document.getElementById('aluno-cancellationDate').value : '',
                 cancellationReason: isCancelled ? document.getElementById('aluno-cancellationReason').value : '',
@@ -3255,6 +3301,18 @@
                         </div>
                     </div>
 
+                    ${(aluno.cpf || aluno.estadoCivil || aluno.profissao || aluno.endereco) ? `
+                    <div class="mt-4 pt-4 border-t">
+                        <h4 class="font-semibold text-stone-700 mb-2">Informações Pessoais</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-stone-600">
+                            ${aluno.cpf ? `<p><strong>CPF:</strong> ${aluno.cpf}</p>` : ''}
+                            ${aluno.estadoCivil ? `<p><strong>Estado Civil:</strong> ${aluno.estadoCivil}</p>` : ''}
+                            ${aluno.profissao ? `<p><strong>Profissão:</strong> ${aluno.profissao}</p>` : ''}
+                        </div>
+                        ${aluno.endereco ? `<p class="text-sm text-stone-600 mt-2"><strong>Endereço:</strong> ${aluno.endereco}</p>` : ''}
+                    </div>
+                    ` : ''}
+
                     ${responsibleHtml}
 
                     ${aluno.status === 'Cancelado' && aluno.cancellationDate ? `
@@ -3303,7 +3361,7 @@
             document.getElementById('form-modal-title').textContent = turma ? "Editar Turma" : "Adicionar Nova Turma";
 
             const teacherOptions = collaborators.filter(c => c.sectors?.includes('professor')).map(c => `<option value="${c.id}" data-name="${c.name}" ${turma?.teacherId === c.id ? 'selected' : ''}>${c.name}</option>`).join('');
-            const levelOptions = ['Beginner', 'Elementary', 'Pre-Intermediate', 'Intermediate', 'Upper-Intermediate', 'Advanced'].map(level => `<option value="${level}" ${turma?.level === level ? 'selected' : ''}>${level}</option>`).join('') + `<option value="outro">Outro (especificar)</option>`;
+            const levelOptions = ['Starter 1', 'Starter 2', 'Freshman 1', 'Freshman 2', 'Sophomore 1', 'Sophomore 2', 'Junior 1', 'Junior 2', 'Senior 1', 'Senior 2', 'ACC'].map(level => `<option value="${level}" ${turma?.level === level ? 'selected' : ''}>${level}</option>`).join('') + `<option value="outro">Outro (especificar)</option>`;
 
             // Get students already allocated to other classes (excluding current class if editing)
             const allocatedStudentIds = getStudentsAllocatedToOtherTurmas(turmaId);
