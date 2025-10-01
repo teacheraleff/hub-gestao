@@ -1238,14 +1238,23 @@
             contentArea.innerHTML = `
                 <section id="alunos-section" class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-6">
-                        <div class="base-card bg-gradient-to-r from-stone-50 to-stone-100 border-stone-200">
-                            <div class="flex items-start justify-between">
-                                <div class="flex-1 min-w-0 pr-4">
+                        <div class="base-card bg-gradient-to-r from-stone-50 to-stone-100 border-stone-200" id="stat-card-total-alunos">
+                            <div class="flex items-start justify-between mb-2">
+                                <div class="flex-1 min-w-0 pr-4 card-content">
                                     <p class="text-sm font-medium text-stone-600">Total de Alunos</p>
                                     <p class="text-2xl font-bold text-stone-700 mt-1">${totalCount}</p>
                                 </div>
-                                <div class="flex-shrink-0">
-                                    <div class="p-2 bg-indigo-200 rounded-full">
+                                <div class="flex gap-2 items-start">
+                                    <button onclick="toggleCardVisibility('stat-card-total-alunos')" class="text-stone-400 hover:text-stone-600 transition-colors p-1" title="Ocultar/Mostrar informações">
+                                        <svg class="w-4 h-4 eye-icon-open" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                        </svg>
+                                        <svg class="w-4 h-4 eye-icon-closed hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path>
+                                        </svg>
+                                    </button>
+                                    <div class="p-2 bg-indigo-200 rounded-full flex-shrink-0">
                                         <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
                                         </svg>
@@ -1253,14 +1262,23 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="base-card bg-gradient-to-r from-stone-50 to-stone-100 border-stone-200">
-                            <div class="flex items-start justify-between">
-                                <div class="flex-1 min-w-0 pr-4">
+                        <div class="base-card bg-gradient-to-r from-stone-50 to-stone-100 border-stone-200" id="stat-card-alunos-ativos">
+                            <div class="flex items-start justify-between mb-2">
+                                <div class="flex-1 min-w-0 pr-4 card-content">
                                     <p class="text-sm font-medium text-stone-600">Alunos Ativos</p>
                                     <p class="text-2xl font-bold text-stone-700 mt-1">${activeCount}</p>
                                 </div>
-                                <div class="flex-shrink-0">
-                                    <div class="p-2 bg-green-200 rounded-full">
+                                <div class="flex gap-2 items-start">
+                                    <button onclick="toggleCardVisibility('stat-card-alunos-ativos')" class="text-stone-400 hover:text-stone-600 transition-colors p-1" title="Ocultar/Mostrar informações">
+                                        <svg class="w-4 h-4 eye-icon-open" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                        </svg>
+                                        <svg class="w-4 h-4 eye-icon-closed hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path>
+                                        </svg>
+                                    </button>
+                                    <div class="p-2 bg-green-200 rounded-full flex-shrink-0">
                                         <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                         </svg>
@@ -1268,14 +1286,23 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="base-card bg-gradient-to-r from-stone-50 to-stone-100 border-stone-200">
-                            <div class="flex items-start justify-between">
-                                <div class="flex-1 min-w-0 pr-4">
+                        <div class="base-card bg-gradient-to-r from-stone-50 to-stone-100 border-stone-200" id="stat-card-alunos-pendentes">
+                            <div class="flex items-start justify-between mb-2">
+                                <div class="flex-1 min-w-0 pr-4 card-content">
                                     <p class="text-sm font-medium text-stone-600">Alunos Pendentes</p>
                                     <p class="text-2xl font-bold text-stone-700 mt-1">${pendingCount}</p>
                                 </div>
-                                <div class="flex-shrink-0">
-                                    <div class="p-2 bg-yellow-200 rounded-full">
+                                <div class="flex gap-2 items-start">
+                                    <button onclick="toggleCardVisibility('stat-card-alunos-pendentes')" class="text-stone-400 hover:text-stone-600 transition-colors p-1" title="Ocultar/Mostrar informações">
+                                        <svg class="w-4 h-4 eye-icon-open" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                        </svg>
+                                        <svg class="w-4 h-4 eye-icon-closed hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path>
+                                        </svg>
+                                    </button>
+                                    <div class="p-2 bg-yellow-200 rounded-full flex-shrink-0">
                                         <svg class="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                         </svg>
@@ -1283,14 +1310,23 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="base-card bg-gradient-to-r from-stone-50 to-stone-100 border-stone-200">
-                            <div class="flex items-start justify-between">
-                                <div class="flex-1 min-w-0 pr-4">
+                        <div class="base-card bg-gradient-to-r from-stone-50 to-stone-100 border-stone-200" id="stat-card-modalidade-vip">
+                            <div class="flex items-start justify-between mb-2">
+                                <div class="flex-1 min-w-0 pr-4 card-content">
                                     <p class="text-sm font-medium text-stone-600">Modalidade VIP</p>
                                     <p class="text-2xl font-bold text-stone-700 mt-1">${vipCount}</p>
                                 </div>
-                                <div class="flex-shrink-0">
-                                    <div class="p-2 bg-purple-200 rounded-full">
+                                <div class="flex gap-2 items-start">
+                                    <button onclick="toggleCardVisibility('stat-card-modalidade-vip')" class="text-stone-400 hover:text-stone-600 transition-colors p-1" title="Ocultar/Mostrar informações">
+                                        <svg class="w-4 h-4 eye-icon-open" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                        </svg>
+                                        <svg class="w-4 h-4 eye-icon-closed hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path>
+                                        </svg>
+                                    </button>
+                                    <div class="p-2 bg-purple-200 rounded-full flex-shrink-0">
                                         <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
                                         </svg>
@@ -1298,14 +1334,23 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="base-card bg-gradient-to-r from-stone-50 to-stone-100 border-stone-200">
-                            <div class="flex items-start justify-between">
-                                <div class="flex-1 min-w-0 pr-4">
+                        <div class="base-card bg-gradient-to-r from-stone-50 to-stone-100 border-stone-200" id="stat-card-modalidade-turmas">
+                            <div class="flex items-start justify-between mb-2">
+                                <div class="flex-1 min-w-0 pr-4 card-content">
                                     <p class="text-sm font-medium text-stone-600">Modalidade Turmas</p>
                                     <p class="text-2xl font-bold text-stone-700 mt-1">${turmaCount}</p>
                                 </div>
-                                <div class="flex-shrink-0">
-                                    <div class="p-2 bg-teal-200 rounded-full">
+                                <div class="flex gap-2 items-start">
+                                    <button onclick="toggleCardVisibility('stat-card-modalidade-turmas')" class="text-stone-400 hover:text-stone-600 transition-colors p-1" title="Ocultar/Mostrar informações">
+                                        <svg class="w-4 h-4 eye-icon-open" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                        </svg>
+                                        <svg class="w-4 h-4 eye-icon-closed hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path>
+                                        </svg>
+                                    </button>
+                                    <div class="p-2 bg-teal-200 rounded-full flex-shrink-0">
                                         <svg class="w-5 h-5 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
                                         </svg>
@@ -1314,14 +1359,23 @@
                             </div>
                         </div>
                         ${canViewFinancialInfo ? `
-                        <div class="base-card bg-gradient-to-r from-stone-50 to-stone-100 border-stone-200">
-                            <div class="flex items-start justify-between">
-                                <div class="flex-1 min-w-0 pr-4">
+                        <div class="base-card bg-gradient-to-r from-stone-50 to-stone-100 border-stone-200" id="stat-card-ticket-medio">
+                            <div class="flex items-start justify-between mb-2">
+                                <div class="flex-1 min-w-0 pr-4 card-content">
                                     <p class="text-sm font-medium text-stone-600">Ticket Médio Mensal</p>
                                     <p class="text-2xl font-bold text-stone-700 mt-1">${formatCurrencyBR(averageTicket)}</p>
                                 </div>
-                                <div class="flex-shrink-0">
-                                    <div class="p-2 bg-orange-200 rounded-full">
+                                <div class="flex gap-2 items-start">
+                                    <button onclick="toggleCardVisibility('stat-card-ticket-medio')" class="text-stone-400 hover:text-stone-600 transition-colors p-1" title="Ocultar/Mostrar informações">
+                                        <svg class="w-4 h-4 eye-icon-open" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                        </svg>
+                                        <svg class="w-4 h-4 eye-icon-closed hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path>
+                                        </svg>
+                                    </button>
+                                    <div class="p-2 bg-orange-200 rounded-full flex-shrink-0">
                                         <svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
                                         </svg>
@@ -1329,14 +1383,23 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="base-card bg-gradient-to-r from-stone-50 to-stone-100 border-stone-200">
-                            <div class="flex items-start justify-between">
-                                <div class="flex-1 min-w-0 pr-4">
+                        <div class="base-card bg-gradient-to-r from-stone-50 to-stone-100 border-stone-200" id="stat-card-receita-total">
+                            <div class="flex items-start justify-between mb-2">
+                                <div class="flex-1 min-w-0 pr-4 card-content">
                                     <p class="text-sm font-medium text-stone-600">Receita Total</p>
                                     <p class="text-2xl font-bold text-stone-700 mt-1">${formatCurrencyBR(totalRevenue)}</p>
                                 </div>
-                                <div class="flex-shrink-0">
-                                    <div class="p-2 bg-blue-200 rounded-full">
+                                <div class="flex gap-2 items-start">
+                                    <button onclick="toggleCardVisibility('stat-card-receita-total')" class="text-stone-400 hover:text-stone-600 transition-colors p-1" title="Ocultar/Mostrar informações">
+                                        <svg class="w-4 h-4 eye-icon-open" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                        </svg>
+                                        <svg class="w-4 h-4 eye-icon-closed hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path>
+                                        </svg>
+                                    </button>
+                                    <div class="p-2 bg-blue-200 rounded-full flex-shrink-0">
                                         <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
                                         </svg>
@@ -1719,19 +1782,8 @@
                 return `
                 <div class="base-card flex flex-col" id="vip-card-${student.id}">
                     <div class="flex-1">
-                        <div class="flex justify-between items-start mb-2">
-                            <div>
-                                <h3 class="text-xl font-bold text-stone-800">${student.name}</h3>
-                            </div>
-                            <button onclick="toggleCardVisibility('vip-card-${student.id}')" class="text-stone-400 hover:text-stone-600 transition-colors p-1" title="Ocultar/Mostrar informações">
-                                <svg class="w-4 h-4 eye-icon-open" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                                </svg>
-                                <svg class="w-4 h-4 eye-icon-closed hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path>
-                                </svg>
-                            </button>
+                        <div class="mb-2">
+                            <h3 class="text-xl font-bold text-stone-800">${student.name}</h3>
                         </div>
                         <div class="card-content">
                             <p class="text-sm text-stone-600 mb-2"><strong>Status:</strong> <span class="status-tag status-${(student.status || 'pendente').toLowerCase()}">${student.status || 'Pendente'}</span></p>
@@ -2613,14 +2665,23 @@
             contentArea.innerHTML = `
                 <!-- Cards de Resumo Financeiro -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                    <div class="base-card bg-gradient-to-r from-stone-50 to-stone-100 border-stone-200">
-                        <div class="flex items-start justify-between">
-                            <div class="flex-1 min-w-0 pr-4">
+                    <div class="base-card bg-gradient-to-r from-stone-50 to-stone-100 border-stone-200" id="expense-card-receita">
+                        <div class="flex items-start justify-between mb-2">
+                            <div class="flex-1 min-w-0 pr-4 card-content">
                                 <p class="text-sm font-medium text-stone-600">Receita Total</p>
                                 <p class="text-2xl font-bold text-stone-700 mt-1">${totalRevenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
                             </div>
-                            <div class="flex-shrink-0">
-                                <div class="p-2 bg-green-200 rounded-full">
+                            <div class="flex gap-2 items-start">
+                                <button onclick="toggleCardVisibility('expense-card-receita')" class="text-stone-400 hover:text-stone-600 transition-colors p-1" title="Ocultar/Mostrar informações">
+                                    <svg class="w-4 h-4 eye-icon-open" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                    </svg>
+                                    <svg class="w-4 h-4 eye-icon-closed hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path>
+                                    </svg>
+                                </button>
+                                <div class="p-2 bg-green-200 rounded-full flex-shrink-0">
                                     <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
                                     </svg>
@@ -2628,14 +2689,23 @@
                             </div>
                         </div>
                     </div>
-                    <div class="base-card bg-gradient-to-r from-stone-50 to-stone-100 border-stone-200">
-                        <div class="flex items-start justify-between">
-                            <div class="flex-1 min-w-0 pr-4">
+                    <div class="base-card bg-gradient-to-r from-stone-50 to-stone-100 border-stone-200" id="expense-card-pendentes">
+                        <div class="flex items-start justify-between mb-2">
+                            <div class="flex-1 min-w-0 pr-4 card-content">
                                 <p class="text-sm font-medium text-stone-600">Despesas Pendentes</p>
                                 <p class="text-2xl font-bold text-stone-700 mt-1">${totalExpenses.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
                             </div>
-                            <div class="flex-shrink-0">
-                                <div class="p-2 bg-red-200 rounded-full">
+                            <div class="flex gap-2 items-start">
+                                <button onclick="toggleCardVisibility('expense-card-pendentes')" class="text-stone-400 hover:text-stone-600 transition-colors p-1" title="Ocultar/Mostrar informações">
+                                    <svg class="w-4 h-4 eye-icon-open" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                    </svg>
+                                    <svg class="w-4 h-4 eye-icon-closed hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path>
+                                    </svg>
+                                </button>
+                                <div class="p-2 bg-red-200 rounded-full flex-shrink-0">
                                     <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                     </svg>
@@ -2643,14 +2713,23 @@
                             </div>
                         </div>
                     </div>
-                    <div class="base-card bg-gradient-to-r from-stone-50 to-stone-100 border-stone-200">
-                        <div class="flex items-start justify-between">
-                            <div class="flex-1 min-w-0 pr-4">
+                    <div class="base-card bg-gradient-to-r from-stone-50 to-stone-100 border-stone-200" id="expense-card-lucro">
+                        <div class="flex items-start justify-between mb-2">
+                            <div class="flex-1 min-w-0 pr-4 card-content">
                                 <p class="text-sm font-medium text-stone-600">Lucro</p>
                                 <p class="text-2xl font-bold text-stone-700 mt-1">${profit.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
                             </div>
-                            <div class="flex-shrink-0">
-                                <div class="p-2 bg-blue-200 rounded-full">
+                            <div class="flex gap-2 items-start">
+                                <button onclick="toggleCardVisibility('expense-card-lucro')" class="text-stone-400 hover:text-stone-600 transition-colors p-1" title="Ocultar/Mostrar informações">
+                                    <svg class="w-4 h-4 eye-icon-open" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                    </svg>
+                                    <svg class="w-4 h-4 eye-icon-closed hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path>
+                                    </svg>
+                                </button>
+                                <div class="p-2 bg-blue-200 rounded-full flex-shrink-0">
                                     <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
                                     </svg>
@@ -3001,12 +3080,14 @@
             const eyeOpen = card.querySelector('.eye-icon-open');
             const eyeClosed = card.querySelector('.eye-icon-closed');
             
-            if (contentDiv.style.display === 'none') {
-                contentDiv.style.display = 'block';
+            if (contentDiv.style.filter === 'blur(8px)') {
+                contentDiv.style.filter = 'none';
+                contentDiv.style.userSelect = 'auto';
                 eyeOpen.classList.remove('hidden');
                 eyeClosed.classList.add('hidden');
             } else {
-                contentDiv.style.display = 'none';
+                contentDiv.style.filter = 'blur(8px)';
+                contentDiv.style.userSelect = 'none';
                 eyeOpen.classList.add('hidden');
                 eyeClosed.classList.remove('hidden');
             }
@@ -3020,17 +3101,17 @@
             const eyeOpen = row.querySelector('.eye-icon-open');
             const eyeClosed = row.querySelector('.eye-icon-closed');
             
-            if (contentElements[0] && contentElements[0].style.opacity === '0') {
+            if (contentElements[0] && contentElements[0].style.filter === 'blur(8px)') {
                 contentElements.forEach(el => {
-                    el.style.opacity = '1';
                     el.style.filter = 'none';
+                    el.style.userSelect = 'auto';
                 });
                 eyeOpen.classList.remove('hidden');
                 eyeClosed.classList.add('hidden');
             } else {
                 contentElements.forEach(el => {
-                    el.style.opacity = '0';
                     el.style.filter = 'blur(8px)';
+                    el.style.userSelect = 'none';
                 });
                 eyeOpen.classList.add('hidden');
                 eyeClosed.classList.remove('hidden');
