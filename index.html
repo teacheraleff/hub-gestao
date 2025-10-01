@@ -205,40 +205,6 @@
         .highlight-award { color: #059669; font-size: 0.875rem; margin-top: 0.5rem; }
         .highlight-empty { text-align: center; padding: 2rem; color: #9ca3af; }
 
-        /* --- Pedagogical Challenge Styles --- */
-        .pedagogical-quiz-option {
-            display: block;
-            width: 100%;
-            padding: 0.75rem 1rem;
-            margin-bottom: 0.75rem;
-            text-align: left;
-            background-color: #f5f5f4;
-            border-radius: 0.5rem;
-            font-weight: 500;
-            transition: all 0.2s ease;
-            border: 2px solid transparent;
-            cursor: pointer;
-        }
-        .pedagogical-quiz-option:hover:not(:disabled) {
-            background-color: #e7e5e4;
-            border-color: #F1D24B;
-        }
-        .pedagogical-quiz-option:disabled {
-            cursor: not-allowed;
-            opacity: 0.8;
-        }
-        .pedagogical-quiz-option.correct {
-            background-color: #D1FAE5;
-            border-color: #34D399;
-            color: #065F46;
-            font-weight: 600;
-        }
-        .pedagogical-quiz-option.incorrect {
-            background-color: #FEE2E2;
-            border-color: #F87171;
-            color: #991B1B;
-            font-weight: 600;
-        }
         .audio-player-container {
             display: flex;
             align-items: center;
@@ -482,8 +448,7 @@
         const pendingView = document.getElementById('pending-view');
 
         let db, auth, storage, userId, currentUserName, currentUserRole;
-        let usersData = [], students = [], turmas = [], vips = [], attendance = [], tasks = [], events = [], collaborators = [], schedules = [], expenses = [], dojoRanking = [], dojoMissions = [], avisos = [];
-        let muralFilter = 'todos';
+        let usersData = [], students = [], turmas = [], vips = [], attendance = [], tasks = [], events = [], collaborators = [], schedules = [], expenses = [], dojoRanking = [], dojoMissions = [];
         let userProfiles = {};
         let monthlyHighlight = {
             name: 'João Silva',
@@ -498,16 +463,6 @@
         let currentPage = 1;
         let itemsPerPage = 20;
         
-        // Sector tags for mural announcements
-        const setorTags = [
-            { value: 'teachers', label: 'Teachers', color: '#10B981' },
-            { value: 'pedagogico', label: 'Pedagógico', color: '#3B82F6' },
-            { value: 'comercial', label: 'Comercial', color: '#F59E0B' },
-            { value: 'financeiro', label: 'Financeiro', color: '#EF4444' },
-            { value: 'marketing', label: 'Marketing', color: '#8B5CF6' },
-            { value: 'administrativo', label: 'Administrativo', color: '#6B7280' },
-            { value: 'geral', label: 'Geral', color: '#F1D24B' }
-        ];
 
         // --- DEVELOPMENT MODE FUNCTIONS ---
         function startAppInDevelopmentMode() {
@@ -521,44 +476,12 @@
             document.getElementById('profile-picture').src = 'https://res.cloudinary.com/dqfi22uz0/image/upload/v1749349751/DBB440C2-684E-4DCF-9CD3-B2DDC18F1E53_3_vgocga.jpg';
 
             // Initialize with demo data
-            loadDemoMuralData();
             updateWelcomeMessages(currentUserName);
             showHubView();
             renderInicioSection();
             renderMenu();
         }
 
-        async function loadDemoMuralData() {
-            // Load mural avisos from server API
-            await loadAvisos();
-        }
-
-        // Load avisos from server API
-        async function loadAvisos() {
-            try {
-                const response = await fetch('/api/avisos');
-                if (response.ok) {
-                    const data = await response.json();
-                    // Convert database fields to expected format
-                    avisos = data.map(aviso => ({
-                        id: aviso.id,
-                        titulo: aviso.titulo,
-                        conteudo: aviso.conteudo,
-                        setor: Array.isArray(aviso.setor) ? aviso.setor : JSON.parse(aviso.setor),
-                        autorId: aviso.autor_id,
-                        autorNome: aviso.autor_nome,
-                        dataPublicacao: aviso.data_publicacao,
-                        dataCriacao: aviso.data_criacao,
-                        dataEdicao: aviso.data_edicao
-                    }));
-                } else {
-                    throw new Error('Failed to load avisos');
-                }
-            } catch (error) {
-                console.error("Error loading avisos:", error);
-                avisos = [];
-            }
-        }
 
         function safeDeleteItem(collection, id, itemName = 'item') {
             
@@ -682,7 +605,6 @@
             });
             getCollectionListener('events', events, () => {
                 const activePageId = contentArea.firstElementChild?.id;
-                if (activePageId === 'campanhas-section') renderCampanhasSection();
             });
             getCollectionListener('schedules', schedules, () => {
                  if (contentArea.firstElementChild?.id === 'grade-section') renderGradeSection();
@@ -1302,13 +1224,15 @@
             const totalCount = students.length;
             const activeCount = students.filter(s => s.status === 'Ativo').length;
             const pendingCount = students.filter(s => s.status === 'Pendente').length;
+            const vipCount = students.filter(s => s.modalidade === 'VIP').length;
+            const turmaCount = students.filter(s => s.modalidade === 'TURMA' || s.modalidade === 'DUPLA').length;
             const totalRevenue = students.reduce((sum, student) => {
                 return sum + parseFloat(student.amountReceived || student.amountPaid || 0);
             }, 0);
 
             contentArea.innerHTML = `
                 <section id="alunos-section" class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
                         <div class="base-card bg-gradient-to-r from-stone-50 to-stone-100 border-stone-200">
                             <div class="flex items-start justify-between">
                                 <div class="flex-1 min-w-0 pr-4">
@@ -1349,6 +1273,36 @@
                                     <div class="p-2 bg-yellow-200 rounded-full">
                                         <svg class="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="base-card bg-gradient-to-r from-purple-50 to-purple-100 border-purple-200">
+                            <div class="flex items-start justify-between">
+                                <div class="flex-1 min-w-0 pr-4">
+                                    <p class="text-sm font-medium text-purple-600">Modalidade VIP</p>
+                                    <p class="text-2xl font-bold text-purple-700 mt-1">${vipCount}</p>
+                                </div>
+                                <div class="flex-shrink-0">
+                                    <div class="p-2 bg-purple-200 rounded-full">
+                                        <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
+                                        </svg>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="base-card bg-gradient-to-r from-teal-50 to-teal-100 border-teal-200">
+                            <div class="flex items-start justify-between">
+                                <div class="flex-1 min-w-0 pr-4">
+                                    <p class="text-sm font-medium text-teal-600">Modalidade Turmas</p>
+                                    <p class="text-2xl font-bold text-teal-700 mt-1">${turmaCount}</p>
+                                </div>
+                                <div class="flex-shrink-0">
+                                    <div class="p-2 bg-teal-200 rounded-full">
+                                        <svg class="w-5 h-5 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
                                         </svg>
                                     </div>
                                 </div>
@@ -1396,7 +1350,6 @@
                                     <th>Status</th>
                                     ${canViewFinancialInfo ? '<th>Valor Pago</th>' : ''}
                                     ${canViewFinancialInfo ? '<th>Valor Recebido</th>' : '<th>Responsável</th>'}
-                                    <th class="text-center">Ações</th>
                                 </tr>
                             </thead>
                             <tbody id="alunos-list"></tbody>
@@ -1798,7 +1751,7 @@
             const paginatedStudents = filteredStudents.slice(startIndex, endIndex);
 
             if (filteredStudents.length === 0) {
-                const colspanCount = canViewFinancialInfo ? 5 : 4;
+                const colspanCount = canViewFinancialInfo ? 4 : 3;
                 listBody.innerHTML = `<tr><td colspan="${colspanCount}" class="text-center py-10 text-stone-500">Nenhum aluno encontrado.</td></tr>`;
                 updatePaginationControls(0, 0, 0);
                 return;
@@ -1820,12 +1773,6 @@
                     <td><span class="status-tag status-${(student.status || 'pendente').toLowerCase()}">${student.status || 'Pendente'}</span></td>
                     ${canViewFinancialInfo ? `<td class="font-mono">R$ ${parseFloat(student.amountPaid || 0).toFixed(2)}</td>` : ''}
                     ${canViewFinancialInfo ? `<td class="font-mono">R$ ${parseFloat(student.amountReceived || student.amountPaid || 0).toFixed(2)}</td>` : `<td>${student.responsibleName || 'N/A'}</td>`}
-                    <td class="text-center">
-                        <div class="flex gap-1 justify-center">
-                            ${canEdit ? `<button class="secondary-btn" data-action="edit-aluno" data-id="${student.id}" onclick="event.stopPropagation()">Editar</button>` : `<button class="secondary-btn" data-action="view-aluno" data-id="${student.id}" onclick="event.stopPropagation()">Ver</button>`}
-                            ${vipRecord && canEdit ? `<button class="secondary-btn text-xs px-2 py-1" data-action="edit-vip" data-id="${vipRecord.id}" onclick="event.stopPropagation()" title="Editar VIP">✏️</button>` : ''}
-                        </div>
-                    </td>
                 </tr>
                 `;
             }).join('');
@@ -2129,53 +2076,6 @@
             });
         }
 
-        async function renderCampanhasSection() {
-            document.getElementById('main-title').textContent = 'Gestor de Campanhas';
-            document.getElementById('main-description').textContent = 'Planeje e gerencie todas as campanhas de marketing da marca.';
-            
-            // Load campanhas from Firebase if not in development mode
-            if (!window.isDevelopmentMode) {
-                await loadCampanhas();
-            }
-            
-            contentArea.innerHTML = `
-                <div id="campanhas-section" class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
-                    <div class="text-right mb-6">
-                        <button class="primary-btn w-auto" data-action="add-campanha">+ Adicionar Campanha</button>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        ${events.map(c => `
-                        <div class="base-card ${c.finalizada ? 'bg-gray-100 opacity-75' : 'bg-white hover:bg-yellow-50'} border-l-yellow-400 border-l-4 shadow-md hover:shadow-lg transition-all duration-200" data-action="view-campanha" data-id="${c.id}">
-                            <div class="mb-3">
-                                <h3 class="text-xl font-bold ${c.finalizada ? 'text-gray-600 line-through' : 'text-stone-800'} leading-tight">${c.nome || c.title}</h3>
-                            </div>
-                            <div class="space-y-2 mb-3">
-                                ${c.setores && c.setores.length > 0 ? `<div class="flex flex-wrap gap-1">${c.setores.map(setor => `<span class="status-tag status-${setor.toLowerCase()} text-xs ${c.finalizada ? 'opacity-60' : ''}">${setor}</span>`).join('')}</div>` : ''}
-                                <p class="text-sm ${c.finalizada ? 'text-gray-500' : 'text-stone-500'}"><strong>Responsável:</strong> ${c.responsavel || 'N/A'}</p>
-                                <p class="text-sm ${c.finalizada ? 'text-gray-500' : 'text-stone-600'}"><strong>Plataforma:</strong> ${c.plataforma && c.plataforma.length > 0 ? c.plataforma.join(', ') : (c.foco && c.foco.length > 0 ? c.foco.join(', ') : 'N/A')}</p>
-                                <p class="text-sm ${c.finalizada ? 'text-gray-500' : 'text-stone-600'}"><strong>Foco:</strong> ${c.focoObjetivo && c.focoObjetivo.length > 0 ? c.focoObjetivo.join(', ') : 'N/A'}</p>
-                            </div>
-                            <div class="space-y-1">
-                                ${c.referencia1 || c.referencia2 ? `<p class="text-sm ${c.finalizada ? 'text-gray-500' : 'text-stone-600'}"><strong>Referências:</strong> ${[c.referencia1, c.referencia2].filter(Boolean).length} link(s)</p>` : ''}
-                                ${c.local ? `<p class="text-sm ${c.finalizada ? 'text-gray-500' : 'text-stone-600'}"><strong>Local:</strong> ${c.local}</p>` : ''}
-                                ${c.horario ? `<p class="text-sm ${c.finalizada ? 'text-gray-500' : 'text-stone-600'}"><strong>Horário:</strong> ${c.horario}</p>` : ''}
-                            </div>
-                            <div class="flex items-center justify-between mt-3 pt-2 border-t">
-                                <div class="flex items-center">
-                                    <input type="checkbox" id="finalizada-${c.id}" ${c.finalizada ? 'checked' : ''} 
-                                           class="h-4 w-4 rounded finalizada-checkbox" 
-                                           data-campanha-id="${c.id}"
-                                           onchange="event.stopPropagation(); console.log('Checkbox changed for campaign:', '${c.id}', this.checked); toggleCampanhaFinalizada('${c.id}', this.checked);">
-                                    <label for="finalizada-${c.id}" class="ml-2 text-sm text-stone-600 cursor-pointer">
-                                        ${c.finalizada ? 'Finalizada' : 'Marcar como finalizada'}
-                                    </label>
-                                </div>
-                                ${c.finalizada ? `<span class="text-xs text-green-600 font-medium">✓ Finalizada</span>` : ''}
-                            </div>
-                        </div>`).join('') || '<p class="col-span-full text-center py-10 text-stone-500">Nenhuma campanha encontrada.</p>'}
-                    </div>
-                </div>`;
-        }
 
 
 
@@ -3142,10 +3042,10 @@
                     <div>
                         <label class="font-medium text-sm">Níveis Cursados</label>
                         <div id="aluno-levels-checkboxes" class="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-y-2 gap-x-4 max-h-40 overflow-y-auto p-2 border rounded-md">
-                            ${[].map(cp => `
+                            ${['Basic 1', 'Basic 2', 'Pre-intermediate 1', 'Pre-intermediate 2', 'Intermediate 1', 'Intermediate 2', 'Pre-advanced 1', 'Pre-advanced 2', 'Advanced 1', 'Advanced 2', 'ACC'].map((level, index) => `
                                 <div class="flex items-center">
-                                    <input type="checkbox" id="level-${cp.id}" name="completedLevels" value="${cp.title}" class="h-4 w-4 rounded text-yellow-500 focus:ring-yellow-400" ${aluno?.completedLevels?.includes(cp.title) ? 'checked' : ''}>
-                                    <label for="level-${cp.id}" class="ml-2 text-sm">${cp.title}</label>
+                                    <input type="checkbox" id="level-${index}" name="completedLevels" value="${level}" class="h-4 w-4 rounded text-yellow-500 focus:ring-yellow-400" ${aluno?.completedLevels?.includes(level) ? 'checked' : ''}>
+                                    <label for="level-${index}" class="ml-2 text-sm">${level}</label>
                                 </div>
                             `).join('')}
                         </div>
@@ -4382,35 +4282,6 @@
             document.getElementById('form-modal').classList.add('visible');
         }
 
-        async function toggleCampanhaFinalizada(campanhaId, finalizada) {
-            try {
-                const data = { finalizada: finalizada, updatedAt: serverTimestamp() };
-                
-                if (!db) { 
-                    console.warn("Offline mode."); 
-                    // Update local events array for immediate UI feedback
-                    const campanhaIndex = events.findIndex(c => c.id === campanhaId);
-                    if (campanhaIndex !== -1) {
-                        events[campanhaIndex].finalizada = finalizada;
-                        // Removed auto re-render to fix navigation issues
-                    }
-                    showSuccessMessage("Sucesso!", `Campanha ${finalizada ? 'marcada como finalizada' : 'desmarcada'} (modo offline).`);
-                    return; 
-                } else {
-                    await updateDoc(doc(db, `artifacts/${appId}/public/data/events`, campanhaId), data);
-                    showSuccessMessage("Sucesso!", `Campanha ${finalizada ? 'marcada como finalizada' : 'desmarcada'} com sucesso.`);
-                }
-            } catch (error) {
-                console.error("Error updating campanha status:", error);
-                showErrorMessage("Erro", "Falha ao atualizar o status da campanha.");
-                
-                // Revert checkbox state on error
-                const checkbox = document.getElementById(`finalizada-${campanhaId}`);
-                if (checkbox) {
-                    checkbox.checked = !finalizada;
-                }
-            }
-        }
 
 
 
@@ -4970,18 +4841,31 @@
                         <div><label class="font-medium text-sm">Valor Pago (R$)</label><input type="number" step="0.01" id="expense-paidAmount" class="form-input" value="${expense?.paidAmount || ''}"></div>
                     </div>
 
+                    <div id="parcelas-container" class="${expense?.tipo === 'fixo' || expense?.isFixedSalary ? 'hidden' : ''}">
+                        <label class="font-medium text-sm">Quantidade de Parcelas</label>
+                        <input type="number" min="1" max="60" id="expense-parcelas" class="form-input" placeholder="Ex: 12" value="${expense?.parcelas || ''}">
+                    </div>
+
                     <div class="flex items-center gap-2"><input type="checkbox" id="expense-isFixedSalary" class="h-4 w-4 rounded" ${expense?.isFixedSalary ? 'checked' : ''}><label for="expense-isFixedSalary" class="text-sm">É salário fixo?</label></div>
                     <div id="employee-role-container" class="${expense?.isFixedSalary ? '' : 'hidden'}"><label class="font-medium text-sm">Cargo</label><input type="text" id="expense-employeeRole" class="form-input" value="${expense?.employeeRole || ''}"></div>
                     <div class="pt-4 flex justify-end gap-2">${expenseId ? `<button type="button" class="danger-btn" data-action="delete-item" data-collection="expenses" data-id="${expenseId}">Apagar</button>` : ''}<button type="submit" class="primary-btn w-auto">Salvar</button></div>
                 </form>`;
 
             const isFixedSalaryCheckbox = document.getElementById('expense-isFixedSalary');
-            isFixedSalaryCheckbox.onchange = () => {
+            const tipoSelect = document.getElementById('expense-tipo');
+            
+            const updateFieldVisibility = () => {
                 const isChecked = isFixedSalaryCheckbox.checked;
+                const isVariavel = tipoSelect.value === 'variavel';
+                
                 document.getElementById('employee-role-container').classList.toggle('hidden', !isChecked);
                 document.getElementById('due-date-container').classList.toggle('hidden', isChecked);
                 document.getElementById('due-day-container').classList.toggle('hidden', !isChecked);
+                document.getElementById('parcelas-container').classList.toggle('hidden', !isVariavel || isChecked);
             };
+            
+            isFixedSalaryCheckbox.onchange = updateFieldVisibility;
+            tipoSelect.onchange = updateFieldVisibility;
 
             document.getElementById('form-modal-body').onsubmit = saveExpense;
             document.getElementById('form-modal').classList.add('visible');
@@ -4990,23 +4874,30 @@
             event.preventDefault();
             const expenseId = document.getElementById('expense-id').value;
             const isFixedSalary = document.getElementById('expense-isFixedSalary').checked;
+            const tipo = document.getElementById('expense-tipo').value;
             const data = {
                 description: document.getElementById('expense-description').value,
-                tipo: document.getElementById('expense-tipo').value,
+                tipo: tipo,
                 amount: document.getElementById('expense-amount').value,
                 extraAmount: document.getElementById('expense-extraAmount').value || 0,
                 paidAmount: document.getElementById('expense-paidAmount').value || 0,
                 isPaid: false,
                 isFixedSalary: isFixedSalary,
-                employeeRole: isFixedSalary ? document.getElementById('expense-employeeRole').value : '',
+                employeeRole: isFixedSalary ? document.getElementById('expense-employeeRole').value : ''
             };
 
             if (isFixedSalary) {
                 data.dueDay = document.getElementById('expense-dueDay').value;
                 data.dueDate = null;
+                data.parcelas = '';
             } else {
                 data.dueDate = document.getElementById('expense-dueDate').value;
                 data.dueDay = null;
+                if (tipo === 'variavel') {
+                    data.parcelas = document.getElementById('expense-parcelas').value || '';
+                } else {
+                    data.parcelas = '';
+                }
             }
 
             if (!db) { console.warn("Offline mode."); closeFormModal(); return; }
@@ -6571,8 +6462,6 @@
                 hasFirebase: !!db,
                 currentUser: currentUserName,
                 currentRole: currentUserRole,
-                challengeContent: challengeContent,
-                localStorage: localStorage.getItem('slap-challenge-content'),
                 timestamp: new Date().toISOString()
             };
 
@@ -6608,26 +6497,6 @@
                                 <div class="flex justify-between">
                                     <span>Papel:</span>
                                     <span class="font-medium">${currentUserRole}</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div>
-                        <h4 class="font-semibold text-stone-800 mb-3">Conteúdo Atual do Desafio</h4>
-                        <div class="bg-stone-50 border border-stone-200 rounded-lg p-4">
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                                <div>
-                                    <span class="font-medium">Mês:</span> ${challengeContent.month || 'N/A'}
-                                </div>
-                                <div>
-                                    <span class="font-medium">Subtítulo:</span> ${challengeContent.subtitle || 'N/A'}
-                                </div>
-                                <div>
-                                    <span class="font-medium">Vídeo:</span> ${challengeContent.videoUrl ? 'Definido' : 'Não definido'}
-                                </div>
-                                <div>
-                                    <span class="font-medium">Deadline:</span> ${challengeContent.deadline ? new Date(challengeContent.deadline).toLocaleString('pt-BR') : 'N/A'}
                                 </div>
                             </div>
                         </div>
@@ -7046,29 +6915,6 @@
             // No longer needed - events are saved individually via saveCalendarEvent
         }
 
-        // Load campanhas from Firebase
-        async function loadCampanhas() {
-            if (!db) {
-                console.warn("Firebase not available, using sample data");
-                events = [
-                    { id: '1', nome: 'Campanha Demo', responsavel: 'Admin', setores: ['Marketing'], plataforma: ['Instagram'], focoObjetivo: ['Engajamento'], finalizada: false }
-                ];
-                return;
-            }
-
-            try {
-                const campanhasCollection = collection(db, `artifacts/${appId}/public/data/events`);
-                const campanhasSnapshot = await getDocs(campanhasCollection);
-                events = campanhasSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                
-                // Load campanhas data without real-time updates to prevent navigation interference
-                // Removed onSnapshot to fix navigation issues
-                
-            } catch (error) {
-                console.error("Error loading campanhas:", error);
-                events = [];
-            }
-        }
 
         // Marketing Calendar Functions
         function initializeMarketingCalendar() {
@@ -7305,1025 +7151,7 @@
             showSuccessMessage("Sucesso!", "Evento excluído com sucesso.");
         }
 
-        // --- Pedagogical Challenge Functions ---
-        function renderDesafioPedagogicoSection() {
-            document.getElementById('main-title').textContent = 'Desafio Pedagógico';
-            const contentArea = document.getElementById('content-area');
-
-            contentArea.innerHTML = `
-                <div class="bg-[#F1D24B] p-6 rounded-xl shadow-lg mb-8">
-                    <div class="flex flex-wrap items-center justify-between gap-4">
-                        <div class="flex-grow text-center">
-                            <h1 class="text-2xl sm:text-3xl font-bold text-stone-800">Pedagogical Challenge</h1>
-                            <p id="challenge-subtitle-display" class="text-md sm:text-lg text-stone-700 mt-1">A new topic every month to sharpen your skills.</p>
-                        </div>
-                        <div class="bg-white text-stone-800 px-4 py-2 rounded-lg shadow-inner text-center flex-shrink-0">
-                            <span id="challenge-month-display" class="font-bold text-xl">MONTHLY MODULE</span>
-                        </div>
-                        ${['admin', 'ap'].includes(currentUserRole) ? `
-                        <button class="secondary-btn w-auto" data-action="edit-challenge-content">
-                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                            </svg>
-                            Editar Conteúdo
-                        </button>
-                        ` : ''}
-
-                    </div>
-
-                    <div class="mt-6 bg-stone-800 text-white p-6 rounded-lg shadow-lg">
-                        <div class="flex flex-col md:flex-row items-center justify-center md:justify-around gap-6 md:gap-12">
-                            <div class="text-center">
-                                <h3 class="font-semibold text-base uppercase tracking-wider text-yellow-300">Deadline to Complete</h3>
-                                <div id="countdown" class="flex justify-center gap-4 sm:gap-6 text-2xl sm:text-4xl mt-2">
-                                    <div><span id="days" class="font-bold">00</span><span class="block text-xs sm:text-sm font-normal text-stone-300">Days</span></div>
-                                    <div><span id="hours" class="font-bold">00</span><span class="block text-xs sm:text-sm font-normal text-stone-300">Hours</span></div>
-                                    <div><span id="minutes" class="font-bold">00</span><span class="block text-xs sm:text-sm font-normal text-stone-300">Minutes</span></div>
-                                    <div><span id="seconds" class="font-bold">00</span><span class="block text-xs sm:text-sm font-normal text-stone-300">Seconds</span></div>
-                                </div>
-                            </div>
-                            <div class="hidden md:block w-px h-16 bg-stone-600"></div>
-                            <div class="text-center flex items-center gap-4">
-                                <svg class="w-12 h-12 text-yellow-300 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                </svg>
-                                <div class="text-left">
-                                     <p class="text-lg font-bold text-white">1000 Points</p>
-                                     <p class="text-sm text-stone-300">in the SLAP Dojo</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-white p-6 sm:p-8 rounded-2xl shadow-lg border-2 border-stone-200">
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                        <!-- Left Column: Materials -->
-                        <div class="space-y-8">
-                            <div>
-                                <h4 class="text-xl font-semibold mb-3 flex items-center">
-                                    <svg class="w-6 h-6 mr-2 text-red-500" fill="currentColor" viewBox="0 0 24 24">
-                                        <path d="M8 5v14l11-7z"/>
-                                    </svg>
-                                    Video Materials
-                                </h4>
-                                <div id="challenge-video-container">
-                                    <!-- Video content will be rendered here -->
-                                </div>
-                            </div>
-
-                            <div>
-                                <h4 class="text-xl font-semibold mb-3 flex items-center">
-                                    <svg class="w-6 h-6 mr-2 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 14.142M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/>
-                                    </svg>
-                                    Audio Materials
-                                </h4>
-                                <div id="challenge-audio-container">
-                                    <!-- Audio content will be rendered here -->
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Right Column: Quiz -->
-                        <div class="flex flex-col">
-                            <h4 class="text-xl font-semibold mb-3 flex items-center">
-                                <svg class="w-6 h-6 mr-2 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
-                                </svg>
-                                The Challenge Quiz
-                            </h4>
-                            <div id="quiz-container" class="bg-stone-50 p-6 rounded-lg border border-stone-200 flex-grow min-h-[400px]">
-                                <!-- Quiz content will be injected here -->
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Challenge Content Edit Modal -->
-                <div id="challenge-edit-modal" class="modal-overlay">
-                    <div class="modal-content max-w-2xl">
-                        <div class="modal-header">
-                            <h4>Editar Conteúdo do Desafio</h4>
-                            <button data-action="close-challenge-modal" class="modal-close-btn">&times;</button>
-                        </div>
-                        <form id="challenge-content-form">
-                            <div class="space-y-6">
-                                <div>
-                                    <label class="font-medium text-sm">URL do Vídeo (Cloudinary)</label>
-                                    <input type="url" id="challenge-video-url" class="form-input" placeholder="https://res.cloudinary.com/...">
-                                    <p class="text-xs text-stone-500 mt-1">Deixe em branco para remover o vídeo</p>
-                                </div>
-                                <div>
-                                    <label class="font-medium text-sm">URL do Áudio 1 (Cloudinary)</label>
-                                    <input type="url" id="challenge-audio1-url" class="form-input" placeholder="https://res.cloudinary.com/...">
-                                </div>
-                                <div>
-                                    <label class="font-medium text-sm">URL do Áudio 2 (Cloudinary)</label>
-                                    <input type="url" id="challenge-audio2-url" class="form-input" placeholder="https://res.cloudinary.com/...">
-                                </div>
-                                <div>
-                                    <label class="font-medium text-sm">Mês do Módulo</label>
-                                    <input type="text" id="challenge-month" class="form-input" placeholder="Ex: JANEIRO 2025">
-                                </div>
-                                <div>
-                                    <label class="font-medium text-sm">Tema do Mês (Subtítulo)</label>
-                                    <input type="text" id="challenge-subtitle" class="form-input" placeholder="Ex: A new topic every month to sharpen your skills.">
-                                    <p class="text-xs text-stone-500 mt-1">Texto que aparece abaixo do título principal</p>
-                                </div>
-                                <div>
-                                    <label class="font-medium text-sm">Data Limite (Deadline)</label>
-                                    <input type="datetime-local" id="challenge-deadline" class="form-input">
-                                </div>
-                                <div class="flex justify-end gap-2">
-                                    <button type="button" data-action="close-challenge-modal" class="secondary-btn">Cancelar</button>
-                                    <button type="submit" class="primary-btn w-auto">Salvar Conteúdo</button>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            `;
-
-            initializePedagogicalChallenge().catch(console.error);
-        }
-
-        // --- Pedagogical Challenge Implementation ---
-        let challengeContent = {
-            videoUrl: '',
-            audio1Url: '',
-            audio2Url: '',
-            month: 'MONTHLY MODULE',
-            deadline: null
-        };
-
-        let teacherName = '';
-        let quizQuestions = [];
-        let currentQuestionIndex = 0;
-        let correctStreak = 0;
-        let totalAttempts = 0;
-        const questionsNeededForSuccess = 20;
-        const questionsInChallenge = 20;
-
-        const fullQuizData = [
-            // Dogme ELT Questions (25 questions)
-            { q: "According to Thornbury, what is the main role of the teacher in a Dogme-based classroom?", o: ["To follow the coursebook closely", "To correct all grammar errors immediately", "To facilitate and respond to emergent language*", "To deliver pre-planned grammar presentations"], a: 2, e: "In Dogme ELT, teachers act as facilitators who respond to language that emerges naturally from student interaction rather than following rigid lesson plans." },
-            { q: "What does 'noticing' primarily help with in advanced learners?", o: ["Expanding vocabulary rapidly", "Developing listening skills", "Identifying fossilized errors*", "Memorizing phrasal verbs"], a: 2, e: "Noticing helps advanced learners become aware of persistent language errors that have become fossilized in their production." },
-            { q: "Dogme ELT emphasizes:", o: ["Heavy reliance on multimedia resources", "Teaching fixed grammar structures", "Predefined learning outcomes", "Conversation-driven instruction*"], a: 3, e: "Dogme prioritizes natural conversation and interaction over predetermined curricula and materials." },
-            { q: "What is a common challenge advanced learners face, according to Thornbury?", o: ["Lack of interest in grammar", "Inability to understand basic tenses", "Repetition of fossilized errors*", "Low vocabulary range"], a: 2, e: "Advanced learners often struggle with persistent errors that have become automatic and require conscious attention to correct." },
-            { q: "Emergent language refers to:", o: ["Vocabulary from the syllabus", "Language that arises spontaneously during interaction*", "Language from previous homework", "Phrases taken from authentic texts"], a: 1, e: "Emergent language is the language that naturally emerges from student interaction and communication needs in the moment." },
-            { q: "Which of the following best represents Thornbury's view of the coursebook in Dogme?", o: ["A non-negotiable part of every lesson", "A helpful supplementary tool", "An optional, secondary resource", "Often an obstacle to genuine interaction*"], a: 3, e: "Thornbury views coursebooks as potentially limiting authentic interaction and emergent learning opportunities." },
-            { q: "What is one core principle of Dogme teaching?", o: ["Silence is golden", "Grammar translation is key", "Learner output drives learning*", "Drilling ensures retention"], a: 2, e: "Dogme believes that learning is most effective when driven by what learners actually produce and need to communicate." },
-            { q: "Why is noticing especially important for advanced learners?", o: ["They are preparing for tests", "They don't need explicit grammar", "Their language awareness needs refining*", "They need more input than output"], a: 2, e: "Advanced learners benefit from refined language awareness to identify and correct subtle errors in their production." },
-            { q: "Which of the following is most aligned with emergent language pedagogy?", o: ["Ignoring student errors", "Focusing on accuracy before fluency", "Using language produced by learners as teaching material*", "Teaching only from the textbook"], a: 2, e: "Emergent pedagogy uses actual student language production as the primary source of teaching content and focus." },
-            { q: "A key benefit of emergent language instruction is:", o: ["It reduces lesson planning time", "It creates mechanical practice", "It fosters personalized learning experiences*", "It removes the need for assessment"], a: 2, e: "Emergent instruction creates highly personalized learning experiences based on individual student needs and output." },
-            { q: "Which teacher behavior best fits the noticing framework?", o: ["Allowing errors to persist unaddressed", "Reformulating student sentences in real-time*", "Avoiding correction to preserve fluency", "Testing students on isolated grammar points"], a: 1, e: "Reformulation helps students notice the difference between their production and more target-like forms." },
-            { q: "What type of flexibility does Dogme require from teachers?", o: ["Willingness to change jobs", "Ability to switch between coursebooks", "Adapting plans based on learner interaction*", "Using technology to change lesson pace"], a: 2, e: "Dogme teachers must be flexible enough to adapt their teaching based on what emerges from student interaction." },
-            { q: "According to Thornbury, language should be taught:", o: ["Before it is produced", "From student-generated content*", "With strict grammatical accuracy", "Only after assessment"], a: 1, e: "Thornbury advocates for using language that students actually produce as the basis for teaching and learning." },
-            { q: "What is the ultimate goal of noticing in advanced learners?", o: ["To prepare them for native-level conversation", "To memorize fixed expressions", "To activate conscious reflection about language use*", "To eliminate fluency gaps"], a: 2, e: "Noticing aims to develop conscious awareness and reflection about language patterns and usage." },
-            { q: "Thornbury advocates for:", o: ["Content-heavy PowerPoint lessons", "Structured grammar drills", "Spontaneous language-focused sessions*", "Coursebook-led speaking exercises"], a: 2, e: "Thornbury prefers spontaneous, language-focused sessions that emerge from student interaction." },
-            { q: "Which technique aligns most with Thornbury's approach?", o: ["Present–Practice–Produce", "Reformulation and guided noticing*", "Translation and dictation", "Grammar gap-fills"], a: 1, e: "Reformulation and guided noticing are key techniques in helping students become aware of language patterns." },
-            { q: "What type of classroom activity would Thornbury likely support?", o: ["Role-play with unpredictable outcomes*", "Reading comprehension from textbooks", "Silent reading sessions", "Grammar quizzes"], a: 0, e: "Unpredictable role-plays create opportunities for genuine emergent language that can be worked with pedagogically." },
-            { q: "How can teachers track emergent language?", o: ["Ignore it and continue the lesson", "Record and revisit student errors*", "Focus only on written accuracy", "Use ready-made worksheets"], a: 1, e: "Teachers should record emergent language issues to revisit and work on them pedagogically." },
-            { q: "What is a typical issue in fossilization?", o: ["Teachers overcorrect mistakes", "Learners are unaware of persistent errors*", "Materials are too advanced", "Students memorize too quickly"], a: 1, e: "Fossilization occurs when learners are unaware of persistent errors that have become automatic." },
-            { q: "Why might coursebooks be counterproductive in advanced classes, according to Thornbury?", o: ["They are too expensive", "They lack spontaneity and authentic interaction*", "They overuse listening activities", "They don't include enough homework"], a: 1, e: "Coursebooks can limit the spontaneous, authentic interaction that advanced learners need for continued development." },
-            { q: "Noticing can be enhanced through:", o: ["Multiple-choice questions", "Grammar translation", "Contrasting learner and native-like output*", "Ignoring errors for fluency"], a: 2, e: "Contrasting student output with more target-like versions helps enhance noticing and awareness." },
-            { q: "What is a sign that a learner needs more noticing?", o: ["They hesitate when speaking", "They produce frequent but subtle errors*", "They ask too many questions", "They refuse to write"], a: 1, e: "Frequent subtle errors indicate that learners have fossilized patterns that need conscious attention and noticing to correct." },
-            { q: "Which of the following best describes Dogme's view on input?", o: ["Authentic input must always come from native speakers", "All input should be teacher-generated", "Learners themselves generate the most relevant input*", "Input should be controlled and limited"], a: 2, e: "In Dogme, learners' own language production becomes the primary source of meaningful and relevant input for further learning." },
-            { q: "Which mindset should a teacher adopt for emergent language teaching?", o: ["Control and delivery", "Observation and responsiveness*", "Correction and drilling", "Silence and monitoring"], a: 1, e: "Emergent language teaching requires teachers to be observant and responsive to learning opportunities as they arise naturally." },
-            { q: "Which of the following best reflects Thornbury's philosophy?", o: ["Language is best acquired through repeated testing", "Learning occurs most effectively through structured tasks", "Language awareness must be developed through active engagement*", "Students need more input than output"], a: 2, e: "Thornbury believes that conscious engagement with language, particularly through noticing and reflection, is key to language development." },
-
-            // Michael Lewis Lexical Approach Questions (25 questions)
-            { q: "According to Michael Lewis, what is the primary component of language?", o: ["Grammar rules", "Phonological systems", "Lexical chunks*", "Discrete vocabulary words"], a: 2, e: "Lewis argues that language is primarily made up of prefabricated chunks or collocations rather than individual words and grammar rules." },
-            { q: "What does Lewis mean by 'language consists of grammaticalized lexis'?", o: ["Grammar should be taught before vocabulary", "Vocabulary should be organized by parts of speech", "Grammar emerges from lexical patterns*", "Lexis must be learned through grammar"], a: 2, e: "Lewis believes that grammar patterns emerge naturally from how words combine in chunks, rather than being separate rules to memorize." },
-            { q: "Which of the following is an example of a lexical chunk?", o: ["Verb + ing", "Present perfect", "Make a mistake*", "A noun in plural"], a: 2, e: "A lexical chunk is a group of words that commonly appear together, like 'make a mistake', 'strong coffee', or 'by the way'." },
-            { q: "The Lexical Approach argues against:", o: ["Teaching collocations", "Learning isolated grammar structures*", "Using authentic texts", "Encouraging fluency"], a: 1, e: "The Lexical Approach opposes teaching grammar as isolated rules separate from meaningful chunks of language." },
-            { q: "According to Schmitt (2000), why does the brain prefer chunks?", o: ["They are easier to spell", "They activate the visual cortex", "They reduce cognitive load*", "They follow textbook logic"], a: 2, e: "Processing prefabricated chunks requires less cognitive effort than constructing language from individual elements each time." },
-            { q: "What replaces the traditional PPP model in Lewis's approach?", o: ["Explain–Drill–Repeat", "Present–Produce–Perfect", "Observe–Hypothesise–Experiment*", "Input–Output–Feedback"], a: 2, e: "Lewis proposes OHE (Observe–Hypothesise–Experiment) as a more natural way to acquire language through discovery rather than presentation." },
-            { q: "In the 'Observe' phase, students:", o: ["Take grammar notes from rules", "Memorize irregular verbs", "Identify lexical patterns in authentic texts*", "Translate texts word for word"], a: 2, e: "Students observe how language naturally occurs in authentic contexts to notice chunks and patterns." },
-            { q: "During the 'Hypothesise' phase, students:", o: ["Guess meanings and usage of chunks*", "Correct grammar in sentences", "Write essays from memory", "Identify parts of speech"], a: 0, e: "Students form hypotheses about how chunks work and their meanings based on observed patterns." },
-            { q: "The 'Experiment' stage encourages students to:", o: ["Avoid errors", "Use chunks in creative, real tasks*", "Fill in grammar worksheets", "Learn from the teacher's corrections"], a: 1, e: "Students experiment with using chunks in authentic, meaningful communication tasks." },
-            { q: "What is the ultimate goal of the Lexical Approach?", o: ["Perfect grammar use", "Fluent and natural communication*", "Memorizing academic vocabulary", "Mastering verb conjugation"], a: 1, e: "The Lexical Approach aims for natural, fluent communication through mastery of lexical chunks." },
-            { q: "Lewis views grammar as something that should be:", o: ["Taught in isolation", "Memorized before speaking", "Avoided completely", "Acquired implicitly through chunks*"], a: 3, e: "Grammar should be acquired naturally through exposure to and use of lexical chunks rather than explicit teaching." },
-            { q: "What kind of input does the Lexical Approach favor?", o: ["Artificially simplified sentences", "Authentic and real-life language*", "Grammatical drills", "Repetition of isolated verbs"], a: 1, e: "Authentic, real-life language provides natural examples of how chunks are used in context." },
-            { q: "What kind of classroom activity best aligns with the Lexical Approach?", o: ["Gap-fills using collocations*", "Timed grammar quizzes", "Phoneme dictation", "Silent reading of lists"], a: 0, e: "Activities that focus on collocations and chunks help students notice and practice lexical patterns." },
-            { q: "Which of the following would NOT be typical in a lexical classroom?", o: ["Chunk identification in authentic audio", "Creative rewriting using collocations", "Translation of entire paragraphs", "Teaching grammar in isolation*"], a: 3, e: "Teaching grammar in isolation goes against the lexical approach principle of learning grammar through chunks." },
-            { q: "What is a 'collocation box' used for?", o: ["Listing irregular verbs", "Tracking spelling mistakes", "Organizing common word pairings*", "Highlighting past participles"], a: 2, e: "Collocation boxes help organize and learn common word combinations and lexical patterns." },
-            { q: "A teacher using the Lexical Approach might ask students to:", o: ["List all prepositions", "Identify and reuse useful chunks in conversation*", "Avoid idioms in writing", "Conjugate all modal verbs"], a: 1, e: "Students are encouraged to notice useful chunks and then actively use them in their own communication." },
-            { q: "Lewis's methodology emphasizes:", o: ["Structured grammar presentations", "Contextualized exposure to real language*", "Memorizing dictionaries", "Monolingual definitions"], a: 1, e: "Real, contextualized language exposure helps students see how chunks function naturally." },
-            { q: "Repetition and recycling of chunks is used to:", o: ["Teach phonology", "Improve pronunciation accuracy", "Enhance retention and fluency*", "Promote grammar mastery"], a: 2, e: "Repeated exposure and use of chunks helps students internalize them for fluent, automatic use." },
-            { q: "Which phrase best summarizes Lewis's belief?", o: ["Grammar creates vocabulary", "Lexis is secondary to form", "Grammar is the foundation of all speech", "Lexis drives grammar, not the other way around*"], a: 3, e: "Lewis believes that lexical patterns drive grammatical understanding, reversing traditional priorities." },
-            { q: "Chunk-for-chunk translation helps learners:", o: ["Understand isolated grammar rules", "Focus on equivalent lexical patterns*", "Translate word-by-word", "Ignore pragmatic meaning"], a: 1, e: "Chunk-for-chunk translation helps learners see equivalent patterns between languages rather than word-by-word correspondence." },
-            { q: "How can the Lexical Approach be integrated into CLT or TBL?", o: ["Through drills after reading", "By teaching grammar first, then activating it", "By highlighting useful chunks and encouraging use in tasks*", "Through rote learning of textbook dialogues"], a: 2, e: "Integration involves identifying useful chunks in communicative tasks and encouraging their active use." },
-            { q: "What does 'noticing lexical patterns' mean in this context?", o: ["Memorizing vocabulary lists", "Focusing on how language is built through fixed expressions*", "Avoiding grammar at all times", "Creating new words from roots"], a: 1, e: "Noticing lexical patterns involves recognizing how language is constructed through recurring combinations of words." },
-            { q: "According to Lewis, grammar is best learned:", o: ["After lexis is fully mastered", "Through explicit drills", "Within lexical chunks and meaningful context*", "Through native-speaker imitation"], a: 2, e: "Grammar is most effectively learned when encountered within meaningful lexical chunks rather than as isolated rules." },
-            { q: "Why are authentic texts important in the Lexical Approach?", o: ["They test reading speed", "They illustrate textbook rules", "They provide real examples of chunk usage*", "They contain simpler grammar"], a: 2, e: "Authentic texts show how chunks are actually used in real communication contexts." },
-            { q: "What kind of outcome does Lewis's approach aim for?", o: ["Native-like pronunciation", "Controlled accuracy", "Spontaneous and meaningful fluency*", "Structured writing skills"], a: 2, e: "The goal is natural, spontaneous fluency through mastery of lexical chunks rather than perfect formal accuracy." }
-        ];
-
-        async function initializePedagogicalChallenge() {
-            await loadChallengeContent();
-            renderChallengeContent();
-            initializeCountdown();
-            showQuizWelcome();
-
-            // Set up real-time listener for Firebase updates
-            if (!window.isDevelopmentMode && db) {
-                const docRef = doc(db, `artifacts/${appId}/public/data/challenge-content`, 'current');
-                onSnapshot(docRef, (doc) => {
-                    if (doc.exists()) {
-                        const data = doc.data();
-                        const newContent = {
-                            videoUrl: data.videoUrl || '',
-                            audio1Url: data.audio1Url || '',
-                            audio2Url: data.audio2Url || '',
-                            month: data.month || 'MONTHLY MODULE',
-                            subtitle: data.subtitle || 'A new topic every month to sharpen your skills.',
-                            deadline: data.deadline || null
-                        };
-
-                        // Only update if content changed to avoid infinite loops
-                        if (JSON.stringify(newContent) !== JSON.stringify(challengeContent)) {
-                            challengeContent = newContent;
-                            renderChallengeContent();
-
-                            // Restart countdown with new deadline
-                            if (countdownInterval) {
-                                clearInterval(countdownInterval);
-                            }
-                            initializeCountdown();
-
-                            // Show notification that content was updated
-                            if (data.updatedBy && data.updatedBy !== currentUserName) {
-                                showSuccessMessage("Atualização!", `Conteúdo atualizado por ${data.updatedBy}`);
-                            }
-                        }
-                    }
-                }, (error) => {
-                    console.error("Error listening to challenge content updates:", error);
-                });
-            }
-        }
-
-        async function loadChallengeContent() {
-            if (window.isDevelopmentMode) {
-                // In development mode, load from localStorage
-                const saved = localStorage.getItem('slap-challenge-content');
-                if (saved) {
-                    challengeContent = JSON.parse(saved);
-                } else {
-                    setDefaultChallengeContent();
-                }
-            } else if (db) {
-                // In production, load from Firebase so it's shared across all users
-                try {
-                    const docRef = doc(db, `artifacts/${appId}/public/data/challenge-content`, 'current');
-                    const docSnap = await getDoc(docRef);
-
-                    if (docSnap.exists()) {
-                        const data = docSnap.data();
-                        challengeContent = {
-                            videoUrl: data.videoUrl || '',
-                            audio1Url: data.audio1Url || '',
-                            audio2Url: data.audio2Url || '',
-                            month: data.month || 'MONTHLY MODULE',
-                            subtitle: data.subtitle || 'A new topic every month to sharpen your skills.',
-                            deadline: data.deadline || null
-                        };
-                    } else {
-                        setDefaultChallengeContent();
-                    }
-                } catch (error) {
-                    console.error("Error loading challenge content:", error);
-                    // Fallback to localStorage
-                    const saved = localStorage.getItem('slap-challenge-content');
-                    if (saved) {
-                        challengeContent = JSON.parse(saved);
-                    } else {
-                        setDefaultChallengeContent();
-                    }
-                }
-            } else {
-                // Fallback to localStorage
-                const saved = localStorage.getItem('slap-challenge-content');
-                if (saved) {
-                    challengeContent = JSON.parse(saved);
-                } else {
-                    setDefaultChallengeContent();
-                }
-            }
-        }
-
-        function setDefaultChallengeContent() {
-            const now = new Date();
-            const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
-
-            challengeContent = {
-                videoUrl: 'https://res.cloudinary.com/dqfi22uz0/video/upload/v1751160446/Vygotksy_s_Zone_of_Proximal_Development_Explained_in_4_minutes_n3dmpt.mp4',
-                audio1Url: 'https://res.cloudinary.com/dqfi22uz0/video/upload/v1751161824/zdp1_yldo65.mp3',
-                audio2Url: 'https://res.cloudinary.com/dqfi22uz0/video/upload/v1751162058/ZDP2_jfyspg.mp3',
-                month: 'JANEIRO 2025',
-                subtitle: 'A new topic every month to sharpen your skills.',
-                deadline: endOfMonth.toISOString()
-            };
-            saveChallengeContent();
-        }
-
-        async function saveChallengeContent() {
-            if (window.isDevelopmentMode) {
-                // In development mode, save to localStorage
-                localStorage.setItem('slap-challenge-content', JSON.stringify(challengeContent));
-            } else if (db) {
-                // In production, save to Firebase so it's shared across all users
-                try {
-                    await setDoc(doc(db, `artifacts/${appId}/public/data/challenge-content`, 'current'), {
-                        ...challengeContent,
-                        updatedAt: serverTimestamp(),
-                        updatedBy: currentUserName
-                    });
-                } catch (error) {
-                    console.error("Error saving challenge content:", error);
-                    // Fallback to localStorage if Firebase fails
-                    localStorage.setItem('slap-challenge-content', JSON.stringify(challengeContent));
-                }
-            } else {
-                // Fallback to localStorage
-                localStorage.setItem('slap-challenge-content', JSON.stringify(challengeContent));
-            }
-        }
-
-        function renderChallengeContent() {
-            console.log('Rendering challenge content:', challengeContent);
-            renderVideoContent();
-            renderAudioContent();
-            updateChallengeHeader();
-        }
-
-        function updateChallengeHeader() {
-            const monthDisplay = document.getElementById('challenge-month-display');
-            const subtitleDisplay = document.getElementById('challenge-subtitle-display');
-
-            if (monthDisplay && challengeContent.month) {
-                monthDisplay.textContent = challengeContent.month;
-            }
-
-            if (subtitleDisplay && challengeContent.subtitle) {
-                subtitleDisplay.textContent = challengeContent.subtitle;
-            }
-        }
-
-        function renderVideoContent() {
-            const container = document.getElementById('challenge-video-container');
-            console.log('Rendering video content. URL:', challengeContent.videoUrl);
-            if (challengeContent.videoUrl) {
-                container.innerHTML = `
-                    <div class="mb-4">
-                        <div class="aspect-video bg-stone-200 rounded-lg overflow-hidden">
-                            <video controls class="w-full h-full">
-                                <source src="${challengeContent.videoUrl}" type="video/mp4">
-                                Your browser does not support the video tag.
-                            </video>
-                        </div>
-                    </div>
-                `;
-            } else {
-                container.innerHTML = `
-                    <div class="text-center py-8 text-stone-500">
-                        <svg class="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h8m2-10a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                        </svg>
-                        <p>Nenhum vídeo configurado</p>
-                        ${['admin', 'ap'].includes(currentUserRole) ? '<p class="text-xs mt-1">Configure um vídeo através do botão "Editar Conteúdo"</p>' : ''}
-                    </div>
-                `;
-            }
-        }
-
-        function renderAudioContent() {
-            const container = document.getElementById('challenge-audio-container');
-            console.log('Rendering audio content. Audio1:', challengeContent.audio1Url, 'Audio2:', challengeContent.audio2Url);
-            let audioHtml = '';
-
-            if (challengeContent.audio1Url) {
-                audioHtml += `
-                    <div class="mb-4">
-                        <p class="font-medium text-stone-700 mb-2">Audio 1</p>
-                        ${createAudioPlayer(challengeContent.audio1Url, 'audio1')}
-                    </div>
-                `;
-            }
-
-            if (challengeContent.audio2Url) {
-                audioHtml += `
-                    <div class="mb-4">
-                        <p class="font-medium text-stone-700 mb-2">Audio 2</p>
-                        ${createAudioPlayer(challengeContent.audio2Url, 'audio2')}
-                    </div>
-                `;
-            }
-
-            if (!challengeContent.audio1Url && !challengeContent.audio2Url) {
-                audioHtml = `
-                    <div class="text-center py-8 text-stone-500">
-                        <svg class="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 14.142M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/>
-                        </svg>
-                        <p>Nenhum áudio configurado</p>
-                        ${['admin', 'ap'].includes(currentUserRole) ? '<p class="text-xs mt-1">Configure áudios através do botão "Editar Conteúdo"</p>' : ''}
-                    </div>
-                `;
-            }
-
-            container.innerHTML = audioHtml;
-
-            // Use setTimeout to ensure DOM is ready before initializing players
-            setTimeout(() => {
-                initializeAudioPlayers();
-            }, 100);
-        }
-
-        function createAudioPlayer(audioUrl, playerId) {
-            // Add timestamp to avoid cache issues with Cloudinary
-            const cacheBustedUrl = audioUrl.includes('?') ? `${audioUrl}&t=${Date.now()}` : `${audioUrl}?t=${Date.now()}`;
-
-            return `
-                <div class="audio-player-container" data-player="${playerId}">
-                    <button class="play-pause-button">
-                        <svg class="play-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"></path></svg>
-                        <svg class="pause-icon hidden" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path></svg>
-                    </button>
-                    <span class="time-display">0:00 / 0:00</span>
-                    <input type="range" class="progress-bar" value="0" step="1">
-                    <audio class="audio-element" preload="metadata" src="${cacheBustedUrl}"></audio>
-                </div>
-            `;
-        }
-
-        function cleanupAudioPlayers() {
-            // Stop and cleanup existing audio players
-            const existingPlayers = document.querySelectorAll('.audio-player-container');
-            existingPlayers.forEach(container => {
-                const audio = container.querySelector('.audio-element');
-                if (audio) {
-                    audio.pause();
-                    audio.currentTime = 0;
-                    // Remove event listeners to prevent memory leaks
-                    audio.removeEventListener('loadedmetadata', () => {});
-                    audio.removeEventListener('timeupdate', () => {});
-                    audio.removeEventListener('error', () => {});
-                }
-            });
-        }
-
-        function initializeAudioPlayers() {
-            // Clean up any existing audio players first
-            cleanupAudioPlayers();
-
-            const players = document.querySelectorAll('.audio-player-container');
-            console.log('Initializing audio players. Found:', players.length, 'players');
-
-            players.forEach((container, index) => {
-                const audio = container.querySelector('.audio-element');
-                const playButton = container.querySelector('.play-pause-button');
-                const playIcon = container.querySelector('.play-icon');
-                const pauseIcon = container.querySelector('.pause-icon');
-                const progressBar = container.querySelector('.progress-bar');
-                const timeDisplay = container.querySelector('.time-display');
-
-                if (!audio || !playButton || !playIcon || !pauseIcon || !progressBar || !timeDisplay) {
-                    console.error('Missing audio player elements for player', index);
-                    return;
-                }
-
-                console.log('Setting up audio player', index, 'for:', audio.src);
-
-                // Ensure audio element is properly configured
-                audio.preload = 'metadata';
-                audio.crossOrigin = 'anonymous';
-
-                // Force reload audio element to clear cache
-                if (audio.src) {
-                    audio.load();
-                }
-
-                const loadedMetadataHandler = () => {
-                    if (audio.duration && !isNaN(audio.duration) && audio.duration !== Infinity) {
-                        progressBar.max = audio.duration;
-                        updateTimeDisplay();
-                        console.log('Audio', index, 'metadata loaded, duration:', audio.duration);
-                    }
-                };
-
-                const timeUpdateHandler = () => {
-                    if (audio.duration && !isNaN(audio.duration)) {
-                        progressBar.value = audio.currentTime;
-                        updateTimeDisplay();
-                    }
-                };
-
-                const errorHandler = (e) => {
-                    console.error('Audio', index, 'loading error:', e);
-                    timeDisplay.textContent = 'Error loading audio';
-                };
-
-                const endedHandler = () => {
-                    playIcon.classList.remove('hidden');
-                    pauseIcon.classList.add('hidden');
-                    audio.currentTime = 0;
-                    progressBar.value = 0;
-                    updateTimeDisplay();
-                };
-
-                // Add event listeners
-                audio.addEventListener('loadedmetadata', loadedMetadataHandler);
-                audio.addEventListener('timeupdate', timeUpdateHandler);
-                audio.addEventListener('error', errorHandler);
-                audio.addEventListener('ended', endedHandler);
-
-                playButton.addEventListener('click', () => {
-                    console.log('Play button clicked for audio', index, ', paused:', audio.paused);
-                    if (audio.paused) {
-                        // Pause all other audio players first
-                        const allAudioElements = document.querySelectorAll('.audio-element');
-                        allAudioElements.forEach(otherAudio => {
-                            if (otherAudio !== audio && !otherAudio.paused) {
-                                otherAudio.pause();
-                                const otherContainer = otherAudio.closest('.audio-player-container');
-                                if (otherContainer) {
-                                    const otherPlayIcon = otherContainer.querySelector('.play-icon');
-                                    const otherPauseIcon = otherContainer.querySelector('.pause-icon');
-                                    if (otherPlayIcon && otherPauseIcon) {
-                                        otherPlayIcon.classList.remove('hidden');
-                                        otherPauseIcon.classList.add('hidden');
-                                    }
-                                }
-                            }
-                        });
-
-                        audio.play().then(() => {
-                            playIcon.classList.add('hidden');
-                            pauseIcon.classList.remove('hidden');
-                            console.log('Audio', index, 'started playing');
-                        }).catch(e => {
-                            console.error('Error playing audio', index, ':', e);
-                            alert('Erro ao reproduzir áudio. Verifique se a URL está funcionando.');
-                        });
-                    } else {
-                        audio.pause();
-                        playIcon.classList.remove('hidden');
-                        pauseIcon.classList.add('hidden');
-                        console.log('Audio', index, 'paused');
-                    }
-                });
-
-                progressBar.addEventListener('input', () => {
-                    if (audio.duration && !isNaN(audio.duration)) {
-                        audio.currentTime = progressBar.value;
-                    }
-                });
-
-                function updateTimeDisplay() {
-                    const current = formatTime(audio.currentTime || 0);
-                    const duration = formatTime(audio.duration || 0);
-                    timeDisplay.textContent = `${current} / ${duration}`;
-                }
-
-                function formatTime(seconds) {
-                    if (isNaN(seconds) || seconds === Infinity) return '0:00';
-                    const minutes = Math.floor(seconds / 60);
-                    const secs = Math.floor(seconds % 60);
-                    return `${minutes}:${secs.toString().padStart(2, '0')}`;
-                }
-
-                // Initialize display
-                updateTimeDisplay();
-            });
-        }
-
-        function openChallengeContentForm() {
-            const modal = document.getElementById('challenge-edit-modal');
-            const form = document.getElementById('challenge-content-form');
-
-            // Pre-fill form
-            document.getElementById('challenge-video-url').value = challengeContent.videoUrl || '';
-            document.getElementById('challenge-audio1-url').value = challengeContent.audio1Url || '';
-            document.getElementById('challenge-audio2-url').value = challengeContent.audio2Url || '';
-            document.getElementById('challenge-month').value = challengeContent.month || '';
-            document.getElementById('challenge-subtitle').value = challengeContent.subtitle || '';
-
-            // Pre-fill deadline
-            if (challengeContent.deadline) {
-                let date;
-                if (typeof challengeContent.deadline === 'number') {
-                    date = new Date(challengeContent.deadline);
-                } else {
-                    date = new Date(challengeContent.deadline);
-                }
-
-                // Ensure the date is valid before formatting
-                if (!isNaN(date.getTime())) {
-                    const formattedDate = date.toISOString().slice(0, 16);
-                    document.getElementById('challenge-deadline').value = formattedDate;
-                }
-            }
-
-            modal.classList.add('visible');
-
-            form.onsubmit = (e) => {
-                e.preventDefault();
-                saveChallengeContentForm();
-                modal.classList.remove('visible');
-            };
-        }
-
-        async function saveChallengeContentForm() {
-            const deadlineValue = document.getElementById('challenge-deadline').value;
-
-            let deadline = null;
-            if (deadlineValue) {
-                const deadlineDate = new Date(deadlineValue);
-                if (!isNaN(deadlineDate.getTime())) {
-                    deadline = deadlineDate.toISOString(); // Store as ISO string for consistency
-                }
-            }
-
-            challengeContent = {
-                videoUrl: document.getElementById('challenge-video-url').value.trim(),
-                audio1Url: document.getElementById('challenge-audio1-url').value.trim(),
-                audio2Url: document.getElementById('challenge-audio2-url').value.trim(),
-                month: document.getElementById('challenge-month').value.trim() || 'MONTHLY MODULE',
-                subtitle: document.getElementById('challenge-subtitle').value.trim() || 'A new topic every month to sharpen your skills.',
-                deadline: deadline
-            };
-
-            await saveChallengeContent();
-            renderChallengeContent();
-
-            // Restart countdown with new deadline
-            if (countdownInterval) {
-                clearInterval(countdownInterval);
-            }
-            initializeCountdown();
-
-            // Reset form safely
-            const form = document.getElementById('challenge-content-form');
-            if (form) {
-                form.reset();
-            }
-        }
-
-        let countdownInterval = null;
-
-        function initializeCountdown() {
-            // Use custom deadline or default to end of current month
-            let deadline;
-            if (challengeContent.deadline) {
-                // Handle both timestamp and date string formats
-                if (typeof challengeContent.deadline === 'number') {
-                    deadline = new Date(challengeContent.deadline);
-                } else {
-                    deadline = new Date(challengeContent.deadline);
-                }
-            } else {
-                const now = new Date();
-                deadline = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
-            }
-
-            function updateCountdown() {
-                const now = new Date().getTime();
-                const distance = deadline.getTime() - now;
-
-                const daysEl = document.getElementById('days');
-                const hoursEl = document.getElementById('hours');
-                const minutesEl = document.getElementById('minutes');
-                const secondsEl = document.getElementById('seconds');
-
-                if (distance > 0) {
-                    const days = Math.floor(distance / (1000 * 60 * 60 * 24));
-                    const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-                    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-
-                    if (daysEl) daysEl.textContent = days.toString().padStart(2, '0');
-                    if (hoursEl) hoursEl.textContent = hours.toString().padStart(2, '0');
-                    if (minutesEl) minutesEl.textContent = minutes.toString().padStart(2, '0');
-                    if (secondsEl) secondsEl.textContent = seconds.toString().padStart(2, '0');
-                } else {
-                    if (daysEl) daysEl.textContent = '00';
-                    if (hoursEl) hoursEl.textContent = '00';
-                    if (minutesEl) minutesEl.textContent = '00';
-                    if (secondsEl) secondsEl.textContent = '00';
-                }
-            }
-
-            updateCountdown();
-            countdownInterval = setInterval(updateCountdown, 1000);
-        }
-
-        function showQuizWelcome() {
-            const quizContainer = document.getElementById('quiz-container');
-            quizContainer.innerHTML = `
-                <div class="text-center h-full flex flex-col justify-center">
-                    <svg class="w-16 h-16 mx-auto mb-4 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
-                    </svg>
-                    <h3 class="text-xl font-bold mb-2 text-violet-600">🎯 Desafio Pedagógico</h3>
-                    <p class="text-stone-600 mb-4">Estude o conteúdo acima e depois faça o desafio para testar seu conhecimento!</p>
-                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 max-w-md mx-auto">
-                        <p class="text-sm text-blue-800">
-                            <strong>🏆 Desafio:</strong> Acerte 20 perguntas consecutivas<br>
-                            <strong>⚠️ Regra:</strong> Uma pergunta errada reinicia tudo<br>
-                            <strong>🔀 Sistema:</strong> Perguntas sempre em ordem aleatória
-                        </p>
-                    </div>
-                    <button onclick="window.startQuiz()" class="primary-btn w-auto mx-auto">🚀 Iniciar Desafio</button>
-                </div>
-            `;
-        }
-
-        window.startQuiz = function() {
-            // Reset streak variables
-            correctStreak = 0;
-            totalAttempts = 0;
-            currentQuestionIndex = 0;
-
-            // Shuffle all questions to ensure randomness every time
-            const shuffled = [...fullQuizData].sort(() => Math.random() - 0.5);
-            quizQuestions = shuffled.map(question => {
-                // Find correct answer by asterisk (*) and clean options
-                let correctIndex = -1;
-                const cleanedOptions = question.o.map((option, index) => {
-                    if (option.includes('*')) {
-                        correctIndex = index;
-                        return option.replace('*', ''); // Remove asterisk for display
-                    }
-                    return option;
-                });
-
-                // If no asterisk found, use the original 'a' property
-                if (correctIndex === -1) {
-                    correctIndex = question.a;
-                }
-
-                // Create shuffled options with correct answer tracking
-                const optionsWithIndices = cleanedOptions.map((option, index) => ({
-                    text: option,
-                    originalIndex: index
-                }));
-
-                // Shuffle the options
-                const shuffledOptions = optionsWithIndices.sort(() => Math.random() - 0.5);
-
-                // Find new correct answer index after shuffling
-                const newCorrectIndex = shuffledOptions.findIndex(opt => opt.originalIndex === correctIndex);
-
-                return {
-                    ...question,
-                    o: shuffledOptions.map(opt => opt.text),
-                    a: newCorrectIndex
-                };
-            });
-
-            showNameInput();
-        }
-
-        function showNameInput() {
-            const quizContainer = document.getElementById('quiz-container');
-            quizContainer.innerHTML = `
-                <div class="text-center h-full flex flex-col justify-center">
-                    <h3 class="text-xl font-bold mb-4 text-violet-600">🎯 Desafio Pedagógico - Streak Challenge</h3>
-                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-                        <p class="text-stone-700 mb-2"><strong>Objetivo:</strong> Acerte 20 perguntas consecutivas para completar o desafio!</p>
-                        <p class="text-red-600 text-sm font-medium">⚠️ Se errar uma pergunta, o desafio reinicia do zero!</p>
-                        <p class="text-blue-600 text-sm mt-2">💡 As perguntas sempre aparecem em ordem aleatória</p>
-                    </div>
-                    <input type="text" id="teacher-name-input" class="form-input mb-4 max-w-sm mx-auto" placeholder="Seu nome completo" required>
-                    <button onclick="window.submitName()" class="primary-btn w-auto mx-auto">🚀 Iniciar Desafio</button>
-                </div>
-            `;
-        }
-
-        window.submitName = function() {
-            const nameInput = document.getElementById('teacher-name-input');
-            teacherName = nameInput.value.trim();
-
-            if (teacherName) {
-                showQuestion();
-            } else {
-                alert('Please enter your name to continue.');
-            }
-        }
-
-        function showQuestion() {
-            // Get current question from shuffled pool
-            if (currentQuestionIndex >= quizQuestions.length) {
-                // Reshuffle if we've gone through all questions
-                const shuffled = [...fullQuizData].sort(() => Math.random() - 0.5);
-                quizQuestions = shuffled.map(question => {
-                    let correctIndex = -1;
-                    const cleanedOptions = question.o.map((option, index) => {
-                        if (option.includes('*')) {
-                            correctIndex = index;
-                            return option.replace('*', '');
-                        }
-                        return option;
-                    });
-
-                    if (correctIndex === -1) {
-                        correctIndex = question.a;
-                    }
-
-                    const optionsWithIndices = cleanedOptions.map((option, index) => ({
-                        text: option,
-                        originalIndex: index
-                    }));
-
-                    const shuffledOptions = optionsWithIndices.sort(() => Math.random() - 0.5);
-                    const newCorrectIndex = shuffledOptions.findIndex(opt => opt.originalIndex === correctIndex);
-
-                    return {
-                        ...question,
-                        o: shuffledOptions.map(opt => opt.text),
-                        a: newCorrectIndex
-                    };
-                });
-                currentQuestionIndex = 0;
-            }
-
-            const question = quizQuestions[currentQuestionIndex];
-            if (!question) {
-                console.error('Question not found at index:', currentQuestionIndex);
-                return;
-            }
-
-            const quizContainer = document.getElementById('quiz-container');
-
-            quizContainer.innerHTML = `
-                <div class="h-full flex flex-col">
-                    <div class="mb-4">
-                        <div class="flex justify-between items-center mb-2">
-                            <span class="text-sm font-medium text-stone-600">Streak: ${correctStreak}/${questionsNeededForSuccess}</span>
-                            <span class="text-sm font-medium text-violet-600">Tentativas: ${totalAttempts + 1}</span>
-                        </div>
-                        <div class="w-full bg-stone-200 rounded-full h-3">
-                            <div class="bg-gradient-to-r from-green-400 to-green-600 h-3 rounded-full transition-all duration-500" style="width: ${(correctStreak / questionsNeededForSuccess) * 100}%"></div>
-                        </div>
-                        <p class="text-xs text-center mt-1 text-stone-500">
-                            ${correctStreak === 0 ? 'Comece seu streak!' : `${questionsNeededForSuccess - correctStreak} restantes para completar!`}
-                        </p>
-                    </div>
-
-                    <div class="flex-grow flex flex-col justify-center">
-                        <h3 class="text-lg font-semibold mb-6">${question.q}</h3>
-                        <div id="quiz-options" class="space-y-2">
-                            ${question.o.map((option, index) => `
-                                <button class="pedagogical-quiz-option" onclick="window.selectAnswer(${index})">
-                                    ${option}
-                                </button>
-                            `).join('')}
-                        </div>
-                    </div>
-
-                    <div id="explanation" class="hidden mt-4 p-4 rounded-lg">
-                        <p class="text-sm"></p>
-                    </div>
-
-                    <div class="mt-6 flex justify-center">
-                        <button id="next-btn" onclick="window.nextQuestion()" class="primary-btn w-auto hidden">Próxima Pergunta</button>
-                    </div>
-                </div>
-            `;
-        }
-
-        window.selectAnswer = function(selectedIndex) {
-            const question = quizQuestions[currentQuestionIndex];
-            if (!question) {
-                console.error('Question not found at index:', currentQuestionIndex);
-                return;
-            }
-
-            const options = document.querySelectorAll('.pedagogical-quiz-option');
-            const explanation = document.getElementById('explanation');
-            const nextBtn = document.getElementById('next-btn');
-
-            // Disable all options
-            options.forEach(option => option.disabled = true);
-
-            const isCorrect = selectedIndex === question.a;
-
-            // Show correct/incorrect
-            options.forEach((option, index) => {
-                if (index === question.a) {
-                    option.classList.add('correct');
-                } else if (index === selectedIndex && !isCorrect) {
-                    option.classList.add('incorrect');
-                }
-            });
-
-            // Update streak logic
-            if (isCorrect) {
-                correctStreak++;
-                explanation.className = 'mt-4 p-4 bg-green-50 border border-green-200 rounded-lg';
-                explanation.querySelector('p').className = 'text-sm text-green-800';
-                explanation.querySelector('p').innerHTML = `<strong>✅ Correto!</strong> ${question.e}`;
-
-                // Check if challenge is completed
-                if (correctStreak >= questionsNeededForSuccess) {
-                    setTimeout(() => {
-                        showSuccessResult();
-                    }, 2000);
-                    explanation.classList.remove('hidden');
-                    return;
-                }
-            } else {
-                // Reset streak on wrong answer
-                correctStreak = 0;
-                totalAttempts++;
-                explanation.className = 'mt-4 p-4 bg-red-50 border border-red-200 rounded-lg';
-                explanation.querySelector('p').className = 'text-sm text-red-800';
-                explanation.querySelector('p').innerHTML = `<strong>❌ Incorreto!</strong> Seu streak reiniciou. ${question.e}`;
-
-                // Show restart message
-                setTimeout(() => {
-                    showRestartMessage();
-                }, 3000);
-                explanation.classList.remove('hidden');
-                return;
-            }
-
-            // Show explanation and next button
-            explanation.classList.remove('hidden');
-            nextBtn.classList.remove('hidden');
-
-            // Track answer
-            quizQuestions[currentQuestionIndex].userAnswer = selectedIndex;
-        }
-
-        window.nextQuestion = function() {
-            currentQuestionIndex++;
-            showQuestion();
-        }
-
-        function showRestartMessage() {
-            const quizContainer = document.getElementById('quiz-container');
-            quizContainer.innerHTML = `
-                <div class="text-center h-full flex flex-col justify-center">
-                    <div class="mb-6">
-                        <svg class="w-20 h-20 mx-auto mb-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.314 16.5c-.77.833.192 2.5 1.732 2.5z"/>
-                        </svg>
-                        <h2 class="text-2xl font-bold mb-2 text-red-600">Streak Reiniciado!</h2>
-                        <p class="text-stone-600 mb-4">Você errou uma pergunta. O desafio vai recomeçar do zero.</p>
-                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6 max-w-md mx-auto">
-                            <p class="text-sm text-stone-700">
-                                <strong>Tentativas:</strong> ${totalAttempts}<br>
-                                <strong>Streak anterior:</strong> Foi resetado para 0<br>
-                                <strong>Meta:</strong> 20 perguntas consecutivas corretas
-                            </p>
-                        </div>
-                    </div>
-
-                    <div class="space-y-2">
-                        <button onclick="window.startQuiz()" class="primary-btn w-auto mx-auto">🔄 Tentar Novamente</button>
-                        <button onclick="showQuizWelcome()" class="secondary-btn w-auto mx-auto">📚 Voltar ao Início</button>
-                    </div>
-                </div>
-            `;
-        }
-
-        function showSuccessResult() {
-            const quizContainer = document.getElementById('quiz-container');
-            quizContainer.innerHTML = `
-                <div class="text-center h-full flex flex-col justify-center">
-                    <div class="mb-6">
-                        <svg class="w-24 h-24 mx-auto mb-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                        </svg>
-                        <h2 class="text-3xl font-bold mb-2 text-green-600">🎉 Parabéns, ${teacherName}!</h2>
-                        <p class="text-stone-600 mb-4">Você completou o Desafio Pedagógico com sucesso!</p>
-                        <div class="bg-green-50 border border-green-200 rounded-lg p-6 mb-6 max-w-md mx-auto">
-                            <h3 class="text-lg font-semibold text-green-800 mb-3">🏆 Resultado Final</h3>
-                            <div class="text-sm text-green-700 space-y-1">
-                                <p><strong>✅ Streak Final:</strong> ${correctStreak}/${questionsNeededForSuccess}</p>
-                                <p><strong>🎯 Tentativas Total:</strong> ${totalAttempts + 1}</p>
-                                <p><strong>📊 Status:</strong> <span class="text-green-600 font-bold">APROVADO</span></p>
-                            </div>
-                        </div>
-                        <p class="text-green-600 font-medium mb-6">
-                            Você demonstrou excelente conhecimento sobre Dogme ELT e Lexical Approach!
-                        </p>
-                    </div>
-
-                    <div class="space-y-2">
-                        <button onclick="showQuizWelcome()" class="primary-btn w-auto mx-auto">🏠 Voltar ao Início</button>
-                        <button onclick="window.startQuiz()" class="secondary-btn w-auto mx-auto">🔄 Fazer Novamente</button>
-                    </div>
-                </div>
-            `;
-        }
-
-
-
+        
         // --- Guidelines Functions ---
         
         // Bulk import function for guidelines
@@ -10412,11 +9240,7 @@
         window.changeGuidelinePage = changeGuidelinePage;
         window.exportAlunosDoc = exportAlunosDoc;
         window.exportGuidelinesDoc = exportGuidelinesDoc;
-        window.selectAnswer = selectAnswer;
-        window.nextQuestion = nextQuestion;
-        window.startQuiz = startQuiz;
         window.checkTimeConflict = checkTimeConflict;
-        window.toggleCampanhaFinalizada = toggleCampanhaFinalizada;
         window.saveTurmaGrades = saveTurmaGrades;
 
         window.switchTaskTab = switchTaskTab;
@@ -10805,10 +9629,7 @@
                 { key: 'grade', label: 'Grade', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" x2="16" y1="2" y2="6"></line><line x1="8" x2="8" y1="2" y2="6"></line><line x1="3" x2="21" y1="10" y2="10"></line></svg>', roles: ['admin', 'pedagogico', 'ap', 'teacher', 'am', 'financeiro'] },
                 { key: 'calendario-pedagogico', label: 'Calendário Pedagógico', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>', roles: ['admin', 'pedagogico', 'ap', 'teacher', 'am'] },
                 { key: 'calendario-marketing', label: 'Calendário Marketing', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>', roles: ['admin', 'ap', 'am', 'teacher'] },
-                { key: 'desafio-pedagogico', label: 'Desafio Pedagógico', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>', roles: ['admin', 'pedagogico', 'ap', 'teacher', 'am'] },
-                { key: 'mural', label: 'Mural', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 3h16a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M8 7h8"/><path d="M8 11h8"/><path d="M8 15h5"/></svg>', roles: ['admin', 'pedagogico', 'ap', 'financeiro', 'teacher', 'am'] },
                 
-                { key: 'campanhas', label: 'Campanhas', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>', roles: ['admin', 'ap', 'am'] },
                 
                 { key: 'colaboradores', label: 'Colaboradores', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>', roles: ['admin', 'ap', 'financeiro'] },
                 
@@ -10824,341 +9645,13 @@
             mainNav.innerHTML = menuItemsHTML;
         }
 
-        // --- MURAL SECTION ---
-        function renderMuralSection() {
-            document.getElementById('main-title').textContent = 'Mural de Avisos';
-            document.getElementById('main-description').textContent = 'Quadro de avisos e comunicados para toda a equipe.';
-            
-            const canCreateNotice = currentUserRole === 'admin';
-            const filteredAvisos = getFilteredAvisos();
-            const visibleSectorTags = getVisibleSectorTags();
-            const allowedSectors = getAllowedSectorsForRole(currentUserRole);
-            
-            // Calculate total count for "Todos" button based on role-filtered avisos
-            const totalRoleFilteredAvisos = avisos.filter(aviso => 
-                aviso.setor.some(setor => allowedSectors.includes(setor))
-            );
-            
-            contentArea.innerHTML = `
-                <div id="mural-section" class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
-                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-                        <div class="flex flex-wrap gap-2">
-                            <button onclick="setMuralFilter('todos')" class="secondary-btn ${muralFilter === 'todos' ? 'active' : ''}">
-                                Todos (${totalRoleFilteredAvisos.length})
-                            </button>
-                            ${visibleSectorTags.map(tag => `
-                                <button onclick="setMuralFilter('${tag.value}')" class="secondary-btn ${muralFilter === tag.value ? 'active' : ''}" style="background-color: ${muralFilter === tag.value ? tag.color : ''}; color: ${muralFilter === tag.value ? 'white' : ''};">
-                                    ${tag.label} (${totalRoleFilteredAvisos.filter(a => a.setor.includes(tag.value)).length})
-                                </button>
-                            `).join('')}
-                        </div>
-                        ${canCreateNotice ? `
-                            <button class="primary-btn" data-action="open-novo-aviso">
-                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-                                </svg>
-                                Novo Aviso
-                            </button>
-                        ` : ''}
-                    </div>
 
-                    <div class="space-y-4">
-                        ${filteredAvisos.length === 0 ? `
-                            <div class="text-center py-8 text-stone-500">
-                                <svg class="w-16 h-16 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10m0 0V6a2 2 0 00-2-2H9a2 2 0 00-2 2v2m0 0v10a2 2 0 002 2h6a2 2 0 002-2V8M9 12h6"/>
-                                </svg>
-                                <p class="text-lg font-medium">Nenhum aviso encontrado</p>
-                                <p class="text-sm">
-                                    ${muralFilter === 'todos' ? 
-                                        'Ainda não há avisos no mural.' : 
-                                        `Nenhum aviso encontrado para o setor ${setorTags.find(t => t.value === muralFilter)?.label || muralFilter}.`
-                                    }
-                                </p>
-                            </div>
-                        ` : filteredAvisos.map(aviso => `
-                            <div class="base-card">
-                                <div class="flex justify-between items-start mb-3">
-                                    <div class="flex-1">
-                                        <h3 class="text-lg font-semibold text-stone-800 mb-2">${aviso.titulo}</h3>
-                                        <div class="flex flex-wrap gap-2 mb-3">
-                                            ${aviso.setor.map(setor => {
-                                                const tag = setorTags.find(t => t.value === setor);
-                                                return tag ? `<span class="px-2 py-1 rounded-full text-xs font-medium" style="background-color: ${tag.color}20; color: ${tag.color};">${tag.label}</span>` : '';
-                                            }).join('')}
-                                        </div>
-                                        <p class="text-stone-600 leading-relaxed">${aviso.conteudo}</p>
-                                    </div>
-                                    ${canCreateNotice ? `
-                                        <div class="flex gap-2 ml-4">
-                                            <button onclick="editarAviso('${aviso.id}')" class="text-stone-400 hover:text-stone-600 transition-colors">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                                                </svg>
-                                            </button>
-                                            <button onclick="deletarAviso('${aviso.id}')" class="text-stone-400 hover:text-red-600 transition-colors">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                                                </svg>
-                                            </button>
-                                        </div>
-                                    ` : ''}
-                                </div>
-                                <div class="flex justify-end items-center text-sm text-stone-500 pt-3 border-t border-stone-100">
-                                    <span>${formatDateBR(aviso.dataPublicacao)}</span>
-                                </div>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            `;
-        }
 
-        function getFilteredAvisos() {
-            let filteredAvisos = avisos;
-            
-            // Apply role-based filtering first
-            const allowedSectors = getAllowedSectorsForRole(currentUserRole);
-            
-            filteredAvisos = avisos.filter(aviso => 
-                aviso.setor.some(setor => allowedSectors.includes(setor))
-            );
-            
-            // Then apply user's selected filter
-            if (muralFilter === 'todos') {
-                return filteredAvisos.sort((a, b) => new Date(b.dataPublicacao) - new Date(a.dataPublicacao));
-            }
-            return filteredAvisos.filter(aviso => aviso.setor.includes(muralFilter))
-                                 .sort((a, b) => new Date(b.dataPublicacao) - new Date(a.dataPublicacao));
-        }
 
-        function getAllowedSectorsForRole(role) {
-            const roleFilters = {
-                'am': ['marketing', 'geral'],
-                'ap': ['teachers', 'pedagogico', 'geral'],
-                'pedagogico': ['pedagogico', 'teachers'],
-                'financeiro': ['financeiro', 'administrativo'],
-                'admin': ['teachers', 'pedagogico', 'comercial', 'financeiro', 'marketing', 'administrativo', 'geral'],
-                'teacher': ['teachers']
-            };
-            return roleFilters[role] || [];
-        }
 
-        function getVisibleSectorTags() {
-            const allowedSectors = getAllowedSectorsForRole(currentUserRole);
-            return setorTags.filter(tag => allowedSectors.includes(tag.value));
-        }
 
-        function setMuralFilter(filter) {
-            muralFilter = filter;
-            renderMuralSection();
-        }
 
-        function openNovoAvisoModal() {
-            clearModalHeaderButtons();
-            document.getElementById('form-modal-title').textContent = "Novo Aviso";
-            
-            document.getElementById('form-modal-content-area').innerHTML = `
-                <div class="space-y-4">
-                    <div>
-                        <label class="font-medium text-sm">Título do Aviso</label>
-                        <input type="text" id="aviso-titulo" class="form-input" required placeholder="Ex: Reunião de equipe, Atualização importante...">
-                    </div>
-                    
-                    <div>
-                        <label class="font-medium text-sm">Conteúdo</label>
-                        <textarea id="aviso-conteudo" class="form-input" rows="6" required placeholder="Escreva o conteúdo do aviso aqui..."></textarea>
-                    </div>
-                    
-                    <div>
-                        <label class="font-medium text-sm">Setores (Selecione um ou mais)</label>
-                        <div class="grid grid-cols-2 gap-3 mt-2">
-                            ${setorTags.map(tag => `
-                                <label class="flex items-center space-x-2 cursor-pointer">
-                                    <input type="checkbox" value="${tag.value}" class="aviso-setor-checkbox" />
-                                    <span class="px-3 py-1 rounded-full text-xs font-medium" style="background-color: ${tag.color}20; color: ${tag.color};">${tag.label}</span>
-                                </label>
-                            `).join('')}
-                        </div>
-                    </div>
-                    
-                    <div class="flex justify-end gap-2 pt-4">
-                        <button type="button" onclick="closeFormModal()" class="secondary-btn">Cancelar</button>
-                        <button type="button" onclick="salvarNovoAviso()" class="primary-btn">Publicar Aviso</button>
-                    </div>
-                </div>
-            `;
 
-            document.getElementById('form-modal').classList.add('visible');
-        }
-
-        async function salvarNovoAviso() {
-            const titulo = document.getElementById('aviso-titulo').value;
-            const conteudo = document.getElementById('aviso-conteudo').value;
-            const checkboxes = document.querySelectorAll('.aviso-setor-checkbox:checked');
-            const setorSelecionado = Array.from(checkboxes).map(cb => cb.value);
-
-            if (!titulo || !conteudo || setorSelecionado.length === 0) {
-                showErrorMessage("Erro", "Todos os campos são obrigatórios e pelo menos um setor deve ser selecionado.");
-                return;
-            }
-
-            const novoAviso = {
-                id: 'aviso_' + Date.now(),
-                titulo: titulo,
-                conteudo: conteudo,
-                setor: setorSelecionado,
-                autorId: userId,
-                autorNome: currentUserName,
-                dataPublicacao: new Date().toISOString(),
-                dataCriacao: new Date().toISOString()
-            };
-
-            try {
-                // Development mode
-                avisos.unshift(novoAviso);
-                localStorage.setItem('hub-avisos', JSON.stringify(avisos));
-
-                document.getElementById('form-modal').classList.remove('visible');
-                renderMuralSection();
-                showSuccessMessage("Sucesso!", "Aviso publicado com sucesso!");
-                playSuccessSound();
-            } catch (error) {
-                console.error("Error saving aviso:", error);
-                showErrorMessage("Erro", "Erro ao publicar aviso: " + error.message);
-                playErrorSound();
-            }
-        }
-
-        function editarAviso(avisoId) {
-            const aviso = avisos.find(a => a.id === avisoId);
-            if (!aviso) return;
-
-            clearModalHeaderButtons();
-            document.getElementById('form-modal-title').textContent = "Editar Aviso";
-            
-            document.getElementById('form-modal-content-area').innerHTML = `
-                <form id="aviso-edit-form" class="space-y-4">
-                    <div>
-                        <label class="font-medium text-sm">Título do Aviso</label>
-                        <input type="text" id="aviso-titulo-edit" class="form-input" required value="${aviso.titulo}">
-                    </div>
-                    
-                    <div>
-                        <label class="font-medium text-sm">Conteúdo</label>
-                        <textarea id="aviso-conteudo-edit" class="form-input" rows="6" required>${aviso.conteudo}</textarea>
-                    </div>
-                    
-                    <div>
-                        <label class="font-medium text-sm">Setores (Selecione um ou mais)</label>
-                        <div class="grid grid-cols-2 gap-3 mt-2">
-                            ${setorTags.map(tag => `
-                                <label class="flex items-center space-x-2 cursor-pointer">
-                                    <input type="checkbox" value="${tag.value}" class="aviso-setor-checkbox-edit" ${aviso.setor.includes(tag.value) ? 'checked' : ''} />
-                                    <span class="px-3 py-1 rounded-full text-xs font-medium" style="background-color: ${tag.color}20; color: ${tag.color};">${tag.label}</span>
-                                </label>
-                            `).join('')}
-                        </div>
-                    </div>
-                    
-                    <div class="flex justify-end gap-2 pt-4">
-                        <button type="button" data-action="close-modal" class="secondary-btn">Cancelar</button>
-                        <button type="submit" class="primary-btn">Salvar Alterações</button>
-                    </div>
-                </form>
-            `;
-
-            document.getElementById('aviso-edit-form').onsubmit = (e) => updateAviso(e, avisoId);
-            document.getElementById('form-modal').classList.add('visible');
-        }
-
-        async function updateAviso(event, avisoId) {
-            event.preventDefault();
-            
-            const titulo = document.getElementById('aviso-titulo-edit').value;
-            const conteudo = document.getElementById('aviso-conteudo-edit').value;
-            const checkboxes = document.querySelectorAll('.aviso-setor-checkbox-edit:checked');
-            const setorSelecionado = Array.from(checkboxes).map(cb => cb.value);
-
-            if (!titulo || !conteudo || setorSelecionado.length === 0) {
-                showErrorMessage("Erro", "Todos os campos são obrigatórios e pelo menos um setor deve ser selecionado.");
-                return;
-            }
-
-            try {
-                const avisoIndex = avisos.findIndex(a => a.id === avisoId);
-                if (avisoIndex === -1) return;
-
-                const avisoAtualizado = {
-                    ...avisos[avisoIndex],
-                    titulo: titulo,
-                    conteudo: conteudo,
-                    setor: setorSelecionado,
-                    dataEdicao: new Date().toISOString()
-                };
-
-                if (!db) {
-                    // Development mode
-                    avisos[avisoIndex] = avisoAtualizado;
-                    localStorage.setItem('hub-avisos', JSON.stringify(avisos));
-                    console.log('Aviso updated locally (development mode)');
-                } else {
-                    // Production mode
-                    const avisoRef = doc(db, `artifacts/${appId}/public/data/avisos`, avisoId);
-                    await setDoc(avisoRef, avisoAtualizado);
-                    console.log('Aviso updated in Firebase');
-                }
-
-                document.getElementById('form-modal').classList.remove('visible');
-                renderMuralSection();
-                showSuccessMessage("Sucesso!", "Aviso atualizado com sucesso!");
-                playSuccessSound();
-            } catch (error) {
-                console.error("Error updating aviso:", error);
-                showErrorMessage("Erro", "Erro ao atualizar aviso: " + error.message);
-                playErrorSound();
-            }
-        }
-
-        async function deletarAviso(avisoId) {
-            console.log('deletarAviso called with ID:', avisoId);
-            console.log('Total avisos before deletion:', avisos.length);
-            
-            if (!confirm("Tem certeza que deseja excluir este aviso? Esta ação não pode ser desfeita.")) {
-                return;
-            }
-
-            try {
-                // Development mode - always use localStorage
-                const index = avisos.findIndex(a => a.id === avisoId);
-                console.log('Found aviso at index:', index);
-                
-                if (index > -1) {
-                    avisos.splice(index, 1);
-                    localStorage.setItem('hub-avisos', JSON.stringify(avisos));
-                    console.log('Aviso deleted. Total avisos after deletion:', avisos.length);
-                } else {
-                    console.log('Aviso not found with ID:', avisoId);
-                    showErrorMessage("Erro", "Aviso não encontrado.");
-                    return;
-                }
-
-                renderMuralSection();
-                showSuccessMessage("Sucesso!", "Aviso excluído com sucesso!");
-                playSuccessSound();
-            } catch (error) {
-                console.error("Error deleting aviso:", error);
-                showErrorMessage("Erro", "Erro ao excluir aviso: " + error.message);
-                playErrorSound();
-            }
-        }
-
-        // Make functions global
-        window.setMuralFilter = setMuralFilter;
-        window.openNovoAvisoModal = openNovoAvisoModal;
-        window.editarAviso = editarAviso;
-        window.deletarAviso = deletarAviso;
-        window.salvarNovoAviso = salvarNovoAviso;
         
 
         // --- SUBTLE MOUSE CLICK SOUND SYSTEM ---
@@ -11323,22 +9816,19 @@
                 'alunos': ['admin', 'pedagogico', 'ap', 'financeiro', 'teacher', 'am'], // Students - everyone  
                 'turmas': ['admin', 'pedagogico', 'ap', 'teacher', 'am', 'financeiro'], // Classes - no financeiro
                 'vips': ['admin', 'pedagogico', 'ap', 'teacher', 'am', 'financeiro'], // VIPs - accessible to teachers
-                'campanhas': ['admin', 'ap', 'am'], // Campaigns - marketing only
                 'grade': ['admin', 'pedagogico', 'ap', 'teacher', 'am', 'financeiro'], // Schedule - no financeiro
                 'folha-pagamento': ['admin', 'financeiro'], // Payroll/Expenses - FINANCIAL ONLY
                 'colaboradores': ['admin', 'ap', 'financeiro'], // Collaborators - admin, AP and financeiro
                 'dojo': ['admin', 'pedagogico', 'ap', 'teacher', 'am'], // Dojo - everyone except financeiro
                 'calendario-pedagogico': ['admin', 'pedagogico', 'ap', 'teacher', 'am'], // Pedagogical calendar
                 'calendario-marketing': ['admin', 'ap', 'am', 'teacher'], // Marketing calendar
-                'desafio-pedagogico': ['admin', 'pedagogico', 'ap', 'teacher', 'am'], // Pedagogical challenges
-                'mural': ['admin', 'pedagogico', 'ap', 'financeiro', 'teacher', 'am'] // Mural - everyone can access
             };
             
             return pagePermissions[pageKey]?.includes(userRole) || false;
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            const pageRenderers = { 'inicio': renderInicioSection, 'alunos': renderAlunosSection, 'turmas': renderTurmasSection, 'vips': renderVipsSection, 'campanhas': renderCampanhasSection, 'tarefas': renderTarefasSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection, 'colaboradores': renderColaboradoresSection, 'dojo': renderDojoSection, 'calendario-pedagogico': renderCalendarioPedagogicoSection, 'calendario-marketing': renderCalendarioMarketingSection, 'desafio-pedagogico': renderDesafioPedagogicoSection, 'mural': renderMuralSection };
+            const pageRenderers = { 'inicio': renderInicioSection, 'alunos': renderAlunosSection, 'turmas': renderTurmasSection, 'vips': renderVipsSection, 'tarefas': renderTarefasSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection, 'colaboradores': renderColaboradoresSection, 'dojo': renderDojoSection, 'calendario-pedagogico': renderCalendarioPedagogicoSection, 'calendario-marketing': renderCalendarioMarketingSection  };
 
             document.body.addEventListener('click', (event) => {
                 // Close modals when clicking overlay or close button
@@ -11350,9 +9840,6 @@
                 }
                 if (event.target.matches('.modal-overlay') || event.target.matches('[data-action="close-highlight-modal"]')) {
                     document.getElementById('monthly-highlight-modal').classList.remove('visible');
-                }
-                if (event.target.matches('.modal-overlay') || event.target.matches('[data-action="close-challenge-modal"]')) {
-                    document.getElementById('challenge-edit-modal').classList.remove('visible');
                 }
                 if (event.target.matches('.modal-overlay') || event.target.matches('[data-action="close-fluxo-modal"]')) {
                     const fluxoModal = document.getElementById('fluxo-modal');
@@ -11514,7 +10001,6 @@
                         'add-guideline': openGuidelineForm,
                         'export-guidelines': exportGuidelinesDoc,
                         'edit-monthly-highlight': openMonthlyHighlightForm,
-                        'edit-challenge-content': openChallengeContentForm,
                         'delete-calendar-event': () => {
                             if (id) {
                                 deleteCalendarEvent(id);
@@ -11525,7 +10011,6 @@
                         },
                         'delete-vip': () => deleteVip(id),
                         'delete-all-vips': deleteAllVips,
-                        'open-novo-aviso': () => openNovoAvisoModal(),
 
                         'debug-sync-status': debugSyncStatus,
                     };
