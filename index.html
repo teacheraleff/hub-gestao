@@ -3783,7 +3783,7 @@
             // Botão de exportação da turma completa
             const exportButton = document.createElement('button');
             exportButton.className = 'secondary-btn w-auto';
-            exportButton.textContent = 'Exportar PEF Completo';
+            exportButton.textContent = 'Exportar PEF';
             exportButton.dataset.action = 'export-turma-pef';
             exportButton.dataset.id = turmaId;
             modalHeader.insertBefore(exportButton, modalHeader.querySelector('.modal-close-btn'));
@@ -3793,7 +3793,7 @@
             exportStudentDropdown.className = 'relative inline-block ml-2';
             exportStudentDropdown.innerHTML = `
                 <button type="button" class="secondary-btn w-auto dropdown-toggle" id="export-student-btn-${turmaId}">
-                    Exportar por Aluno
+                    Exportar Aluno
                     <svg class="w-4 h-4 ml-2 inline" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"></path>
                     </svg>
@@ -4727,7 +4727,14 @@
 
             let formHtml = `<form id="form-modal-body" class="space-y-4">
                 <input type="hidden" id="schedule-id" value="${scheduleId || ''}">
-                <div class="schedule-student-field"><label class="font-medium text-sm">Aluno/Turma</label><input type="text" id="schedule-student" class="form-input" required value="${schedule?.student || ''}" ${isTeacher ? 'disabled' : ''}></div>
+                <div class="schedule-student-field">
+                    <label class="font-medium text-sm">Aluno/Turma</label>
+                    <input type="text" id="schedule-student" class="form-input" required value="${schedule?.student || ''}" ${isTeacher ? 'disabled' : ''} list="students-datalist" autocomplete="off">
+                    <datalist id="students-datalist">
+                        ${students.map(s => `<option value="${s.name}">`).join('')}
+                    </datalist>
+                    <p id="student-duplicate-warning" class="hidden text-sm text-red-600 mt-1">⚠️ Aluno já presente na grade deste professor</p>
+                </div>
                 <div class="schedule-level-field">
                     <label class="font-medium text-sm">Nível</label>
                     <select id="schedule-level" class="form-input" required ${isTeacher ? 'disabled' : ''}>${levelOptions}</select>
@@ -4796,11 +4803,44 @@
                 }
             }
 
+            // Check for duplicate students
+            function checkStudentDuplicate() {
+                const student = document.getElementById('schedule-student').value;
+                const teacher = document.getElementById('schedule-teacher').value;
+                const scheduleId = document.getElementById('schedule-id').value;
+                const warning = document.getElementById('student-duplicate-warning');
+                const type = document.getElementById('schedule-type').value;
+
+                // Skip check for breaks or if no student/teacher selected
+                if (!student || !teacher || type === 'break') {
+                    warning.classList.add('hidden');
+                    return;
+                }
+
+                // Check if this student already has a class with this teacher (excluding current edit)
+                const hasDuplicate = schedules.some(s => 
+                    s.student === student && 
+                    s.teacher === teacher && 
+                    s.id !== scheduleId &&
+                    s.type !== 'break'
+                );
+
+                if (hasDuplicate) {
+                    warning.classList.remove('hidden');
+                } else {
+                    warning.classList.add('hidden');
+                }
+            }
+
             document.getElementById('schedule-type').addEventListener('change', updateFormFields);
-            document.getElementById('schedule-teacher').addEventListener('change', checkConflicts);
+            document.getElementById('schedule-teacher').addEventListener('change', () => {
+                checkConflicts();
+                checkStudentDuplicate();
+            });
             document.getElementById('schedule-day').addEventListener('change', checkConflicts);
             document.getElementById('schedule-start').addEventListener('change', checkConflicts);
             document.getElementById('schedule-end').addEventListener('change', checkConflicts);
+            document.getElementById('schedule-student').addEventListener('input', checkStudentDuplicate);
 
             updateFormFields();
 
@@ -4810,9 +4850,28 @@
 
         async function saveScheduleEntry(event) {
             event.preventDefault();
+            
+            const student = document.getElementById('schedule-student').value;
             const teacherName = document.getElementById('schedule-teacher').value;
+            const scheduleId = document.getElementById('schedule-id').value;
+            const scheduleType = document.getElementById('schedule-type').value;
+            
+            // Check for duplicate student (only for non-break entries)
+            if (scheduleType !== 'break') {
+                const hasDuplicate = schedules.some(s => 
+                    s.student === student && 
+                    s.teacher === teacherName && 
+                    s.id !== scheduleId &&
+                    s.type !== 'break'
+                );
+                
+                if (hasDuplicate) {
+                    showErrorMessage("Erro", "Aluno já presente na grade deste professor.");
+                    return;
+                }
+            }
+            
             const startTime = document.getElementById('schedule-start').value;
-
             const teacher = collaborators.find(c => c.name === teacherName);
             if (teacher && teacher.shiftStart && teacher.shiftEnd) {
                 if (startTime < teacher.shiftStart || startTime > teacher.shiftEnd) {
@@ -7886,9 +7945,11 @@
                 assiduidade: 0
             };
             
-            // Auto-calculate attendance for VIP if not manually set
+            // Auto-calculate attendance for VIP - calculate and display, but only auto-fill if no manual value exists
             const autoAttendance = calculateVipAttendanceScore(vip.id);
-            if (autoAttendance !== null && grades.assiduidade === 0) {
+            // Only auto-fill if assiduidade is 0 or empty (not manually set) - normalize to number for proper comparison
+            const currentAttendance = Number(grades.assiduidade) || 0;
+            if (autoAttendance !== null && currentAttendance === 0) {
                 grades.assiduidade = autoAttendance;
             }
 
@@ -8067,9 +8128,11 @@
                             assiduidade: 0
                         };
                         
-                        // Auto-calculate attendance score if not manually set
+                        // Auto-calculate attendance score - calculate and display, but only auto-fill if no manual value exists
                         const autoAttendance = calculateAttendanceScore(student.id, turmaId);
-                        if (autoAttendance !== null && grades.assiduidade === 0) {
+                        // Only auto-fill if assiduidade is 0 or empty (not manually set) - normalize to number for proper comparison
+                        const currentAttendance = Number(grades.assiduidade) || 0;
+                        if (autoAttendance !== null && currentAttendance === 0) {
                             grades.assiduidade = autoAttendance;
                         }
                         
