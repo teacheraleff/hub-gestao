@@ -3858,15 +3858,6 @@
             // Definir turmaStudents primeiro
             const turmaStudents = (turma.studentIds || []).map(id => students.find(s => s.id === id)).filter(Boolean);
 
-            // Botão de salvar todas as aulas
-            const saveAllButton = document.createElement('button');
-            saveAllButton.className = 'primary-btn w-auto';
-            saveAllButton.textContent = 'Salvar Todas as Aulas';
-            saveAllButton.dataset.action = 'save-all-pef-lessons';
-            saveAllButton.dataset.unitId = turmaId;
-            saveAllButton.dataset.pefType = 'turma';
-            modalHeader.insertBefore(saveAllButton, modalHeader.querySelector('.modal-close-btn'));
-
             // Botão de exportação da turma completa
             const exportButton = document.createElement('button');
             exportButton.className = 'secondary-btn w-auto';
@@ -3930,8 +3921,8 @@
                 const studentsHtml = turmaStudents.map(student => {
                     const studentStatus = lessonData?.students?.[student.id] || '';
                     return `
-                        <div class="pef-student-attendance-row" data-student-id="${student.id}">
-                            <span class="text-sm">${student.name}</span>
+                        <div class="pef-student-attendance-row flex flex-col items-center gap-2" data-student-id="${student.id}">
+                            <span class="text-sm font-medium text-center">${student.name}</span>
                             <div class="pef-status-btn-group flex gap-1">
                                 <button data-action="mark-attendance" data-status="P" class="${studentStatus === 'P' ? 'active P' : ''}">P</button>
                                 <button data-action="mark-attendance" data-status="F" class="${studentStatus === 'F' ? 'active F' : ''}">F</button>
@@ -3965,6 +3956,11 @@
 
             modalContentArea.innerHTML = `
                 <div>${lessonsHtml}</div>
+                <div class="sticky bottom-0 left-0 right-0 bg-white border-t-2 border-yellow-400 p-4 mt-4 shadow-lg z-10">
+                    <button class="primary-btn w-full text-lg" data-action="save-all-pef-lessons" data-unit-id="${turmaId}" data-pef-type="turma">
+                        💾 Salvar Todas as Aulas
+                    </button>
+                </div>
             `;
             modal.classList.add('visible');
         }
@@ -3984,15 +3980,6 @@
             const modalHeader = document.getElementById('modal-header-container');
             const modalTitle = document.getElementById('form-modal-title');
             const modalContentArea = document.getElementById('form-modal-content-area');
-
-            // Botão de salvar todas as aulas
-            const saveAllButton = document.createElement('button');
-            saveAllButton.className = 'primary-btn w-auto';
-            saveAllButton.textContent = 'Salvar Todas as Aulas';
-            saveAllButton.dataset.action = 'save-all-pef-lessons';
-            saveAllButton.dataset.unitId = vipId;
-            saveAllButton.dataset.pefType = 'vip';
-            modalHeader.insertBefore(saveAllButton, modalHeader.querySelector('.modal-close-btn'));
 
             const exportButton = document.createElement('button');
             exportButton.className = 'secondary-btn w-auto';
@@ -4041,6 +4028,11 @@
 
             modalContentArea.innerHTML = `
                 <div>${lessonsHtml}</div>
+                <div class="sticky bottom-0 left-0 right-0 bg-white border-t-2 border-yellow-400 p-4 mt-4 shadow-lg z-10">
+                    <button class="primary-btn w-full text-lg" data-action="save-all-pef-lessons" data-unit-id="${vipId}" data-pef-type="vip">
+                        💾 Salvar Todas as Aulas
+                    </button>
+                </div>
             `;
             modal.classList.add('visible');
         }
@@ -4048,52 +4040,11 @@
         async function saveAllPefLessons(unitId, pefType) {
             try {
                 console.log("saveAllPefLessons called with:", unitId, pefType);
-                showSuccessMessage("Salvando...", "Processando todas as aulas. Aguarde...");
                 
                 let savedCount = 0;
                 const totalLessons = 40;
                 
-                for (let lessonNumber = 1; lessonNumber <= totalLessons; lessonNumber++) {
-                    const lessonRow = document.getElementById(`lesson-row-${unitId}-${lessonNumber}`);
-                    if (!lessonRow) continue;
-                    
-                    const date = lessonRow.querySelector('.lesson-date').value;
-                    // Skip lessons without date (empty lessons)
-                    if (!date) continue;
-                    
-                    const topic = lessonRow.querySelector('.lesson-topic').value;
-                    const notes = lessonRow.querySelector('.lesson-notes').value;
-                    
-                    const studentAttendance = {};
-                    const studentRows = lessonRow.querySelectorAll('.pef-student-attendance-row');
-                    studentRows.forEach(row => {
-                        const studentId = row.dataset.studentId;
-                        const activeButton = row.querySelector('.pef-status-btn-group button.active');
-                        const status = activeButton ? activeButton.dataset.status : '';
-                        if (studentId) {
-                            studentAttendance[studentId] = status;
-                        }
-                    });
-                    
-                    const attendanceRef = doc(db, `artifacts/${appId}/public/data/attendance`, unitId);
-                    
-                    try {
-                        await updateDoc(attendanceRef, {
-                            [`lessons.${lessonNumber}`]: {
-                                date: date,
-                                topic: topic,
-                                notes: notes,
-                                students: studentAttendance
-                            }
-                        });
-                        savedCount++;
-                    } catch (error) {
-                        console.error(`Error saving lesson ${lessonNumber}:`, error);
-                        // Continue with other lessons even if one fails
-                    }
-                }
-                
-                // Update local data
+                // Update local data first
                 let attendanceIndex = attendance.findIndex(a => a.id === unitId);
                 if (attendanceIndex === -1) {
                     attendance.push({ id: unitId, lessons: {} });
@@ -4104,13 +4055,13 @@
                     attendance[attendanceIndex].lessons = {};
                 }
                 
-                // Update local attendance data for each saved lesson
+                // Process all lessons
                 for (let lessonNumber = 1; lessonNumber <= totalLessons; lessonNumber++) {
                     const lessonRow = document.getElementById(`lesson-row-${unitId}-${lessonNumber}`);
                     if (!lessonRow) continue;
                     
                     const date = lessonRow.querySelector('.lesson-date').value;
-                    if (!date) continue;
+                    if (!date) continue; // Skip lessons without date
                     
                     const topic = lessonRow.querySelector('.lesson-topic').value;
                     const notes = lessonRow.querySelector('.lesson-notes').value;
@@ -4126,19 +4077,43 @@
                         }
                     });
                     
+                    // Update local data
                     attendance[attendanceIndex].lessons[lessonNumber] = {
                         date: date,
                         topic: topic,
                         notes: notes,
                         students: studentAttendance
                     };
+                    savedCount++;
                 }
                 
-                showSuccessMessage("Sucesso!", `${savedCount} aulas salvas com sucesso.`);
+                // Save to storage (Firebase or localStorage)
+                if (window.isDevelopmentMode) {
+                    localStorage.setItem('attendance', JSON.stringify(attendance));
+                    playSuccessSound();
+                    showSuccessMessage("Sucesso!", `${savedCount} aulas salvas com sucesso.`);
+                } else {
+                    // Save to Firebase
+                    for (let lessonNumber = 1; lessonNumber <= totalLessons; lessonNumber++) {
+                        const lessonData = attendance[attendanceIndex].lessons[lessonNumber];
+                        if (!lessonData) continue;
+                        
+                        const attendanceRef = doc(db, `artifacts/${appId}/public/data/attendance`, unitId);
+                        try {
+                            await updateDoc(attendanceRef, {
+                                [`lessons.${lessonNumber}`]: lessonData
+                            });
+                        } catch (error) {
+                            console.error(`Error saving lesson ${lessonNumber}:`, error);
+                        }
+                    }
+                    playSuccessSound();
+                    showSuccessMessage("Sucesso!", `${savedCount} aulas salvas com sucesso.`);
+                }
                 
             } catch (error) {
                 console.error("Error saving all lessons:", error);
-                showErrorMessage("Erro", "Falha ao salvar todas as aulas. Algumas aulas podem ter sido salvas.");
+                showErrorMessage("Erro", "Falha ao salvar todas as aulas.");
             }
         }
 
