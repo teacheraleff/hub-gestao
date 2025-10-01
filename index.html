@@ -3011,6 +3011,384 @@
             `;
         }
 
+        function renderKPIsPedagogicoSection() {
+            document.getElementById('main-title').textContent = 'KPIs Pedagógico';
+            document.getElementById('main-description').textContent = 'Métricas e indicadores pedagógicos para acompanhamento.';
+
+            // Cálculos dos KPIs
+            const activeStudents = students.filter(s => s.status === 'Ativo');
+            const maleCount = activeStudents.filter(s => s.gender === 'Masculino').length;
+            const femaleCount = activeStudents.filter(s => s.gender === 'Feminino').length;
+            const studentsInTurmas = activeStudents.filter(s => s.modalidade === 'TURMA').length;
+            const studentsInVIP = activeStudents.filter(s => s.modalidade === 'VIP').length;
+            const totalTurmas = turmas.length;
+
+            // Calcular idade média dos alunos
+            const studentsWithBirthdate = students.filter(s => s.birthDate);
+            let averageAge = 0;
+            if (studentsWithBirthdate.length > 0) {
+                const ages = studentsWithBirthdate.map(s => {
+                    const birthDate = new Date(s.birthDate);
+                    const today = new Date();
+                    let age = today.getFullYear() - birthDate.getFullYear();
+                    const monthDiff = today.getMonth() - birthDate.getMonth();
+                    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                        age--;
+                    }
+                    return age;
+                });
+                averageAge = ages.reduce((sum, age) => sum + age, 0) / ages.length;
+            }
+
+            // Contar professores ativos (professores únicos nos schedules)
+            const uniqueProfessors = [...new Set(schedules.map(s => s.professor))].filter(p => p && p.trim() !== '');
+            const totalProfessors = uniqueProfessors.length;
+
+            // Calcular médias de notas (midterm, listening, grammar, oral)
+            const gradesData = schedules.filter(s => s.midtermTest !== undefined || s.listeningTest !== undefined || s.grammarTest !== undefined || s.oralTest !== undefined);
+            
+            let avgMidterm = 0;
+            let avgListening = 0;
+            let avgGrammar = 0;
+            let avgOral = 0;
+            
+            if (gradesData.length > 0) {
+                const midtermScores = gradesData.filter(g => g.midtermTest > 0).map(g => g.midtermTest);
+                const listeningScores = gradesData.filter(g => g.listeningTest > 0).map(g => g.listeningTest);
+                const grammarScores = gradesData.filter(g => g.grammarTest > 0).map(g => g.grammarTest);
+                const oralScores = gradesData.filter(g => g.oralTest > 0).map(g => g.oralTest);
+                
+                avgMidterm = midtermScores.length > 0 ? midtermScores.reduce((sum, score) => sum + score, 0) / midtermScores.length : 0;
+                avgListening = listeningScores.length > 0 ? listeningScores.reduce((sum, score) => sum + score, 0) / listeningScores.length : 0;
+                avgGrammar = grammarScores.length > 0 ? grammarScores.reduce((sum, score) => sum + score, 0) / grammarScores.length : 0;
+                avgOral = oralScores.length > 0 ? oralScores.reduce((sum, score) => sum + score, 0) / oralScores.length : 0;
+            }
+
+            // Calcular % de presença e faltas por VIP
+            const vipAttendanceData = vips.map(vip => {
+                const student = students.find(s => s.id === vip.studentId);
+                const unitAttendance = attendance.find(a => a.id === vip.id);
+                
+                let totalLessons = 0;
+                let presentCount = 0;
+                let absentCount = 0;
+                
+                if (unitAttendance && unitAttendance.lessons) {
+                    for (let i = 1; i <= 40; i++) {
+                        const lessonData = unitAttendance.lessons[i];
+                        if (lessonData && lessonData.status) {
+                            totalLessons++;
+                            if (lessonData.status === 'P' || lessonData.status === 'PP') {
+                                presentCount++;
+                            } else if (lessonData.status === 'F') {
+                                absentCount++;
+                            }
+                        }
+                    }
+                }
+                
+                const presencePercentage = totalLessons > 0 ? (presentCount / totalLessons) * 100 : 0;
+                const absencePercentage = totalLessons > 0 ? (absentCount / totalLessons) * 100 : 0;
+                
+                return {
+                    name: student?.name || 'Desconhecido',
+                    presencePercentage: presencePercentage,
+                    absencePercentage: absencePercentage,
+                    totalLessons: totalLessons
+                };
+            }).filter(v => v.totalLessons > 0).sort((a, b) => b.presencePercentage - a.presencePercentage);
+
+            // Calcular % de presença e faltas por turma
+            const turmaAttendanceData = turmas.map(turma => {
+                if (!turma.studentIds || turma.studentIds.length === 0) {
+                    return { name: turma.name, presencePercentage: 0, absencePercentage: 0, totalLessons: 0 };
+                }
+                
+                const unitAttendance = attendance.find(a => a.id === turma.id);
+                let totalLessons = 0;
+                let totalPresent = 0;
+                let totalAbsent = 0;
+                
+                if (unitAttendance && unitAttendance.lessons) {
+                    turma.studentIds.forEach(studentId => {
+                        for (let i = 1; i <= 40; i++) {
+                            const lessonData = unitAttendance.lessons[i];
+                            if (lessonData && lessonData.students && lessonData.students[studentId]) {
+                                totalLessons++;
+                                const status = lessonData.students[studentId];
+                                if (status === 'P' || status === 'PP') {
+                                    totalPresent++;
+                                } else if (status === 'F') {
+                                    totalAbsent++;
+                                }
+                            }
+                        }
+                    });
+                }
+                
+                const presencePercentage = totalLessons > 0 ? (totalPresent / totalLessons) * 100 : 0;
+                const absencePercentage = totalLessons > 0 ? (totalAbsent / totalLessons) * 100 : 0;
+                
+                return {
+                    name: turma.name,
+                    presencePercentage: presencePercentage,
+                    absencePercentage: absencePercentage,
+                    totalLessons: totalLessons
+                };
+            }).filter(t => t.totalLessons > 0).sort((a, b) => b.presencePercentage - a.presencePercentage);
+
+            contentArea.innerHTML = `
+                <section id="kpis-section" class="base-card">
+                    <!-- Cards de Estatísticas Rápidas -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                        <!-- Alunos em Turmas -->
+                        <div class="bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-lg border border-purple-200">
+                            <div class="flex items-center justify-between mb-2">
+                                <h3 class="text-sm font-medium text-purple-700 uppercase tracking-wide">Alunos em Turmas</h3>
+                                <svg class="w-8 h-8 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                                </svg>
+                            </div>
+                            <p class="text-4xl font-bold text-purple-800">${studentsInTurmas}</p>
+                            <p class="text-xs text-purple-600 mt-1">Alunos ativos</p>
+                        </div>
+
+                        <!-- Alunos VIP -->
+                        <div class="bg-gradient-to-br from-amber-50 to-amber-100 p-6 rounded-lg border border-amber-200">
+                            <div class="flex items-center justify-between mb-2">
+                                <h3 class="text-sm font-medium text-amber-700 uppercase tracking-wide">Alunos VIP</h3>
+                                <svg class="w-8 h-8 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
+                                </svg>
+                            </div>
+                            <p class="text-4xl font-bold text-amber-800">${studentsInVIP}</p>
+                            <p class="text-xs text-amber-600 mt-1">Alunos ativos</p>
+                        </div>
+
+                        <!-- Total de Turmas -->
+                        <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-lg border border-blue-200">
+                            <div class="flex items-center justify-between mb-2">
+                                <h3 class="text-sm font-medium text-blue-700 uppercase tracking-wide">Total de Turmas</h3>
+                                <svg class="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+                                </svg>
+                            </div>
+                            <p class="text-4xl font-bold text-blue-800">${totalTurmas}</p>
+                            <p class="text-xs text-blue-600 mt-1">Turmas cadastradas</p>
+                        </div>
+
+                        <!-- Idade Média dos Alunos -->
+                        <div class="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-lg border border-green-200">
+                            <div class="flex items-center justify-between mb-2">
+                                <h3 class="text-sm font-medium text-green-700 uppercase tracking-wide">Idade Média</h3>
+                                <svg class="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                </svg>
+                            </div>
+                            <p class="text-4xl font-bold text-green-800">${averageAge > 0 ? averageAge.toFixed(1) : '0'}</p>
+                            <p class="text-xs text-green-600 mt-1">Anos (média dos alunos)</p>
+                        </div>
+
+                        <!-- Professores Ativos -->
+                        <div class="bg-gradient-to-br from-red-50 to-red-100 p-6 rounded-lg border border-red-200">
+                            <div class="flex items-center justify-between mb-2">
+                                <h3 class="text-sm font-medium text-red-700 uppercase tracking-wide">Professores Ativos</h3>
+                                <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                                </svg>
+                            </div>
+                            <p class="text-4xl font-bold text-red-800">${totalProfessors}</p>
+                            <p class="text-xs text-red-600 mt-1">Professores no sistema</p>
+                        </div>
+                    </div>
+
+                    <!-- Gráfico de Gênero e Tabelas de Assiduidade -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Gráfico de Gênero -->
+                        <div class="bg-white p-6 rounded-lg border border-stone-200">
+                            <h3 class="text-lg font-semibold text-stone-800 mb-4">Distribuição por Gênero</h3>
+                            <div class="flex items-center justify-center" style="height: 300px;">
+                                <canvas id="gender-chart"></canvas>
+                            </div>
+                            <div class="mt-4 flex justify-center gap-6">
+                                <div class="text-center">
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-4 h-4 rounded-full" style="background-color: #3B82F6;"></div>
+                                        <span class="text-sm text-stone-600">Masculino</span>
+                                    </div>
+                                    <p class="text-xl font-bold text-stone-800">${maleCount}</p>
+                                </div>
+                                <div class="text-center">
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-4 h-4 rounded-full" style="background-color: #EC4899;"></div>
+                                        <span class="text-sm text-stone-600">Feminino</span>
+                                    </div>
+                                    <p class="text-xl font-bold text-stone-800">${femaleCount}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Assiduidade por VIP -->
+                        <div class="bg-white p-6 rounded-lg border border-stone-200">
+                            <h3 class="text-lg font-semibold text-stone-800 mb-4">Assiduidade VIP</h3>
+                            <div style="max-height: 350px; overflow-y: auto;">
+                                ${vipAttendanceData.length > 0 ? `
+                                    <div class="space-y-3">
+                                        ${vipAttendanceData.map(vip => `
+                                            <div class="p-3 bg-stone-50 rounded-lg">
+                                                <p class="text-sm font-medium text-stone-700 mb-2">${vip.name}</p>
+                                                <div class="flex items-center gap-4">
+                                                    <div class="flex-1">
+                                                        <div class="flex items-center justify-between text-xs mb-1">
+                                                            <span class="text-green-600 font-medium">Presença</span>
+                                                            <span class="text-green-700 font-bold">${vip.presencePercentage.toFixed(1)}%</span>
+                                                        </div>
+                                                        <div class="w-full bg-stone-200 rounded-full h-2">
+                                                            <div class="bg-green-500 h-2 rounded-full" style="width: ${vip.presencePercentage}%"></div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="flex-1">
+                                                        <div class="flex items-center justify-between text-xs mb-1">
+                                                            <span class="text-red-600 font-medium">Faltas</span>
+                                                            <span class="text-red-700 font-bold">${vip.absencePercentage.toFixed(1)}%</span>
+                                                        </div>
+                                                        <div class="w-full bg-stone-200 rounded-full h-2">
+                                                            <div class="bg-red-500 h-2 rounded-full" style="width: ${vip.absencePercentage}%"></div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                ` : '<div class="text-center py-8 text-stone-500">Nenhum dado de assiduidade disponível</div>'}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Assiduidade por Turma -->
+                    <div class="mt-6 bg-white p-6 rounded-lg border border-stone-200">
+                        <h3 class="text-lg font-semibold text-stone-800 mb-4">Assiduidade por Turma</h3>
+                        ${turmaAttendanceData.length > 0 ? `
+                            <div class="overflow-x-auto">
+                                <table class="w-full">
+                                    <thead>
+                                        <tr class="border-b border-stone-200">
+                                            <th class="text-left pb-3 text-sm font-semibold text-stone-700">Turma</th>
+                                            <th class="text-center pb-3 text-sm font-semibold text-stone-700">% Presença</th>
+                                            <th class="text-center pb-3 text-sm font-semibold text-stone-700">% Faltas</th>
+                                            <th class="text-center pb-3 text-sm font-semibold text-stone-700">Visualização</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${turmaAttendanceData.map(turma => `
+                                            <tr class="border-b border-stone-100">
+                                                <td class="py-3 text-sm font-medium text-stone-700">${turma.name}</td>
+                                                <td class="py-3 text-sm font-bold text-green-700 text-center">${turma.presencePercentage.toFixed(1)}%</td>
+                                                <td class="py-3 text-sm font-bold text-red-700 text-center">${turma.absencePercentage.toFixed(1)}%</td>
+                                                <td class="py-3">
+                                                    <div class="flex items-center justify-center gap-2">
+                                                        <div class="w-24 bg-stone-200 rounded-full h-2">
+                                                            <div class="bg-green-500 h-2 rounded-full" style="width: ${turma.presencePercentage}%"></div>
+                                                        </div>
+                                                        <div class="w-24 bg-stone-200 rounded-full h-2">
+                                                            <div class="bg-red-500 h-2 rounded-full" style="width: ${turma.absencePercentage}%"></div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        ` : '<div class="text-center py-8 text-stone-500">Nenhum dado de assiduidade disponível</div>'}
+                    </div>
+
+                    <!-- Médias de Notas dos Testes -->
+                    <div class="mt-6 bg-white p-6 rounded-lg border border-stone-200">
+                        <h3 class="text-lg font-semibold text-stone-800 mb-4">Médias de Desempenho nos Testes</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <!-- Midterm Test -->
+                            <div class="p-4 bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-lg border border-indigo-200">
+                                <p class="text-xs font-medium text-indigo-700 uppercase tracking-wide mb-2">Midterm Test</p>
+                                <p class="text-3xl font-bold text-indigo-800">${avgMidterm.toFixed(1)}</p>
+                                <div class="mt-2 w-full bg-indigo-200 rounded-full h-2">
+                                    <div class="bg-indigo-500 h-2 rounded-full" style="width: ${(avgMidterm / 25) * 100}%"></div>
+                                </div>
+                                <p class="text-xs text-indigo-600 mt-1">de 25.0 pontos</p>
+                            </div>
+
+                            <!-- Listening Test -->
+                            <div class="p-4 bg-gradient-to-br from-sky-50 to-sky-100 rounded-lg border border-sky-200">
+                                <p class="text-xs font-medium text-sky-700 uppercase tracking-wide mb-2">Listening Test</p>
+                                <p class="text-3xl font-bold text-sky-800">${avgListening.toFixed(1)}</p>
+                                <div class="mt-2 w-full bg-sky-200 rounded-full h-2">
+                                    <div class="bg-sky-500 h-2 rounded-full" style="width: ${(avgListening / 15) * 100}%"></div>
+                                </div>
+                                <p class="text-xs text-sky-600 mt-1">de 15.0 pontos</p>
+                            </div>
+
+                            <!-- Grammar Test -->
+                            <div class="p-4 bg-gradient-to-br from-teal-50 to-teal-100 rounded-lg border border-teal-200">
+                                <p class="text-xs font-medium text-teal-700 uppercase tracking-wide mb-2">Grammar Test</p>
+                                <p class="text-3xl font-bold text-teal-800">${avgGrammar.toFixed(1)}</p>
+                                <div class="mt-2 w-full bg-teal-200 rounded-full h-2">
+                                    <div class="bg-teal-500 h-2 rounded-full" style="width: ${(avgGrammar / 15) * 100}%"></div>
+                                </div>
+                                <p class="text-xs text-teal-600 mt-1">de 15.0 pontos</p>
+                            </div>
+
+                            <!-- Oral Test -->
+                            <div class="p-4 bg-gradient-to-br from-pink-50 to-pink-100 rounded-lg border border-pink-200">
+                                <p class="text-xs font-medium text-pink-700 uppercase tracking-wide mb-2">Oral Test</p>
+                                <p class="text-3xl font-bold text-pink-800">${avgOral.toFixed(1)}</p>
+                                <div class="mt-2 w-full bg-pink-200 rounded-full h-2">
+                                    <div class="bg-pink-500 h-2 rounded-full" style="width: ${(avgOral / 15) * 100}%"></div>
+                                </div>
+                                <p class="text-xs text-pink-600 mt-1">de 15.0 pontos</p>
+                            </div>
+                        </div>
+                        ${gradesData.length === 0 ? '<div class="text-center py-4 mt-4 text-stone-500 text-sm">Nenhuma nota registrada ainda</div>' : ''}
+                    </div>
+                </section>
+            `;
+
+            // Renderizar gráfico de gênero usando Chart.js
+            setTimeout(() => {
+                const ctx = document.getElementById('gender-chart');
+                if (ctx && window.Chart) {
+                    new Chart(ctx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['Masculino', 'Feminino'],
+                            datasets: [{
+                                data: [maleCount, femaleCount],
+                                backgroundColor: ['#3B82F6', '#EC4899'],
+                                borderWidth: 0
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: true,
+                            plugins: {
+                                legend: {
+                                    display: false
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                            const percentage = ((context.parsed / total) * 100).toFixed(1);
+                                            return `${context.label}: ${context.parsed} (${percentage}%)`;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            }, 100);
+        }
+
 
         // --- MODAL & FORM FUNCTIONS ---
         function clearModalHeaderButtons() {
@@ -3238,11 +3616,11 @@
 
                     <h4 class="text-lg font-semibold text-stone-700 border-b pb-2 pt-4">Informações Pessoais</h4>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div><label class="font-medium text-sm">Data de Nascimento</label><input type="date" id="aluno-birthDate" class="form-input" value="${aluno?.birthDate || ''}"></div>
-                        <div><label class="font-medium text-sm">Gênero</label><select id="aluno-gender" class="form-input"><option value="">Selecione</option><option value="Masculino" ${aluno?.gender === 'Masculino' ? 'selected' : ''}>Masculino</option><option value="Feminino" ${aluno?.gender === 'Feminino' ? 'selected' : ''}>Feminino</option></select></div>
+                        <div><label class="font-medium text-sm">Data de Nascimento <span class="text-red-500">*</span></label><input type="date" id="aluno-birthDate" class="form-input" required value="${aluno?.birthDate || ''}"></div>
+                        <div><label class="font-medium text-sm">Gênero <span class="text-red-500">*</span></label><select id="aluno-gender" class="form-input" required><option value="">Selecione</option><option value="Masculino" ${aluno?.gender === 'Masculino' ? 'selected' : ''}>Masculino</option><option value="Feminino" ${aluno?.gender === 'Feminino' ? 'selected' : ''}>Feminino</option></select></div>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div><label class="font-medium text-sm">CPF</label><input type="text" id="aluno-cpf" class="form-input" placeholder="000.000.000-00" value="${aluno?.cpf || ''}"></div>
+                        <div><label class="font-medium text-sm">CPF <span class="text-red-500">*</span></label><input type="text" id="aluno-cpf" class="form-input" placeholder="000.000.000-00" required value="${aluno?.cpf || ''}"></div>
                         <div><label class="font-medium text-sm">Estado Civil</label><select id="aluno-estadoCivil" class="form-input"><option value="">Selecione</option><option value="Solteiro(a)" ${aluno?.estadoCivil === 'Solteiro(a)' ? 'selected' : ''}>Solteiro(a)</option><option value="Casado(a)" ${aluno?.estadoCivil === 'Casado(a)' ? 'selected' : ''}>Casado(a)</option><option value="Divorciado(a)" ${aluno?.estadoCivil === 'Divorciado(a)' ? 'selected' : ''}>Divorciado(a)</option><option value="Viúvo(a)" ${aluno?.estadoCivil === 'Viúvo(a)' ? 'selected' : ''}>Viúvo(a)</option><option value="União Estável" ${aluno?.estadoCivil === 'União Estável' ? 'selected' : ''}>União Estável</option></select></div>
                     </div>
                     <div><label class="font-medium text-sm">Profissão</label><input type="text" id="aluno-profissao" class="form-input" placeholder="Ex: Engenheiro, Professor, etc." value="${aluno?.profissao || ''}"></div>
@@ -3502,6 +3880,7 @@
                     ${aluno.notes ? `<div class="mt-4 pt-4 border-t"><strong>Observações:</strong><p class="mt-1 p-3 bg-stone-50 rounded-md whitespace-pre-wrap text-sm">${aluno.notes}</p></div>` : ''}
 
                     <div class="border-t pt-4 flex justify-end gap-2">
+                        ${canEdit && aluno.status === 'Ativo' ? `<button class="primary-btn !bg-blue-600 hover:!bg-blue-700" onclick="openRematriculaForm('${aluno.id}'); event.preventDefault();">Rematricular</button>` : ''}
                         ${canEdit ? `<button class="secondary-btn" data-action="edit-aluno" data-id="${aluno.id}">Editar</button>
                         <button class="danger-btn" data-action="delete-item" data-collection="students" data-id="${aluno.id}">Apagar</button>` : ''}
                         <button class="primary-btn" data-action="close-modal">Fechar</button>
@@ -3509,6 +3888,128 @@
                 </div>`;
             document.getElementById('form-modal').classList.add('visible');
         }
+
+        // Rematrícula Functions
+        window.openRematriculaForm = function(alunoId) {
+            const aluno = students.find(s => s.id === alunoId);
+            if (!aluno) {
+                showErrorMessage("Erro", "Aluno não encontrado.");
+                return;
+            }
+
+            // Check if student has active enrollment
+            let hasActiveVip = false;
+            let hasActiveTurma = false;
+            let currentVip = null;
+            let currentTurma = null;
+
+            // Check VIP
+            currentVip = vips.find(v => v.studentId === alunoId && (!v.endDate || new Date(v.endDate) >= new Date()));
+            if (currentVip) hasActiveVip = true;
+
+            // Check Turma
+            currentTurma = turmas.find(t => t.studentIds && t.studentIds.includes(alunoId));
+            if (currentTurma) hasActiveTurma = true;
+
+            if (!hasActiveVip && !hasActiveTurma) {
+                showErrorMessage("Erro", "Este aluno não possui matrícula ativa em VIP ou Turma para finalizar.");
+                return;
+            }
+
+            const enrollmentInfo = hasActiveVip 
+                ? `VIP - ${currentVip.level || 'Nível não especificado'}`
+                : `Turma - ${currentTurma.name || 'Nome não especificado'}`;
+
+            document.getElementById('form-modal-title').textContent = 'Rematrícula de Aluno';
+            document.getElementById('form-modal-content-area').innerHTML = `
+                <div class="space-y-4">
+                    <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                        <p class="text-sm text-blue-800 mb-2"><strong>Aluno:</strong> ${aluno.name}</p>
+                        <p class="text-sm text-blue-800"><strong>Matrícula Atual:</strong> ${enrollmentInfo}</p>
+                    </div>
+                    <p class="text-stone-700">Esta ação irá:</p>
+                    <ul class="list-disc list-inside text-sm text-stone-600 space-y-1">
+                        ${hasActiveVip ? '<li>Finalizar o contrato VIP atual (definir data de término como hoje)</li>' : ''}
+                        ${hasActiveTurma ? '<li>Remover o aluno da turma atual</li>' : ''}
+                        <li>Abrir o formulário para nova matrícula</li>
+                    </ul>
+                    <div class="pt-4 border-t flex justify-end gap-2">
+                        <button class="secondary-btn" onclick="closeModal(); event.preventDefault();">Cancelar</button>
+                        <button class="primary-btn !bg-blue-600 hover:!bg-blue-700" onclick="finalizeEnrollmentAndRematriculate('${alunoId}'); event.preventDefault();">Confirmar Rematrícula</button>
+                    </div>
+                </div>
+            `;
+            document.getElementById('form-modal').classList.add('visible');
+        };
+
+        window.finalizeEnrollmentAndRematriculate = async function(alunoId) {
+            const aluno = students.find(s => s.id === alunoId);
+            if (!aluno) {
+                showErrorMessage("Erro", "Aluno não encontrado.");
+                return;
+            }
+
+            let wasVip = false;
+            let wasTurma = false;
+
+            try {
+                // Find and finalize VIP enrollment
+                const activeVip = vips.find(v => v.studentId === alunoId && (!v.endDate || new Date(v.endDate) >= new Date()));
+                if (activeVip) {
+                    wasVip = true;
+                    const today = new Date().toISOString().split('T')[0];
+                    
+                    if (window.isDevelopmentMode) {
+                        const index = vips.findIndex(v => v.id === activeVip.id);
+                        if (index !== -1) {
+                            vips[index].endDate = today;
+                            localStorage.setItem('vips', JSON.stringify(vips));
+                        }
+                    } else {
+                        await updateDoc(doc(db, `artifacts/${appId}/public/data/vips`, activeVip.id), {
+                            endDate: today
+                        });
+                    }
+                }
+
+                // Find and remove from Turma
+                const activeTurma = turmas.find(t => t.studentIds && t.studentIds.includes(alunoId));
+                if (activeTurma) {
+                    wasTurma = true;
+                    const updatedStudentIds = activeTurma.studentIds.filter(id => id !== alunoId);
+                    
+                    if (window.isDevelopmentMode) {
+                        const index = turmas.findIndex(t => t.id === activeTurma.id);
+                        if (index !== -1) {
+                            turmas[index].studentIds = updatedStudentIds;
+                            localStorage.setItem('turmas', JSON.stringify(turmas));
+                        }
+                    } else {
+                        await updateDoc(doc(db, `artifacts/${appId}/public/data/turmas`, activeTurma.id), {
+                            studentIds: updatedStudentIds
+                        });
+                    }
+                }
+
+                // Close modal and open appropriate form
+                closeModal();
+                
+                // Small delay to ensure modal closes properly
+                setTimeout(() => {
+                    if (wasVip) {
+                        openVipForm();
+                    } else if (wasTurma) {
+                        openTurmaForm();
+                    }
+                }, 300);
+
+                showSuccessMessage("Sucesso", "Matrícula anterior finalizada. Complete a nova matrícula.");
+
+            } catch (error) {
+                console.error("Error during rematrícula:", error);
+                showErrorMessage("Erro", "Erro ao processar rematrícula: " + error.message);
+            }
+        };
 
         // Helper function to get students already allocated to other classes
         function getStudentsAllocatedToOtherTurmas(excludeTurmaId = null) {
@@ -3683,8 +4184,13 @@
             const teacherOptions = collaborators.filter(c => c.sectors?.includes('professor')).map(c => `<option value="${c.id}" data-name="${c.name}" ${vip?.teacherId === c.id ? 'selected' : ''}>${c.name}</option>`).join('');
             const levelOptions = [].map(cp => `<option value="${cp.title}" ${vip?.level === cp.title ? 'selected' : ''}>${cp.title}</option>`).join('') + `<option value="outro">Outro (especificar)</option>`;
             
-            // Available VIP students (modalidade VIP and not already registered as VIP, or current VIP being edited)
-            const availableVipStudents = students.filter(s => s.modalidade === 'VIP' && (!vips.find(v => v.studentId === s.id) || vip?.studentId === s.id));
+            // Available VIP students (modalidade VIP and not already registered as ACTIVE VIP, or current VIP being edited)
+            // A student is only considered unavailable if they have an active VIP contract (no endDate or future endDate)
+            const availableVipStudents = students.filter(s => {
+                const isCurrentlyEditing = vip?.studentId === s.id;
+                const hasActiveVip = vips.some(v => v.studentId === s.id && (!v.endDate || new Date(v.endDate) >= new Date()));
+                return s.modalidade === 'VIP' && (isCurrentlyEditing || !hasActiveVip);
+            });
 
             document.getElementById('form-modal-content-area').innerHTML = `
                 <form id="form-modal-body" class="space-y-4">
@@ -4943,11 +5449,26 @@
                 <div class="schedule-student-field">
                     <label class="font-medium text-sm" id="student-field-label">Aluno/Turma</label>
                     
-                    <!-- VIP dropdown (hidden by default) -->
-                    <select id="schedule-vip-select" class="form-input hidden" ${isTeacher ? 'disabled' : ''}>
-                        <option value="">Selecione um aluno VIP</option>
-                        ${vipStudents.map(s => `<option value="${s.name}" ${schedule?.student === s.name ? 'selected' : ''}>${s.name}</option>`).join('')}
-                    </select>
+                    <!-- VIP search field (hidden by default) -->
+                    <div id="schedule-vip-container" class="hidden relative">
+                        <input type="text" id="schedule-vip-search" class="form-input" placeholder="Digite o nome do aluno VIP..." 
+                               autocomplete="off" value="${schedule?.student || ''}" ${isTeacher ? 'disabled' : ''}>
+                        
+                        <button type="button" id="schedule-vip-dropdown-btn" class="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none" ${isTeacher ? 'disabled' : ''}>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                        </button>
+                        
+                        <div id="schedule-vip-results" class="absolute z-50 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto hidden">
+                            ${vipStudents.length > 0 ? vipStudents.map(s => `
+                                <div class="p-2 hover:bg-gray-100 cursor-pointer border-b" data-student-name="${s.name}">
+                                    <p class="font-medium text-sm">${s.name}</p>
+                                    <p class="text-xs text-gray-500">Status: ${s.status} | Modalidade: ${s.modalidade}</p>
+                                </div>
+                            `).join('') : '<div class="p-2 text-sm text-gray-500">Nenhum aluno VIP disponível</div>'}
+                        </div>
+                    </div>
                     
                     <!-- TURMA dropdown (hidden by default) -->
                     <select id="schedule-turma-select" class="form-input hidden" ${isTeacher ? 'disabled' : ''}>
@@ -4990,7 +5511,7 @@
                 const type = document.getElementById('schedule-type').value;
                 const studentField = document.querySelector('.schedule-student-field');
                 const levelField = document.querySelector('.schedule-level-field');
-                const vipSelect = document.getElementById('schedule-vip-select');
+                const vipContainer = document.getElementById('schedule-vip-container');
                 const turmaSelect = document.getElementById('schedule-turma-select');
                 const hiddenInput = document.getElementById('schedule-student');
                 const levelSelect = document.getElementById('schedule-level');
@@ -5003,17 +5524,18 @@
                     studentField.style.display = 'block';
                     levelField.style.display = 'block';
                     fieldLabel.textContent = 'Aluno VIP';
-                    vipSelect.classList.remove('hidden');
+                    vipContainer.classList.remove('hidden');
                     turmaSelect.classList.add('hidden');
-                    // Sync hidden input with VIP selection
-                    if (vipSelect.value) {
-                        hiddenInput.value = vipSelect.value;
+                    // Sync hidden input with VIP search
+                    const vipSearchInput = document.getElementById('schedule-vip-search');
+                    if (vipSearchInput.value) {
+                        hiddenInput.value = vipSearchInput.value;
                     }
                 } else if (type === 'turma') {
                     studentField.style.display = 'block';
                     levelField.style.display = 'block';
                     fieldLabel.textContent = 'Turma';
-                    vipSelect.classList.add('hidden');
+                    vipContainer.classList.add('hidden');
                     turmaSelect.classList.remove('hidden');
                     // Sync hidden input with Turma selection
                     if (turmaSelect.value) {
@@ -5070,10 +5592,58 @@
                 }
             }
 
-            // Sync VIP select with hidden input
-            document.getElementById('schedule-vip-select').addEventListener('change', (e) => {
-                document.getElementById('schedule-student').value = e.target.value;
-                checkStudentDuplicate();
+            // VIP search functionality
+            const vipSearchInput = document.getElementById('schedule-vip-search');
+            const vipResults = document.getElementById('schedule-vip-results');
+            const vipDropdownBtn = document.getElementById('schedule-vip-dropdown-btn');
+            const allVipItems = vipResults.querySelectorAll('[data-student-name]');
+
+            // Filter VIP list as user types
+            vipSearchInput.addEventListener('input', (e) => {
+                const searchTerm = e.target.value.toLowerCase();
+                vipResults.classList.remove('hidden');
+                
+                let hasVisibleResults = false;
+                allVipItems.forEach(item => {
+                    const studentName = item.getAttribute('data-student-name').toLowerCase();
+                    if (studentName.includes(searchTerm)) {
+                        item.style.display = 'block';
+                        hasVisibleResults = true;
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+                
+                if (!hasVisibleResults && searchTerm) {
+                    vipResults.innerHTML = '<div class="p-2 text-sm text-gray-500">Nenhum aluno encontrado</div>';
+                }
+            });
+
+            // Show/hide dropdown on button click
+            vipDropdownBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                vipResults.classList.toggle('hidden');
+                // Reset filter to show all
+                allVipItems.forEach(item => item.style.display = 'block');
+            });
+
+            // Select VIP from list
+            vipResults.addEventListener('click', (e) => {
+                const item = e.target.closest('[data-student-name]');
+                if (item) {
+                    const studentName = item.getAttribute('data-student-name');
+                    vipSearchInput.value = studentName;
+                    document.getElementById('schedule-student').value = studentName;
+                    vipResults.classList.add('hidden');
+                    checkStudentDuplicate();
+                }
+            });
+
+            // Close dropdown when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!vipSearchInput.contains(e.target) && !vipResults.contains(e.target) && !vipDropdownBtn.contains(e.target)) {
+                    vipResults.classList.add('hidden');
+                }
             });
 
             // Sync Turma select with hidden input
@@ -5163,9 +5733,32 @@
             if (!db) { console.warn("Offline mode."); closeFormModal(); return; }
             try {
                 if (scheduleId) { 
-                    const data = {...baseData, day: daySelection };
-                    await updateDoc(doc(db, `artifacts/${appId}/public/data/schedules`, scheduleId), data); 
-                    showSuccessMessage("Sucesso!", "Aula atualizada.");
+                    // When editing, we need to find and update all related entries
+                    const originalSchedule = schedules.find(s => s.id === scheduleId);
+                    
+                    if (originalSchedule) {
+                        // Find all schedules with same teacher, student, startTime, endTime (paired entries)
+                        const relatedSchedules = schedules.filter(s => 
+                            s.teacher === originalSchedule.teacher &&
+                            s.student === originalSchedule.student &&
+                            s.startTime === originalSchedule.startTime &&
+                            s.endTime === originalSchedule.endTime &&
+                            s.type === originalSchedule.type
+                        );
+
+                        // Delete all related entries
+                        for (const relatedSchedule of relatedSchedules) {
+                            await deleteDoc(doc(db, `artifacts/${appId}/public/data/schedules`, relatedSchedule.id));
+                        }
+                        
+                        // Create new entries with updated data
+                        for (const day of daysToCreate) {
+                            const data = {...baseData, day: day, createdAt: serverTimestamp() };
+                            await addDoc(collection(db, `artifacts/${appId}/public/data/schedules`), data);
+                        }
+                        
+                        showSuccessMessage("Sucesso!", "Aula atualizada.");
+                    }
                 } else { 
                     for (const day of daysToCreate) {
                         const data = {...baseData, day: day, createdAt: serverTimestamp() };
@@ -8230,10 +8823,9 @@
                             <input type="number" id="participacao" class="form-input" min="0" max="10" step="any" value="${grades.participacao}">
                         </div>
                         <div>
-                            <label class="font-medium text-sm">Assiduidade (0-10) ${autoAttendance !== null ? `<small style="color: #6b7280;">Auto: ${autoAttendance.toFixed(1)}</small>` : ''}</label>
-                            <input type="number" id="assiduidade" class="form-input" min="0" max="10" step="any" value="${grades.assiduidade}" 
-                                   placeholder="${autoAttendance !== null ? `Auto: ${autoAttendance.toFixed(1)}` : '0.0'}"
-                                   title="${autoAttendance !== null ? `Calculado automaticamente baseado nas presenças (${autoAttendance.toFixed(1)}). Você pode alterar manualmente se necessário.` : 'Insira a nota de assiduidade manualmente'}">
+                            <label class="font-medium text-sm">Assiduidade (0-10) - Automático</label>
+                            <input type="number" id="assiduidade" class="form-input bg-gray-100" min="0" max="10" step="any" value="${grades.assiduidade}" readonly
+                                   title="Calculado automaticamente baseado nas presenças registradas no PEF. Não pode ser editado manualmente.">
                         </div>
                     </div>
                     
@@ -8249,15 +8841,15 @@
                             Necessário 70 pontos para aprovação
                         </div>
                         ${autoAttendance !== null ? `
-                        <div class="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded text-sm">
-                            <div class="flex items-center gap-2 text-yellow-800">
+                        <div class="mt-3 p-2 bg-blue-50 border border-blue-200 rounded text-sm">
+                            <div class="flex items-center gap-2 text-blue-800">
                                 <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
                                 </svg>
                                 <span class="font-medium">Assiduidade Calculada Automaticamente: ${autoAttendance.toFixed(1)}</span>
                             </div>
-                            <div class="text-yellow-700 mt-1">
-                                Baseado no registro de presenças. Você pode alterar manualmente se necessário.
+                            <div class="text-blue-700 mt-1">
+                                Baseado no registro de presenças no PEF. Valor somente leitura.
                             </div>
                         </div>` : ''}
                     </div>
@@ -8413,10 +9005,9 @@
                                     <input type="number" id="participacao-${student.id}" class="form-input student-grade" min="0" max="10" step="any" value="${grades.participacao}" data-student="${student.id}">
                                 </div>
                                 <div>
-                                    <label class="font-medium text-sm">Assiduidade (0-10) ${autoAttendance !== null ? `<small style="color: #6b7280;">Auto: ${autoAttendance.toFixed(1)}</small>` : ''}</label>
-                                    <input type="number" id="assiduidade-${student.id}" class="form-input student-grade" min="0" max="10" step="any" value="${grades.assiduidade}" data-student="${student.id}" 
-                                           placeholder="${autoAttendance !== null ? `Auto: ${autoAttendance.toFixed(1)}` : '0.0'}"
-                                           title="${autoAttendance !== null ? `Calculado automaticamente baseado nas presenças (${autoAttendance.toFixed(1)}). Você pode alterar manualmente se necessário.` : 'Insira a nota de assiduidade manualmente'}">
+                                    <label class="font-medium text-sm">Assiduidade (0-10) - Automático</label>
+                                    <input type="number" id="assiduidade-${student.id}" class="form-input student-grade bg-gray-100" min="0" max="10" step="any" value="${grades.assiduidade}" data-student="${student.id}" readonly
+                                           title="Calculado automaticamente baseado nas presenças registradas no PEF. Não pode ser editado manualmente.">
                                 </div>
                             </div>
                             
@@ -8438,16 +9029,16 @@
                         const autoAttendance = calculateAttendanceScore(s.id, turmaId);
                         return autoAttendance !== null;
                     }) ? `
-                    <div class="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                        <div class="flex items-center gap-2 text-yellow-800">
+                    <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <div class="flex items-center gap-2 text-blue-800">
                             <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
                             </svg>
                             <span class="font-medium">Sistema de Assiduidade Automática Ativo</span>
                         </div>
-                        <div class="text-yellow-700 mt-1">
-                            As notas de assiduidade foram calculadas automaticamente baseadas no registro de presenças. 
-                            Você pode editá-las manualmente conforme necessário.
+                        <div class="text-blue-700 mt-1">
+                            As notas de assiduidade são calculadas automaticamente baseadas no registro de presenças no PEF. 
+                            Valores somente leitura.
                         </div>
                     </div>` : ''}
                     
@@ -10002,6 +10593,7 @@
                 { key: 'calendario-pedagogico', label: 'Calendário Pedagógico', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>', roles: ['admin', 'pedagogico', 'ap', 'teacher', 'am'] },
                 { key: 'calendario-marketing', label: 'Calendário Marketing', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>', roles: ['admin', 'ap', 'am', 'teacher'] },
                 
+                { key: 'kpis-pedagogico', label: 'KPIs Pedagógico', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/></svg>', roles: ['admin', 'pedagogico', 'ap'] },
                 
                 { key: 'colaboradores', label: 'Colaboradores', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>', roles: ['admin', 'ap', 'financeiro'] },
                 
@@ -10194,13 +10786,14 @@
                 'dojo': ['admin', 'pedagogico', 'ap', 'teacher', 'am'], // Dojo - everyone except financeiro
                 'calendario-pedagogico': ['admin', 'pedagogico', 'ap', 'teacher', 'am'], // Pedagogical calendar
                 'calendario-marketing': ['admin', 'ap', 'am', 'teacher'], // Marketing calendar
+                'kpis-pedagogico': ['admin', 'pedagogico', 'ap'], // KPIs Pedagógico
             };
             
             return pagePermissions[pageKey]?.includes(userRole) || false;
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            const pageRenderers = { 'inicio': renderInicioSection, 'alunos': renderAlunosSection, 'turmas': renderTurmasSection, 'vips': renderVipsSection, 'tarefas': renderTarefasSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection, 'colaboradores': renderColaboradoresSection, 'dojo': renderDojoSection, 'calendario-pedagogico': renderCalendarioPedagogicoSection, 'calendario-marketing': renderCalendarioMarketingSection  };
+            const pageRenderers = { 'inicio': renderInicioSection, 'alunos': renderAlunosSection, 'turmas': renderTurmasSection, 'vips': renderVipsSection, 'tarefas': renderTarefasSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection, 'colaboradores': renderColaboradoresSection, 'dojo': renderDojoSection, 'calendario-pedagogico': renderCalendarioPedagogicoSection, 'calendario-marketing': renderCalendarioMarketingSection, 'kpis-pedagogico': renderKPIsPedagogicoSection  };
 
             document.body.addEventListener('click', (event) => {
                 // Close modals when clicking overlay or close button
