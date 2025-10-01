@@ -4817,15 +4817,15 @@
                     return;
                 }
 
-                // Check if this student already has a class with this teacher (excluding current edit)
-                const hasDuplicate = schedules.some(s => 
+                // Check if this student already exists in ANY teacher's schedule (excluding current edit)
+                const existingSchedule = schedules.find(s => 
                     s.student === student && 
-                    s.teacher === teacher && 
                     s.id !== scheduleId &&
                     s.type !== 'break'
                 );
 
-                if (hasDuplicate) {
+                if (existingSchedule) {
+                    warning.textContent = `⚠️ Aluno já adicionado na grade do professor ${existingSchedule.teacher}`;
                     warning.classList.remove('hidden');
                 } else {
                     warning.classList.add('hidden');
@@ -4856,17 +4856,16 @@
             const scheduleId = document.getElementById('schedule-id').value;
             const scheduleType = document.getElementById('schedule-type').value;
             
-            // Check for duplicate student (only for non-break entries)
+            // Check for duplicate student in ANY teacher's schedule (only for non-break entries)
             if (scheduleType !== 'break') {
-                const hasDuplicate = schedules.some(s => 
+                const existingSchedule = schedules.find(s => 
                     s.student === student && 
-                    s.teacher === teacherName && 
                     s.id !== scheduleId &&
                     s.type !== 'break'
                 );
                 
-                if (hasDuplicate) {
-                    showErrorMessage("Erro", "Aluno já presente na grade deste professor.");
+                if (existingSchedule) {
+                    showErrorMessage("Erro", `Aluno já adicionado na grade do professor ${existingSchedule.teacher}.`);
                     return;
                 }
             }
