@@ -146,9 +146,7 @@
 
 
         /* --- PEF Styles (Integrated) --- */
-        .pef-lesson-row { display: grid; grid-template-columns: 80px 150px 1fr; align-items: start; gap: 1rem; padding: 1rem 0.75rem; border-bottom: 1px solid #e5e7eb; }
-        .pef-lesson-row:last-child { border-bottom: none; }
-        .pef-student-attendance-row { display: flex; align-items: center; justify-content: space-between; margin-left: 1rem; padding: 0.5rem 0; }
+        .pef-student-attendance-row { display: flex; align-items: center; justify-content: space-between; padding: 0.5rem; border: 1px solid #e5e7eb; border-radius: 0.375rem; background-color: #f9fafb; }
         .pef-status-btn-group button { width: 2.5rem; height: 2.5rem; border-radius: 0.375rem; border: 1px solid #d1d5db; font-size: 0.875rem; font-weight: 600; cursor: pointer; transition: all 0.2s; background-color: #f9fafb; }
         .pef-status-btn-group button:hover { border-color: #a8a29e; }
         .pef-status-btn-group button.active.P { background-color: #10B981; color: white; border-color: #10B981; }
@@ -1719,25 +1717,36 @@
                 const statusTag = getVipStatusTag(vipRecord);
                 
                 return `
-                <div class="base-card flex flex-col">
+                <div class="base-card flex flex-col" id="vip-card-${student.id}">
                     <div class="flex-1">
                         <div class="flex justify-between items-start mb-2">
                             <div>
                                 <h3 class="text-xl font-bold text-stone-800">${student.name}</h3>
                             </div>
+                            <button onclick="toggleCardVisibility('vip-card-${student.id}')" class="text-stone-400 hover:text-stone-600 transition-colors p-1" title="Ocultar/Mostrar informações">
+                                <svg class="w-4 h-4 eye-icon-open" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                </svg>
+                                <svg class="w-4 h-4 eye-icon-closed hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path>
+                                </svg>
+                            </button>
                         </div>
-                        <p class="text-sm text-stone-600 mb-2"><strong>Status:</strong> <span class="status-tag status-${(student.status || 'pendente').toLowerCase()}">${student.status || 'Pendente'}</span></p>
-                        ${vipRecord ? `<p class="text-sm text-stone-500 mb-2">Professor: ${teacher?.name || 'N/A'}</p>` : ''}
-                        ${vipRecord ? `<p class="text-sm text-stone-600"><strong>Nível:</strong> ${vipRecord.level || 'N/A'}</p>` : ''}
-                        ${vipRecord && vipRecord.endDate ? `<p class="text-sm text-stone-600"><strong>Finaliza em:</strong> ${formatDateBR(vipRecord.endDate)}</p>` : ''}
-                        ${student.indicacao ? `<p class="text-sm text-stone-600"><strong>Indicação:</strong> ${student.indicacao}</p>` : ''}
-                        ${vipRecord && vipRecord.observacoes ? `
-                            <div class="mt-3 pt-2 border-t border-stone-100">
-                                <p class="text-sm text-stone-600"><strong>Observações:</strong></p>
-                                <p class="text-sm text-stone-500 mt-1 italic">${vipRecord.observacoes}</p>
-                            </div>
-                        ` : ''}
-                        ${statusTag}
+                        <div class="card-content">
+                            <p class="text-sm text-stone-600 mb-2"><strong>Status:</strong> <span class="status-tag status-${(student.status || 'pendente').toLowerCase()}">${student.status || 'Pendente'}</span></p>
+                            ${vipRecord ? `<p class="text-sm text-stone-500 mb-2">Professor: ${teacher?.name || 'N/A'}</p>` : ''}
+                            ${vipRecord ? `<p class="text-sm text-stone-600"><strong>Nível:</strong> ${vipRecord.level || 'N/A'}</p>` : ''}
+                            ${vipRecord && vipRecord.endDate ? `<p class="text-sm text-stone-600"><strong>Finaliza em:</strong> ${formatDateBR(vipRecord.endDate)}</p>` : ''}
+                            ${student.indicacao ? `<p class="text-sm text-stone-600"><strong>Indicação:</strong> ${student.indicacao}</p>` : ''}
+                            ${vipRecord && vipRecord.observacoes ? `
+                                <div class="mt-3 pt-2 border-t border-stone-100">
+                                    <p class="text-sm text-stone-600"><strong>Observações:</strong></p>
+                                    <p class="text-sm text-stone-500 mt-1 italic">${vipRecord.observacoes}</p>
+                                </div>
+                            ` : ''}
+                            ${statusTag}
+                        </div>
                     </div>
                     <div class="mt-auto pt-4 border-t border-stone-100 flex gap-2">
                         ${vipRecord ? `
@@ -1782,19 +1791,30 @@
             listBody.innerHTML = paginatedStudents.map(student => {
                 const vipRecord = student.modalidade === 'VIP' ? vips.find(v => v.studentId === student.id) : null;
                 return `
-                <tr data-action="view-aluno" data-id="${student.id}" class="cursor-pointer">
-                    <td class="font-medium">
-                        <div class="flex flex-col">
-                            <div>${student.name}</div>
-                            <div class="mt-1">
-                                <span class="status-tag status-${(student.modalidade || 'turma').toLowerCase()} text-xs">${student.modalidade || 'TURMA'}</span>
-                                ${student.indicacao ? `<span class="ml-2 text-xs text-stone-500">• ${student.indicacao}</span>` : ''}
+                <tr id="student-row-${student.id}" class="cursor-pointer">
+                    <td class="font-medium" data-action="view-aluno" data-id="${student.id}">
+                        <div class="flex items-center justify-between">
+                            <div class="flex flex-col flex-1">
+                                <div>${student.name}</div>
+                                <div class="mt-1 row-content">
+                                    <span class="status-tag status-${(student.modalidade || 'turma').toLowerCase()} text-xs">${student.modalidade || 'TURMA'}</span>
+                                    ${student.indicacao ? `<span class="ml-2 text-xs text-stone-500">• ${student.indicacao}</span>` : ''}
+                                </div>
                             </div>
+                            <button onclick="event.stopPropagation(); toggleRowVisibility('student-row-${student.id}')" class="text-stone-400 hover:text-stone-600 transition-colors p-1 ml-2" title="Ocultar/Mostrar informações">
+                                <svg class="w-3.5 h-3.5 eye-icon-open" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                </svg>
+                                <svg class="w-3.5 h-3.5 eye-icon-closed hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path>
+                                </svg>
+                            </button>
                         </div>
                     </td>
-                    <td><span class="status-tag status-${(student.status || 'pendente').toLowerCase()}">${student.status || 'Pendente'}</span></td>
-                    ${canViewFinancialInfo ? `<td class="font-mono">R$ ${parseFloat(student.amountPaid || 0).toFixed(2)}</td>` : ''}
-                    ${canViewFinancialInfo ? `<td class="font-mono">R$ ${parseFloat(student.amountReceived || student.amountPaid || 0).toFixed(2)}</td>` : `<td>${student.responsibleName || 'N/A'}</td>`}
+                    <td class="row-content" data-action="view-aluno" data-id="${student.id}"><span class="status-tag status-${(student.status || 'pendente').toLowerCase()}">${student.status || 'Pendente'}</span></td>
+                    ${canViewFinancialInfo ? `<td class="font-mono row-content" data-action="view-aluno" data-id="${student.id}">R$ ${parseFloat(student.amountPaid || 0).toFixed(2)}</td>` : ''}
+                    ${canViewFinancialInfo ? `<td class="font-mono row-content" data-action="view-aluno" data-id="${student.id}">R$ ${parseFloat(student.amountReceived || student.amountPaid || 0).toFixed(2)}</td>` : `<td class="row-content" data-action="view-aluno" data-id="${student.id}">${student.responsibleName || 'N/A'}</td>`}
                 </tr>
                 `;
             }).join('');
@@ -2666,17 +2686,30 @@
                             </thead>
                             <tbody id="expenses-list">
                                 ${monthlyExpenses.length > 0 ? monthlyExpenses.map(exp => `
-                                    <tr class="${exp.isPaid ? 'paid' : ''}" data-expense-type="${exp.tipo || 'variavel'}">
+                                    <tr id="expense-row-${exp.id}" class="${exp.isPaid ? 'paid' : ''}" data-expense-type="${exp.tipo || 'variavel'}">
                                         <td class="text-center"><input type="checkbox" data-action="toggle-expense" data-id="${exp.id}" class="h-5 w-5 rounded border-gray-300 text-yellow-500 focus:ring-yellow-400" ${exp.isPaid ? 'checked' : ''}></td>
                                         <td class="font-medium cursor-pointer" data-action="view-expense" data-id="${exp.id}">
-                                            ${exp.description} 
-                                            ${exp.isFixedSalary && exp.employeeRole ? `<span class="sector-tag">${exp.employeeRole}</span>` : ''}
-                                            <span class="inline-block ml-2 px-2 py-1 text-xs rounded-full ${exp.tipo === 'fixo' ? 'bg-blue-100 text-blue-800' : 'bg-orange-100 text-orange-800'}">${exp.tipo === 'fixo' ? 'Fixo' : 'Variável'}</span>
+                                            <div class="flex items-center justify-between">
+                                                <div class="flex-1">
+                                                    <span class="row-content">${exp.description}</span> 
+                                                    ${exp.isFixedSalary && exp.employeeRole ? `<span class="sector-tag row-content">${exp.employeeRole}</span>` : ''}
+                                                    <span class="inline-block ml-2 px-2 py-1 text-xs rounded-full row-content ${exp.tipo === 'fixo' ? 'bg-blue-100 text-blue-800' : 'bg-orange-100 text-orange-800'}">${exp.tipo === 'fixo' ? 'Fixo' : 'Variável'}</span>
+                                                </div>
+                                                <button onclick="event.stopPropagation(); toggleRowVisibility('expense-row-${exp.id}')" class="text-stone-400 hover:text-stone-600 transition-colors p-1 ml-2" title="Ocultar/Mostrar informações">
+                                                    <svg class="w-3.5 h-3.5 eye-icon-open" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                                    </svg>
+                                                    <svg class="w-3.5 h-3.5 eye-icon-closed hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path>
+                                                    </svg>
+                                                </button>
+                                            </div>
                                         </td>
-                                        <td class="cursor-pointer" data-action="view-expense" data-id="${exp.id}">${formatDateBR(exp.effectiveDueDate)}</td>
-                                        <td class="text-right font-mono cursor-pointer" data-action="view-expense" data-id="${exp.id}">${Number(exp.amount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
-                                        <td class="text-right font-mono cursor-pointer" data-action="view-expense" data-id="${exp.id}">${Number(exp.extraAmount || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
-                                        <td class="text-right font-mono cursor-pointer" data-action="view-expense" data-id="${exp.id}">${Number(exp.paidAmount || (exp.isPaid ? exp.amount : 0)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                                        <td class="cursor-pointer row-content" data-action="view-expense" data-id="${exp.id}">${formatDateBR(exp.effectiveDueDate)}</td>
+                                        <td class="text-right font-mono cursor-pointer row-content" data-action="view-expense" data-id="${exp.id}">${Number(exp.amount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                                        <td class="text-right font-mono cursor-pointer row-content" data-action="view-expense" data-id="${exp.id}">${Number(exp.extraAmount || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                                        <td class="text-right font-mono cursor-pointer row-content" data-action="view-expense" data-id="${exp.id}">${Number(exp.paidAmount || (exp.isPaid ? exp.amount : 0)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
                                         <td class="text-center">
                                             <button class="task-delete-btn" data-action="delete-item" data-collection="expenses" data-id="${exp.id}">
                                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
@@ -2958,6 +2991,51 @@
                 currency: 'BRL'
             }).format(value);
         }
+
+        // Funções globais para ocultar/mostrar informações em cards e linhas
+        window.toggleCardVisibility = function(cardId) {
+            const card = document.getElementById(cardId);
+            if (!card) return;
+            
+            const contentDiv = card.querySelector('.card-content');
+            const eyeOpen = card.querySelector('.eye-icon-open');
+            const eyeClosed = card.querySelector('.eye-icon-closed');
+            
+            if (contentDiv.style.display === 'none') {
+                contentDiv.style.display = 'block';
+                eyeOpen.classList.remove('hidden');
+                eyeClosed.classList.add('hidden');
+            } else {
+                contentDiv.style.display = 'none';
+                eyeOpen.classList.add('hidden');
+                eyeClosed.classList.remove('hidden');
+            }
+        };
+
+        window.toggleRowVisibility = function(rowId) {
+            const row = document.getElementById(rowId);
+            if (!row) return;
+            
+            const contentElements = row.querySelectorAll('.row-content');
+            const eyeOpen = row.querySelector('.eye-icon-open');
+            const eyeClosed = row.querySelector('.eye-icon-closed');
+            
+            if (contentElements[0] && contentElements[0].style.opacity === '0') {
+                contentElements.forEach(el => {
+                    el.style.opacity = '1';
+                    el.style.filter = 'none';
+                });
+                eyeOpen.classList.remove('hidden');
+                eyeClosed.classList.add('hidden');
+            } else {
+                contentElements.forEach(el => {
+                    el.style.opacity = '0';
+                    el.style.filter = 'blur(8px)';
+                });
+                eyeOpen.classList.add('hidden');
+                eyeClosed.classList.remove('hidden');
+            }
+        };
 
         function openSignUpModal() {
             clearModalHeaderButtons();
@@ -3780,6 +3858,15 @@
             // Definir turmaStudents primeiro
             const turmaStudents = (turma.studentIds || []).map(id => students.find(s => s.id === id)).filter(Boolean);
 
+            // Botão de salvar todas as aulas
+            const saveAllButton = document.createElement('button');
+            saveAllButton.className = 'primary-btn w-auto';
+            saveAllButton.textContent = 'Salvar Todas as Aulas';
+            saveAllButton.dataset.action = 'save-all-pef-lessons';
+            saveAllButton.dataset.unitId = turmaId;
+            saveAllButton.dataset.pefType = 'turma';
+            modalHeader.insertBefore(saveAllButton, modalHeader.querySelector('.modal-close-btn'));
+
             // Botão de exportação da turma completa
             const exportButton = document.createElement('button');
             exportButton.className = 'secondary-btn w-auto';
@@ -3855,15 +3942,21 @@
                 }).join('');
 
                 lessonsHtml += `
-                    <div class="pef-lesson-row" id="lesson-row-${turmaId}-${i}">
-                        <div class="flex flex-col justify-center items-center gap-2">
-                             <span class="font-bold text-stone-700">Aula ${i}</span>
-                             <button class="secondary-btn !text-xs !py-1 !px-3" data-action="save-pef-lesson" data-unit-id="${turmaId}" data-lesson-number="${i}">Salvar</button>
+                    <div class="border border-stone-200 rounded-lg p-4 mb-4" id="lesson-row-${turmaId}-${i}" data-lesson-number="${i}">
+                        <!-- Cabeçalho da aula: Número e Data em linha -->
+                        <div class="flex items-center gap-4 mb-3 pb-3 border-b border-stone-200">
+                            <span class="font-bold text-stone-700 text-lg">Aula ${i}</span>
+                            <input type="date" class="form-input p-2 text-sm lesson-date flex-1" value="${lessonDate}">
                         </div>
-                        <input type="date" class="form-input p-2 text-sm lesson-date self-center" value="${lessonDate}">
-                        <div class="space-y-2">
-                            <textarea class="form-input p-2 text-sm w-full lesson-topic" placeholder="Tema da aula">${lessonData?.topic || ''}</textarea>
-                            <textarea class="form-input p-2 text-sm w-full lesson-notes mt-2" placeholder="Observações da aula">${lessonData?.notes || ''}</textarea>
+                        
+                        <!-- Tema e Observações lado a lado -->
+                        <div class="grid grid-cols-2 gap-3 mb-3">
+                            <textarea class="form-input p-2 text-sm lesson-topic" placeholder="Tema da aula" rows="2">${lessonData?.topic || ''}</textarea>
+                            <textarea class="form-input p-2 text-sm lesson-notes" placeholder="Observações da aula" rows="2">${lessonData?.notes || ''}</textarea>
+                        </div>
+                        
+                        <!-- Alunos em grid compacto -->
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
                             ${studentsHtml}
                         </div>
                     </div>
@@ -3891,6 +3984,15 @@
             const modalHeader = document.getElementById('modal-header-container');
             const modalTitle = document.getElementById('form-modal-title');
             const modalContentArea = document.getElementById('form-modal-content-area');
+
+            // Botão de salvar todas as aulas
+            const saveAllButton = document.createElement('button');
+            saveAllButton.className = 'primary-btn w-auto';
+            saveAllButton.textContent = 'Salvar Todas as Aulas';
+            saveAllButton.dataset.action = 'save-all-pef-lessons';
+            saveAllButton.dataset.unitId = vipId;
+            saveAllButton.dataset.pefType = 'vip';
+            modalHeader.insertBefore(saveAllButton, modalHeader.querySelector('.modal-close-btn'));
 
             const exportButton = document.createElement('button');
             exportButton.className = 'secondary-btn w-auto';
@@ -3923,15 +4025,14 @@
                 `;
 
                 lessonsHtml += `
-                    <div class="pef-lesson-row" id="lesson-row-${vipId}-${i}">
-                        <div class="flex flex-col justify-center items-center gap-2">
-                             <span class="font-bold text-stone-700">Aula ${i}</span>
-                             <button class="secondary-btn !text-xs !py-1 !px-3" data-action="save-pef-lesson" data-unit-id="${vipId}" data-lesson-number="${i}">Salvar</button>
+                    <div class="border border-stone-200 rounded-lg p-4 mb-4" id="lesson-row-${vipId}-${i}" data-lesson-number="${i}">
+                        <div class="flex items-center gap-4 mb-3 pb-3 border-b border-stone-200">
+                            <span class="font-bold text-stone-700 text-lg">Aula ${i}</span>
+                            <input type="date" class="form-input p-2 text-sm lesson-date flex-1" value="${lessonDate}">
                         </div>
-                        <input type="date" class="form-input p-2 text-sm lesson-date self-center" value="${lessonDate}">
-                        <div class="space-y-2">
-                            <textarea class="form-input p-2 text-sm w-full lesson-topic" placeholder="Tema da aula">${lessonTopic}</textarea>
-                            <textarea class="form-input p-2 text-sm w-full lesson-notes mt-2" placeholder="Observações da aula">${lessonNotes}</textarea>
+                        <div class="space-y-3">
+                            <textarea class="form-input p-2 text-sm w-full lesson-topic" placeholder="Tema da aula" rows="2">${lessonTopic}</textarea>
+                            <textarea class="form-input p-2 text-sm w-full lesson-notes" placeholder="Observações da aula" rows="2">${lessonNotes}</textarea>
                             ${studentHtml}
                         </div>
                     </div>
@@ -4723,7 +4824,8 @@
             const teacherOptions = collaborators.filter(c => c.sectors && c.sectors.includes('professor')).map(c => `<option value="${c.name}" ${schedule?.teacher === c.name ? 'selected' : ''}>${c.name}</option>`).join('');
             const dayOptions = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Seg/Qua", "Ter/Qui"].map(d => `<option value="${d}" ${schedule?.day === d ? 'selected' : ''}>${d}</option>`).join('');
             const typeOptions = ["vip", "turma", "break"].map(t => `<option value="${t}" ${schedule?.type === t ? 'selected' : ''}>${t === 'break' ? 'BREAK' : t.toUpperCase()}</option>`).join('');
-            const levelOptions = [].map(cp => `<option value="${cp.title}" ${schedule?.level === cp.title ? 'selected' : ''}>${cp.title}</option>`).join('') + `<option value="outro">Outro (especificar)</option>`;
+            const availableLevels = ["Starter 1", "Starter 2", "Freshman 1", "Freshman 2", "Sophomore 1", "Sophomore 2", "Junior 1", "Junior 2", "Senior 1", "Senior 2", "ACC"];
+            const levelOptions = availableLevels.map(level => `<option value="${level}" ${schedule?.level === level ? 'selected' : ''}>${level}</option>`).join('') + `<option value="outro">Outro (especificar)</option>`;
 
             let formHtml = `<form id="form-modal-body" class="space-y-4">
                 <input type="hidden" id="schedule-id" value="${scheduleId || ''}">
@@ -8061,7 +8163,7 @@
             // Add export buttons to modal header
             const exportButton = document.createElement('button');
             exportButton.className = 'secondary-btn w-auto';
-            exportButton.textContent = 'Exportar Report Card Completo';
+            exportButton.textContent = 'Exportar RC Completo';
             exportButton.id = 'export-turma-btn';
             exportButton.dataset.turmaId = turmaId;
             modalHeader.insertBefore(exportButton, modalHeader.querySelector('.modal-close-btn'));
@@ -8071,7 +8173,7 @@
             exportStudentDropdown.className = 'relative inline-block ml-2';
             exportStudentDropdown.innerHTML = `
                 <button type="button" class="secondary-btn w-auto dropdown-toggle" id="export-student-btn-${turmaId}">
-                    Exportar por Aluno
+                    Exportar Aluno
                     <svg class="w-4 h-4 ml-2 inline" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"></path>
                     </svg>
