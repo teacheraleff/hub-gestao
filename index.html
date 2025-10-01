@@ -1236,15 +1236,12 @@
             const averageTicket = studentsWithPayment.length > 0 ? totalPayments / studentsWithPayment.length : 0;
 
             contentArea.innerHTML = `
-                <section id="alunos-section" class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
+                <section id="alunos-section" class="bg-white p-6 rounded-lg shadow-sm border border-stone-200">
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-6">
-                        <div class="base-card bg-gradient-to-r from-stone-50 to-stone-100 border-stone-200" id="stat-card-total-alunos">
-                            <div class="flex items-start justify-between mb-2">
-                                <div class="flex-1 min-w-0 pr-4 card-content">
-                                    <p class="text-sm font-medium text-stone-600">Total de Alunos</p>
-                                    <p class="text-2xl font-bold text-stone-700 mt-1">${totalCount}</p>
-                                </div>
-                                <div class="flex gap-2 items-start">
+                        <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-6 rounded-lg border border-stone-200" id="stat-card-total-alunos">
+                            <div class="flex items-center justify-between mb-2">
+                                <h3 class="text-sm font-medium text-stone-700 uppercase tracking-wide">Total de Alunos</h3>
+                                <div class="flex gap-2 items-center">
                                     <button onclick="toggleCardVisibility('stat-card-total-alunos')" class="text-stone-400 hover:text-stone-600 transition-colors p-1" title="Ocultar/Mostrar informações">
                                         <svg class="w-4 h-4 eye-icon-open" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
@@ -1254,21 +1251,18 @@
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path>
                                         </svg>
                                     </button>
-                                    <div class="p-2 bg-indigo-200 rounded-full flex-shrink-0">
-                                        <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                                        </svg>
-                                    </div>
+                                    <svg class="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                                    </svg>
                                 </div>
                             </div>
+                            <p class="text-4xl font-bold text-stone-800 card-content">${totalCount}</p>
+                            <p class="text-xs text-stone-600 mt-1">Total cadastrado</p>
                         </div>
-                        <div class="base-card bg-gradient-to-r from-stone-50 to-stone-100 border-stone-200" id="stat-card-alunos-ativos">
-                            <div class="flex items-start justify-between mb-2">
-                                <div class="flex-1 min-w-0 pr-4 card-content">
-                                    <p class="text-sm font-medium text-stone-600">Alunos Ativos</p>
-                                    <p class="text-2xl font-bold text-stone-700 mt-1">${activeCount}</p>
-                                </div>
-                                <div class="flex gap-2 items-start">
+                        <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-6 rounded-lg border border-stone-200" id="stat-card-alunos-ativos">
+                            <div class="flex items-center justify-between mb-2">
+                                <h3 class="text-sm font-medium text-stone-700 uppercase tracking-wide">Alunos Ativos</h3>
+                                <div class="flex gap-2 items-center">
                                     <button onclick="toggleCardVisibility('stat-card-alunos-ativos')" class="text-stone-400 hover:text-stone-600 transition-colors p-1" title="Ocultar/Mostrar informações">
                                         <svg class="w-4 h-4 eye-icon-open" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
@@ -1278,21 +1272,18 @@
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path>
                                         </svg>
                                     </button>
-                                    <div class="p-2 bg-green-200 rounded-full flex-shrink-0">
-                                        <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                        </svg>
-                                    </div>
+                                    <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
                                 </div>
                             </div>
+                            <p class="text-4xl font-bold text-stone-800 card-content">${activeCount}</p>
+                            <p class="text-xs text-stone-600 mt-1">Estudando atualmente</p>
                         </div>
-                        <div class="base-card bg-gradient-to-r from-stone-50 to-stone-100 border-stone-200" id="stat-card-alunos-pendentes">
-                            <div class="flex items-start justify-between mb-2">
-                                <div class="flex-1 min-w-0 pr-4 card-content">
-                                    <p class="text-sm font-medium text-stone-600">Alunos Pendentes</p>
-                                    <p class="text-2xl font-bold text-stone-700 mt-1">${pendingCount}</p>
-                                </div>
-                                <div class="flex gap-2 items-start">
+                        <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-6 rounded-lg border border-stone-200" id="stat-card-alunos-pendentes">
+                            <div class="flex items-center justify-between mb-2">
+                                <h3 class="text-sm font-medium text-stone-700 uppercase tracking-wide">Alunos Pendentes</h3>
+                                <div class="flex gap-2 items-center">
                                     <button onclick="toggleCardVisibility('stat-card-alunos-pendentes')" class="text-stone-400 hover:text-stone-600 transition-colors p-1" title="Ocultar/Mostrar informações">
                                         <svg class="w-4 h-4 eye-icon-open" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
@@ -1302,21 +1293,18 @@
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path>
                                         </svg>
                                     </button>
-                                    <div class="p-2 bg-yellow-200 rounded-full flex-shrink-0">
-                                        <svg class="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                        </svg>
-                                    </div>
+                                    <svg class="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
                                 </div>
                             </div>
+                            <p class="text-4xl font-bold text-stone-800 card-content">${pendingCount}</p>
+                            <p class="text-xs text-stone-600 mt-1">Aguardando início</p>
                         </div>
-                        <div class="base-card bg-gradient-to-r from-stone-50 to-stone-100 border-stone-200" id="stat-card-modalidade-vip">
-                            <div class="flex items-start justify-between mb-2">
-                                <div class="flex-1 min-w-0 pr-4 card-content">
-                                    <p class="text-sm font-medium text-stone-600">Modalidade VIP</p>
-                                    <p class="text-2xl font-bold text-stone-700 mt-1">${vipCount}</p>
-                                </div>
-                                <div class="flex gap-2 items-start">
+                        <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-6 rounded-lg border border-stone-200" id="stat-card-modalidade-vip">
+                            <div class="flex items-center justify-between mb-2">
+                                <h3 class="text-sm font-medium text-stone-700 uppercase tracking-wide">Modalidade VIP</h3>
+                                <div class="flex gap-2 items-center">
                                     <button onclick="toggleCardVisibility('stat-card-modalidade-vip')" class="text-stone-400 hover:text-stone-600 transition-colors p-1" title="Ocultar/Mostrar informações">
                                         <svg class="w-4 h-4 eye-icon-open" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
@@ -1326,21 +1314,18 @@
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path>
                                         </svg>
                                     </button>
-                                    <div class="p-2 bg-purple-200 rounded-full flex-shrink-0">
-                                        <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
-                                        </svg>
-                                    </div>
+                                    <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
+                                    </svg>
                                 </div>
                             </div>
+                            <p class="text-4xl font-bold text-stone-800 card-content">${vipCount}</p>
+                            <p class="text-xs text-stone-600 mt-1">Alunos individuais</p>
                         </div>
-                        <div class="base-card bg-gradient-to-r from-stone-50 to-stone-100 border-stone-200" id="stat-card-modalidade-turmas">
-                            <div class="flex items-start justify-between mb-2">
-                                <div class="flex-1 min-w-0 pr-4 card-content">
-                                    <p class="text-sm font-medium text-stone-600">Modalidade Turmas</p>
-                                    <p class="text-2xl font-bold text-stone-700 mt-1">${turmaCount}</p>
-                                </div>
-                                <div class="flex gap-2 items-start">
+                        <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-6 rounded-lg border border-stone-200" id="stat-card-modalidade-turmas">
+                            <div class="flex items-center justify-between mb-2">
+                                <h3 class="text-sm font-medium text-stone-700 uppercase tracking-wide">Modalidade Turmas</h3>
+                                <div class="flex gap-2 items-center">
                                     <button onclick="toggleCardVisibility('stat-card-modalidade-turmas')" class="text-stone-400 hover:text-stone-600 transition-colors p-1" title="Ocultar/Mostrar informações">
                                         <svg class="w-4 h-4 eye-icon-open" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
@@ -1350,22 +1335,19 @@
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path>
                                         </svg>
                                     </button>
-                                    <div class="p-2 bg-teal-200 rounded-full flex-shrink-0">
-                                        <svg class="w-5 h-5 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
-                                        </svg>
-                                    </div>
+                                    <svg class="w-8 h-8 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                                    </svg>
                                 </div>
                             </div>
+                            <p class="text-4xl font-bold text-stone-800 card-content">${turmaCount}</p>
+                            <p class="text-xs text-stone-600 mt-1">Alunos em grupo</p>
                         </div>
                         ${canViewFinancialInfo ? `
-                        <div class="base-card bg-gradient-to-r from-stone-50 to-stone-100 border-stone-200" id="stat-card-ticket-medio">
-                            <div class="flex items-start justify-between mb-2">
-                                <div class="flex-1 min-w-0 pr-4 card-content">
-                                    <p class="text-sm font-medium text-stone-600">Ticket Médio Mensal</p>
-                                    <p class="text-2xl font-bold text-stone-700 mt-1">${formatCurrencyBR(averageTicket)}</p>
-                                </div>
-                                <div class="flex gap-2 items-start">
+                        <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-6 rounded-lg border border-stone-200" id="stat-card-ticket-medio">
+                            <div class="flex items-center justify-between mb-2">
+                                <h3 class="text-sm font-medium text-stone-700 uppercase tracking-wide">Ticket Médio Mensal</h3>
+                                <div class="flex gap-2 items-center">
                                     <button onclick="toggleCardVisibility('stat-card-ticket-medio')" class="text-stone-400 hover:text-stone-600 transition-colors p-1" title="Ocultar/Mostrar informações">
                                         <svg class="w-4 h-4 eye-icon-open" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
@@ -1375,21 +1357,18 @@
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path>
                                         </svg>
                                     </button>
-                                    <div class="p-2 bg-orange-200 rounded-full flex-shrink-0">
-                                        <svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
-                                        </svg>
-                                    </div>
+                                    <svg class="w-8 h-8 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                                    </svg>
                                 </div>
                             </div>
+                            <p class="text-4xl font-bold text-stone-800 card-content">${formatCurrencyBR(averageTicket)}</p>
+                            <p class="text-xs text-stone-600 mt-1">Valor médio por aluno</p>
                         </div>
-                        <div class="base-card bg-gradient-to-r from-stone-50 to-stone-100 border-stone-200" id="stat-card-receita-total">
-                            <div class="flex items-start justify-between mb-2">
-                                <div class="flex-1 min-w-0 pr-4 card-content">
-                                    <p class="text-sm font-medium text-stone-600">Receita Total</p>
-                                    <p class="text-2xl font-bold text-stone-700 mt-1">${formatCurrencyBR(totalRevenue)}</p>
-                                </div>
-                                <div class="flex gap-2 items-start">
+                        <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-6 rounded-lg border border-stone-200" id="stat-card-receita-total">
+                            <div class="flex items-center justify-between mb-2">
+                                <h3 class="text-sm font-medium text-stone-700 uppercase tracking-wide">Receita Total</h3>
+                                <div class="flex gap-2 items-center">
                                     <button onclick="toggleCardVisibility('stat-card-receita-total')" class="text-stone-400 hover:text-stone-600 transition-colors p-1" title="Ocultar/Mostrar informações">
                                         <svg class="w-4 h-4 eye-icon-open" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
@@ -1399,13 +1378,13 @@
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path>
                                         </svg>
                                     </button>
-                                    <div class="p-2 bg-blue-200 rounded-full flex-shrink-0">
-                                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
-                                        </svg>
-                                    </div>
+                                    <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                                    </svg>
                                 </div>
                             </div>
+                            <p class="text-4xl font-bold text-stone-800 card-content">${formatCurrencyBR(totalRevenue)}</p>
+                            <p class="text-xs text-stone-600 mt-1">Receita acumulada</p>
                         </div>
                         ` : ''}
                     </div>
@@ -2671,13 +2650,10 @@
             contentArea.innerHTML = `
                 <!-- Cards de Resumo Financeiro -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                    <div class="base-card bg-gradient-to-r from-stone-50 to-stone-100 border-stone-200" id="expense-card-receita">
-                        <div class="flex items-start justify-between mb-2">
-                            <div class="flex-1 min-w-0 pr-4 card-content">
-                                <p class="text-sm font-medium text-stone-600">Receita Total</p>
-                                <p class="text-2xl font-bold text-stone-700 mt-1">${totalRevenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
-                            </div>
-                            <div class="flex gap-2 items-start">
+                    <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-6 rounded-lg border border-stone-200" id="expense-card-receita">
+                        <div class="flex items-center justify-between mb-2">
+                            <h3 class="text-sm font-medium text-stone-700 uppercase tracking-wide">Receita Total</h3>
+                            <div class="flex gap-2 items-center">
                                 <button onclick="toggleCardVisibility('expense-card-receita')" class="text-stone-400 hover:text-stone-600 transition-colors p-1" title="Ocultar/Mostrar informações">
                                     <svg class="w-4 h-4 eye-icon-open" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
@@ -2687,21 +2663,18 @@
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path>
                                     </svg>
                                 </button>
-                                <div class="p-2 bg-green-200 rounded-full flex-shrink-0">
-                                    <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
-                                    </svg>
-                                </div>
+                                <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                                </svg>
                             </div>
                         </div>
+                        <p class="text-4xl font-bold text-stone-800 card-content">${totalRevenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                        <p class="text-xs text-stone-600 mt-1">Entrada de receita</p>
                     </div>
-                    <div class="base-card bg-gradient-to-r from-stone-50 to-stone-100 border-stone-200" id="expense-card-pendentes">
-                        <div class="flex items-start justify-between mb-2">
-                            <div class="flex-1 min-w-0 pr-4 card-content">
-                                <p class="text-sm font-medium text-stone-600">Despesas Pendentes</p>
-                                <p class="text-2xl font-bold text-stone-700 mt-1">${totalExpenses.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
-                            </div>
-                            <div class="flex gap-2 items-start">
+                    <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-6 rounded-lg border border-stone-200" id="expense-card-pendentes">
+                        <div class="flex items-center justify-between mb-2">
+                            <h3 class="text-sm font-medium text-stone-700 uppercase tracking-wide">Despesas Pendentes</h3>
+                            <div class="flex gap-2 items-center">
                                 <button onclick="toggleCardVisibility('expense-card-pendentes')" class="text-stone-400 hover:text-stone-600 transition-colors p-1" title="Ocultar/Mostrar informações">
                                     <svg class="w-4 h-4 eye-icon-open" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
@@ -2711,21 +2684,18 @@
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path>
                                     </svg>
                                 </button>
-                                <div class="p-2 bg-red-200 rounded-full flex-shrink-0">
-                                    <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                    </svg>
-                                </div>
+                                <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
                             </div>
                         </div>
+                        <p class="text-4xl font-bold text-stone-800 card-content">${totalExpenses.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                        <p class="text-xs text-stone-600 mt-1">Aguardando pagamento</p>
                     </div>
-                    <div class="base-card bg-gradient-to-r from-stone-50 to-stone-100 border-stone-200" id="expense-card-lucro">
-                        <div class="flex items-start justify-between mb-2">
-                            <div class="flex-1 min-w-0 pr-4 card-content">
-                                <p class="text-sm font-medium text-stone-600">Lucro</p>
-                                <p class="text-2xl font-bold text-stone-700 mt-1">${profit.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
-                            </div>
-                            <div class="flex gap-2 items-start">
+                    <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-6 rounded-lg border border-stone-200" id="expense-card-lucro">
+                        <div class="flex items-center justify-between mb-2">
+                            <h3 class="text-sm font-medium text-stone-700 uppercase tracking-wide">Lucro</h3>
+                            <div class="flex gap-2 items-center">
                                 <button onclick="toggleCardVisibility('expense-card-lucro')" class="text-stone-400 hover:text-stone-600 transition-colors p-1" title="Ocultar/Mostrar informações">
                                     <svg class="w-4 h-4 eye-icon-open" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
@@ -2735,13 +2705,13 @@
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path>
                                     </svg>
                                 </button>
-                                <div class="p-2 bg-blue-200 rounded-full flex-shrink-0">
-                                    <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
-                                    </svg>
-                                </div>
+                                <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                                </svg>
                             </div>
                         </div>
+                        <p class="text-4xl font-bold text-stone-800 card-content">${profit.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                        <p class="text-xs text-stone-600 mt-1">Resultado líquido</p>
                     </div>
                 </div>
 
@@ -3044,19 +3014,35 @@
             const uniqueProfessors = [...new Set(schedules.map(s => s.professor))].filter(p => p && p.trim() !== '');
             const totalProfessors = uniqueProfessors.length;
 
-            // Calcular médias de notas (midterm, listening, grammar, oral)
-            const gradesData = schedules.filter(s => s.midtermTest !== undefined || s.listeningTest !== undefined || s.grammarTest !== undefined || s.oralTest !== undefined);
+            // Calcular médias de notas (midterm, listening, grammar, oral) das notas registradas em VIPs e Turmas
+            const allGrades = [];
+            
+            // Coletar notas dos VIPs
+            vips.forEach(vip => {
+                if (vip.grades) {
+                    allGrades.push(vip.grades);
+                }
+            });
+            
+            // Coletar notas das Turmas (studentGrades)
+            turmas.forEach(turma => {
+                if (turma.studentGrades) {
+                    Object.values(turma.studentGrades).forEach(grades => {
+                        allGrades.push(grades);
+                    });
+                }
+            });
             
             let avgMidterm = 0;
             let avgListening = 0;
             let avgGrammar = 0;
             let avgOral = 0;
             
-            if (gradesData.length > 0) {
-                const midtermScores = gradesData.filter(g => g.midtermTest > 0).map(g => g.midtermTest);
-                const listeningScores = gradesData.filter(g => g.listeningTest > 0).map(g => g.listeningTest);
-                const grammarScores = gradesData.filter(g => g.grammarTest > 0).map(g => g.grammarTest);
-                const oralScores = gradesData.filter(g => g.oralTest > 0).map(g => g.oralTest);
+            if (allGrades.length > 0) {
+                const midtermScores = allGrades.filter(g => g.midtermTest > 0).map(g => g.midtermTest);
+                const listeningScores = allGrades.filter(g => g.listeningTest > 0).map(g => g.listeningTest);
+                const grammarScores = allGrades.filter(g => g.grammarTest > 0).map(g => g.grammarTest);
+                const oralScores = allGrades.filter(g => g.oralTest > 0).map(g => g.oralTest);
                 
                 avgMidterm = midtermScores.length > 0 ? midtermScores.reduce((sum, score) => sum + score, 0) / midtermScores.length : 0;
                 avgListening = listeningScores.length > 0 ? listeningScores.reduce((sum, score) => sum + score, 0) / listeningScores.length : 0;
@@ -3142,63 +3128,63 @@
                     <!-- Cards de Estatísticas Rápidas -->
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                         <!-- Alunos em Turmas -->
-                        <div class="bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-lg border border-purple-200">
+                        <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-6 rounded-lg border border-stone-200">
                             <div class="flex items-center justify-between mb-2">
-                                <h3 class="text-sm font-medium text-purple-700 uppercase tracking-wide">Alunos em Turmas</h3>
+                                <h3 class="text-sm font-medium text-stone-700 uppercase tracking-wide">Alunos em Turmas</h3>
                                 <svg class="w-8 h-8 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
                                 </svg>
                             </div>
-                            <p class="text-4xl font-bold text-purple-800">${studentsInTurmas}</p>
-                            <p class="text-xs text-purple-600 mt-1">Alunos ativos</p>
+                            <p class="text-4xl font-bold text-stone-800">${studentsInTurmas}</p>
+                            <p class="text-xs text-stone-600 mt-1">Alunos ativos</p>
                         </div>
 
                         <!-- Alunos VIP -->
-                        <div class="bg-gradient-to-br from-amber-50 to-amber-100 p-6 rounded-lg border border-amber-200">
+                        <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-6 rounded-lg border border-stone-200">
                             <div class="flex items-center justify-between mb-2">
-                                <h3 class="text-sm font-medium text-amber-700 uppercase tracking-wide">Alunos VIP</h3>
+                                <h3 class="text-sm font-medium text-stone-700 uppercase tracking-wide">Alunos VIP</h3>
                                 <svg class="w-8 h-8 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
                                 </svg>
                             </div>
-                            <p class="text-4xl font-bold text-amber-800">${studentsInVIP}</p>
-                            <p class="text-xs text-amber-600 mt-1">Alunos ativos</p>
+                            <p class="text-4xl font-bold text-stone-800">${studentsInVIP}</p>
+                            <p class="text-xs text-stone-600 mt-1">Alunos ativos</p>
                         </div>
 
                         <!-- Total de Turmas -->
-                        <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-lg border border-blue-200">
+                        <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-6 rounded-lg border border-stone-200">
                             <div class="flex items-center justify-between mb-2">
-                                <h3 class="text-sm font-medium text-blue-700 uppercase tracking-wide">Total de Turmas</h3>
+                                <h3 class="text-sm font-medium text-stone-700 uppercase tracking-wide">Total de Turmas</h3>
                                 <svg class="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
                                 </svg>
                             </div>
-                            <p class="text-4xl font-bold text-blue-800">${totalTurmas}</p>
-                            <p class="text-xs text-blue-600 mt-1">Turmas cadastradas</p>
+                            <p class="text-4xl font-bold text-stone-800">${totalTurmas}</p>
+                            <p class="text-xs text-stone-600 mt-1">Turmas cadastradas</p>
                         </div>
 
                         <!-- Idade Média dos Alunos -->
-                        <div class="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-lg border border-green-200">
+                        <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-6 rounded-lg border border-stone-200">
                             <div class="flex items-center justify-between mb-2">
-                                <h3 class="text-sm font-medium text-green-700 uppercase tracking-wide">Idade Média</h3>
+                                <h3 class="text-sm font-medium text-stone-700 uppercase tracking-wide">Idade Média</h3>
                                 <svg class="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                                 </svg>
                             </div>
-                            <p class="text-4xl font-bold text-green-800">${averageAge > 0 ? averageAge.toFixed(1) : '0'}</p>
-                            <p class="text-xs text-green-600 mt-1">Anos (média dos alunos)</p>
+                            <p class="text-4xl font-bold text-stone-800">${averageAge > 0 ? averageAge.toFixed(1) : '0'}</p>
+                            <p class="text-xs text-stone-600 mt-1">Anos (média dos alunos)</p>
                         </div>
 
                         <!-- Professores Ativos -->
-                        <div class="bg-gradient-to-br from-red-50 to-red-100 p-6 rounded-lg border border-red-200">
+                        <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-6 rounded-lg border border-stone-200">
                             <div class="flex items-center justify-between mb-2">
-                                <h3 class="text-sm font-medium text-red-700 uppercase tracking-wide">Professores Ativos</h3>
+                                <h3 class="text-sm font-medium text-stone-700 uppercase tracking-wide">Professores Ativos</h3>
                                 <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
                                 </svg>
                             </div>
-                            <p class="text-4xl font-bold text-red-800">${totalProfessors}</p>
-                            <p class="text-xs text-red-600 mt-1">Professores no sistema</p>
+                            <p class="text-4xl font-bold text-stone-800">${totalProfessors}</p>
+                            <p class="text-xs text-stone-600 mt-1">Professores no sistema</p>
                         </div>
                     </div>
 
@@ -3267,7 +3253,23 @@
 
                     <!-- Assiduidade por Turma -->
                     <div class="mt-6 bg-white p-6 rounded-lg border border-stone-200">
-                        <h3 class="text-lg font-semibold text-stone-800 mb-4">Assiduidade por Turma</h3>
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-semibold text-stone-800">Assiduidade por Turma</h3>
+                            ${turmaAttendanceData.length > 0 ? `
+                            <div class="relative w-64">
+                                <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                </svg>
+                                <input 
+                                    type="text" 
+                                    id="turma-attendance-search" 
+                                    placeholder="Buscar turma..." 
+                                    class="w-full pl-10 pr-4 py-2 text-sm border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F1D24B] focus:border-transparent"
+                                    oninput="filterTurmaAttendance(this.value)"
+                                >
+                            </div>
+                            ` : ''}
+                        </div>
                         ${turmaAttendanceData.length > 0 ? `
                             <div class="overflow-x-auto">
                                 <table class="w-full">
@@ -3279,9 +3281,9 @@
                                             <th class="text-center pb-3 text-sm font-semibold text-stone-700">Visualização</th>
                                         </tr>
                                     </thead>
-                                    <tbody>
+                                    <tbody id="turma-attendance-tbody">
                                         ${turmaAttendanceData.map(turma => `
-                                            <tr class="border-b border-stone-100">
+                                            <tr class="border-b border-stone-100 turma-attendance-row" data-turma-name="${turma.name.toLowerCase()}">
                                                 <td class="py-3 text-sm font-medium text-stone-700">${turma.name}</td>
                                                 <td class="py-3 text-sm font-bold text-green-700 text-center">${turma.presencePercentage.toFixed(1)}%</td>
                                                 <td class="py-3 text-sm font-bold text-red-700 text-center">${turma.absencePercentage.toFixed(1)}%</td>
@@ -3299,6 +3301,7 @@
                                         `).join('')}
                                     </tbody>
                                 </table>
+                                <div id="turma-attendance-no-results" class="hidden text-center py-8 text-stone-500">Nenhuma turma encontrada</div>
                             </div>
                         ` : '<div class="text-center py-8 text-stone-500">Nenhum dado de assiduidade disponível</div>'}
                     </div>
@@ -3308,43 +3311,43 @@
                         <h3 class="text-lg font-semibold text-stone-800 mb-4">Médias de Desempenho nos Testes</h3>
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                             <!-- Midterm Test -->
-                            <div class="p-4 bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-lg border border-indigo-200">
-                                <p class="text-xs font-medium text-indigo-700 uppercase tracking-wide mb-2">Midterm Test</p>
-                                <p class="text-3xl font-bold text-indigo-800">${avgMidterm.toFixed(1)}</p>
-                                <div class="mt-2 w-full bg-indigo-200 rounded-full h-2">
+                            <div class="p-4 bg-gradient-to-br from-stone-50 to-stone-100 rounded-lg border border-stone-200">
+                                <p class="text-xs font-medium text-stone-700 uppercase tracking-wide mb-2">Midterm Test</p>
+                                <p class="text-3xl font-bold text-stone-800">${avgMidterm.toFixed(1)}</p>
+                                <div class="mt-2 w-full bg-stone-200 rounded-full h-2">
                                     <div class="bg-indigo-500 h-2 rounded-full" style="width: ${(avgMidterm / 25) * 100}%"></div>
                                 </div>
-                                <p class="text-xs text-indigo-600 mt-1">de 25.0 pontos</p>
+                                <p class="text-xs text-stone-600 mt-1">de 25.0 pontos</p>
                             </div>
 
                             <!-- Listening Test -->
-                            <div class="p-4 bg-gradient-to-br from-sky-50 to-sky-100 rounded-lg border border-sky-200">
-                                <p class="text-xs font-medium text-sky-700 uppercase tracking-wide mb-2">Listening Test</p>
-                                <p class="text-3xl font-bold text-sky-800">${avgListening.toFixed(1)}</p>
-                                <div class="mt-2 w-full bg-sky-200 rounded-full h-2">
+                            <div class="p-4 bg-gradient-to-br from-stone-50 to-stone-100 rounded-lg border border-stone-200">
+                                <p class="text-xs font-medium text-stone-700 uppercase tracking-wide mb-2">Listening Test</p>
+                                <p class="text-3xl font-bold text-stone-800">${avgListening.toFixed(1)}</p>
+                                <div class="mt-2 w-full bg-stone-200 rounded-full h-2">
                                     <div class="bg-sky-500 h-2 rounded-full" style="width: ${(avgListening / 15) * 100}%"></div>
                                 </div>
-                                <p class="text-xs text-sky-600 mt-1">de 15.0 pontos</p>
+                                <p class="text-xs text-stone-600 mt-1">de 15.0 pontos</p>
                             </div>
 
                             <!-- Grammar Test -->
-                            <div class="p-4 bg-gradient-to-br from-teal-50 to-teal-100 rounded-lg border border-teal-200">
-                                <p class="text-xs font-medium text-teal-700 uppercase tracking-wide mb-2">Grammar Test</p>
-                                <p class="text-3xl font-bold text-teal-800">${avgGrammar.toFixed(1)}</p>
-                                <div class="mt-2 w-full bg-teal-200 rounded-full h-2">
+                            <div class="p-4 bg-gradient-to-br from-stone-50 to-stone-100 rounded-lg border border-stone-200">
+                                <p class="text-xs font-medium text-stone-700 uppercase tracking-wide mb-2">Grammar Test</p>
+                                <p class="text-3xl font-bold text-stone-800">${avgGrammar.toFixed(1)}</p>
+                                <div class="mt-2 w-full bg-stone-200 rounded-full h-2">
                                     <div class="bg-teal-500 h-2 rounded-full" style="width: ${(avgGrammar / 15) * 100}%"></div>
                                 </div>
-                                <p class="text-xs text-teal-600 mt-1">de 15.0 pontos</p>
+                                <p class="text-xs text-stone-600 mt-1">de 15.0 pontos</p>
                             </div>
 
                             <!-- Oral Test -->
-                            <div class="p-4 bg-gradient-to-br from-pink-50 to-pink-100 rounded-lg border border-pink-200">
-                                <p class="text-xs font-medium text-pink-700 uppercase tracking-wide mb-2">Oral Test</p>
-                                <p class="text-3xl font-bold text-pink-800">${avgOral.toFixed(1)}</p>
-                                <div class="mt-2 w-full bg-pink-200 rounded-full h-2">
+                            <div class="p-4 bg-gradient-to-br from-stone-50 to-stone-100 rounded-lg border border-stone-200">
+                                <p class="text-xs font-medium text-stone-700 uppercase tracking-wide mb-2">Oral Test</p>
+                                <p class="text-3xl font-bold text-stone-800">${avgOral.toFixed(1)}</p>
+                                <div class="mt-2 w-full bg-stone-200 rounded-full h-2">
                                     <div class="bg-pink-500 h-2 rounded-full" style="width: ${(avgOral / 15) * 100}%"></div>
                                 </div>
-                                <p class="text-xs text-pink-600 mt-1">de 15.0 pontos</p>
+                                <p class="text-xs text-stone-600 mt-1">de 15.0 pontos</p>
                             </div>
                         </div>
                         ${gradesData.length === 0 ? '<div class="text-center py-4 mt-4 text-stone-500 text-sm">Nenhuma nota registrada ainda</div>' : ''}
@@ -3388,6 +3391,34 @@
                 }
             }, 100);
         }
+
+        // Filter turma attendance by name
+        window.filterTurmaAttendance = function(searchTerm) {
+            const rows = document.querySelectorAll('.turma-attendance-row');
+            const noResultsDiv = document.getElementById('turma-attendance-no-results');
+            const tbody = document.getElementById('turma-attendance-tbody');
+            const term = searchTerm.toLowerCase().trim();
+            
+            let visibleCount = 0;
+            
+            rows.forEach(row => {
+                const turmaName = row.dataset.turmaName;
+                if (turmaName.includes(term)) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+            
+            if (visibleCount === 0) {
+                tbody.style.display = 'none';
+                noResultsDiv.classList.remove('hidden');
+            } else {
+                tbody.style.display = '';
+                noResultsDiv.classList.add('hidden');
+            }
+        };
 
 
         // --- MODAL & FORM FUNCTIONS ---
@@ -3880,7 +3911,7 @@
                     ${aluno.notes ? `<div class="mt-4 pt-4 border-t"><strong>Observações:</strong><p class="mt-1 p-3 bg-stone-50 rounded-md whitespace-pre-wrap text-sm">${aluno.notes}</p></div>` : ''}
 
                     <div class="border-t pt-4 flex justify-end gap-2">
-                        ${canEdit && aluno.status === 'Ativo' ? `<button class="primary-btn !bg-blue-600 hover:!bg-blue-700" onclick="openRematriculaForm('${aluno.id}'); event.preventDefault();">Rematricular</button>` : ''}
+                        ${canEdit && aluno.status === 'Ativo' ? `<button class="primary-btn !bg-[#F1D24B] hover:!bg-[#E5C63F] !text-stone-900" onclick="openRematriculaForm('${aluno.id}'); event.preventDefault();">Rematricular</button>` : ''}
                         ${canEdit ? `<button class="secondary-btn" data-action="edit-aluno" data-id="${aluno.id}">Editar</button>
                         <button class="danger-btn" data-action="delete-item" data-collection="students" data-id="${aluno.id}">Apagar</button>` : ''}
                         <button class="primary-btn" data-action="close-modal">Fechar</button>
@@ -3903,16 +3934,16 @@
             let currentVip = null;
             let currentTurma = null;
 
-            // Check VIP
-            currentVip = vips.find(v => v.studentId === alunoId && (!v.endDate || new Date(v.endDate) >= new Date()));
+            // Check VIP (compare as strings to ensure match)
+            currentVip = vips.find(v => String(v.studentId) === String(alunoId) && (!v.endDate || new Date(v.endDate) >= new Date()));
             if (currentVip) hasActiveVip = true;
 
-            // Check Turma
-            currentTurma = turmas.find(t => t.studentIds && t.studentIds.includes(alunoId));
+            // Check Turma (compare as strings to ensure match)
+            currentTurma = turmas.find(t => t.studentIds && t.studentIds.some(id => String(id) === String(alunoId)));
             if (currentTurma) hasActiveTurma = true;
 
             if (!hasActiveVip && !hasActiveTurma) {
-                showErrorMessage("Erro", "Este aluno não possui matrícula ativa em VIP ou Turma para finalizar.");
+                showErrorMessage("Erro", "Este aluno não possui matrícula ativa em VIP ou Turma para finalizar.\n\nPara fazer rematrícula, o aluno precisa estar matriculado em uma turma ou ter um VIP ativo.");
                 return;
             }
 
@@ -3935,7 +3966,7 @@
                     </ul>
                     <div class="pt-4 border-t flex justify-end gap-2">
                         <button class="secondary-btn" onclick="closeModal(); event.preventDefault();">Cancelar</button>
-                        <button class="primary-btn !bg-blue-600 hover:!bg-blue-700" onclick="finalizeEnrollmentAndRematriculate('${alunoId}'); event.preventDefault();">Confirmar Rematrícula</button>
+                        <button class="primary-btn !bg-[#F1D24B] hover:!bg-[#E5C63F] !text-stone-900" onclick="finalizeEnrollmentAndRematriculate('${alunoId}'); event.preventDefault();">Confirmar Rematrícula</button>
                     </div>
                 </div>
             `;
@@ -6209,7 +6240,7 @@
                     <div class="lesson-card">
                         <div class="lesson-header">
                             <div class="lesson-number">Aula ${i}</div>
-                            <div class="lesson-date">${lessonData.date || 'Data não informada'}</div>
+                            <div class="lesson-date">${lessonData.date ? formatDateBR(lessonData.date) : 'Data não informada'}</div>
                         </div>
                         <div class="lesson-content">
                             <div class="topic-section">
@@ -6458,7 +6489,7 @@
                         <div class="lesson-info">
                             <div class="lesson-detail">
                                 <span class="lesson-detail-label">Data da Aula</span>
-                                <span class="lesson-detail-value">${lessonData.date || 'Não definida'}</span>
+                                <span class="lesson-detail-value">${lessonData.date ? formatDateBR(lessonData.date) : 'Não definida'}</span>
                             </div>
                             <div class="lesson-detail">
                                 <span class="lesson-detail-label">Status</span>
@@ -6954,7 +6985,7 @@
                         <div class="lesson-info">
                             <div class="lesson-detail">
                                 <span class="lesson-detail-label">Data da Aula</span>
-                                <span class="lesson-detail-value">${lessonData.date || 'Não realizada'}</span>
+                                <span class="lesson-detail-value">${lessonData.date ? formatDateBR(lessonData.date) : 'Não realizada'}</span>
                             </div>
                             <div class="lesson-detail">
                                 <span class="lesson-detail-label">Status do Aluno</span>
