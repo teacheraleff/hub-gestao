@@ -783,7 +783,7 @@
                         canViewFinancialInfo ? 'grid-cols-2 md:grid-cols-4' : 'grid-cols-2 md:grid-cols-3'
                     } gap-4">
                         ${!isTeacher ? `
-                        <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-6 rounded-lg border border-stone-200">
+                        <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-6 rounded-lg border border-stone-200 transition-all hover:border-[#F1D24B]">
                             <div class="flex items-center justify-between mb-2">
                                 <h3 class="text-sm font-medium text-stone-700 uppercase tracking-wide">Total de Alunos</h3>
                                 <svg class="w-8 h-8 text-stone-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2283,10 +2283,7 @@
             }
 
             const addAulaButton = ['admin', 'ap', 'pedagogico'].includes(currentUserRole)
-                ? `<div class="flex gap-2">
-                     <button class="primary-btn w-auto" data-action="add-schedule">+ Adicionar Aula</button>
-                     <button class="secondary-btn w-auto" data-action="add-break">+ Adicionar Break</button>
-                   </div>`
+                ? `<button class="primary-btn w-auto" data-action="add-schedule">+ Adicionar Aula</button>`
                 : '';
 
             contentArea.innerHTML = `
@@ -3022,7 +3019,8 @@
             
             // Incluir VIPs com PEF
             vips.forEach(vip => {
-                const unitAttendance = attendance.find(a => a.id === vip.id);
+                // Match attendance by vipId field, not document id
+                const unitAttendance = attendance.find(a => a.vipId === vip.id || a.turmaId === vip.id || a.id === vip.id);
                 if (unitAttendance && unitAttendance.lessons) {
                     for (let i = 1; i <= 40; i++) {
                         const lessonData = unitAttendance.lessons[i];
@@ -3103,7 +3101,8 @@
             // Calcular % de presença e faltas por VIP conectado às PEFs
             const vipAttendanceData = vips.map(vip => {
                 const student = students.find(s => s.id === vip.studentId);
-                const unitAttendance = attendance.find(a => a.id === vip.id);
+                // Match attendance by vipId field, not document id
+                const unitAttendance = attendance.find(a => a.vipId === vip.id || a.turmaId === vip.id || a.id === vip.id);
                 
                 let totalLessons = 0;
                 let presentCount = 0;
@@ -3198,7 +3197,7 @@
                     <!-- Cards de Estatísticas Rápidas -->
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                         <!-- Alunos em Turmas -->
-                        <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-6 rounded-lg border border-stone-200">
+                        <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-6 rounded-lg border border-stone-200 transition-all hover:border-[#F1D24B]">
                             <div class="flex items-center justify-between mb-2">
                                 <h3 class="text-sm font-medium text-stone-700 uppercase tracking-wide">Alunos em Turmas</h3>
                                 <svg class="w-8 h-8 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -3210,7 +3209,7 @@
                         </div>
 
                         <!-- Alunos VIP -->
-                        <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-6 rounded-lg border border-stone-200">
+                        <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-6 rounded-lg border border-stone-200 transition-all hover:border-[#F1D24B]">
                             <div class="flex items-center justify-between mb-2">
                                 <h3 class="text-sm font-medium text-stone-700 uppercase tracking-wide">Alunos VIP</h3>
                                 <svg class="w-8 h-8 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -3222,7 +3221,7 @@
                         </div>
 
                         <!-- Total de Turmas -->
-                        <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-6 rounded-lg border border-stone-200">
+                        <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-6 rounded-lg border border-stone-200 transition-all hover:border-[#F1D24B]">
                             <div class="flex items-center justify-between mb-2">
                                 <h3 class="text-sm font-medium text-stone-700 uppercase tracking-wide">Total de Turmas</h3>
                                 <svg class="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -3234,7 +3233,7 @@
                         </div>
 
                         <!-- Idade Média dos Alunos -->
-                        <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-6 rounded-lg border border-stone-200">
+                        <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-6 rounded-lg border border-stone-200 transition-all hover:border-[#F1D24B]">
                             <div class="flex items-center justify-between mb-2">
                                 <h3 class="text-sm font-medium text-stone-700 uppercase tracking-wide">Idade Média</h3>
                                 <svg class="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -3246,7 +3245,7 @@
                         </div>
 
                         <!-- Distribuição por Gênero -->
-                        <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-6 rounded-lg border border-stone-200">
+                        <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-6 rounded-lg border border-stone-200 transition-all hover:border-[#F1D24B]">
                             <div class="flex items-center justify-between mb-2">
                                 <h3 class="text-sm font-medium text-stone-700 uppercase tracking-wide">Distribuição por Gênero</h3>
                                 <svg class="w-8 h-8 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -3276,7 +3275,7 @@
                         </div>
 
                         <!-- Assiduidade Média Geral -->
-                        <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-6 rounded-lg border border-stone-200">
+                        <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-6 rounded-lg border border-stone-200 transition-all hover:border-[#F1D24B]">
                             <div class="flex items-center justify-between mb-2">
                                 <h3 class="text-sm font-medium text-stone-700 uppercase tracking-wide">Assiduidade Média Geral</h3>
                                 <svg class="w-8 h-8 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -3429,72 +3428,113 @@
                         </div>
                     </div>
 
-                    <!-- Distribuição de Alunos por Nível -->
-                    <div class="mt-6 bg-white p-6 rounded-lg border border-stone-200">
-                        <h3 class="text-lg font-semibold text-stone-800 mb-4">Alunos Cursando Atualmente por Nível</h3>
-                        ${(() => {
-                            // Calcular distribuição de alunos por nível usando currentLevel
-                            const levelDistribution = {};
-                            let totalStudents = 0;
-                            
-                            // Inicializar todos os níveis com zero
-                            STANDARD_LEVELS.forEach(level => {
-                                levelDistribution[level] = 0;
-                            });
-                            
-                            // Contar alunos ativos por nível atual
-                            students.forEach(student => {
-                                // Considerar apenas alunos ativos com nível atual definido
-                                if (student.status === 'Ativo' && student.currentLevel) {
-                                    if (levelDistribution.hasOwnProperty(student.currentLevel)) {
-                                        levelDistribution[student.currentLevel]++;
-                                        totalStudents++;
+                    <!-- Grid com Níveis e Horários -->
+                    <div class="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Alunos por Nível -->
+                        <div class="bg-white p-6 rounded-lg border border-stone-200">
+                            <h3 class="text-lg font-semibold text-stone-800 mb-4">Alunos Cursando por Nível</h3>
+                            ${(() => {
+                                const levelDistribution = {};
+                                let totalStudents = 0;
+                                
+                                STANDARD_LEVELS.forEach(level => {
+                                    levelDistribution[level] = 0;
+                                });
+                                
+                                students.forEach(student => {
+                                    if (student.status === 'Ativo' && student.currentLevel) {
+                                        if (levelDistribution.hasOwnProperty(student.currentLevel)) {
+                                            levelDistribution[student.currentLevel]++;
+                                            totalStudents++;
+                                        }
                                     }
-                                }
-                            });
-                            
-                            // SEMPRE mostrar os 11 níveis (mesmo que zerados)
-                            return `
-                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                    ${STANDARD_LEVELS.map(level => {
-                                        const count = levelDistribution[level];
-                                        const percentage = totalStudents > 0 ? (count / totalStudents) * 100 : 0;
-                                        const colors = {
-                                            'Starter 1': 'bg-emerald-500',
-                                            'Starter 2': 'bg-emerald-600',
-                                            'Freshman 1': 'bg-blue-500',
-                                            'Freshman 2': 'bg-blue-600',
-                                            'Sophomore 1': 'bg-indigo-500',
-                                            'Sophomore 2': 'bg-indigo-600',
-                                            'Junior 1': 'bg-purple-500',
-                                            'Junior 2': 'bg-purple-600',
-                                            'Senior 1': 'bg-pink-500',
-                                            'Senior 2': 'bg-pink-600',
-                                            'ACC': 'bg-amber-500'
-                                        };
-                                        const barColor = colors[level] || 'bg-gray-500';
-                                        
-                                        return `
-                                            <div class="p-4 bg-gradient-to-br from-stone-50 to-stone-100 rounded-lg border border-stone-200">
-                                                <p class="text-xs font-medium text-stone-700 uppercase tracking-wide mb-2">${level}</p>
-                                                <div class="flex items-baseline gap-2 mb-2">
-                                                    <p class="text-3xl font-bold text-stone-800">${count}</p>
-                                                    <p class="text-sm font-medium text-stone-600">(${percentage.toFixed(1)}%)</p>
-                                                </div>
-                                                <div class="w-full bg-stone-200 rounded-full h-2 overflow-hidden">
-                                                    <div class="${barColor} h-2 rounded-full transition-all duration-300" style="width: ${Math.min(100, percentage)}%"></div>
-                                                </div>
-                                                <p class="text-xs text-stone-600 mt-1">${count === 1 ? 'aluno' : 'alunos'}</p>
-                                            </div>
-                                        `;
-                                    }).join('')}
-                                </div>
-                                <div class="mt-4 text-center">
-                                    <p class="text-sm font-semibold text-stone-700">Total de Alunos Cursando: <span class="text-xl ${totalStudents === 0 ? 'text-stone-500' : 'text-stone-900'}">${totalStudents}</span></p>
-                                    ${totalStudents === 0 ? '<p class="text-xs text-stone-500 mt-1">Nenhum aluno com nível atual definido</p>' : ''}
-                                </div>
-                            `;
-                        })()}
+                                });
+                                
+                                return `
+                                    <div style="max-height: 400px; overflow-y: auto;">
+                                        <div class="grid grid-cols-2 gap-2">
+                                            ${STANDARD_LEVELS.map(level => {
+                                                const count = levelDistribution[level];
+                                                const percentage = totalStudents > 0 ? (count / totalStudents) * 100 : 0;
+                                                const colors = {
+                                                    'Starter 1': 'bg-emerald-500',
+                                                    'Starter 2': 'bg-emerald-600',
+                                                    'Freshman 1': 'bg-blue-500',
+                                                    'Freshman 2': 'bg-blue-600',
+                                                    'Sophomore 1': 'bg-indigo-500',
+                                                    'Sophomore 2': 'bg-indigo-600',
+                                                    'Junior 1': 'bg-purple-500',
+                                                    'Junior 2': 'bg-purple-600',
+                                                    'Senior 1': 'bg-pink-500',
+                                                    'Senior 2': 'bg-pink-600',
+                                                    'ACC': 'bg-amber-500'
+                                                };
+                                                const barColor = colors[level] || 'bg-gray-500';
+                                                
+                                                return `
+                                                    <div class="p-3 bg-gradient-to-br from-stone-50 to-stone-100 rounded-lg border border-stone-200 transition-all hover:border-[#F1D24B]">
+                                                        <p class="text-xs font-medium text-stone-700 uppercase tracking-wide mb-1">${level}</p>
+                                                        <div class="flex items-baseline gap-2 mb-1">
+                                                            <p class="text-2xl font-bold text-stone-800">${count}</p>
+                                                            <p class="text-xs font-medium text-stone-600">(${percentage.toFixed(1)}%)</p>
+                                                        </div>
+                                                        <div class="w-full bg-stone-200 rounded-full h-1.5 overflow-hidden">
+                                                            <div class="${barColor} h-1.5 rounded-full transition-all duration-300" style="width: ${Math.min(100, percentage)}%"></div>
+                                                        </div>
+                                                    </div>
+                                                `;
+                                            }).join('')}
+                                        </div>
+                                    </div>
+                                    <div class="mt-4 text-center">
+                                        <p class="text-sm font-semibold text-stone-700">Total: <span class="text-xl ${totalStudents === 0 ? 'text-stone-500' : 'text-stone-900'}">${totalStudents}</span> ${totalStudents === 1 ? 'aluno' : 'alunos'}</p>
+                                    </div>
+                                `;
+                            })()}
+                        </div>
+
+                        <!-- Horários Mais Ocupados -->
+                        <div class="bg-white p-6 rounded-lg border border-stone-200">
+                            <h3 class="text-lg font-semibold text-stone-800 mb-4">Horários Mais Ocupados</h3>
+                            ${(() => {
+                                const scheduleCount = {};
+                                
+                                // Contar horários da grade (schedules)
+                                schedules.forEach(schedule => {
+                                    if (schedule.type !== 'break' && schedule.day && schedule.startTime && schedule.endTime) {
+                                        const timeSlot = `${schedule.day} ${schedule.startTime}-${schedule.endTime}`;
+                                        scheduleCount[timeSlot] = (scheduleCount[timeSlot] || 0) + 1;
+                                    }
+                                });
+                                
+                                // Ordenar por quantidade
+                                const sortedSchedules = Object.entries(scheduleCount)
+                                    .sort((a, b) => b[1] - a[1]);
+                                
+                                const maxCount = sortedSchedules.length > 0 ? sortedSchedules[0][1] : 1;
+                                
+                                return sortedSchedules.length > 0 ? `
+                                    <div style="max-height: 400px; overflow-y: auto;">
+                                        <div class="space-y-2">
+                                            ${sortedSchedules.map(([schedule, count]) => {
+                                                const percentage = (count / maxCount) * 100;
+                                                return `
+                                                    <div class="p-3 bg-stone-50 rounded-lg border border-stone-200 transition-all hover:border-[#F1D24B]">
+                                                        <div class="flex items-center justify-between mb-2">
+                                                            <span class="text-sm font-medium text-stone-700">${schedule}</span>
+                                                            <span class="px-2 py-1 bg-indigo-100 text-indigo-700 rounded text-xs font-bold">${count} ${count === 1 ? 'aula' : 'aulas'}</span>
+                                                        </div>
+                                                        <div class="w-full bg-stone-200 rounded-full h-2">
+                                                            <div class="bg-indigo-500 h-2 rounded-full transition-all duration-300" style="width: ${percentage}%"></div>
+                                                        </div>
+                                                    </div>
+                                                `;
+                                            }).join('')}
+                                        </div>
+                                    </div>
+                                ` : '<div class="text-center py-8 text-stone-500">Nenhum horário cadastrado na grade</div>';
+                            })()}
+                        </div>
                     </div>
 
                     <!-- Grid com Alunos por Professor e Médias de Testes -->
@@ -3511,7 +3551,7 @@
                                             const isTopTeacher = index < 3;
                                             
                                             return `
-                                                <div class="p-3 ${isTopTeacher ? 'bg-yellow-50' : 'bg-stone-50'} rounded-lg border ${isTopTeacher ? 'border-yellow-200' : 'border-stone-200'}">
+                                                <div class="p-3 bg-stone-50 rounded-lg border border-stone-200 transition-all hover:border-[#F1D24B]">
                                                     <div class="flex items-center justify-between mb-2">
                                                         <div class="flex items-center gap-2">
                                                             ${isTopTeacher ? `
@@ -3544,7 +3584,7 @@
                             <h3 class="text-lg font-semibold text-stone-800 mb-4">Médias de Desempenho nos Testes</h3>
                             <div class="grid grid-cols-2 gap-3">
                                 <!-- Midterm Test -->
-                                <div class="p-4 bg-gradient-to-br from-stone-50 to-stone-100 rounded-lg border border-stone-200">
+                                <div class="p-4 bg-gradient-to-br from-stone-50 to-stone-100 rounded-lg border border-stone-200 transition-all hover:border-[#F1D24B]">
                                     <p class="text-xs font-medium text-stone-700 uppercase tracking-wide mb-2">Midterm Test</p>
                                     <p class="text-3xl font-bold text-stone-800">${avgMidterm.toFixed(1)}</p>
                                     <div class="mt-2 w-full bg-stone-200 rounded-full h-2 overflow-hidden">
@@ -3554,7 +3594,7 @@
                                 </div>
 
                                 <!-- Listening Test -->
-                                <div class="p-4 bg-gradient-to-br from-stone-50 to-stone-100 rounded-lg border border-stone-200">
+                                <div class="p-4 bg-gradient-to-br from-stone-50 to-stone-100 rounded-lg border border-stone-200 transition-all hover:border-[#F1D24B]">
                                     <p class="text-xs font-medium text-stone-700 uppercase tracking-wide mb-2">Listening Test</p>
                                     <p class="text-3xl font-bold text-stone-800">${avgListening.toFixed(1)}</p>
                                     <div class="mt-2 w-full bg-stone-200 rounded-full h-2 overflow-hidden">
@@ -3564,7 +3604,7 @@
                                 </div>
 
                                 <!-- Grammar Test -->
-                                <div class="p-4 bg-gradient-to-br from-stone-50 to-stone-100 rounded-lg border border-stone-200">
+                                <div class="p-4 bg-gradient-to-br from-stone-50 to-stone-100 rounded-lg border border-stone-200 transition-all hover:border-[#F1D24B]">
                                     <p class="text-xs font-medium text-stone-700 uppercase tracking-wide mb-2">Grammar Test</p>
                                     <p class="text-3xl font-bold text-stone-800">${avgGrammar.toFixed(1)}</p>
                                     <div class="mt-2 w-full bg-stone-200 rounded-full h-2 overflow-hidden">
@@ -3574,7 +3614,7 @@
                                 </div>
 
                                 <!-- Oral Test -->
-                                <div class="p-4 bg-gradient-to-br from-stone-50 to-stone-100 rounded-lg border border-stone-200">
+                                <div class="p-4 bg-gradient-to-br from-stone-50 to-stone-100 rounded-lg border border-stone-200 transition-all hover:border-[#F1D24B]">
                                     <p class="text-xs font-medium text-stone-700 uppercase tracking-wide mb-2">Oral Test</p>
                                     <p class="text-3xl font-bold text-stone-800">${avgOral.toFixed(1)}</p>
                                     <div class="mt-2 w-full bg-stone-200 rounded-full h-2 overflow-hidden">
@@ -4352,7 +4392,7 @@
                         <li>Abrir o formulário para nova matrícula</li>
                     </ul>
                     <div class="pt-4 border-t flex justify-end gap-2">
-                        <button class="secondary-btn" onclick="closeModal(); event.preventDefault();">Cancelar</button>
+                        <button class="secondary-btn" onclick="closeFormModal(); event.preventDefault();">Cancelar</button>
                         <button class="primary-btn !bg-[#F1D24B] hover:!bg-[#E5C63F] !text-stone-900" onclick="finalizeEnrollmentAndRematriculate('${alunoId}'); event.preventDefault();">Confirmar Rematrícula</button>
                     </div>
                 </div>
@@ -4443,7 +4483,7 @@
                 }
 
                 // Close modal and open student edit form
-                closeModal();
+                closeFormModal();
                 
                 // Small delay to ensure modal closes properly, then open student edit form
                 setTimeout(() => {
@@ -4538,18 +4578,54 @@
                                value="${turma && turma.level && !STANDARD_LEVELS.includes(turma.level) ? turma.level : ''}"
                                ${turma && turma.level && !STANDARD_LEVELS.includes(turma.level) ? 'required' : ''}>
                     </div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="font-medium text-sm">Dias da Semana <span class="text-red-500">*</span></label>
-                            <select id="turma-days" class="form-input" required>
-                                <option value="">Selecione os dias</option>
-                                <option value="S/Q" ${turma?.days === 'S/Q' ? 'selected' : ''}>Segunda/Quarta (S/Q)</option>
-                                <option value="T/Q" ${turma?.days === 'T/Q' ? 'selected' : ''}>Terça/Quinta (T/Q)</option>
-                            </select>
+                    <div class="border border-stone-200 rounded-lg p-4 bg-stone-50">
+                        <h4 class="font-semibold text-sm text-stone-700 mb-3">Dia 1 <span class="text-red-500">*</span></h4>
+                        <div class="grid grid-cols-3 gap-4">
+                            <div>
+                                <label class="font-medium text-xs">Dia da Semana <span class="text-red-500">*</span></label>
+                                <select id="turma-day1" class="form-input" required>
+                                    <option value="">Selecione</option>
+                                    <option value="Segunda" ${turma?.day1 === 'Segunda' ? 'selected' : ''}>Segunda</option>
+                                    <option value="Terça" ${turma?.day1 === 'Terça' ? 'selected' : ''}>Terça</option>
+                                    <option value="Quarta" ${turma?.day1 === 'Quarta' ? 'selected' : ''}>Quarta</option>
+                                    <option value="Quinta" ${turma?.day1 === 'Quinta' ? 'selected' : ''}>Quinta</option>
+                                    <option value="Sexta" ${turma?.day1 === 'Sexta' ? 'selected' : ''}>Sexta</option>
+                                    <option value="Sábado" ${turma?.day1 === 'Sábado' ? 'selected' : ''}>Sábado</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="font-medium text-xs">Horário Início <span class="text-red-500">*</span></label>
+                                <input type="time" id="turma-startTime1" class="form-input" value="${turma?.startTime1 || ''}" required>
+                            </div>
+                            <div>
+                                <label class="font-medium text-xs">Horário Fim <span class="text-red-500">*</span></label>
+                                <input type="time" id="turma-endTime1" class="form-input" value="${turma?.endTime1 || ''}" required>
+                            </div>
                         </div>
-                        <div>
-                            <label class="font-medium text-sm">Horário de Início <span class="text-red-500">*</span></label>
-                            <input type="time" id="turma-time" class="form-input" value="${turma?.startTime || ''}" required>
+                    </div>
+                    <div class="border border-stone-200 rounded-lg p-4 bg-stone-50">
+                        <h4 class="font-semibold text-sm text-stone-700 mb-3">Dia 2 <span class="text-red-500">*</span></h4>
+                        <div class="grid grid-cols-3 gap-4">
+                            <div>
+                                <label class="font-medium text-xs">Dia da Semana <span class="text-red-500">*</span></label>
+                                <select id="turma-day2" class="form-input" required>
+                                    <option value="">Selecione</option>
+                                    <option value="Segunda" ${turma?.day2 === 'Segunda' ? 'selected' : ''}>Segunda</option>
+                                    <option value="Terça" ${turma?.day2 === 'Terça' ? 'selected' : ''}>Terça</option>
+                                    <option value="Quarta" ${turma?.day2 === 'Quarta' ? 'selected' : ''}>Quarta</option>
+                                    <option value="Quinta" ${turma?.day2 === 'Quinta' ? 'selected' : ''}>Quinta</option>
+                                    <option value="Sexta" ${turma?.day2 === 'Sexta' ? 'selected' : ''}>Sexta</option>
+                                    <option value="Sábado" ${turma?.day2 === 'Sábado' ? 'selected' : ''}>Sábado</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="font-medium text-xs">Horário Início <span class="text-red-500">*</span></label>
+                                <input type="time" id="turma-startTime2" class="form-input" value="${turma?.startTime2 || ''}" required>
+                            </div>
+                            <div>
+                                <label class="font-medium text-xs">Horário Fim <span class="text-red-500">*</span></label>
+                                <input type="time" id="turma-endTime2" class="form-input" value="${turma?.endTime2 || ''}" required>
+                            </div>
                         </div>
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -4567,7 +4643,7 @@
                     <div class="flex justify-between gap-2">
                         <div class="flex gap-2">
                             ${turmaId && !turma?.finalizada ? `<button type="button" class="secondary-btn" style="background-color: #6B7280; color: white;" onclick="finalizarTurma('${turmaId}')">Finalizar Turma</button>` : ''}
-                            ${turmaId && turma?.finalizada ? `<span class="px-4 py-2 text-sm font-medium bg-stone-200 text-stone-700 rounded-lg">Turma Finalizada</span>` : ''}
+                            ${turmaId && turma?.finalizada ? `<button type="button" class="secondary-btn" style="background-color: #10B981; color: white;" onclick="reativarTurma('${turmaId}')">Reativar Turma</button>` : ''}
                         </div>
                         <div class="flex gap-2">
                             ${turmaId ? `<button type="button" class="danger-btn" data-action="delete-item" data-collection="turmas" data-id="${turmaId}">Excluir</button>` : ''}
@@ -4602,16 +4678,24 @@
                 : levelSelect.value;
 
             // Get form values for generating the name
-            const days = document.getElementById('turma-days').value; // S/Q or T/Q
-            const timeInput = document.getElementById('turma-time').value; // HH:MM format
+            const day1 = document.getElementById('turma-day1').value;
+            const startTime1 = document.getElementById('turma-startTime1').value;
+            const endTime1 = document.getElementById('turma-endTime1').value;
+            const day2 = document.getElementById('turma-day2').value;
+            const startTime2 = document.getElementById('turma-startTime2').value;
+            const endTime2 = document.getElementById('turma-endTime2').value;
             const semestre = document.getElementById('turma-semestre').value.trim();
             
             // Validação de campos obrigatórios
             const missingFields = [];
             if (!selectedTeacherOption.value) missingFields.push('Professor');
             if (!levelValue || levelValue.trim() === '') missingFields.push('Nível');
-            if (!days) missingFields.push('Dias da Semana');
-            if (!timeInput) missingFields.push('Horário de Início');
+            if (!day1) missingFields.push('Dia 1 - Dia da Semana');
+            if (!startTime1) missingFields.push('Dia 1 - Horário Início');
+            if (!endTime1) missingFields.push('Dia 1 - Horário Fim');
+            if (!day2) missingFields.push('Dia 2 - Dia da Semana');
+            if (!startTime2) missingFields.push('Dia 2 - Horário Início');
+            if (!endTime2) missingFields.push('Dia 2 - Horário Fim');
             if (!semestre) missingFields.push('Semestre');
             
             if (missingFields.length > 0) {
@@ -4620,14 +4704,21 @@
                 return;
             }
             
+            // Format days abbreviation (e.g., "Segunda/Quarta" becomes "S/Q")
+            const dayAbbrev = (day) => {
+                const abbrevs = { 'Segunda': 'S', 'Terça': 'T', 'Quarta': 'Q', 'Quinta': 'Q', 'Sexta': 'S', 'Sábado': 'Sáb' };
+                return abbrevs[day] || day;
+            };
+            const daysCode = `${dayAbbrev(day1)}/${dayAbbrev(day2)}`;
+            
             // Format time to just hours (e.g., "19:30" becomes "19h")
-            const hours = timeInput ? timeInput.split(':')[0] + 'h' : '';
+            const hours = startTime1 ? startTime1.split(':')[0] + 'h' : '';
             
             // Generate random code starting with SL
             const randomCode = 'SL' + Math.floor(1000 + Math.random() * 9000);
             
             // Generate standardized name: "Nível - S/Q | 19h #SL1234"
-            const generatedName = `${levelValue} - ${days} | ${hours} #${randomCode}`;
+            const generatedName = `${levelValue} - ${daysCode} | ${hours} #${randomCode}`;
 
             // Get current turma to preserve finalizada status
             const currentTurma = turmaId ? turmas.find(t => t.id === turmaId) : null;
@@ -4641,8 +4732,12 @@
                 semestre: semestre,
                 startDate: document.getElementById('turma-startDate').value,
                 endDate: document.getElementById('turma-endDate').value,
-                days: days,
-                startTime: timeInput,
+                day1: day1,
+                startTime1: startTime1,
+                endTime1: endTime1,
+                day2: day2,
+                startTime2: startTime2,
+                endTime2: endTime2,
                 finalizada: currentTurma?.finalizada ?? false // Preserve finalizada status or default to false
             };
 
@@ -4682,6 +4777,28 @@
             }
         }
         window.finalizarTurma = finalizarTurma;
+
+        // Global function to reactivate a turma
+        async function reativarTurma(turmaId) {
+            if (!confirm('Tem certeza que deseja reativar esta turma? A turma voltará ao status ativo.')) {
+                return;
+            }
+
+            try {
+                await updateDoc(doc(db, `artifacts/${appId}/public/data/turmas`, turmaId), { finalizada: false });
+                showSuccessMessage("Sucesso", "Turma reativada com sucesso!");
+                document.getElementById('form-modal').classList.remove('visible');
+                // Refresh the turmas list
+                await loadDataFromFirebase();
+                if (currentSection === 'turmas') {
+                    renderTurmasSection();
+                }
+            } catch (error) {
+                console.error("Error reactivating turma:", error);
+                showErrorMessage("Erro", "Não foi possível reativar a turma.");
+            }
+        }
+        window.reativarTurma = reativarTurma;
 
         function openVipForm(vipId = null) {
             clearModalHeaderButtons();
@@ -4744,7 +4861,7 @@
                     <div class="flex justify-between gap-2">
                         <div class="flex gap-2">
                             ${vipId && !vip?.finalizado ? `<button type="button" class="secondary-btn" style="background-color: #6B7280; color: white;" onclick="finalizarVip('${vipId}')">Finalizar VIP</button>` : ''}
-                            ${vipId && vip?.finalizado ? `<span class="px-4 py-2 text-sm font-medium bg-stone-200 text-stone-700 rounded-lg">VIP Finalizado</span>` : ''}
+                            ${vipId && vip?.finalizado ? `<button type="button" class="secondary-btn" style="background-color: #10B981; color: white;" onclick="reativarVip('${vipId}')">Reativar VIP</button>` : ''}
                         </div>
                         <div class="flex gap-2">
                             ${vipId ? `<button type="button" class="danger-btn" data-action="delete-vip" data-id="${vipId}">Excluir VIP</button>` : ''}
@@ -4973,6 +5090,29 @@
             }
         }
         window.finalizarVip = finalizarVip;
+
+        // Global function to reactivate a VIP
+        async function reativarVip(vipId) {
+            if (!confirm('Tem certeza que deseja reativar este VIP? O contrato voltará ao status ativo.')) {
+                return;
+            }
+
+            try {
+                await updateDoc(doc(db, `artifacts/${appId}/public/data/vips`, vipId), { finalizado: false });
+                showSuccessMessage("Sucesso", "VIP reativado com sucesso!");
+                document.getElementById('form-modal').classList.remove('visible');
+                // Refresh the VIPs list
+                await loadDataFromFirebase();
+                if (currentSection === 'vips') {
+                    renderVipsSection();
+                    updateVipsList();
+                }
+            } catch (error) {
+                console.error("Error reactivating VIP:", error);
+                showErrorMessage("Erro", "Não foi possível reativar o VIP.");
+            }
+        }
+        window.reativarVip = reativarVip;
 
         async function deleteVip(vipId) {
             if (!confirm('Tem certeza que deseja excluir este VIP?')) return;
@@ -5930,102 +6070,6 @@
             } catch (error) { console.error("Error saving collaborator:", error); showErrorMessage("Erro", "Falha ao salvar o colaborador."); }
         }
 
-        function openBreakForm() {
-            clearModalHeaderButtons();
-            document.getElementById('form-modal-title').textContent = "Adicionar Break";
-
-            const teacherOptions = collaborators.filter(c => c.sectors && c.sectors.includes('professor')).map(c => `<option value="${c.name}">${c.name}</option>`).join('');
-            const dayOptions = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta"].map(d => `<option value="${d}">${d}</option>`).join('');
-
-            document.getElementById('form-modal-content-area').innerHTML = `
-                <form id="form-modal-body" class="space-y-4">
-                    <div><label class="font-medium text-sm">Professor</label><select id="break-teacher" class="form-input" required>${teacherOptions}</select></div>
-                    <div><label class="font-medium text-sm">Dia da Semana</label><select id="break-day" class="form-input" required>${dayOptions}</select></div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div><label class="font-medium text-sm">Horário de Início</label><input type="time" id="break-start" class="form-input" required></div>
-                        <div><label class="font-medium text-sm">Horário de Fim</label><input type="time" id="break-end" class="form-input" required></div>
-                    </div>
-                    <div id="break-conflict-warning" class="hidden bg-red-50 border border-red-200 rounded-lg p-3 text-red-700">
-                        <strong>⚠️ Conflito de horário detectado!</strong>
-                        <p>Já existe uma aula ou break agendado para este professor neste horário.</p>
-                    </div>
-                    <div class="text-right"><button type="submit" class="primary-btn w-auto">Adicionar Break</button></div>
-                </form>`;
-
-            // Add conflict checking
-            const teacherSelect = document.getElementById('break-teacher');
-            const daySelect = document.getElementById('break-day');
-            const startInput = document.getElementById('break-start');
-            const endInput = document.getElementById('break-end');
-            const conflictWarning = document.getElementById('break-conflict-warning');
-
-            function checkBreakConflicts() {
-                const teacher = teacherSelect.value;
-                const day = daySelect.value;
-                const startTime = startInput.value;
-                const endTime = endInput.value;
-
-                if (teacher && day && startTime && endTime) {
-                    const hasConflict = checkTimeConflict(teacher, day, startTime, endTime);
-                    conflictWarning.classList.toggle('hidden', !hasConflict);
-                }
-            }
-
-            [teacherSelect, daySelect, startInput, endInput].forEach(element => {
-                element.addEventListener('change', checkBreakConflicts);
-            });
-
-            document.getElementById('form-modal-body').onsubmit = saveBreak;
-            document.getElementById('form-modal').classList.add('visible');
-        }
-
-        async function saveBreak(event) {
-            event.preventDefault();
-
-            const teacher = document.getElementById('break-teacher').value;
-            const day = document.getElementById('break-day').value;
-            const startTime = document.getElementById('break-start').value;
-            const endTime = document.getElementById('break-end').value;
-
-            // Validate time
-            if (startTime >= endTime) {
-                showErrorMessage("Erro de Validação", "O horário de início deve ser anterior ao horário de fim.");
-                return;
-            }
-
-            // Check for conflicts
-            const hasConflict = checkTimeConflict(teacher, day, startTime, endTime);
-            if (hasConflict) {
-                showErrorMessage("Conflito de Horário", "Já existe uma aula ou break agendado para este professor neste horário.");
-                return;
-            }
-
-            const data = {
-                teacher: teacher,
-                day: day,
-                startTime: startTime,
-                endTime: endTime,
-                type: 'break',
-                student: 'Intervalo',
-                level: 'N/A',
-                createdAt: serverTimestamp()
-            };
-
-            if (!db) { 
-                console.warn("Offline mode."); 
-                closeFormModal(); 
-                return; 
-            }
-
-            try {
-                await addDoc(collection(db, `artifacts/${appId}/public/data/schedules`), data);
-                showSuccessMessage("Sucesso!", "Break adicionado à grade.");
-                closeFormModal();
-            } catch (error) { 
-                console.error("Error saving break:", error); 
-                showErrorMessage("Erro", "Falha ao salvar o break."); 
-            }
-        }
 
         function openScheduleForm(scheduleId = null) {
             clearModalHeaderButtons();
@@ -6034,7 +6078,7 @@
             const isTeacher = currentUserRole === 'teacher';
 
             const teacherOptions = collaborators.filter(c => c.sectors && c.sectors.includes('professor')).map(c => `<option value="${c.name}" ${schedule?.teacher === c.name ? 'selected' : ''}>${c.name}</option>`).join('');
-            const dayOptions = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Seg/Qua", "Ter/Qui"].map(d => `<option value="${d}" ${schedule?.day === d ? 'selected' : ''}>${d}</option>`).join('');
+            const dayOptions = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"].map(d => `<option value="${d}" ${schedule?.day === d ? 'selected' : ''}>${d}</option>`).join('');
             const typeOptions = ["vip", "turma", "break"].map(t => `<option value="${t}" ${schedule?.type === t ? 'selected' : ''}>${t === 'break' ? 'BREAK' : t.toUpperCase()}</option>`).join('');
             const levelOptions = STANDARD_LEVELS.map(level => `<option value="${level}" ${schedule?.level === level ? 'selected' : ''}>${level}</option>`).join('') + `<option value="outro">Outro (especificar)</option>`;
 
@@ -6088,10 +6132,23 @@
                     <input type="text" id="schedule-level-custom" class="form-input mt-2 hidden" placeholder="Digite o nível personalizado" ${isTeacher ? 'disabled' : ''}>
                 </div>
                 <div><label class="font-medium text-sm">Professor</label><select id="schedule-teacher" class="form-input" required ${isTeacher ? 'disabled' : ''}>${teacherOptions}</select></div>
-                <div><label class="font-medium text-sm">Dia</label><select id="schedule-day" class="form-input" required ${isTeacher ? 'disabled' : ''}>${dayOptions}</select></div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div><label class="font-medium text-sm">Início</label><input type="time" id="schedule-start" class="form-input" required value="${schedule?.startTime || ''}" ${isTeacher ? 'disabled' : ''}></div>
-                    <div><label class="font-medium text-sm">Fim</label><input type="time" id="schedule-end" class="form-input" required value="${schedule?.endTime || ''}" ${isTeacher ? 'disabled' : ''}></div>
+                
+                <div class="border border-stone-200 rounded-lg p-4 bg-stone-50">
+                    <h4 class="font-semibold text-sm text-stone-700 mb-3">Dia 1 <span class="text-red-500">*</span></h4>
+                    <div class="grid grid-cols-3 gap-4">
+                        <div><label class="font-medium text-xs">Dia da Semana</label><select id="schedule-day1" class="form-input" required ${isTeacher ? 'disabled' : ''}>${dayOptions}</select></div>
+                        <div><label class="font-medium text-xs">Início</label><input type="time" id="schedule-start1" class="form-input" required value="${schedule?.startTime || ''}" ${isTeacher ? 'disabled' : ''}></div>
+                        <div><label class="font-medium text-xs">Fim</label><input type="time" id="schedule-end1" class="form-input" required value="${schedule?.endTime || ''}" ${isTeacher ? 'disabled' : ''}></div>
+                    </div>
+                </div>
+                
+                <div class="border border-stone-200 rounded-lg p-4 bg-stone-50">
+                    <h4 class="font-semibold text-sm text-stone-700 mb-3">Dia 2 <span class="text-red-500">*</span></h4>
+                    <div class="grid grid-cols-3 gap-4">
+                        <div><label class="font-medium text-xs">Dia da Semana</label><select id="schedule-day2" class="form-input" required ${isTeacher ? 'disabled' : ''}>${dayOptions}</select></div>
+                        <div><label class="font-medium text-xs">Início</label><input type="time" id="schedule-start2" class="form-input" required ${isTeacher ? 'disabled' : ''}></div>
+                        <div><label class="font-medium text-xs">Fim</label><input type="time" id="schedule-end2" class="form-input" required ${isTeacher ? 'disabled' : ''}></div>
+                    </div>
                 </div>
                 <div id="conflict-warning" class="hidden bg-red-50 border border-red-200 rounded-lg p-3 text-red-700">
                     <strong>⚠️ Conflito de horário detectado!</strong>
@@ -6148,19 +6205,31 @@
             // Check for time conflicts
             function checkConflicts() {
                 const teacher = document.getElementById('schedule-teacher').value;
-                const day = document.getElementById('schedule-day').value;
-                const startTime = document.getElementById('schedule-start').value;
-                const endTime = document.getElementById('schedule-end').value;
+                const day1 = document.getElementById('schedule-day1').value;
+                const startTime1 = document.getElementById('schedule-start1').value;
+                const endTime1 = document.getElementById('schedule-end1').value;
+                const day2 = document.getElementById('schedule-day2').value;
+                const startTime2 = document.getElementById('schedule-start2').value;
+                const endTime2 = document.getElementById('schedule-end2').value;
                 const scheduleId = document.getElementById('schedule-id').value;
                 const warning = document.getElementById('conflict-warning');
 
-                if (teacher && day && startTime && endTime) {
-                    const hasConflict = checkTimeConflict(teacher, day, startTime, endTime, scheduleId);
-                    if (hasConflict) {
-                        warning.classList.remove('hidden');
-                    } else {
-                        warning.classList.add('hidden');
-                    }
+                let hasConflict = false;
+                
+                // Check conflicts for Day 1
+                if (teacher && day1 && startTime1 && endTime1) {
+                    hasConflict = checkTimeConflict(teacher, day1, startTime1, endTime1, scheduleId);
+                }
+                
+                // Check conflicts for Day 2 if no conflict found yet
+                if (!hasConflict && teacher && day2 && startTime2 && endTime2) {
+                    hasConflict = checkTimeConflict(teacher, day2, startTime2, endTime2, scheduleId);
+                }
+                
+                if (hasConflict) {
+                    warning.classList.remove('hidden');
+                } else {
+                    warning.classList.add('hidden');
                 }
             }
 
@@ -6261,9 +6330,12 @@
                 checkConflicts();
                 checkStudentDuplicate();
             });
-            document.getElementById('schedule-day').addEventListener('change', checkConflicts);
-            document.getElementById('schedule-start').addEventListener('change', checkConflicts);
-            document.getElementById('schedule-end').addEventListener('change', checkConflicts);
+            document.getElementById('schedule-day1').addEventListener('change', checkConflicts);
+            document.getElementById('schedule-start1').addEventListener('change', checkConflicts);
+            document.getElementById('schedule-end1').addEventListener('change', checkConflicts);
+            document.getElementById('schedule-day2').addEventListener('change', checkConflicts);
+            document.getElementById('schedule-start2').addEventListener('change', checkConflicts);
+            document.getElementById('schedule-end2').addEventListener('change', checkConflicts);
 
             updateFormFields();
 
@@ -6293,13 +6365,13 @@
                 }
             }
             
-            const startTime = document.getElementById('schedule-start').value;
+            const startTime1 = document.getElementById('schedule-start1').value;
             const teacher = collaborators.find(c => c.name === teacherName);
             if (teacher && teacher.shiftStart && teacher.shiftEnd) {
-                if (startTime < teacher.shiftStart || startTime > teacher.shiftEnd) {
+                if (startTime1 < teacher.shiftStart || startTime1 > teacher.shiftEnd) {
                     showConfirmationModal(
                         "Aviso de Horário", 
-                        `Este horário (${startTime}) está fora do turno do professor (${teacher.shiftStart} - ${teacher.shiftEnd}). Tem certeza que quer continuar?`,
+                        `Este horário (${startTime1}) está fora do turno do professor (${teacher.shiftStart} - ${teacher.shiftEnd}). Tem certeza que quer continuar?`,
                         () => proceedWithSaveSchedule()
                     );
                     return;
@@ -6310,11 +6382,14 @@
 
         async function proceedWithSaveSchedule() {
             const scheduleId = document.getElementById('schedule-id').value;
-            const daySelection = document.getElementById('schedule-day').value;
-            const daysToCreate = [];
-            if (daySelection === 'Seg/Qua') daysToCreate.push('Segunda', 'Quarta');
-            else if (daySelection === 'Ter/Qui') daysToCreate.push('Terça', 'Quinta');
-            else daysToCreate.push(daySelection);
+            
+            const day1 = document.getElementById('schedule-day1').value;
+            const startTime1 = document.getElementById('schedule-start1').value;
+            const endTime1 = document.getElementById('schedule-end1').value;
+            
+            const day2 = document.getElementById('schedule-day2').value;
+            const startTime2 = document.getElementById('schedule-start2').value;
+            const endTime2 = document.getElementById('schedule-end2').value;
 
             const levelSelect = document.getElementById('schedule-level');
             const levelValue = levelSelect.value === 'outro'
@@ -6322,13 +6397,29 @@
                 : levelSelect.value;
 
             const scheduleType = document.getElementById('schedule-type').value;
-            const baseData = { 
-                student: scheduleType === 'break' ? 'Break' : document.getElementById('schedule-student').value, 
+            const studentValue = scheduleType === 'break' ? 'Break' : document.getElementById('schedule-student').value;
+            const teacherValue = document.getElementById('schedule-teacher').value;
+            
+            // Create data for Day 1
+            const data1 = { 
+                student: studentValue, 
                 level: scheduleType === 'break' ? 'N/A' : levelValue, 
-                teacher: document.getElementById('schedule-teacher').value, 
+                teacher: teacherValue, 
                 type: scheduleType, 
-                startTime: document.getElementById('schedule-start').value, 
-                endTime: document.getElementById('schedule-end').value 
+                day: day1,
+                startTime: startTime1, 
+                endTime: endTime1 
+            };
+            
+            // Create data for Day 2
+            const data2 = { 
+                student: studentValue, 
+                level: scheduleType === 'break' ? 'N/A' : levelValue, 
+                teacher: teacherValue, 
+                type: scheduleType, 
+                day: day2,
+                startTime: startTime2, 
+                endTime: endTime2 
             };
 
             if (!db) { console.warn("Offline mode."); closeFormModal(); return; }
@@ -6338,12 +6429,10 @@
                     const originalSchedule = schedules.find(s => s.id === scheduleId);
                     
                     if (originalSchedule) {
-                        // Find all schedules with same teacher, student, startTime, endTime (paired entries)
+                        // Find all schedules with same teacher, student, type (paired entries)
                         const relatedSchedules = schedules.filter(s => 
                             s.teacher === originalSchedule.teacher &&
                             s.student === originalSchedule.student &&
-                            s.startTime === originalSchedule.startTime &&
-                            s.endTime === originalSchedule.endTime &&
                             s.type === originalSchedule.type
                         );
 
@@ -6352,21 +6441,28 @@
                             await deleteDoc(doc(db, `artifacts/${appId}/public/data/schedules`, relatedSchedule.id));
                         }
                         
-                        // Create new entries with updated data
-                        for (const day of daysToCreate) {
-                            const data = {...baseData, day: day, createdAt: serverTimestamp() };
-                            await addDoc(collection(db, `artifacts/${appId}/public/data/schedules`), data);
-                        }
+                        // Create Day 1 entry
+                        const dataWithTimestamp1 = {...data1, createdAt: serverTimestamp() };
+                        await addDoc(collection(db, `artifacts/${appId}/public/data/schedules`), dataWithTimestamp1);
+                        
+                        // Create Day 2 entry
+                        const dataWithTimestamp2 = {...data2, createdAt: serverTimestamp() };
+                        await addDoc(collection(db, `artifacts/${appId}/public/data/schedules`), dataWithTimestamp2);
                         
                         showSuccessMessage("Sucesso!", "Aula atualizada.");
                     }
                 } else { 
-                    for (const day of daysToCreate) {
-                        const data = {...baseData, day: day, createdAt: serverTimestamp() };
-                        await addDoc(collection(db, `artifacts/${appId}/public/data/schedules`), data); 
-                    }
-                    showSuccessMessage("Sucesso!", "Aula(s) adicionada(s).");
+                    // Create Day 1 entry
+                    const dataWithTimestamp1 = {...data1, createdAt: serverTimestamp() };
+                    await addDoc(collection(db, `artifacts/${appId}/public/data/schedules`), dataWithTimestamp1); 
+                    
+                    // Create Day 2 entry
+                    const dataWithTimestamp2 = {...data2, createdAt: serverTimestamp() };
+                    await addDoc(collection(db, `artifacts/${appId}/public/data/schedules`), dataWithTimestamp2);
+                    
+                    showSuccessMessage("Sucesso!", "Aulas adicionadas (Dia 1 e Dia 2).");
                 }
+                closeFormModal();
             } catch (error) { console.error("Error saving schedule:", error); showErrorMessage("Erro", "Falha ao salvar a aula."); }
         }
 
@@ -11510,7 +11606,6 @@
 
 
                         'add-schedule': openScheduleForm,
-                        'add-break': openBreakForm,
                         'view-schedule': () => openScheduleForm(id),
                         'add-expense': openExpenseForm,
                         'view-expense': () => openExpenseForm(id),
