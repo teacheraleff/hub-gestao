@@ -2552,7 +2552,7 @@
         }
 
         function renderFolhaPagamentoSection() {
-            document.getElementById('main-title').textContent = 'Folha de Pagamento';
+            document.getElementById('main-title').textContent = 'Setor Financeiro';
             document.getElementById('main-description').textContent = 'Gerencie as despesas e contas a pagar do mês.';
 
             const now = new Date();
@@ -3019,8 +3019,8 @@
             
             // Incluir VIPs com PEF
             vips.forEach(vip => {
-                // Match attendance by vipId field, not document id
-                const unitAttendance = attendance.find(a => a.vipId === vip.id || a.turmaId === vip.id || a.id === vip.id);
+                // Match attendance by id (VIP attendance records use vip.id as their id)
+                const unitAttendance = attendance.find(a => a.id === vip.id);
                 if (unitAttendance && unitAttendance.lessons) {
                     for (let i = 1; i <= 40; i++) {
                         const lessonData = unitAttendance.lessons[i];
@@ -3101,8 +3101,8 @@
             // Calcular % de presença e faltas por VIP conectado às PEFs
             const vipAttendanceData = vips.map(vip => {
                 const student = students.find(s => s.id === vip.studentId);
-                // Match attendance by vipId field, not document id
-                const unitAttendance = attendance.find(a => a.vipId === vip.id || a.turmaId === vip.id || a.id === vip.id);
+                // Match attendance by id (VIP attendance records use vip.id as their id)
+                const unitAttendance = attendance.find(a => a.id === vip.id);
                 
                 let totalLessons = 0;
                 let presentCount = 0;
@@ -3497,48 +3497,49 @@
                         <div class="bg-white p-6 rounded-lg border border-stone-200">
                             <h3 class="text-lg font-semibold text-stone-800 mb-4">Horários Mais Ocupados</h3>
                             ${(() => {
-                                const scheduleCount = {};
+                                const hourCount = {};
                                 
-                                // Contar horários da grade (schedules) - agrupar apenas por hora, sem dia
+                                // Contar aulas por hora de início (independente do dia)
                                 schedules.forEach(schedule => {
                                     if (schedule.type !== 'break') {
                                         // Processar Day 1
-                                        if (schedule.day1 && schedule.startTime1 && schedule.endTime1) {
-                                            const timeSlot = `${schedule.startTime1}-${schedule.endTime1}`;
-                                            scheduleCount[timeSlot] = (scheduleCount[timeSlot] || 0) + 1;
+                                        if (schedule.day1 && schedule.startTime1) {
+                                            // Extrair hora (ex: "19:00" -> "19h")
+                                            const hour = schedule.startTime1.split(':')[0] + 'h';
+                                            hourCount[hour] = (hourCount[hour] || 0) + 1;
                                         }
                                         // Processar Day 2
-                                        if (schedule.day2 && schedule.startTime2 && schedule.endTime2) {
-                                            const timeSlot = `${schedule.startTime2}-${schedule.endTime2}`;
-                                            scheduleCount[timeSlot] = (scheduleCount[timeSlot] || 0) + 1;
+                                        if (schedule.day2 && schedule.startTime2) {
+                                            // Extrair hora (ex: "20:00" -> "20h")
+                                            const hour = schedule.startTime2.split(':')[0] + 'h';
+                                            hourCount[hour] = (hourCount[hour] || 0) + 1;
                                         }
                                     }
                                 });
                                 
-                                // Ordenar por quantidade
-                                const sortedSchedules = Object.entries(scheduleCount)
-                                    .sort((a, b) => b[1] - a[1]);
+                                // Ordenar por quantidade e pegar top 10
+                                const sortedHours = Object.entries(hourCount)
+                                    .sort((a, b) => b[1] - a[1])
+                                    .slice(0, 10);
                                 
-                                const maxCount = sortedSchedules.length > 0 ? sortedSchedules[0][1] : 1;
+                                const maxCount = sortedHours.length > 0 ? sortedHours[0][1] : 1;
                                 
-                                return sortedSchedules.length > 0 ? `
-                                    <div style="max-height: 400px; overflow-y: auto;">
-                                        <div class="space-y-2">
-                                            ${sortedSchedules.map(([schedule, count]) => {
-                                                const percentage = (count / maxCount) * 100;
-                                                return `
-                                                    <div class="p-3 bg-stone-50 rounded-lg border border-stone-200 transition-all hover:border-[#F1D24B]">
-                                                        <div class="flex items-center justify-between mb-2">
-                                                            <span class="text-sm font-medium text-stone-700">${schedule}</span>
-                                                            <span class="px-2 py-1 bg-indigo-100 text-indigo-700 rounded text-xs font-bold">${count} ${count === 1 ? 'aula' : 'aulas'}</span>
-                                                        </div>
-                                                        <div class="w-full bg-stone-200 rounded-full h-2">
-                                                            <div class="bg-indigo-500 h-2 rounded-full transition-all duration-300" style="width: ${percentage}%"></div>
-                                                        </div>
+                                return sortedHours.length > 0 ? `
+                                    <div class="space-y-2">
+                                        ${sortedHours.map(([hour, count]) => {
+                                            const percentage = (count / maxCount) * 100;
+                                            return `
+                                                <div class="p-3 bg-stone-50 rounded-lg border border-stone-200 transition-all hover:border-[#F1D24B]">
+                                                    <div class="flex items-center justify-between mb-2">
+                                                        <span class="text-sm font-medium text-stone-700">${hour}</span>
+                                                        <span class="px-2 py-1 bg-indigo-100 text-indigo-700 rounded text-xs font-bold">${count} ${count === 1 ? 'aula' : 'aulas'}</span>
                                                     </div>
-                                                `;
-                                            }).join('')}
-                                        </div>
+                                                    <div class="w-full bg-stone-200 rounded-full h-2">
+                                                        <div class="bg-indigo-500 h-2 rounded-full transition-all duration-300" style="width: ${percentage}%"></div>
+                                                    </div>
+                                                </div>
+                                            `;
+                                        }).join('')}
                                     </div>
                                 ` : '<div class="text-center py-8 text-stone-500">Nenhum horário cadastrado na grade</div>';
                             })()}
@@ -3590,45 +3591,45 @@
                         <!-- Médias de Notas dos Testes -->
                         <div class="bg-white p-6 rounded-lg border border-stone-200">
                             <h3 class="text-lg font-semibold text-stone-800 mb-4">Médias de Desempenho nos Testes</h3>
-                            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
                                 <!-- Midterm Test -->
-                                <div class="p-4 bg-gradient-to-br from-stone-50 to-stone-100 rounded-lg border border-stone-200 transition-all hover:border-[#F1D24B]">
-                                    <p class="text-xs font-medium text-stone-700 uppercase tracking-wide mb-2">Midterm Test</p>
-                                    <p class="text-3xl font-bold text-stone-800">${avgMidterm.toFixed(1)}</p>
-                                    <div class="mt-2 w-full bg-stone-200 rounded-full h-2 overflow-hidden">
-                                        <div class="bg-indigo-500 h-2 rounded-full" style="width: ${Math.min(100, (avgMidterm / 25) * 100)}%"></div>
+                                <div class="p-6 bg-gradient-to-br from-stone-50 to-stone-100 rounded-lg border border-stone-200 transition-all hover:border-[#F1D24B]">
+                                    <p class="text-sm font-medium text-stone-700 uppercase tracking-wide mb-3">Midterm Test</p>
+                                    <p class="text-4xl font-bold text-stone-800">${avgMidterm.toFixed(1)}</p>
+                                    <div class="mt-3 w-full bg-stone-200 rounded-full h-2.5 overflow-hidden">
+                                        <div class="bg-indigo-500 h-2.5 rounded-full" style="width: ${Math.min(100, (avgMidterm / 25) * 100)}%"></div>
                                     </div>
-                                    <p class="text-xs text-stone-600 mt-1">de 25.0 pontos</p>
+                                    <p class="text-sm text-stone-600 mt-2">de 25.0 pontos</p>
                                 </div>
 
                                 <!-- Listening Test -->
-                                <div class="p-4 bg-gradient-to-br from-stone-50 to-stone-100 rounded-lg border border-stone-200 transition-all hover:border-[#F1D24B]">
-                                    <p class="text-xs font-medium text-stone-700 uppercase tracking-wide mb-2">Listening Test</p>
-                                    <p class="text-3xl font-bold text-stone-800">${avgListening.toFixed(1)}</p>
-                                    <div class="mt-2 w-full bg-stone-200 rounded-full h-2 overflow-hidden">
-                                        <div class="bg-sky-500 h-2 rounded-full" style="width: ${Math.min(100, (avgListening / 15) * 100)}%"></div>
+                                <div class="p-6 bg-gradient-to-br from-stone-50 to-stone-100 rounded-lg border border-stone-200 transition-all hover:border-[#F1D24B]">
+                                    <p class="text-sm font-medium text-stone-700 uppercase tracking-wide mb-3">Listening Test</p>
+                                    <p class="text-4xl font-bold text-stone-800">${avgListening.toFixed(1)}</p>
+                                    <div class="mt-3 w-full bg-stone-200 rounded-full h-2.5 overflow-hidden">
+                                        <div class="bg-sky-500 h-2.5 rounded-full" style="width: ${Math.min(100, (avgListening / 15) * 100)}%"></div>
                                     </div>
-                                    <p class="text-xs text-stone-600 mt-1">de 15.0 pontos</p>
+                                    <p class="text-sm text-stone-600 mt-2">de 15.0 pontos</p>
                                 </div>
 
                                 <!-- Grammar Test -->
-                                <div class="p-4 bg-gradient-to-br from-stone-50 to-stone-100 rounded-lg border border-stone-200 transition-all hover:border-[#F1D24B]">
-                                    <p class="text-xs font-medium text-stone-700 uppercase tracking-wide mb-2">Grammar Test</p>
-                                    <p class="text-3xl font-bold text-stone-800">${avgGrammar.toFixed(1)}</p>
-                                    <div class="mt-2 w-full bg-stone-200 rounded-full h-2 overflow-hidden">
-                                        <div class="bg-teal-500 h-2 rounded-full" style="width: ${Math.min(100, (avgGrammar / 15) * 100)}%"></div>
+                                <div class="p-6 bg-gradient-to-br from-stone-50 to-stone-100 rounded-lg border border-stone-200 transition-all hover:border-[#F1D24B]">
+                                    <p class="text-sm font-medium text-stone-700 uppercase tracking-wide mb-3">Grammar Test</p>
+                                    <p class="text-4xl font-bold text-stone-800">${avgGrammar.toFixed(1)}</p>
+                                    <div class="mt-3 w-full bg-stone-200 rounded-full h-2.5 overflow-hidden">
+                                        <div class="bg-teal-500 h-2.5 rounded-full" style="width: ${Math.min(100, (avgGrammar / 15) * 100)}%"></div>
                                     </div>
-                                    <p class="text-xs text-stone-600 mt-1">de 15.0 pontos</p>
+                                    <p class="text-sm text-stone-600 mt-2">de 15.0 pontos</p>
                                 </div>
 
                                 <!-- Oral Test -->
-                                <div class="p-4 bg-gradient-to-br from-stone-50 to-stone-100 rounded-lg border border-stone-200 transition-all hover:border-[#F1D24B]">
-                                    <p class="text-xs font-medium text-stone-700 uppercase tracking-wide mb-2">Oral Test</p>
-                                    <p class="text-3xl font-bold text-stone-800">${avgOral.toFixed(1)}</p>
-                                    <div class="mt-2 w-full bg-stone-200 rounded-full h-2 overflow-hidden">
-                                        <div class="bg-pink-500 h-2 rounded-full" style="width: ${Math.min(100, (avgOral / 15) * 100)}%"></div>
+                                <div class="p-6 bg-gradient-to-br from-stone-50 to-stone-100 rounded-lg border border-stone-200 transition-all hover:border-[#F1D24B]">
+                                    <p class="text-sm font-medium text-stone-700 uppercase tracking-wide mb-3">Oral Test</p>
+                                    <p class="text-4xl font-bold text-stone-800">${avgOral.toFixed(1)}</p>
+                                    <div class="mt-3 w-full bg-stone-200 rounded-full h-2.5 overflow-hidden">
+                                        <div class="bg-pink-500 h-2.5 rounded-full" style="width: ${Math.min(100, (avgOral / 15) * 100)}%"></div>
                                     </div>
-                                    <p class="text-xs text-stone-600 mt-1">de 15.0 pontos</p>
+                                    <p class="text-sm text-stone-600 mt-2">de 15.0 pontos</p>
                                 </div>
                             </div>
                             ${allGrades.length === 0 ? '<div class="text-center py-4 mt-4 text-stone-500 text-sm">Nenhuma nota registrada ainda</div>' : ''}
@@ -11332,7 +11333,7 @@
                 
                 { key: 'colaboradores', label: 'Colaboradores', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>', roles: ['admin', 'ap', 'financeiro'] },
                 
-                { key: 'folha-pagamento', label: 'Despesas', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>', roles: ['admin', 'financeiro'] }
+                { key: 'folha-pagamento', label: 'Financeiro', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>', roles: ['admin', 'financeiro'] }
             ];
 
             const filteredItems = menuItems.filter(item => hasAccessToPage(item.key, currentUserRole));
