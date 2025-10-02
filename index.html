@@ -3499,11 +3499,19 @@
                             ${(() => {
                                 const scheduleCount = {};
                                 
-                                // Contar horários da grade (schedules)
+                                // Contar horários da grade (schedules) - agrupar apenas por hora, sem dia
                                 schedules.forEach(schedule => {
-                                    if (schedule.type !== 'break' && schedule.day && schedule.startTime && schedule.endTime) {
-                                        const timeSlot = `${schedule.day} ${schedule.startTime}-${schedule.endTime}`;
-                                        scheduleCount[timeSlot] = (scheduleCount[timeSlot] || 0) + 1;
+                                    if (schedule.type !== 'break') {
+                                        // Processar Day 1
+                                        if (schedule.day1 && schedule.startTime1 && schedule.endTime1) {
+                                            const timeSlot = `${schedule.startTime1}-${schedule.endTime1}`;
+                                            scheduleCount[timeSlot] = (scheduleCount[timeSlot] || 0) + 1;
+                                        }
+                                        // Processar Day 2
+                                        if (schedule.day2 && schedule.startTime2 && schedule.endTime2) {
+                                            const timeSlot = `${schedule.startTime2}-${schedule.endTime2}`;
+                                            scheduleCount[timeSlot] = (scheduleCount[timeSlot] || 0) + 1;
+                                        }
                                     }
                                 });
                                 
@@ -3582,7 +3590,7 @@
                         <!-- Médias de Notas dos Testes -->
                         <div class="bg-white p-6 rounded-lg border border-stone-200">
                             <h3 class="text-lg font-semibold text-stone-800 mb-4">Médias de Desempenho nos Testes</h3>
-                            <div class="grid grid-cols-2 gap-3">
+                            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
                                 <!-- Midterm Test -->
                                 <div class="p-4 bg-gradient-to-br from-stone-50 to-stone-100 rounded-lg border border-stone-200 transition-all hover:border-[#F1D24B]">
                                     <p class="text-xs font-medium text-stone-700 uppercase tracking-wide mb-2">Midterm Test</p>
@@ -4378,18 +4386,30 @@
                 ? `VIP - ${currentVip.level || 'Nível não especificado'}`
                 : `Turma - ${currentTurma.name || 'Nome não especificado'}`;
 
+            // Calculate next level
+            const currentLevelIndex = STANDARD_LEVELS.indexOf(aluno.currentLevel);
+            let nextLevel = '';
+            if (currentLevelIndex !== -1 && currentLevelIndex < STANDARD_LEVELS.length - 1) {
+                nextLevel = STANDARD_LEVELS[currentLevelIndex + 1];
+            } else if (currentLevelIndex === STANDARD_LEVELS.length - 1) {
+                nextLevel = 'ACC';
+            }
+
             document.getElementById('form-modal-title').textContent = 'Rematrícula de Aluno';
             document.getElementById('form-modal-content-area').innerHTML = `
                 <div class="space-y-4">
                     <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
                         <p class="text-sm text-blue-800 mb-2"><strong>Aluno:</strong> ${aluno.name}</p>
-                        <p class="text-sm text-blue-800"><strong>Matrícula Atual:</strong> ${enrollmentInfo}</p>
+                        <p class="text-sm text-blue-800"><strong>Nível Atual:</strong> ${aluno.currentLevel || 'Não especificado'}</p>
+                        ${nextLevel ? `<p class="text-sm text-blue-800"><strong>Próximo Nível:</strong> ${nextLevel}</p>` : ''}
                     </div>
                     <p class="text-stone-700">Esta ação irá:</p>
                     <ul class="list-disc list-inside text-sm text-stone-600 space-y-1">
                         ${hasActiveVip ? '<li>Finalizar o contrato VIP atual (definir data de término como hoje)</li>' : ''}
                         ${hasActiveTurma ? '<li>Remover o aluno da turma atual</li>' : ''}
-                        <li>Abrir o formulário para nova matrícula</li>
+                        <li>Mover "${aluno.currentLevel}" para níveis cursados</li>
+                        ${nextLevel ? `<li>Avançar automaticamente para "${nextLevel}"</li>` : '<li>Limpar o nível atual (próximo nível não identificado)</li>'}
+                        <li>Liberar o aluno para nova matrícula em VIP ou Turma</li>
                     </ul>
                     <div class="pt-4 border-t flex justify-end gap-2">
                         <button class="secondary-btn" onclick="closeFormModal(); event.preventDefault();">Cancelar</button>
@@ -4411,7 +4431,7 @@
             let wasTurma = false;
 
             try {
-                // Move currentLevel to completedLevels if exists
+                // Move currentLevel to completedLevels and advance to next level
                 if (aluno.currentLevel) {
                     const now = new Date();
                     const year = now.getFullYear();
@@ -4427,10 +4447,25 @@
                         semester: semester
                     });
                     
-                    // Update student - move current level to completed and clear current
+                    // Find next level in STANDARD_LEVELS
+                    const currentLevelIndex = STANDARD_LEVELS.indexOf(aluno.currentLevel);
+                    let nextLevel = '';
+                    
+                    if (currentLevelIndex !== -1 && currentLevelIndex < STANDARD_LEVELS.length - 1) {
+                        // Move to next level in sequence
+                        nextLevel = STANDARD_LEVELS[currentLevelIndex + 1];
+                    } else if (currentLevelIndex === STANDARD_LEVELS.length - 1) {
+                        // Already at ACC (last level), keep ACC
+                        nextLevel = 'ACC';
+                    } else {
+                        // Current level not in standard levels, clear it
+                        nextLevel = '';
+                    }
+                    
+                    // Update student - move current level to completed and set next level
                     const updatedStudentData = {
                         completedLevels: completedLevels,
-                        currentLevel: '' // Clear current level
+                        currentLevel: nextLevel
                     };
                     
                     if (window.isDevelopmentMode) {
@@ -4482,13 +4517,16 @@
                     }
                 }
 
-                // Close modal and open student edit form
+                // Close modal and show success message
                 closeFormModal();
                 
-                // Small delay to ensure modal closes properly, then open student edit form
+                // Get the next level that was set
+                const updatedAluno = students.find(s => s.id === alunoId);
+                const newLevel = updatedAluno?.currentLevel || 'nenhum';
+                
+                // Small delay to ensure modal closes properly, then show success
                 setTimeout(() => {
-                    openAlunoForm(alunoId);
-                    showSuccessMessage("Sucesso", "Nível anterior movido para histórico. Selecione o novo nível atual do aluno.");
+                    showSuccessMessage("Sucesso", `Rematrícula concluída com sucesso!\n\nNível anterior movido para histórico.\n${newLevel !== 'nenhum' ? `Aluno avançou automaticamente para: ${newLevel}` : 'Próximo nível não identificado.'}\n\nO aluno está liberado para ser incluído em VIP ou Turma.`);
                 }, 300);
 
             } catch (error) {
