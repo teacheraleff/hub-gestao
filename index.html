@@ -1326,29 +1326,6 @@
                             <p class="text-4xl font-bold text-stone-800 card-content">${turmaCount}</p>
                             <p class="text-xs text-stone-600 mt-1">Alunos em grupo</p>
                         </div>
-                        ${canViewFinancialInfo ? `
-                        <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-6 rounded-lg border border-stone-200" id="stat-card-ticket-medio">
-                            <div class="flex items-center justify-between mb-2">
-                                <h3 class="text-sm font-medium text-stone-700 uppercase tracking-wide">Ticket Médio Mensal</h3>
-                                <div class="flex gap-2 items-center">
-                                    <button onclick="toggleCardVisibility('stat-card-ticket-medio')" class="text-stone-400 hover:text-stone-600 transition-colors p-1" title="Ocultar/Mostrar informações">
-                                        <svg class="w-4 h-4 eye-icon-open" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                                        </svg>
-                                        <svg class="w-4 h-4 eye-icon-closed hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path>
-                                        </svg>
-                                    </button>
-                                    <svg class="w-8 h-8 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
-                                    </svg>
-                                </div>
-                            </div>
-                            <p class="text-4xl font-bold text-stone-800 card-content">${formatCurrencyBR(averageTicket)}</p>
-                            <p class="text-xs text-stone-600 mt-1">Valor médio por aluno</p>
-                        </div>
-                        ` : ''}
                     </div>
 
                     <div class="mb-6">
@@ -1477,6 +1454,7 @@
         function getFilteredTurmas() {
             const searchTerm = document.getElementById('turma-search')?.value.toLowerCase() || '';
             const teacherFilter = document.getElementById('turma-teacher-filter')?.value || '';
+            const statusFilter = document.querySelector('#turmas-filter-buttons .filter-btn.active')?.dataset.filter || 'todos';
             let filteredTurmas = turmas;
 
             if (currentUserRole === 'teacher') {
@@ -1508,6 +1486,13 @@
             } else if (teacherFilter) {
                 // Apply teacher filter for non-teacher users
                 filteredTurmas = turmas.filter(t => t.teacherName === teacherFilter);
+            }
+
+            // Apply status filter
+            if (statusFilter === 'ativas') {
+                filteredTurmas = filteredTurmas.filter(t => t.finalizada !== true);
+            } else if (statusFilter === 'finalizadas') {
+                filteredTurmas = filteredTurmas.filter(t => t.finalizada === true);
             }
 
             if (searchTerm) {
@@ -1572,6 +1557,14 @@
                 });
             }
 
+            // Apply status filter for "Ativos" - VIPs that are not finalized
+            if (statusFilter === 'ativos') {
+                filteredVips = filteredVips.filter(student => {
+                    const vipRecord = vips.find(v => v.studentId === student.id);
+                    return vipRecord && vipRecord.finalizado !== true;
+                });
+            }
+            
             // Apply status filter for "A Finalizar" - VIPs with 30 days or less to end
             if (statusFilter === 'a-finalizar') {
                 const today = new Date();
@@ -1579,7 +1572,7 @@
                 
                 filteredVips = filteredVips.filter(student => {
                     const vipRecord = vips.find(v => v.studentId === student.id);
-                    if (!vipRecord || !vipRecord.endDate) return false;
+                    if (!vipRecord || !vipRecord.endDate || vipRecord.finalizado === true) return false;
                     
                     const endDate = new Date(vipRecord.endDate);
                     return endDate <= thirtyDaysFromNow && endDate >= today;
@@ -1592,10 +1585,18 @@
                 
                 filteredVips = filteredVips.filter(student => {
                     const vipRecord = vips.find(v => v.studentId === student.id);
-                    if (!vipRecord || !vipRecord.endDate) return false;
+                    if (!vipRecord || !vipRecord.endDate || vipRecord.finalizado === true) return false;
                     
                     const endDate = new Date(vipRecord.endDate);
                     return endDate < today;
+                });
+            }
+            
+            // Apply status filter for "Finalizados" - VIPs that are finalized
+            if (statusFilter === 'finalizados') {
+                filteredVips = filteredVips.filter(student => {
+                    const vipRecord = vips.find(v => v.studentId === student.id);
+                    return vipRecord && vipRecord.finalizado === true;
                 });
             }
 
@@ -1800,7 +1801,6 @@
                                 <div>${student.name}</div>
                                 <div class="mt-1">
                                     <span class="status-tag status-${(student.modalidade || 'turma').toLowerCase()} text-xs">${student.modalidade || 'TURMA'}</span>
-                                    ${student.indicacao ? `<span class="ml-2 text-xs text-stone-500">• ${student.indicacao}</span>` : ''}
                                 </div>
                             </div>
                         </div>
@@ -1903,6 +1903,13 @@
                             ${canManage ? `<button class="primary-btn w-auto" data-action="add-turma">+ Adicionar Turma</button>` : ''}
                         </div>
                     </div>
+                    
+                    <div class="flex gap-2 mb-6" id="turmas-filter-buttons">
+                        <button class="secondary-btn filter-btn active" data-filter="todos">Todos</button>
+                        <button class="secondary-btn filter-btn" data-filter="ativas">Ativas</button>
+                        <button class="secondary-btn filter-btn" data-filter="finalizadas">Finalizadas</button>
+                    </div>
+                    
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="turmas-grid">
                         ${itemsToDisplay.map(t => {
                             // Count TURMA and DUPLA modality students in the class
@@ -1944,6 +1951,16 @@
                         </div>`}).join('') || '<p class="col-span-full text-center py-10 text-stone-500">Nenhuma turma encontrada.</p>'}
                     </div>
                 </div>`;
+            
+            // Add event listeners to filter buttons
+            const filterButtons = document.querySelectorAll('#turmas-filter-buttons .filter-btn');
+            filterButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    filterButtons.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    updateTurmasList();
+                });
+            });
         }
 
         function renderVipsSection() {
@@ -1985,8 +2002,10 @@
                     ${canManage || currentUserRole === 'teacher' ? `
                     <div class="flex gap-2 mb-6" id="vips-filter-buttons">
                         <button class="secondary-btn filter-btn active" data-filter="todos">Todos</button>
+                        <button class="secondary-btn filter-btn" data-filter="ativos">Ativos</button>
                         <button class="secondary-btn filter-btn" data-filter="a-finalizar">A Finalizar</button>
                         <button class="secondary-btn filter-btn" data-filter="expirados">Expirados</button>
+                        <button class="secondary-btn filter-btn" data-filter="finalizados">Finalizados</button>
                     </div>
                     ` : ''}
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="vips-grid">
@@ -2613,9 +2632,29 @@
             const totalEffectiveExpenses = totalPaidValues + totalExpenses;
             const profit = totalRevenue - totalEffectiveExpenses;
 
+            // Load financial profit settings from localStorage
+            const profitSettings = JSON.parse(localStorage.getItem('financialProfitSettings') || '{"vipMonthlyPayment": 0, "vipTeacherPayment": 0, "turmaStudentPayment": 0, "turmaTeacherPayment": 0}');
+            
+            // Calculate ticket médio mensal
+            const activeStudents = students.filter(s => s.status && s.status.toLowerCase() === 'ativo');
+            const ticketMedio = activeStudents.length > 0 ? totalRevenue / activeStudents.length : 0;
+            
+            // Calculate VIP profit
+            const activeVips = students.filter(s => s.modalidade === 'VIP' && s.status && s.status.toLowerCase() === 'ativo');
+            const vipTotalRevenue = activeVips.length * profitSettings.vipMonthlyPayment;
+            const vipTotalTeacher = activeVips.length * profitSettings.vipTeacherPayment;
+            const vipSchoolProfit = vipTotalRevenue - vipTotalTeacher;
+            
+            // Calculate Turma profit
+            const turmaStudents = students.filter(s => (s.modalidade === 'TURMA' || s.modalidade === 'DUPLA') && s.status && s.status.toLowerCase() === 'ativo');
+            const turmaCount = turmas.filter(t => !t.finalizada).length;
+            const turmaTotalRevenue = turmaStudents.length * profitSettings.turmaStudentPayment;
+            const turmaTotalTeacher = turmaCount * profitSettings.turmaTeacherPayment;
+            const turmaSchoolProfit = turmaTotalRevenue - turmaTotalTeacher;
+
             contentArea.innerHTML = `
                 <!-- Cards de Resumo Financeiro -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                     <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-6 rounded-lg border border-stone-200" id="expense-card-receita">
                         <div class="flex items-center justify-between mb-2">
                             <h3 class="text-sm font-medium text-stone-700 uppercase tracking-wide">Receita Total</h3>
@@ -2679,6 +2718,61 @@
                         <p class="text-4xl font-bold text-stone-800 card-content">${profit.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
                         <p class="text-xs text-stone-600 mt-1">Resultado líquido</p>
                     </div>
+                    
+                    <!-- Card Ticket Médio Mensal -->
+                    <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-6 rounded-lg border border-stone-200" id="expense-card-ticket">
+                        <div class="flex items-center justify-between mb-2">
+                            <h3 class="text-sm font-medium text-stone-700 uppercase tracking-wide">Ticket Médio Mensal</h3>
+                            <div class="flex gap-2 items-center">
+                                <button onclick="toggleCardVisibility('expense-card-ticket')" class="text-stone-400 hover:text-stone-600 transition-colors p-1" title="Ocultar/Mostrar informações">
+                                    <svg class="w-4 h-4 eye-icon-open" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                    </svg>
+                                    <svg class="w-4 h-4 eye-icon-closed hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path>
+                                    </svg>
+                                </button>
+                                <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <p class="text-4xl font-bold text-stone-800 card-content">${ticketMedio.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                        <p class="text-xs text-stone-600 mt-1">Valor médio por aluno ativo</p>
+                    </div>
+                    
+                    <!-- Card Lucro por VIP (Clicável) -->
+                    <div class="bg-gradient-to-br from-amber-50 to-amber-100 p-6 rounded-lg border border-amber-200 cursor-pointer hover:shadow-lg transition-shadow" id="expense-card-vip-profit" onclick="openVipProfitModal()">
+                        <div class="flex items-center justify-between mb-2">
+                            <h3 class="text-sm font-medium text-amber-900 uppercase tracking-wide">Lucro por VIP (Mensal)</h3>
+                            <svg class="w-8 h-8 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path>
+                            </svg>
+                        </div>
+                        <p class="text-3xl font-bold text-amber-900 mb-3">${vipSchoolProfit.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                        <div class="space-y-1 text-xs text-amber-800">
+                            <p>Professor: ${vipTotalTeacher.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                            <p>Escola: ${vipSchoolProfit.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                        </div>
+                        <p class="text-xs text-amber-700 mt-2 italic">Clique para configurar</p>
+                    </div>
+                    
+                    <!-- Card Lucro por Turma (Clicável) -->
+                    <div class="bg-gradient-to-br from-emerald-50 to-emerald-100 p-6 rounded-lg border border-emerald-200 cursor-pointer hover:shadow-lg transition-shadow" id="expense-card-turma-profit" onclick="openTurmaProfitModal()">
+                        <div class="flex items-center justify-between mb-2">
+                            <h3 class="text-sm font-medium text-emerald-900 uppercase tracking-wide">Lucro por Turma (Mensal)</h3>
+                            <svg class="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                            </svg>
+                        </div>
+                        <p class="text-3xl font-bold text-emerald-900 mb-3">${turmaSchoolProfit.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                        <div class="space-y-1 text-xs text-emerald-800">
+                            <p>Professor: ${turmaTotalTeacher.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                            <p>Escola: ${turmaSchoolProfit.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                        </div>
+                        <p class="text-xs text-emerald-700 mt-2 italic">Clique para configurar</p>
+                    </div>
                 </div>
 
                 <section id="folha-pagamento-section" class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
@@ -2702,7 +2796,20 @@
                                     <th class="text-right">Valor Base (R$)</th>
                                     <th class="text-right">Valor Extra (R$)</th>
                                     <th class="text-right">Valor Pago (R$)</th>
-                                    <th class="text-center">Ações</th>
+                                    <th class="text-center">
+                                        <div class="flex items-center justify-center gap-2">
+                                            <span>Ações</span>
+                                            <button onclick="toggleAllExpensesVisibility()" class="text-stone-400 hover:text-stone-600 transition-colors p-1" title="Ocultar/Mostrar todas as informações" id="toggle-all-expenses-btn">
+                                                <svg class="w-3.5 h-3.5 eye-icon-open" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                                </svg>
+                                                <svg class="w-3.5 h-3.5 eye-icon-closed hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody id="expenses-list">
@@ -2781,7 +2888,7 @@
 
         function renderColaboradoresSection() {
             document.getElementById('main-title').textContent = 'Gestão de Colaboradores';
-            document.getElementById('main-description').textContent = 'Adicione, edite e defina os setores e permissões de cada colaborador.';
+            document.getElementById('main-description').textContent = 'Adicione, edite e defina as permissões de cada colaborador.';
             
             const roleLabels = {
                 'admin': { label: 'Admin', color: 'bg-purple-100 text-purple-800' },
@@ -2803,7 +2910,6 @@
                                 <tr>
                                     <th>Nome</th>
                                     <th>Role</th>
-                                    <th>Setores</th>
                                     <th>Permissões</th>
                                     <th class="text-center">Ações</th>
                                 </tr>
@@ -2812,12 +2918,10 @@
                                 ${collaborators.map(c => {
                                     const roleInfo = roleLabels[c.role] || { label: 'Não definido', color: 'bg-gray-100 text-gray-800' };
                                     const pagesCount = (c.allowedPages || []).length;
-                                    const sectors = (c.sectors || []);
                                     return `
                                     <tr>
                                         <td class="font-medium">${c.name}</td>
                                         <td><span class="px-2 py-1 rounded-full text-xs font-semibold ${roleInfo.color}">${roleInfo.label}</span></td>
-                                        <td>${sectors.map(s => `<span class="sector-tag">${s}</span>`).join(' ') || '<span class="text-stone-400 text-xs">Nenhum</span>'}</td>
                                         <td>
                                             ${c.role === 'admin' ? 
                                                 '<span class="text-xs text-purple-600 font-semibold">Acesso Total</span>' : 
@@ -2825,11 +2929,13 @@
                                             }
                                         </td>
                                         <td class="text-center">
-                                            <button class="secondary-btn" data-action="edit-collaborator" data-id="${c.id}">Editar</button>
-                                            <button class="danger-btn ml-2" data-action="delete-item" data-collection="collaborators" data-id="${c.id}">Excluir</button>
+                                            <div class="flex gap-2 justify-center">
+                                                <button class="secondary-btn" data-action="edit-collaborator" data-id="${c.id}">Editar</button>
+                                                <button class="danger-btn" data-action="delete-item" data-collection="collaborators" data-id="${c.id}">Excluir</button>
+                                            </div>
                                         </td>
                                     </tr>
-                                `}).join('') || '<tr><td colspan="5" class="text-center py-10 text-stone-500">Nenhum colaborador encontrado.</td></tr>'}
+                                `}).join('') || '<tr><td colspan="4" class="text-center py-10 text-stone-500">Nenhum colaborador encontrado.</td></tr>'}
                             </tbody>
                         </table>
                     </div>
@@ -3815,6 +3921,168 @@
                 style: 'currency',
                 currency: 'BRL'
             }).format(value);
+        }
+
+        // Funções para configuração de lucro VIP e Turma
+        function openVipProfitModal() {
+            clearModalHeaderButtons();
+            const profitSettings = JSON.parse(localStorage.getItem('financialProfitSettings') || '{"vipMonthlyPayment": 0, "vipTeacherPayment": 0, "turmaStudentPayment": 0, "turmaTeacherPayment": 0}');
+            
+            document.getElementById('form-modal-title').textContent = 'Configurar Lucro por VIP';
+            document.getElementById('form-modal-body').innerHTML = `
+                <form id="vip-profit-form" class="space-y-6">
+                    <div class="bg-amber-50 p-4 rounded-lg border border-amber-200">
+                        <h3 class="font-semibold text-amber-900 mb-4">Valores Mensais - VIP</h3>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <label class="font-medium text-sm text-amber-900">Quanto o VIP paga por mês (média)</label>
+                                <div class="relative mt-1">
+                                    <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-stone-500">R$</span>
+                                    <input type="number" id="vip-monthly-payment" class="form-input pl-10" step="0.01" min="0" value="${profitSettings.vipMonthlyPayment}" required>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label class="font-medium text-sm text-amber-900">Quanto o professor ganha por VIP (média)</label>
+                                <div class="relative mt-1">
+                                    <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-stone-500">R$</span>
+                                    <input type="number" id="vip-teacher-payment" class="form-input pl-10" step="0.01" min="0" value="${profitSettings.vipTeacherPayment}" required>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-6 p-4 bg-white rounded border border-amber-300">
+                            <h4 class="font-semibold text-sm text-amber-900 mb-2">Resultado:</h4>
+                            <div class="space-y-1 text-sm">
+                                <p class="text-amber-800">💰 <strong>Professor recebe:</strong> <span id="vip-preview-teacher">R$ 0,00</span></p>
+                                <p class="text-amber-800">🏫 <strong>Escola recebe:</strong> <span id="vip-preview-school">R$ 0,00</span></p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="text-right">
+                        <button type="button" class="secondary-btn mr-2" onclick="closeFormModal()">Cancelar</button>
+                        <button type="submit" class="primary-btn w-auto">Salvar Configurações</button>
+                    </div>
+                </form>
+            `;
+            
+            document.getElementById('form-modal').classList.add('visible');
+            
+            // Add event listeners for real-time preview
+            const vipPaymentInput = document.getElementById('vip-monthly-payment');
+            const vipTeacherInput = document.getElementById('vip-teacher-payment');
+            
+            function updateVipPreview() {
+                const payment = parseFloat(vipPaymentInput.value) || 0;
+                const teacher = parseFloat(vipTeacherInput.value) || 0;
+                const school = payment - teacher;
+                
+                document.getElementById('vip-preview-teacher').textContent = formatCurrencyBR(teacher);
+                document.getElementById('vip-preview-school').textContent = formatCurrencyBR(school);
+            }
+            
+            vipPaymentInput.addEventListener('input', updateVipPreview);
+            vipTeacherInput.addEventListener('input', updateVipPreview);
+            updateVipPreview();
+            
+            document.getElementById('vip-profit-form').onsubmit = (e) => {
+                e.preventDefault();
+                saveProfitSettings('vip');
+            };
+        }
+        
+        function openTurmaProfitModal() {
+            clearModalHeaderButtons();
+            const profitSettings = JSON.parse(localStorage.getItem('financialProfitSettings') || '{"vipMonthlyPayment": 0, "vipTeacherPayment": 0, "turmaStudentPayment": 0, "turmaTeacherPayment": 0}');
+            
+            document.getElementById('form-modal-title').textContent = 'Configurar Lucro por Turma';
+            document.getElementById('form-modal-body').innerHTML = `
+                <form id="turma-profit-form" class="space-y-6">
+                    <div class="bg-emerald-50 p-4 rounded-lg border border-emerald-200">
+                        <h3 class="font-semibold text-emerald-900 mb-4">Valores Mensais - Turma</h3>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <label class="font-medium text-sm text-emerald-900">Quanto cada aluno paga por mês (média)</label>
+                                <div class="relative mt-1">
+                                    <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-stone-500">R$</span>
+                                    <input type="number" id="turma-student-payment" class="form-input pl-10" step="0.01" min="0" value="${profitSettings.turmaStudentPayment}" required>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label class="font-medium text-sm text-emerald-900">Quanto o professor recebe por turma (média)</label>
+                                <div class="relative mt-1">
+                                    <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-stone-500">R$</span>
+                                    <input type="number" id="turma-teacher-payment" class="form-input pl-10" step="0.01" min="0" value="${profitSettings.turmaTeacherPayment}" required>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-6 p-4 bg-white rounded border border-emerald-300">
+                            <h4 class="font-semibold text-sm text-emerald-900 mb-2">Resultado (por turma com exemplo de 5 alunos):</h4>
+                            <div class="space-y-1 text-sm">
+                                <p class="text-emerald-800">📚 <strong>Receita da turma:</strong> <span id="turma-preview-revenue">R$ 0,00</span></p>
+                                <p class="text-emerald-800">💰 <strong>Professor recebe:</strong> <span id="turma-preview-teacher">R$ 0,00</span></p>
+                                <p class="text-emerald-800">🏫 <strong>Escola recebe:</strong> <span id="turma-preview-school">R$ 0,00</span></p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="text-right">
+                        <button type="button" class="secondary-btn mr-2" onclick="closeFormModal()">Cancelar</button>
+                        <button type="submit" class="primary-btn w-auto">Salvar Configurações</button>
+                    </div>
+                </form>
+            `;
+            
+            document.getElementById('form-modal').classList.add('visible');
+            
+            // Add event listeners for real-time preview
+            const studentPaymentInput = document.getElementById('turma-student-payment');
+            const teacherPaymentInput = document.getElementById('turma-teacher-payment');
+            
+            function updateTurmaPreview() {
+                const studentPayment = parseFloat(studentPaymentInput.value) || 0;
+                const teacherPayment = parseFloat(teacherPaymentInput.value) || 0;
+                const exampleStudents = 5;
+                const revenue = studentPayment * exampleStudents;
+                const school = revenue - teacherPayment;
+                
+                document.getElementById('turma-preview-revenue').textContent = formatCurrencyBR(revenue);
+                document.getElementById('turma-preview-teacher').textContent = formatCurrencyBR(teacherPayment);
+                document.getElementById('turma-preview-school').textContent = formatCurrencyBR(school);
+            }
+            
+            studentPaymentInput.addEventListener('input', updateTurmaPreview);
+            teacherPaymentInput.addEventListener('input', updateTurmaPreview);
+            updateTurmaPreview();
+            
+            document.getElementById('turma-profit-form').onsubmit = (e) => {
+                e.preventDefault();
+                saveProfitSettings('turma');
+            };
+        }
+        
+        function saveProfitSettings(type) {
+            const currentSettings = JSON.parse(localStorage.getItem('financialProfitSettings') || '{"vipMonthlyPayment": 0, "vipTeacherPayment": 0, "turmaStudentPayment": 0, "turmaTeacherPayment": 0}');
+            
+            if (type === 'vip') {
+                currentSettings.vipMonthlyPayment = parseFloat(document.getElementById('vip-monthly-payment').value) || 0;
+                currentSettings.vipTeacherPayment = parseFloat(document.getElementById('vip-teacher-payment').value) || 0;
+            } else if (type === 'turma') {
+                currentSettings.turmaStudentPayment = parseFloat(document.getElementById('turma-student-payment').value) || 0;
+                currentSettings.turmaTeacherPayment = parseFloat(document.getElementById('turma-teacher-payment').value) || 0;
+            }
+            
+            localStorage.setItem('financialProfitSettings', JSON.stringify(currentSettings));
+            closeFormModal();
+            showSuccessMessage('Sucesso!', 'Configurações de lucro salvas com sucesso.');
+            
+            // Recarregar a seção financeira para atualizar os cards
+            renderFolhaPagamentoSection();
         }
 
         // Funções globais para ocultar/mostrar informações em cards e linhas
@@ -6103,19 +6371,6 @@
             const collaborator = collaboratorId ? collaborators.find(c => c.id === collaboratorId) : null;
             document.getElementById('form-modal-title').textContent = collaborator ? "Editar Colaborador" : "Adicionar Novo Colaborador";
 
-            const sectors = ['professor', 'tarefas', 'campanhas'];
-            const sectorLabels = { professor: 'Professor (Grade)', tarefas: 'Tarefas', campanhas: 'Campanhas' };
-
-            const sectorCheckboxes = sectors.map(sector => {
-                const isChecked = collaborator?.sectors?.includes(sector) ? 'checked' : '';
-                return `
-                    <div class="flex items-center">
-                        <input type="checkbox" id="sector-${sector.replace(' ', '-')}" name="sectors" value="${sector}" class="h-4 w-4 rounded" ${isChecked}>
-                        <label for="sector-${sector.replace(' ', '-')}" class="ml-2 text-sm">${sectorLabels[sector]}</label>
-                    </div>
-                `;
-            }).join('');
-
             // Roles disponíveis
             const roles = [
                 { value: 'admin', label: 'Admin (Acesso Total)' },
@@ -6159,7 +6414,14 @@
                 <form id="form-modal-body" class="space-y-4">
                     <input type="hidden" id="collaborator-id" value="${collaboratorId || ''}">
                     
-                    <div><label class="font-medium text-sm">Nome do Colaborador <span class="text-red-500">*</span></label><input type="text" id="collaborator-name" class="form-input" required value="${collaborator?.name || ''}"></div>
+                    <div><label class="font-medium text-sm">Nome Completo <span class="text-red-500">*</span></label><input type="text" id="collaborator-name" class="form-input" required value="${collaborator?.name || ''}"></div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><label class="font-medium text-sm">CPF</label><input type="text" id="collaborator-cpf" class="form-input" placeholder="000.000.000-00" maxlength="14" value="${collaborator?.cpf || ''}"></div>
+                        <div><label class="font-medium text-sm">Data de Nascimento</label><input type="date" id="collaborator-birthdate" class="form-input" value="${collaborator?.birthdate || ''}"></div>
+                    </div>
+                    
+                    <div><label class="font-medium text-sm">Endereço</label><input type="text" id="collaborator-address" class="form-input" placeholder="Rua, número, bairro, cidade" value="${collaborator?.address || ''}"></div>
                     
                     <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
                         <label class="font-medium text-sm text-blue-900 mb-2 block">Role de Acesso <span class="text-red-500">*</span></label>
@@ -6177,37 +6439,39 @@
                         <p class="text-xs text-yellow-700 mt-2">⚠️ Admin tem acesso total automaticamente</p>
                     </div>
                     
-                    <div>
-                        <label class="font-medium text-sm">Setores de Atuação</label>
-                        <div class="mt-2 grid grid-cols-2 gap-2">${sectorCheckboxes}</div>
-                        <p class="text-xs text-stone-500 mt-1">Marque "Professor (Grade)" para aparecer na grade de horários</p>
-                    </div>
-                    
-                    <div class="grid grid-cols-2 gap-4">
-                         <div><label class="font-medium text-sm">Início do Turno</label><input type="time" id="collaborator-shift-start" class="form-input" value="${collaborator?.shiftStart || ''}"></div>
-                         <div><label class="font-medium text-sm">Fim do Turno</label><input type="time" id="collaborator-shift-end" class="form-input" value="${collaborator?.shiftEnd || ''}"></div>
-                    </div>
-                    
                     <div class="text-right"><button type="submit" class="primary-btn w-auto">Salvar</button></div>
                 </form>`;
             document.getElementById('form-modal-body').onsubmit = saveCollaborator;
             document.getElementById('form-modal').classList.add('visible');
+            
+            // Add CPF mask formatting
+            const cpfInput = document.getElementById('collaborator-cpf');
+            if (cpfInput) {
+                cpfInput.addEventListener('input', (e) => {
+                    let value = e.target.value.replace(/\D/g, '');
+                    if (value.length <= 11) {
+                        value = value.replace(/(\d{3})(\d)/, '$1.$2');
+                        value = value.replace(/(\d{3})(\d)/, '$1.$2');
+                        value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+                    }
+                    e.target.value = value;
+                });
+            }
         }
 
         async function saveCollaborator(event) {
             event.preventDefault();
             const collaboratorId = document.getElementById('collaborator-id').value;
-            const selectedSectors = Array.from(document.querySelectorAll('input[name="sectors"]:checked')).map(cb => cb.value);
             const selectedPages = Array.from(document.querySelectorAll('input[name="allowedPages"]:checked')).map(cb => cb.value);
             const role = document.getElementById('collaborator-role').value;
 
             const data = {
                 name: document.getElementById('collaborator-name').value,
+                cpf: document.getElementById('collaborator-cpf').value,
+                birthdate: document.getElementById('collaborator-birthdate').value,
+                address: document.getElementById('collaborator-address').value,
                 role: role,
-                allowedPages: selectedPages,
-                shiftStart: document.getElementById('collaborator-shift-start').value,
-                shiftEnd: document.getElementById('collaborator-shift-end').value,
-                sectors: selectedSectors
+                allowedPages: selectedPages
             };
 
             if (!data.name) { showErrorMessage("Erro", "O nome do colaborador é obrigatório."); return; }
@@ -8409,7 +8673,7 @@
                             <h2 id="calendar-month-year" class="text-2xl font-bold text-stone-800"></h2>
                             <button class="calendar-nav-btn" onclick="changeMonth(1)">Próximo »</button>
                         </div>
-                        ${['admin', 'pedagogico'].includes(currentUserRole) ? `
+                        ${['admin', 'pedagogico'].includes(currentUserRole) && currentUserRole !== 'teacher' ? `
                         <button class="primary-btn w-auto" data-action="add-calendar-event">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
@@ -8484,7 +8748,7 @@
                             <h2 id="marketing-calendar-month-year" class="text-2xl font-bold text-stone-800"></h2>
                             <button class="calendar-nav-btn" data-action="change-marketing-month" data-direction="1">Próximo »</button>
                         </div>
-                        ${['admin', 'am', 'pedagogico', 'financeiro'].includes(currentUserRole) ? `
+                        ${['admin', 'am', 'pedagogico', 'financeiro'].includes(currentUserRole) && currentUserRole !== 'teacher' ? `
                         <button class="primary-btn w-auto" data-action="add-marketing-event">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
@@ -11468,7 +11732,7 @@
                 
                 { key: 'kpis-pedagogico', label: 'KPIs Pedagógico', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/></svg>', roles: ['admin', 'pedagogico', 'ap'] },
                 
-                { key: 'colaboradores', label: 'Colaboradores', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>', roles: ['admin', 'ap', 'financeiro'] },
+                { key: 'colaboradores', label: 'Colaboradores', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>', roles: ['admin'] },
                 
                 { key: 'folha-pagamento', label: 'Financeiro', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>', roles: ['admin', 'financeiro'] }
             ];
@@ -11646,6 +11910,47 @@
             });
         }
 
+        // Toggle visibility for all expenses rows
+        function toggleAllExpensesVisibility() {
+            const button = document.getElementById('toggle-all-expenses-btn');
+            const openIcon = button.querySelector('.eye-icon-open');
+            const closedIcon = button.querySelector('.eye-icon-closed');
+            
+            // Check current state (if open icon is visible, we need to hide all)
+            const shouldHide = !openIcon.classList.contains('hidden');
+            
+            // Toggle all expense rows
+            document.querySelectorAll('[id^="expense-row-"]').forEach(row => {
+                const rowContents = row.querySelectorAll('.row-content');
+                const rowButton = row.querySelector('button[onclick*="toggleRowVisibility"]');
+                
+                if (shouldHide) {
+                    // Hide all
+                    rowContents.forEach(content => content.classList.add('blurred'));
+                    if (rowButton) {
+                        rowButton.querySelector('.eye-icon-open')?.classList.add('hidden');
+                        rowButton.querySelector('.eye-icon-closed')?.classList.remove('hidden');
+                    }
+                } else {
+                    // Show all
+                    rowContents.forEach(content => content.classList.remove('blurred'));
+                    if (rowButton) {
+                        rowButton.querySelector('.eye-icon-open')?.classList.remove('hidden');
+                        rowButton.querySelector('.eye-icon-closed')?.classList.add('hidden');
+                    }
+                }
+            });
+            
+            // Toggle the header button icons
+            if (shouldHide) {
+                openIcon.classList.add('hidden');
+                closedIcon.classList.remove('hidden');
+            } else {
+                openIcon.classList.remove('hidden');
+                closedIcon.classList.add('hidden');
+            }
+        }
+
         // Role-based access control with custom permissions
         function hasAccessToPage(pageKey, userRole) {
             // Admin sempre tem acesso total
@@ -11671,7 +11976,7 @@
                 'vips': ['admin', 'pedagogico', 'ap', 'teacher', 'am', 'financeiro'], // VIPs - accessible to teachers
                 'grade': ['admin', 'pedagogico', 'ap', 'teacher', 'am', 'financeiro'], // Schedule - no financeiro
                 'folha-pagamento': ['admin', 'financeiro'], // Payroll/Expenses - FINANCIAL ONLY
-                'colaboradores': ['admin', 'ap', 'financeiro'], // Collaborators - admin, AP and financeiro
+                'colaboradores': ['admin'], // Collaborators - admin only
                 'dojo': ['admin', 'pedagogico', 'ap', 'teacher', 'am'], // Dojo - everyone except financeiro
                 'calendario-pedagogico': ['admin', 'pedagogico', 'ap', 'teacher', 'am'], // Pedagogical calendar
                 'calendario-marketing': ['admin', 'ap', 'am', 'teacher'], // Marketing calendar
