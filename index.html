@@ -378,7 +378,7 @@
 
     <div id="hub-view" class="hidden">
         <div id="app-container" class="min-h-screen md:flex bg-stone-50">
-            <aside class="md:w-64 bg-white md:border-r border-b border-stone-200 p-4 md:p-6 flex flex-col h-screen md:h-auto">
+            <aside class="md:w-64 bg-white md:border-r border-b border-stone-200 p-4 md:p-6 flex flex-col h-screen md:fixed md:top-0 md:left-0 md:overflow-y-auto">
                 <div class="mb-4 text-center">
                     <div>
                         <img id="profile-picture" src="https://res.cloudinary.com/dqfi22uz0/image/upload/v1749349751/DBB440C2-684E-4DCF-9CD3-B2DDC18F1E53_3_vgocga.jpg" alt="Foto de Perfil" class="w-24 h-24 mx-auto rounded-full object-cover border-4 border-stone-200">
@@ -397,7 +397,7 @@
                 </div>
             </aside>
 
-            <main class="flex-1 relative">
+            <main class="flex-1 relative md:ml-64">
                 <div class="bg-[#F1D24B] block w-full p-4 sm:p-6 md:p-8 absolute top-0 left-0 right-0 z-10">
                     <div class="flex justify-between items-start">
                         <header id="main-header" class="flex items-center gap-4">
@@ -3148,14 +3148,15 @@
             
             // Incluir VIPs com PEF
             vips.forEach(vip => {
+                const student = students.find(s => s.id === vip.studentId);
                 // Match attendance by id (VIP attendance records use vip.id as their id)
                 const unitAttendance = attendance.find(a => a.id === vip.id);
-                if (unitAttendance && unitAttendance.lessons) {
+                if (unitAttendance && unitAttendance.lessons && student) {
                     for (let i = 1; i <= 40; i++) {
                         const lessonData = unitAttendance.lessons[i];
-                        if (lessonData && lessonData.date) {
+                        if (lessonData && lessonData.date && lessonData.students && lessonData.students[student.id]) {
                             totalLessonsGlobal++;
-                            const status = lessonData.status;
+                            const status = lessonData.students[student.id];
                             if (status === 'P') {
                                 totalPresentGlobal++;
                             } else if (status === 'PP') {
@@ -3255,13 +3256,13 @@
                 let absentCount = 0;
                 
                 // Buscar dados de presença das PEFs do VIP
-                if (unitAttendance && unitAttendance.lessons) {
+                if (unitAttendance && unitAttendance.lessons && student) {
                     for (let i = 1; i <= 40; i++) {
                         const lessonData = unitAttendance.lessons[i];
                         // VIP lessons: verificar se tem data registrada (aula realizada)
-                        if (lessonData && lessonData.date) {
+                        if (lessonData && lessonData.date && lessonData.students && lessonData.students[student.id]) {
                             totalLessons++;
-                            const status = lessonData.status;
+                            const status = lessonData.students[student.id];
                             if (status === 'P') {
                                 presentCount++;
                             } else if (status === 'PP') {
