@@ -6864,8 +6864,7 @@
                 { key: 'turmas', label: 'Turmas' },
                 { key: 'vips', label: 'VIPs' },
                 { key: 'grade', label: 'Grade de Horários' },
-                { key: 'calendario-pedagogico', label: 'Calendário Pedagógico' },
-                { key: 'calendario-marketing', label: 'Calendário Marketing' },
+                { key: 'calendario', label: 'Calendário' },
                 { key: 'kpis-pedagogico', label: 'KPIs Pedagógico' },
                 { key: 'colaboradores', label: 'Colaboradores' },
                 { key: 'folha-pagamento', label: 'Financeiro' }
@@ -9210,8 +9209,8 @@
             }
         }
 
-        function renderCalendarioPedagogicoSection() {
-            document.getElementById('main-title').textContent = 'Calendário Pedagógico';
+        function renderCalendarioSection() {
+            document.getElementById('main-title').textContent = 'Calendário';
             const contentArea = document.getElementById('content-area');
 
             contentArea.innerHTML = `
@@ -9222,14 +9221,18 @@
                             <h2 id="calendar-month-year" class="text-2xl font-bold text-stone-800"></h2>
                             <button class="calendar-nav-btn" onclick="changeMonth(1)">Próximo »</button>
                         </div>
-                        ${['admin', 'pedagogico'].includes(currentUserRole) && currentUserRole !== 'teacher' ? `
-                        <button class="primary-btn w-auto" data-action="add-calendar-event">
-                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-                            </svg>
-                            Adicionar Evento
-                        </button>
-                        ` : ''}
+                        <div class="flex items-center gap-3">
+                            <select id="calendar-filter-collaborator" class="form-input !w-auto" onchange="renderCalendar()">
+                                <option value="">Todos os eventos</option>
+                                ${collaborators.map(c => `<option value="${c.id}">${c.name}</option>`).join('')}
+                            </select>
+                            <button class="primary-btn w-auto" data-action="add-calendar-event">
+                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                                </svg>
+                                Adicionar Evento
+                            </button>
+                        </div>
                     </div>
                     <div class="calendar-grid" id="calendar-grid">
                         <!-- Calendar will be rendered here -->
@@ -9269,6 +9272,25 @@
                                     </select>
                                 </div>
                                 <div>
+                                    <label class="font-medium text-sm">Criado por</label>
+                                    <select id="event-creator" class="form-input" required>
+                                        <option value="">Selecione quem está criando</option>
+                                        ${collaborators.map(c => `<option value="${c.id}">${c.name}</option>`).join('')}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="font-medium text-sm">Diz respeito a</label>
+                                    <div id="event-concerns" class="space-y-2 max-h-40 overflow-y-auto border border-stone-200 rounded-lg p-3">
+                                        ${collaborators.map(c => `
+                                            <label class="flex items-center gap-2 cursor-pointer hover:bg-stone-50 p-1 rounded">
+                                                <input type="checkbox" value="${c.id}" class="concern-checkbox" />
+                                                <span class="text-sm">${c.name}</span>
+                                            </label>
+                                        `).join('')}
+                                    </div>
+                                    <p class="text-xs text-stone-500 mt-1">Selecione os colaboradores envolvidos neste evento</p>
+                                </div>
+                                <div>
                                     <label class="font-medium text-sm">Descrição</label>
                                     <textarea id="event-description" rows="3" class="form-input"></textarea>
                                 </div>
@@ -9285,157 +9307,10 @@
             initializeCalendar();
         }
 
-        function renderCalendarioMarketingSection() {
-            document.getElementById('main-title').textContent = 'Calendário Marketing';
-            const contentArea = document.getElementById('content-area');
-
-            contentArea.innerHTML = `
-                <div class="calendar-container">
-                    <div class="calendar-header">
-                        <div class="flex items-center gap-4">
-                            <button class="calendar-nav-btn" data-action="change-marketing-month" data-direction="-1">« Anterior</button>
-                            <h2 id="marketing-calendar-month-year" class="text-2xl font-bold text-stone-800"></h2>
-                            <button class="calendar-nav-btn" data-action="change-marketing-month" data-direction="1">Próximo »</button>
-                        </div>
-                        ${['admin', 'am', 'pedagogico', 'financeiro'].includes(currentUserRole) && currentUserRole !== 'teacher' ? `
-                        <button class="primary-btn w-auto" data-action="add-marketing-event">
-                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-                            </svg>
-                            Adicionar Evento Marketing
-                        </button>
-                        ` : ''}
-                    </div>
-                    <div class="calendar-grid" id="marketing-calendar-grid">
-                        <!-- Marketing Calendar will be rendered here -->
-                    </div>
-                </div>
-
-                <!-- Marketing Event Modal -->
-                <div id="marketing-event-modal" class="modal-overlay">
-                    <div class="modal-content max-w-lg">
-                        <div class="modal-header">
-                            <h4 id="marketing-event-modal-title">Evento Marketing</h4>
-                            <button data-action="close-marketing-modal" class="modal-close-btn">&times;</button>
-                        </div>
-                        <form id="marketing-event-form">
-                            <div class="space-y-4">
-                                <div>
-                                    <label class="font-medium text-sm">Título</label>
-                                    <input type="text" id="marketing-event-title" class="form-input" required>
-                                </div>
-                                <div>
-                                    <label class="font-medium text-sm">Data</label>
-                                    <input type="date" id="marketing-event-date" class="form-input" required>
-                                </div>
-                                <div>
-                                    <label class="font-medium text-sm">Horário</label>
-                                    <input type="time" id="marketing-event-time" class="form-input">
-                                </div>
-                                <div>
-                                    <label class="font-medium text-sm">Tipo de Conteúdo</label>
-                                    <div class="mt-2 grid grid-cols-2 gap-2 p-3 border rounded-md">
-                                        <div class="flex items-center">
-                                            <input type="checkbox" id="tipo-campanha" name="tipos" value="Campanha" class="h-4 w-4 rounded">
-                                            <label for="tipo-campanha" class="ml-2 text-sm">Campanha</label>
-                                        </div>
-                                        <div class="flex items-center">
-                                            <input type="checkbox" id="tipo-reel" name="tipos" value="Reel" class="h-4 w-4 rounded">
-                                            <label for="tipo-reel" class="ml-2 text-sm">Reel</label>
-                                        </div>
-                                        <div class="flex items-center">
-                                            <input type="checkbox" id="tipo-carrossel" name="tipos" value="Carrossel" class="h-4 w-4 rounded">
-                                            <label for="tipo-carrossel" class="ml-2 text-sm">Carrossel</label>
-                                        </div>
-                                        <div class="flex items-center">
-                                            <input type="checkbox" id="tipo-story" name="tipos" value="Story" class="h-4 w-4 rounded">
-                                            <label for="tipo-story" class="ml-2 text-sm">Story</label>
-                                        </div>
-                                        <div class="flex items-center">
-                                            <input type="checkbox" id="tipo-destaque" name="tipos" value="Destaque" class="h-4 w-4 rounded">
-                                            <label for="tipo-destaque" class="ml-2 text-sm">Destaque</label>
-                                        </div>
-                                        <div class="flex items-center">
-                                            <input type="checkbox" id="tipo-tiktok" name="tipos" value="TikTok" class="h-4 w-4 rounded">
-                                            <label for="tipo-tiktok" class="ml-2 text-sm">TikTok</label>
-                                        </div>
-                                        <div class="flex items-center">
-                                            <input type="checkbox" id="tipo-youtube" name="tipos" value="YouTube" class="h-4 w-4 rounded">
-                                            <label for="tipo-youtube" class="ml-2 text-sm">YouTube</label>
-                                        </div>
-                                        <div class="flex items-center">
-                                            <input type="checkbox" id="tipo-youtube-shorts" name="tipos" value="YouTube Shorts" class="h-4 w-4 rounded">
-                                            <label for="tipo-youtube-shorts" class="ml-2 text-sm">YouTube Shorts</label>
-                                        </div>
-                                        <div class="flex items-center">
-                                            <input type="checkbox" id="tipo-gravacao" name="tipos" value="Gravação" class="h-4 w-4 rounded">
-                                            <label for="tipo-gravacao" class="ml-2 text-sm">Gravação</label>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div>
-                                    <label class="font-medium text-sm">Link Útil</label>
-                                    <input type="url" id="marketing-event-link" class="form-input" placeholder="https://exemplo.com">
-                                </div>
-                                <div>
-                                    <label class="font-medium text-sm">Descrição</label>
-                                    <textarea id="marketing-event-description" rows="3" class="form-input" placeholder="Descrição detalhada do evento..."></textarea>
-                                </div>
-                                <div class="flex justify-end gap-2 pt-4">
-                                    <button type="button" data-action="close-marketing-modal" class="secondary-btn">Cancelar</button>
-                                    <button type="submit" class="primary-btn w-auto">Salvar Evento</button>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            `;
-
-            initializeMarketingCalendar();
-        }
 
         let currentCalendarDate = new Date();
         let calendarEvents = [];
-        let currentMarketingDate = new Date();
-        let marketingEvents = [];
 
-        // Brazilian and US holidays for marketing calendar
-        function getHolidays(year) {
-            return [
-                // Brazilian holidays
-                { date: `${year}-01-01`, title: "Ano Novo (BR)", type: "holiday", country: "BR" },
-                { date: `${year}-02-12`, title: "Carnaval (BR)", type: "holiday", country: "BR" },
-                { date: `${year}-04-21`, title: "Tiradentes (BR)", type: "holiday", country: "BR" },
-                { date: `${year}-05-01`, title: "Dia do Trabalhador (BR)", type: "holiday", country: "BR" },
-                { date: `${year}-09-07`, title: "Independência do Brasil", type: "holiday", country: "BR" },
-                { date: `${year}-10-12`, title: "Nossa Senhora Aparecida (BR)", type: "holiday", country: "BR" },
-                { date: `${year}-11-02`, title: "Finados (BR)", type: "holiday", country: "BR" },
-                { date: `${year}-11-15`, title: "Proclamação da República (BR)", type: "holiday", country: "BR" },
-                { date: `${year}-12-25`, title: "Natal (BR/US)", type: "holiday", country: "BR/US" },
-                { date: `${year}-05-12`, title: "Dia das Mães (BR)", type: "holiday", country: "BR" },
-                { date: `${year}-08-11`, title: "Dia dos Pais (BR)", type: "holiday", country: "BR" },
-                { date: `${year}-10-15`, title: "Dia do Professor (BR)", type: "holiday", country: "BR" },
-                { date: `${year}-06-12`, title: "Dia dos Namorados (BR)", type: "holiday", country: "BR" },
-                
-                // US holidays
-                { date: `${year}-01-15`, title: "Martin Luther King Day (US)", type: "holiday", country: "US" },
-                { date: `${year}-02-19`, title: "Presidents' Day (US)", type: "holiday", country: "US" },
-                { date: `${year}-05-27`, title: "Memorial Day (US)", type: "holiday", country: "US" },
-                { date: `${year}-07-04`, title: "Independence Day (US)", type: "holiday", country: "US" },
-                { date: `${year}-09-02`, title: "Labor Day (US)", type: "holiday", country: "US" },
-                { date: `${year}-10-14`, title: "Columbus Day (US)", type: "holiday", country: "US" },
-                { date: `${year}-11-11`, title: "Veterans Day (US)", type: "holiday", country: "US" },
-                { date: `${year}-11-28`, title: "Thanksgiving (US)", type: "holiday", country: "US" },
-                { date: `${year}-11-29`, title: "Black Friday (US)", type: "holiday", country: "US" },
-                { date: `${year}-12-24`, title: "Christmas Eve (US)", type: "holiday", country: "US" },
-                { date: `${year}-12-31`, title: "New Year's Eve (BR/US)", type: "holiday", country: "BR/US" },
-                { date: `${year}-02-14`, title: "Valentine's Day (US)", type: "holiday", country: "US" },
-                { date: `${year}-03-17`, title: "St. Patrick's Day (US)", type: "holiday", country: "US" },
-                { date: `${year}-10-31`, title: "Halloween (US)", type: "holiday", country: "US" },
-                { date: `${year}-05-12`, title: "Mother's Day (US)", type: "holiday", country: "US" },
-                { date: `${year}-06-16`, title: "Father's Day (US)", type: "holiday", country: "US" }
-            ];
-        }
 
         // Brazilian national holidays only for pedagogical calendar
         function getBrazilianHolidays(year) {
@@ -9513,9 +9388,16 @@
 
         function getEventsForDate(date) {
             const dateString = date.toISOString().split('T')[0];
-            const events = calendarEvents.filter(event => event.date === dateString);
+            let events = calendarEvents.filter(event => event.date === dateString);
             
-            // Add Brazilian holidays for pedagogical calendar
+            const filterCollaborator = document.getElementById('calendar-filter-collaborator')?.value;
+            if (filterCollaborator) {
+                events = events.filter(event => {
+                    return event.createdBy === filterCollaborator || 
+                           (event.concerns && event.concerns.includes(filterCollaborator));
+                });
+            }
+            
             const holidays = getBrazilianHolidays(date.getFullYear()).filter(holiday => holiday.date === dateString);
             
             return [...events, ...holidays];
@@ -9563,21 +9445,7 @@
         }
 
 
-        // Marketing Calendar Functions
-        function initializeMarketingCalendar() {
-            renderMarketingCalendar();
-            loadMarketingEvents();
-        }
-
-        function changeMarketingMonth(direction) {
-            currentMarketingDate.setMonth(currentMarketingDate.getMonth() + direction);
-            renderMarketingCalendar();
-        }
-
         // Expose function globally for onclick handlers
-        window.changeMarketingMonth = changeMarketingMonth;
-        window.viewMarketingEvent = viewMarketingEvent;
-        window.deleteMarketingEvent = deleteMarketingEvent;
         window.deleteCalendarEvent = deleteCalendarEvent;
         window.updateTurmasList = updateTurmasList;
         window.updateVipsList = updateVipsList;
@@ -9611,194 +9479,6 @@
         window.deleteVip = deleteVip;
         window.deleteAllVips = deleteAllVips;
 
-        function renderMarketingCalendar() {
-            const monthYear = document.getElementById('marketing-calendar-month-year');
-            const calendarGrid = document.getElementById('marketing-calendar-grid');
-
-            const months = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 
-                           'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-            const days = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-
-            monthYear.textContent = `${months[currentMarketingDate.getMonth()]} ${currentMarketingDate.getFullYear()}`;
-
-            const firstDay = new Date(currentMarketingDate.getFullYear(), currentMarketingDate.getMonth(), 1);
-            const lastDay = new Date(currentMarketingDate.getFullYear(), currentMarketingDate.getMonth() + 1, 0);
-            const startDate = new Date(firstDay);
-            startDate.setDate(startDate.getDate() - firstDay.getDay());
-
-            let html = days.map(day => `<div class="calendar-day-header">${day}</div>`).join('');
-
-            for (let i = 0; i < 42; i++) {
-                const currentDay = new Date(startDate);
-                currentDay.setDate(startDate.getDate() + i);
-
-                const isCurrentMonth = currentDay.getMonth() === currentMarketingDate.getMonth();
-                const isToday = currentDay.toDateString() === new Date().toDateString();
-                const dayEvents = getMarketingEventsForDate(currentDay);
-
-                html += `
-                    <div class="calendar-day ${!isCurrentMonth ? 'other-month' : ''} ${isToday ? 'today' : ''}" 
-                         data-date="${currentDay.toISOString().split('T')[0]}">
-                        <div class="calendar-day-number">${currentDay.getDate()}</div>
-                        ${dayEvents.map(event =>
-                            `<div class="calendar-event ${event.type === 'holiday' ? 'holiday-event' : 'marketing-event'}" 
-                                  ${event.type === 'holiday' ? '' : `onclick="viewMarketingEvent('${event.id}')"`}>
-                                <span class="event-title">${event.type === 'holiday' ? `<svg class="inline-block w-3 h-3 mr-1" viewBox="0 0 24 24" fill="currentColor">
-                                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                                </svg>${event.title}` : event.title}</span>
-                                ${event.time ? `<span class="event-time">${event.time}</span>` : ''}
-                                ${event.tipos && event.tipos.length > 0 ? 
-                                    `<span class="event-tipos">${event.tipos.slice(0, 2).join(', ')}${event.tipos.length > 2 ? '...' : ''}</span>` : ''}
-                                ${event.country ? `<span class="event-country">${event.country}</span>` : ''}
-                            </div>`
-                        ).join('')}
-                    </div>
-                `;
-            }
-
-            calendarGrid.innerHTML = html;
-        }
-
-        function getMarketingEventsForDate(date) {
-            const dateStr = date.toISOString().split('T')[0];
-            const events = marketingEvents.filter(event => event.date === dateStr);
-            
-            // Add holidays for the current year
-            const holidays = getHolidays(date.getFullYear()).filter(holiday => holiday.date === dateStr);
-            
-            return [...events, ...holidays];
-        }
-
-        function loadMarketingEvents() {
-            const saved = localStorage.getItem('marketing-events');
-            if (saved) {
-                marketingEvents = JSON.parse(saved);
-            } else {
-                // Initialize with sample marketing events
-                marketingEvents = [
-                    { 
-                        id: '1', 
-                        title: 'Campanha Back to School', 
-                        date: '2025-01-20', 
-                        time: '10:00', 
-                        tipos: ['Campanha', 'Reel'], 
-                        link: 'https://exemplo.com',
-                        description: 'Campanha de volta às aulas com foco em reels no Instagram' 
-                    },
-                    { 
-                        id: '2', 
-                        title: 'YouTube Shorts - Dicas Rápidas', 
-                        date: '2025-01-25', 
-                        time: '14:00', 
-                        tipos: ['YouTube Shorts', 'Gravação'], 
-                        link: '',
-                        description: 'Série de vídeos curtos com dicas de inglês' 
-                    }
-                ];
-                saveMarketingEvents();
-            }
-            renderMarketingCalendar();
-        }
-
-        function saveMarketingEvents() {
-            localStorage.setItem('marketing-events', JSON.stringify(marketingEvents));
-        }
-
-        function openMarketingEventForm(eventId = null) {
-            const modal = document.getElementById('marketing-event-modal');
-            const title = document.getElementById('marketing-event-modal-title');
-            const form = document.getElementById('marketing-event-form');
-
-            if (eventId) {
-                const event = marketingEvents.find(e => e.id === eventId);
-                if (event) {
-                    title.textContent = 'Editar Evento Marketing';
-                    document.getElementById('marketing-event-title').value = event.title;
-                    document.getElementById('marketing-event-date').value = event.date;
-                    document.getElementById('marketing-event-time').value = event.time || '';
-                    document.getElementById('marketing-event-link').value = event.link || '';
-                    document.getElementById('marketing-event-description').value = event.description || '';
-                    
-                    // Clear and set checkboxes
-                    document.querySelectorAll('#marketing-event-form input[name="tipos"]').forEach(cb => cb.checked = false);
-                    if (event.tipos) {
-                        event.tipos.forEach(tipo => {
-                            const checkbox = document.querySelector(`#marketing-event-form input[value="${tipo}"]`);
-                            if (checkbox) checkbox.checked = true;
-                        });
-                    }
-                    
-                    form.dataset.eventId = eventId;
-                }
-            } else {
-                title.textContent = 'Novo Evento Marketing';
-                form.reset();
-                delete form.dataset.eventId;
-            }
-
-            modal.classList.add('visible');
-        }
-
-        function viewMarketingEvent(eventId) {
-            const event = marketingEvents.find(e => e.id === eventId);
-            if (!event) return;
-
-            const tiposText = event.tipos && event.tipos.length > 0 ? event.tipos.join(', ') : 'Não especificado';
-            const linkText = event.link ? `<a href="${event.link}" target="_blank" class="text-blue-600 hover:underline">Abrir Link</a>` : 'Não informado';
-
-            const modal = document.getElementById('form-modal');
-            modal.innerHTML = `
-                <div class="modal-content max-w-lg">
-                    <div class="modal-header">
-                        <h4>Detalhes do Evento de Marketing</h4>
-                        <button class="modal-close-btn" data-action="close-modal">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>
-                            </svg>
-                        </button>
-                    </div>
-                    <div class="p-6 space-y-4">
-                        <div>
-                            <h3 class="text-xl font-semibold text-stone-800 mb-4">${event.title}</h3>
-                        </div>
-                        <div class="grid grid-cols-1 gap-3 text-sm">
-                            <div><strong>Data:</strong> ${formatDateBR(event.date)}</div>
-                            ${event.time ? `<div><strong>Horário:</strong> ${event.time}</div>` : ''}
-                            <div><strong>País:</strong> <span class="inline-block px-2 py-1 rounded text-xs bg-blue-100 text-blue-700">${event.country || 'Brasil'}</span></div>
-                            <div><strong>Tipos de Conteúdo:</strong> 
-                                <div class="flex flex-wrap gap-1 mt-1">
-                                    ${event.tipos ? event.tipos.map(tipo => `<span class="inline-block px-2 py-1 rounded text-xs bg-purple-100 text-purple-700">${tipo}</span>`).join('') : '<span class="text-gray-500">Não especificado</span>'}
-                                </div>
-                            </div>
-                            ${event.description ? `<div><strong>Descrição:</strong> <p class="mt-1 text-stone-600">${event.description}</p></div>` : ''}
-                            <div><strong>Link:</strong> ${linkText}</div>
-                        </div>
-                        <div class="flex justify-end gap-2 pt-4 border-t">
-                            ${['admin', 'am', 'pedagogico', 'financeiro'].includes(currentUserRole) ? `
-                                <button class="danger-btn" onclick="deleteMarketingEvent('${event.id}')">Excluir</button>
-                                <button class="secondary-btn" data-action="edit-marketing-event" data-id="${event.id}">Editar</button>
-                            ` : ''}
-                            <button class="primary-btn w-auto" data-action="close-modal">Fechar</button>
-                        </div>
-                    </div>
-                </div>
-            `;
-            modal.classList.add('visible');
-        }
-
-        function deleteMarketingEvent(eventId) {
-            if (!confirm('Tem certeza que deseja excluir este evento?')) return;
-
-            marketingEvents = marketingEvents.filter(e => e.id !== eventId);
-            saveMarketingEvents();
-
-            // Close modal and refresh calendar
-            document.getElementById('form-modal').classList.remove('visible');
-            renderMarketingCalendar();
-            showSuccessMessage("Sucesso!", "Evento excluído com sucesso.");
-        }
-
-        
         // --- Guidelines Functions ---
         
         // Bulk import function for guidelines
@@ -12060,6 +11740,12 @@
                     document.getElementById('event-time').value = event.time || '';
                     document.getElementById('event-type').value = event.type;
                     document.getElementById('event-description').value = event.description || '';
+                    document.getElementById('event-creator').value = event.createdBy || '';
+                    
+                    const concernCheckboxes = document.querySelectorAll('.concern-checkbox');
+                    concernCheckboxes.forEach(cb => {
+                        cb.checked = event.concerns && event.concerns.includes(cb.value);
+                    });
                 }
             } else {
                 form.reset();
@@ -12074,88 +11760,27 @@
             };
         }
 
-        // Initialize marketing form handler when DOM is loaded
-        document.addEventListener('DOMContentLoaded', function() {
-            // Check if marketing event form exists and add handler
-            const setupMarketingFormHandler = () => {
-                const marketingForm = document.getElementById('marketing-event-form');
-                if (marketingForm && !marketingForm.dataset.handlerAdded) {
-                    marketingForm.addEventListener('submit', function(e) {
-                        e.preventDefault();
-                        
-                        const title = document.getElementById('marketing-event-title').value;
-                        const date = document.getElementById('marketing-event-date').value;
-                        const time = document.getElementById('marketing-event-time').value;
-                        const link = document.getElementById('marketing-event-link').value;
-                        const description = document.getElementById('marketing-event-description').value;
-                        
-                        // Get selected tipos
-                        const checkedTipos = Array.from(document.querySelectorAll('#marketing-event-form input[name="tipos"]:checked'))
-                            .map(cb => cb.value);
-                        
-                        const eventId = this.dataset.eventId;
-                        if (eventId) {
-                            // Update existing event
-                            const eventIndex = marketingEvents.findIndex(e => e.id === eventId);
-                            if (eventIndex !== -1) {
-                                marketingEvents[eventIndex] = { 
-                                    id: eventId, 
-                                    title, 
-                                    date, 
-                                    time, 
-                                    tipos: checkedTipos, 
-                                    link, 
-                                    description 
-                                };
-                            }
-                        } else {
-                            // Create new event
-                            const newEvent = {
-                                id: Date.now().toString(),
-                                title,
-                                date,
-                                time,
-                                tipos: checkedTipos,
-                                link,
-                                description
-                            };
-                            marketingEvents.push(newEvent);
-                        }
-                        
-                        saveMarketingEvents();
-                        renderMarketingCalendar();
-                        
-                        document.getElementById('marketing-event-modal').classList.remove('visible');
-                        showSuccessMessage("Sucesso!", "Evento de marketing salvo com sucesso.");
-                    });
-                    marketingForm.dataset.handlerAdded = 'true';
-                }
-            };
-
-            // Setup handler when page loads
-            setupMarketingFormHandler();
-            
-            // Also setup handler whenever calendar marketing section is rendered
-            const originalRenderMarketingSection = renderCalendarioMarketingSection;
-            renderCalendarioMarketingSection = function() {
-                originalRenderMarketingSection.apply(this, arguments);
-                setTimeout(setupMarketingFormHandler, 100);
-            };
-        });
-
         async function saveCalendarEvent(eventId = null) {
             const title = document.getElementById('event-title').value;
             const date = document.getElementById('event-date').value;
             const time = document.getElementById('event-time').value;
             const type = document.getElementById('event-type').value;
             const description = document.getElementById('event-description').value;
+            const createdBy = document.getElementById('event-creator').value;
+            const concernsCheckboxes = document.querySelectorAll('.concern-checkbox:checked');
+            const concerns = Array.from(concernsCheckboxes).map(cb => cb.value);
 
             if (!title || !date) {
                 showErrorMessage("Erro", "Título e data são obrigatórios.");
                 return;
             }
 
-            const eventData = { title, date, time, type, description };
+            if (!createdBy) {
+                showErrorMessage("Erro", "Selecione quem está criando o evento.");
+                return;
+            }
+
+            const eventData = { title, date, time, type, description, createdBy, concerns };
 
             try {
                 if (!db) {
@@ -12205,6 +11830,19 @@
             const timeText = event.time ? `<strong>Horário:</strong> ${event.time}` : '';
             const descriptionText = event.description ? `<strong>Descrição:</strong> ${event.description}` : 'Nenhuma descrição disponível';
             const typeText = getEventTypeLabel(event.type);
+            
+            const creator = collaborators.find(c => c.id === event.createdBy);
+            const creatorText = creator ? `<strong>Criado por:</strong> ${creator.name}` : '';
+            
+            let concernsText = '';
+            if (event.concerns && event.concerns.length > 0) {
+                const concernNames = event.concerns
+                    .map(id => collaborators.find(c => c.id === id)?.name)
+                    .filter(name => name);
+                concernsText = concernNames.length > 0 
+                    ? `<strong>Diz respeito a:</strong> ${concernNames.join(', ')}` 
+                    : '';
+            }
 
             const modal = document.getElementById('form-modal');
             modal.innerHTML = `
@@ -12225,15 +11863,15 @@
                             <div><strong>Data:</strong> ${formatDateBR(event.date)}</div>
                             ${timeText ? `<div>${timeText}</div>` : ''}
                             <div><strong>Tipo:</strong> <span class="inline-block px-2 py-1 rounded text-xs bg-${getEventTypeColor(event.type)}-100 text-${getEventTypeColor(event.type)}-700">${typeText}</span></div>
+                            ${creatorText ? `<div>${creatorText}</div>` : ''}
+                            ${concernsText ? `<div>${concernsText}</div>` : ''}
                             <div class="mt-4">
                                 <div>${descriptionText}</div>
                             </div>
                         </div>
                         <div class="flex justify-end gap-2 pt-4 border-t">
-                            ${['admin', 'pedagogico'].includes(currentUserRole) ? `
-                                <button class="danger-btn" data-action="delete-calendar-event" data-id="${event.id}">Excluir</button>
-                                <button class="secondary-btn" data-action="edit-calendar-event" data-id="${event.id}">Editar</button>
-                            ` : ''}
+                            <button class="danger-btn" data-action="delete-calendar-event" data-id="${event.id}">Excluir</button>
+                            <button class="secondary-btn" data-action="edit-calendar-event" data-id="${event.id}">Editar</button>
                             <button class="primary-btn w-auto" data-action="close-modal">Fechar</button>
                         </div>
                     </div>
@@ -12276,8 +11914,7 @@
                 { key: 'turmas', label: 'Turmas', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>', roles: ['admin', 'pedagogico', 'ap', 'teacher', 'am', 'financeiro'] },
                 { key: 'vips', label: 'VIPs', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20a6 6 0 0 0-12 0"/><circle cx="12" cy="10" r="4"/><circle cx="12" cy="12" r="10"/></svg>', roles: ['admin', 'pedagogico', 'ap', 'teacher', 'am', 'financeiro'] },
                 { key: 'grade', label: 'Grade', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" x2="16" y1="2" y2="6"></line><line x1="8" x2="8" y1="2" y2="6"></line><line x1="3" x2="21" y1="10" y2="10"></line></svg>', roles: ['admin', 'pedagogico', 'ap', 'teacher', 'am', 'financeiro'] },
-                { key: 'calendario-pedagogico', label: 'Calendário Pedagógico', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>', roles: ['admin', 'pedagogico', 'ap', 'teacher', 'am'] },
-                { key: 'calendario-marketing', label: 'Calendário Marketing', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>', roles: ['admin', 'ap', 'am', 'teacher'] },
+                { key: 'calendario', label: 'Calendário', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>', roles: ['admin', 'pedagogico', 'ap', 'teacher', 'am', 'financeiro'] },
                 
                 { key: 'kpis-pedagogico', label: 'KPIs Pedagógico', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/></svg>', roles: ['admin', 'pedagogico', 'ap'] },
                 
@@ -12527,8 +12164,7 @@
                 'folha-pagamento': ['admin', 'financeiro'], // Payroll/Expenses - FINANCIAL ONLY
                 'colaboradores': ['admin'], // Collaborators - admin only
                 'dojo': ['admin', 'pedagogico', 'ap', 'teacher', 'am'], // Dojo - everyone except financeiro
-                'calendario-pedagogico': ['admin', 'pedagogico', 'ap', 'teacher', 'am'], // Pedagogical calendar
-                'calendario-marketing': ['admin', 'ap', 'am', 'teacher'], // Marketing calendar
+                'calendario': ['admin', 'pedagogico', 'ap', 'teacher', 'am', 'financeiro'], // Shared calendar
                 'kpis-pedagogico': ['admin', 'pedagogico', 'ap'], // KPIs Pedagógico
             };
             
@@ -12536,7 +12172,7 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            const pageRenderers = { 'inicio': renderInicioSection, 'alunos': renderAlunosSection, 'turmas': renderTurmasSection, 'vips': renderVipsSection, 'tarefas': renderTarefasSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection, 'colaboradores': renderColaboradoresSection, 'dojo': renderDojoSection, 'calendario-pedagogico': renderCalendarioPedagogicoSection, 'calendario-marketing': renderCalendarioMarketingSection, 'kpis-pedagogico': renderKPIsPedagogicoSection  };
+            const pageRenderers = { 'inicio': renderInicioSection, 'alunos': renderAlunosSection, 'turmas': renderTurmasSection, 'vips': renderVipsSection, 'tarefas': renderTarefasSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection, 'colaboradores': renderColaboradoresSection, 'dojo': renderDojoSection, 'calendario': renderCalendarioSection, 'kpis-pedagogico': renderKPIsPedagogicoSection  };
 
             document.body.addEventListener('click', (event) => {
                 // Close modals when clicking overlay or close button
@@ -12680,31 +12316,7 @@
 
                         'add-calendar-event': openCalendarEventForm,
                         'view-calendar-event': () => viewCalendarEvent(id),
-                        'edit-calendar-event': () => {
-                            if (currentUserRole === 'teacher') {
-                                showErrorMessage("Acesso Negado", "Usuários com role 'teacher' não podem editar este item.");
-                                return;
-                            }
-                            openCalendarEventForm(id);
-                        },
-                        'add-marketing-event': openMarketingEventForm,
-                        'view-marketing-event': () => viewMarketingEvent(id),
-                        'edit-marketing-event': () => {
-                            if (!['admin', 'am', 'pedagogico', 'financeiro'].includes(currentUserRole)) {
-                                showErrorMessage("Acesso Negado", "Apenas admins, marketing managers, pedagógico e financeiro podem editar este item.");
-                                return;
-                            }
-                            // Close any existing modal first
-                            document.getElementById('form-modal').classList.remove('visible');
-                            // Wait a moment for the closing animation
-                            setTimeout(() => {
-                                openMarketingEventForm(id);
-                            }, 300);
-                        },
-                        'change-marketing-month': () => changeMarketingMonth(parseInt(direction) || 0),
-                        'close-marketing-modal': () => {
-                            document.getElementById('marketing-event-modal').classList.remove('visible');
-                        },
+                        'edit-calendar-event': () => openCalendarEventForm(id),
                         'add-guideline': openGuidelineForm,
                         'export-guidelines': exportGuidelinesDoc,
                         'edit-monthly-highlight': openMonthlyHighlightForm,
