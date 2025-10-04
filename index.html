@@ -2865,12 +2865,11 @@
                                             <div class="flex gap-2 justify-center">
                                                 <button class="secondary-btn" data-action="edit-collaborator" data-id="${c.id}">Editar</button>
                                                 ${c.firebaseUid ? `
-                                                    <button class="secondary-btn !bg-blue-500 !text-white hover:!bg-blue-600" onclick="openResetPasswordModal('${c.firebaseUid}', '${c.name}')">
+                                                    <button class="secondary-btn !bg-blue-500 !text-white hover:!bg-blue-600" onclick="openEditFirebaseUserModal('${c.firebaseUid}', '${c.id}', '${c.name}', '${c.email || ''}')">
                                                         <svg class="inline-block w-3 h-3 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                                                            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                                                            <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
                                                         </svg>
-                                                        Senha
+                                                        Editar User
                                                     </button>
                                                     <button class="danger-btn" onclick="deleteFirebaseUser('${c.firebaseUid}', '${c.id}', '${c.name}')">
                                                         <svg class="inline-block w-3 h-3 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -4210,6 +4209,67 @@
                         showSuccessMessage('Sucesso!', `Senha de ${name} redefinida com sucesso!`);
                     } else {
                         showErrorMessage('Erro', data.error || 'Erro ao redefinir senha');
+                    }
+                } catch (error) {
+                    showErrorMessage('Erro', 'Erro ao conectar com o servidor');
+                }
+            };
+        };
+
+        window.openEditFirebaseUserModal = function(uid, collaboratorId, name, currentEmail) {
+            clearModalHeaderButtons();
+            document.getElementById('form-modal-title').textContent = `Editar Usuário Firebase - ${name}`;
+            document.getElementById('form-modal-content-area').innerHTML = `
+                <form id="edit-firebase-user-form" class="space-y-4">
+                    <div class="bg-blue-50 p-4 rounded-lg border border-blue-200 mb-4">
+                        <p class="text-sm text-blue-800">Edite o email e/ou senha do usuário. Deixe a senha em branco se não quiser alterá-la.</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-stone-700 mb-1">Email</label>
+                        <input type="email" id="edit-user-email" class="form-input" value="${currentEmail}" placeholder="usuario@exemplo.com" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-stone-700 mb-1">Nova Senha (opcional)</label>
+                        <input type="password" id="edit-user-password" class="form-input" placeholder="Deixe em branco para manter a atual" minlength="6">
+                    </div>
+                    <div class="flex justify-end gap-3 pt-4">
+                        <button type="button" class="secondary-btn" onclick="closeFormModal()">Cancelar</button>
+                        <button type="submit" class="primary-btn w-auto !bg-blue-500 hover:!bg-blue-600">Salvar Alterações</button>
+                    </div>
+                </form>
+            `;
+            document.getElementById('form-modal').classList.add('visible');
+            
+            document.getElementById('edit-firebase-user-form').onsubmit = async (e) => {
+                e.preventDefault();
+                const email = document.getElementById('edit-user-email').value;
+                const password = document.getElementById('edit-user-password').value;
+                
+                const updateData = { email };
+                if (password && password.trim() !== '') {
+                    updateData.password = password;
+                }
+                
+                try {
+                    const response = await fetch(`/api/firebase/update-user/${uid}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(updateData)
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        const collab = collaborators.find(c => c.id === collaboratorId);
+                        if (collab && data.email) {
+                            collab.email = data.email;
+                            localStorage.setItem('collaborators', JSON.stringify(collaborators));
+                        }
+                        closeFormModal();
+                        showSuccessMessage('Sucesso!', `Usuário ${name} atualizado com sucesso!`);
+                        renderColaboradoresSection();
+                    } else {
+                        showErrorMessage('Erro', data.error || 'Erro ao atualizar usuário');
                     }
                 } catch (error) {
                     showErrorMessage('Erro', 'Erro ao conectar com o servidor');
