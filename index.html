@@ -775,58 +775,6 @@
 
             contentArea.innerHTML = `
                 <div id="inicio-section" class="space-y-6">
-                    <!-- Welcome Header removed - now integrated in main header -->
-
-                    <!-- Compact Statistics -->
-                    <div class="grid ${
-                        isTeacher ? 'grid-cols-2' : 
-                        canViewFinancialInfo ? 'grid-cols-2 md:grid-cols-4' : 'grid-cols-2 md:grid-cols-3'
-                    } gap-4">
-                        ${!isTeacher ? `
-                        <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-6 rounded-lg border border-stone-200 transition-all hover:border-[#F1D24B]">
-                            <div class="flex items-center justify-between mb-2">
-                                <h3 class="text-sm font-medium text-stone-700 uppercase tracking-wide">Total de Alunos</h3>
-                                <svg class="w-8 h-8 text-stone-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                                </svg>
-                            </div>
-                            <p class="text-4xl font-bold text-stone-800">${totalStudents}</p>
-                            <p class="text-xs text-stone-600 mt-1">Total de alunos cadastrados</p>
-                        </div>` : ''}
-                        <div class="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-lg border border-green-200">
-                            <div class="flex items-center justify-between mb-2">
-                                <h3 class="text-sm font-medium text-green-700 uppercase tracking-wide">Alunos Ativos</h3>
-                                <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                </svg>
-                            </div>
-                            <p class="text-4xl font-bold text-stone-800">${activeStudents}</p>
-                            <p class="text-xs text-stone-600 mt-1">Alunos com status ativo</p>
-                        </div>
-                        <div class="bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-lg border border-purple-200">
-                            <div class="flex items-center justify-between mb-2">
-                                <h3 class="text-sm font-medium text-purple-700 uppercase tracking-wide">Turmas</h3>
-                                <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
-                                </svg>
-                            </div>
-                            <p class="text-4xl font-bold text-stone-800">${totalTurmas}</p>
-                            <p class="text-xs text-stone-600 mt-1">Turmas cadastradas</p>
-                        </div>
-                        ${canViewFinancialInfo ? `
-                        <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-lg border border-blue-200">
-                            <div class="flex items-center justify-between mb-2">
-                                <h3 class="text-sm font-medium text-blue-700 uppercase tracking-wide">Receita Total</h3>
-                                <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
-                                </svg>
-                            </div>
-                            <p class="text-4xl font-bold text-stone-800">${formatCurrencyBR(totalRevenue)}</p>
-                            <p class="text-xs text-stone-600 mt-1">Receita acumulada</p>
-                        </div>
-                        ` : ''}
-                    </div>
-
                     <!-- Employee Highlight and Top 3 Dojo Section -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <!-- Fortune Cookie Section - Compact -->
@@ -1205,6 +1153,7 @@
             const totalCount = students.length;
             const activeCount = students.filter(s => s.status === 'Ativo').length;
             const pendingCount = students.filter(s => s.status === 'Pendente').length;
+            const canceledCount = students.filter(s => s.status === 'Cancelado').length;
             const vipCount = students.filter(s => s.modalidade === 'VIP').length;
             const turmaCount = students.filter(s => s.modalidade === 'TURMA' || s.modalidade === 'DUPLA').length;
             const totalRevenue = students.reduce((sum, student) => {
@@ -1284,11 +1233,11 @@
                             <p class="text-4xl font-bold text-stone-800 card-content">${pendingCount}</p>
                             <p class="text-xs text-stone-600 mt-1">Aguardando início</p>
                         </div>
-                        <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-6 rounded-lg border border-stone-200" id="stat-card-modalidade-vip">
+                        <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-6 rounded-lg border border-stone-200" id="stat-card-alunos-cancelados">
                             <div class="flex items-center justify-between mb-2">
-                                <h3 class="text-sm font-medium text-stone-700 uppercase tracking-wide">Modalidade VIP</h3>
+                                <h3 class="text-sm font-medium text-stone-700 uppercase tracking-wide">Alunos Cancelados</h3>
                                 <div class="flex gap-2 items-center">
-                                    <button onclick="toggleCardVisibility('stat-card-modalidade-vip')" class="text-stone-400 hover:text-stone-600 transition-colors p-1" title="Ocultar/Mostrar informações">
+                                    <button onclick="toggleCardVisibility('stat-card-alunos-cancelados')" class="text-stone-400 hover:text-stone-600 transition-colors p-1" title="Ocultar/Mostrar informações">
                                         <svg class="w-4 h-4 eye-icon-open" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
@@ -1297,34 +1246,13 @@
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path>
                                         </svg>
                                     </button>
-                                    <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
+                                    <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                     </svg>
                                 </div>
                             </div>
-                            <p class="text-4xl font-bold text-stone-800 card-content">${vipCount}</p>
-                            <p class="text-xs text-stone-600 mt-1">Alunos individuais</p>
-                        </div>
-                        <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-6 rounded-lg border border-stone-200" id="stat-card-modalidade-turmas">
-                            <div class="flex items-center justify-between mb-2">
-                                <h3 class="text-sm font-medium text-stone-700 uppercase tracking-wide">Modalidade Turmas</h3>
-                                <div class="flex gap-2 items-center">
-                                    <button onclick="toggleCardVisibility('stat-card-modalidade-turmas')" class="text-stone-400 hover:text-stone-600 transition-colors p-1" title="Ocultar/Mostrar informações">
-                                        <svg class="w-4 h-4 eye-icon-open" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                                        </svg>
-                                        <svg class="w-4 h-4 eye-icon-closed hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path>
-                                        </svg>
-                                    </button>
-                                    <svg class="w-8 h-8 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
-                                    </svg>
-                                </div>
-                            </div>
-                            <p class="text-4xl font-bold text-stone-800 card-content">${turmaCount}</p>
-                            <p class="text-xs text-stone-600 mt-1">Alunos em grupo</p>
+                            <p class="text-4xl font-bold text-stone-800 card-content">${canceledCount}</p>
+                            <p class="text-xs text-stone-600 mt-1">Contratos cancelados</p>
                         </div>
                     </div>
 
@@ -1337,6 +1265,7 @@
                             <button class="secondary-btn filter-btn active" data-filter="todos">Todos</button>
                             <button class="secondary-btn filter-btn" data-filter="ativo">Ativos</button>
                             <button class="secondary-btn filter-btn" data-filter="pendente">Pendentes</button>
+                            <button class="secondary-btn filter-btn" data-filter="cancelado">Cancelados</button>
                         </div>
                         <div class="flex gap-2">
                             <button class="secondary-btn w-auto" data-action="export-alunos-doc">Exportar Documento</button>
@@ -1629,6 +1558,8 @@
                 const duplaStudents = turmaStudents.filter(s => s.modalidade === 'DUPLA');
                 
                 const canManage = ['admin', 'pedagogico', 'ap'].includes(currentUserRole);
+                const isFinalizada = t.finalizada === true;
+                
                 return `
                 <div class="base-card flex flex-col">
                     <div class="flex-1">
@@ -1658,7 +1589,7 @@
                         ` : ''}
                     </div>
                     <div class="mt-auto pt-4 border-t border-stone-100 flex gap-2">
-                        ${canManage ? `<button class="secondary-btn !text-sm flex-1" data-action="edit-turma" data-id="${t.id}">Editar</button>` : ''}
+                        ${canManage && !isFinalizada ? `<button class="secondary-btn !text-sm flex-1" data-action="edit-turma" data-id="${t.id}">Editar</button>` : ''}
                         <button class="primary-btn !text-sm flex-1 flex items-center justify-center" data-action="open-turma-pef" data-id="${t.id}">PEF</button>
                         <button class="secondary-btn !text-sm flex-1 flex items-center justify-center" data-action="open-turma-notas" data-id="${t.id}">Notas</button>
                     </div>
@@ -1755,7 +1686,7 @@
                         ${vipRecord ? `
                             <button class="primary-btn !text-sm flex-1 flex items-center justify-center" data-action="open-vip-pef" data-id="${vipRecord.id}">PEF</button>
                             <button class="secondary-btn !text-sm flex-1 flex items-center justify-center" data-action="open-vip-notas" data-id="${vipRecord.id}">Notas</button>
-                            ${currentUserRole !== 'teacher' ? `<button class="secondary-btn !text-sm flex-1" data-action="edit-vip" data-id="${vipRecord.id}">Configurar</button>` : ''}
+                            ${currentUserRole !== 'teacher' && !isFinalizado ? `<button class="secondary-btn !text-sm flex-1" data-action="edit-vip" data-id="${vipRecord.id}">Configurar</button>` : ''}
                         ` : ''}
                     </div>
                 </div>`}).join('') || '<p class="col-span-full text-center py-10 text-stone-500">Nenhum aluno VIP encontrado.</p>';
@@ -1944,7 +1875,7 @@
                                 </div>
                             </div>
                             <div class="mt-auto pt-4 border-t ${isFinalizada ? 'border-stone-200' : 'border-stone-100'} flex gap-2">
-                                ${canManage ? `<button class="secondary-btn !text-sm flex-1" data-action="edit-turma" data-id="${t.id}">Editar</button>` : ''}
+                                ${canManage && !isFinalizada ? `<button class="secondary-btn !text-sm flex-1" data-action="edit-turma" data-id="${t.id}">Editar</button>` : ''}
                                 <button class="primary-btn !text-sm flex-1 flex items-center justify-center" data-action="open-turma-pef" data-id="${t.id}">PEF</button>
                                 <button class="secondary-btn !text-sm flex-1 flex items-center justify-center" data-action="open-turma-notas" data-id="${t.id}">Notas</button>
                             </div>
@@ -3690,17 +3621,27 @@
                                         const hour = turma.startTime2.split(':')[0] + 'h';
                                         hourCount[hour] = (hourCount[hour] || 0) + 1;
                                     }
+                                    // Processar Day 3
+                                    if (turma.day3 && turma.startTime3) {
+                                        // Extrair hora (ex: "21:00" -> "21h")
+                                        const hour = turma.startTime3.split(':')[0] + 'h';
+                                        hourCount[hour] = (hourCount[hour] || 0) + 1;
+                                    }
                                 });
                                 
                                 // Contar aulas por hora de início dos VIPs (independente do dia)
                                 vips.forEach(vip => {
-                                    // VIPs também podem ter day1/day2 e startTime1/startTime2
+                                    // VIPs também podem ter day1/day2/day3 e startTime1/startTime2/startTime3
                                     if (vip.day1 && vip.startTime1) {
                                         const hour = vip.startTime1.split(':')[0] + 'h';
                                         hourCount[hour] = (hourCount[hour] || 0) + 1;
                                     }
                                     if (vip.day2 && vip.startTime2) {
                                         const hour = vip.startTime2.split(':')[0] + 'h';
+                                        hourCount[hour] = (hourCount[hour] || 0) + 1;
+                                    }
+                                    if (vip.day3 && vip.startTime3) {
+                                        const hour = vip.startTime3.split(':')[0] + 'h';
                                         hourCount[hour] = (hourCount[hour] || 0) + 1;
                                     }
                                 });
@@ -4739,7 +4680,7 @@
                     ${aluno.notes ? `<div class="mt-4 pt-4 border-t"><strong>Observações:</strong><p class="mt-1 p-3 bg-stone-50 rounded-md whitespace-pre-wrap text-sm">${aluno.notes}</p></div>` : ''}
 
                     <div class="border-t pt-4 flex justify-end gap-2">
-                        ${canEdit && aluno.status === 'Ativo' ? `<button class="primary-btn !bg-[#F1D24B] hover:!bg-[#E5C63F] !text-stone-900" onclick="openRematriculaForm('${aluno.id}'); event.preventDefault();">Rematricular</button>` : ''}
+                        ${canEdit ? `<button class="primary-btn !bg-[#F1D24B] hover:!bg-[#E5C63F] !text-stone-900" onclick="openRematriculaForm('${aluno.id}'); event.preventDefault();">Rematricular</button>` : ''}
                         ${canEdit ? `<button class="secondary-btn" data-action="edit-aluno" data-id="${aluno.id}">Editar</button>
                         <button class="danger-btn" data-action="delete-item" data-collection="students" data-id="${aluno.id}">Apagar</button>` : ''}
                         <button class="primary-btn" data-action="close-modal">Fechar</button>
@@ -4834,6 +4775,19 @@
                                     ${levelOptions}
                                 </select>
                             </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-stone-700 mb-1">
+                                    Nova modalidade:
+                                </label>
+                                <select id="rematricula-modalidade" class="w-full px-3 py-2 border border-stone-300 rounded-lg">
+                                    <option value="">-- Manter modalidade atual (${aluno.modalidade || 'N/A'}) --</option>
+                                    <option value="VIP">VIP</option>
+                                    <option value="TURMA">TURMA</option>
+                                    <option value="DUPLA">DUPLA</option>
+                                </select>
+                                <p class="text-xs text-stone-500 mt-1">Selecione para alterar de VIP para TURMA/DUPLA ou vice-versa</p>
+                            </div>
                         </div>
                     </div>
 
@@ -4915,6 +4869,9 @@
             // Get financial information from form
             const monthlyValue = parseFloat(document.getElementById('rematricula-monthly-value')?.value) || 0;
             const paymentMethod = document.getElementById('rematricula-payment-method')?.value || '';
+            
+            // Get new modalidade from form
+            const newModalidade = document.getElementById('rematricula-modalidade')?.value || '';
 
             // Validate that current level was selected
             if (!currentLevelToArchive) {
@@ -4957,6 +4914,11 @@
                 }
                 if (paymentMethod) {
                     updatedStudentData.paymentMethod = paymentMethod;
+                }
+                
+                // Add new modalidade if provided
+                if (newModalidade) {
+                    updatedStudentData.modalidade = newModalidade;
                 }
 
                 // Add reprovacao history if applicable
@@ -5024,7 +4986,11 @@
                         ? `\n\nInformações financeiras atualizadas:${monthlyValue > 0 ? `\n- Mensalidade: R$ ${monthlyValue.toFixed(2)}` : ''}${paymentMethod ? `\n- Forma de pagamento: ${paymentMethod}` : ''}` 
                         : '';
                     
-                    showSuccessMessage("Sucesso", `Rematrícula concluída com sucesso!\n\nNível "${currentLevelToArchive}" movido para histórico.\n${levelMessage}${reprovacaoMessage}${financialMessage}\n\n${wasTurma ? 'O aluno permanece vinculado à turma antiga para manter histórico de notas e presença.\n' : ''}O aluno está liberado para nova matrícula em VIP ou Turma.`);
+                    const modalidadeMessage = newModalidade 
+                        ? `\n\nModalidade alterada para: ${newModalidade}` 
+                        : '';
+                    
+                    showSuccessMessage("Sucesso", `Rematrícula concluída com sucesso!\n\nNível "${currentLevelToArchive}" movido para histórico.\n${levelMessage}${reprovacaoMessage}${financialMessage}${modalidadeMessage}\n\n${wasTurma ? 'O aluno permanece vinculado à turma antiga para manter histórico de notas e presença.\n' : ''}O aluno está liberado para nova matrícula em VIP ou Turma.`);
                 }, 300);
 
             } catch (error) {
@@ -5138,11 +5104,11 @@
                         </div>
                     </div>
                     <div class="border border-stone-200 rounded-lg p-4 bg-stone-50">
-                        <h4 class="font-semibold text-sm text-stone-700 mb-3">Dia 2 <span class="text-red-500">*</span></h4>
+                        <h4 class="font-semibold text-sm text-stone-700 mb-3">Dia 2 <span class="text-stone-400 text-xs">(opcional)</span></h4>
                         <div class="grid grid-cols-3 gap-4">
                             <div>
-                                <label class="font-medium text-xs">Dia da Semana <span class="text-red-500">*</span></label>
-                                <select id="turma-day2" class="form-input" required>
+                                <label class="font-medium text-xs">Dia da Semana</label>
+                                <select id="turma-day2" class="form-input">
                                     <option value="">Selecione</option>
                                     <option value="Segunda" ${turma?.day2 === 'Segunda' ? 'selected' : ''}>Segunda</option>
                                     <option value="Terça" ${turma?.day2 === 'Terça' ? 'selected' : ''}>Terça</option>
@@ -5153,15 +5119,48 @@
                                 </select>
                             </div>
                             <div>
-                                <label class="font-medium text-xs">Horário Início <span class="text-red-500">*</span></label>
-                                <input type="time" id="turma-startTime2" class="form-input" value="${turma?.startTime2 || ''}" required>
+                                <label class="font-medium text-xs">Horário Início</label>
+                                <input type="time" id="turma-startTime2" class="form-input" value="${turma?.startTime2 || ''}">
                             </div>
                             <div>
-                                <label class="font-medium text-xs">Horário Fim <span class="text-red-500">*</span></label>
-                                <input type="time" id="turma-endTime2" class="form-input" value="${turma?.endTime2 || ''}" required>
+                                <label class="font-medium text-xs">Horário Fim</label>
+                                <input type="time" id="turma-endTime2" class="form-input" value="${turma?.endTime2 || ''}">
                             </div>
                         </div>
                     </div>
+                    
+                    <div id="turma-day3-container" class="border border-stone-200 rounded-lg p-4 bg-stone-50 hidden">
+                        <h4 class="font-semibold text-sm text-stone-700 mb-3">Dia 3 <span class="text-stone-400 text-xs">(opcional)</span></h4>
+                        <div class="grid grid-cols-3 gap-4">
+                            <div>
+                                <label class="font-medium text-xs">Dia da Semana</label>
+                                <select id="turma-day3" class="form-input">
+                                    <option value="">Selecione</option>
+                                    <option value="Segunda" ${turma?.day3 === 'Segunda' ? 'selected' : ''}>Segunda</option>
+                                    <option value="Terça" ${turma?.day3 === 'Terça' ? 'selected' : ''}>Terça</option>
+                                    <option value="Quarta" ${turma?.day3 === 'Quarta' ? 'selected' : ''}>Quarta</option>
+                                    <option value="Quinta" ${turma?.day3 === 'Quinta' ? 'selected' : ''}>Quinta</option>
+                                    <option value="Sexta" ${turma?.day3 === 'Sexta' ? 'selected' : ''}>Sexta</option>
+                                    <option value="Sábado" ${turma?.day3 === 'Sábado' ? 'selected' : ''}>Sábado</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="font-medium text-xs">Horário Início</label>
+                                <input type="time" id="turma-startTime3" class="form-input" value="${turma?.startTime3 || ''}">
+                            </div>
+                            <div>
+                                <label class="font-medium text-xs">Horário Fim</label>
+                                <input type="time" id="turma-endTime3" class="form-input" value="${turma?.endTime3 || ''}">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button type="button" id="turma-add-day-btn" class="w-full py-2 px-4 border-2 border-dashed border-stone-300 rounded-lg text-stone-600 hover:border-[#F1D24B] hover:text-stone-800 transition-colors font-medium text-sm flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                        </svg>
+                        Adicionar +1 Dia
+                    </button>
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div><label class="font-medium text-sm">Semestre <span class="text-red-500">*</span></label><input type="text" id="turma-semestre" class="form-input" placeholder="Ex: 2025.1" value="${turma?.semestre || ''}" required></div>
                         <div><label class="font-medium text-sm">Data de Início</label><input type="date" id="turma-startDate" class="form-input" value="${turma?.startDate || ''}"></div>
@@ -5196,6 +5195,23 @@
                     levelCustomInput.value = '';
                 }
             });
+            
+            // Botão "+1 dia" para mostrar Dia 3
+            const turmaAddDayBtn = document.getElementById('turma-add-day-btn');
+            const turmaDay3Container = document.getElementById('turma-day3-container');
+            if (turmaAddDayBtn) {
+                turmaAddDayBtn.addEventListener('click', () => {
+                    turmaDay3Container.classList.remove('hidden');
+                    turmaAddDayBtn.classList.add('hidden');
+                });
+            }
+
+            // Mostrar Dia 3 se já existir (modo edição)
+            if (turma?.day3) {
+                turmaDay3Container.classList.remove('hidden');
+                turmaAddDayBtn.classList.add('hidden');
+            }
+            
             document.getElementById('form-modal-content-area').onsubmit = saveTurma;
             document.getElementById('form-modal').classList.add('visible');
         }
@@ -5218,18 +5234,18 @@
             const day2 = document.getElementById('turma-day2').value;
             const startTime2 = document.getElementById('turma-startTime2').value;
             const endTime2 = document.getElementById('turma-endTime2').value;
+            const day3 = document.getElementById('turma-day3')?.value || '';
+            const startTime3 = document.getElementById('turma-startTime3')?.value || '';
+            const endTime3 = document.getElementById('turma-endTime3')?.value || '';
             const semestre = document.getElementById('turma-semestre').value.trim();
             
-            // Validação de campos obrigatórios
+            // Validação de campos obrigatórios (apenas Dia 1)
             const missingFields = [];
             if (!selectedTeacherOption.value) missingFields.push('Professor');
             if (!levelValue || levelValue.trim() === '') missingFields.push('Nível');
             if (!day1) missingFields.push('Dia 1 - Dia da Semana');
             if (!startTime1) missingFields.push('Dia 1 - Horário Início');
             if (!endTime1) missingFields.push('Dia 1 - Horário Fim');
-            if (!day2) missingFields.push('Dia 2 - Dia da Semana');
-            if (!startTime2) missingFields.push('Dia 2 - Horário Início');
-            if (!endTime2) missingFields.push('Dia 2 - Horário Fim');
             if (!semestre) missingFields.push('Semestre');
             
             if (missingFields.length > 0) {
@@ -5272,6 +5288,9 @@
                 day2: day2,
                 startTime2: startTime2,
                 endTime2: endTime2,
+                day3: day3,
+                startTime3: startTime3,
+                endTime3: endTime3,
                 finalizada: currentTurma?.finalizada ?? false // Preserve finalizada status or default to false
             };
 
@@ -5297,7 +5316,15 @@
             }
 
             try {
-                await updateDoc(doc(db, `artifacts/${appId}/public/data/turmas`, turmaId), { finalizada: true });
+                if (window.isDevelopmentMode) {
+                    const turmaIndex = turmas.findIndex(t => t.id === turmaId);
+                    if (turmaIndex !== -1) {
+                        turmas[turmaIndex].finalizada = true;
+                        localStorage.setItem('turmas', JSON.stringify(turmas));
+                    }
+                } else {
+                    await updateDoc(doc(db, `artifacts/${appId}/public/data/turmas`, turmaId), { finalizada: true });
+                }
                 showSuccessMessage("Sucesso", "Turma finalizada com sucesso!");
                 document.getElementById('form-modal').classList.remove('visible');
                 // Refresh the turmas list
@@ -5319,7 +5346,15 @@
             }
 
             try {
-                await updateDoc(doc(db, `artifacts/${appId}/public/data/turmas`, turmaId), { finalizada: false });
+                if (window.isDevelopmentMode) {
+                    const turmaIndex = turmas.findIndex(t => t.id === turmaId);
+                    if (turmaIndex !== -1) {
+                        turmas[turmaIndex].finalizada = false;
+                        localStorage.setItem('turmas', JSON.stringify(turmas));
+                    }
+                } else {
+                    await updateDoc(doc(db, `artifacts/${appId}/public/data/turmas`, turmaId), { finalizada: false });
+                }
                 showSuccessMessage("Sucesso", "Turma reativada com sucesso!");
                 document.getElementById('form-modal').classList.remove('visible');
                 // Refresh the turmas list
@@ -5609,7 +5644,15 @@
             }
 
             try {
-                await updateDoc(doc(db, `artifacts/${appId}/public/data/vips`, vipId), { finalizado: true });
+                if (window.isDevelopmentMode) {
+                    const vipIndex = vips.findIndex(v => v.id === vipId);
+                    if (vipIndex !== -1) {
+                        vips[vipIndex].finalizado = true;
+                        localStorage.setItem('vips', JSON.stringify(vips));
+                    }
+                } else {
+                    await updateDoc(doc(db, `artifacts/${appId}/public/data/vips`, vipId), { finalizado: true });
+                }
                 showSuccessMessage("Sucesso", "VIP finalizado com sucesso!");
                 document.getElementById('form-modal').classList.remove('visible');
                 // Refresh the VIPs list
@@ -5632,7 +5675,15 @@
             }
 
             try {
-                await updateDoc(doc(db, `artifacts/${appId}/public/data/vips`, vipId), { finalizado: false });
+                if (window.isDevelopmentMode) {
+                    const vipIndex = vips.findIndex(v => v.id === vipId);
+                    if (vipIndex !== -1) {
+                        vips[vipIndex].finalizado = false;
+                        localStorage.setItem('vips', JSON.stringify(vips));
+                    }
+                } else {
+                    await updateDoc(doc(db, `artifacts/${appId}/public/data/vips`, vipId), { finalizado: false });
+                }
                 showSuccessMessage("Sucesso", "VIP reativado com sucesso!");
                 document.getElementById('form-modal').classList.remove('visible');
                 // Refresh the VIPs list
@@ -5903,24 +5954,23 @@
         }
 
         async function saveAllPefLessons(unitId, pefType) {
+            const saveButton = document.querySelector('[data-action="save-all-pef-lessons"]');
+            const originalButtonText = saveButton ? saveButton.innerHTML : '';
+            
             try {
                 console.log("saveAllPefLessons called with:", unitId, pefType);
                 
+                // Show loading state
+                if (saveButton) {
+                    saveButton.disabled = true;
+                    saveButton.innerHTML = '⏳ Salvando...';
+                }
+                
                 let savedCount = 0;
                 const totalLessons = 40;
+                const lessonsToSave = {};
                 
-                // Update local data first
-                let attendanceIndex = attendance.findIndex(a => a.id === unitId);
-                if (attendanceIndex === -1) {
-                    attendance.push({ id: unitId, lessons: {} });
-                    attendanceIndex = attendance.length - 1;
-                }
-                
-                if (!attendance[attendanceIndex].lessons) {
-                    attendance[attendanceIndex].lessons = {};
-                }
-                
-                // Process all lessons
+                // Process all lessons and collect data
                 for (let lessonNumber = 1; lessonNumber <= totalLessons; lessonNumber++) {
                     const lessonRow = document.getElementById(`lesson-row-${unitId}-${lessonNumber}`);
                     if (!lessonRow) continue;
@@ -5942,8 +5992,8 @@
                         }
                     });
                     
-                    // Update local data
-                    attendance[attendanceIndex].lessons[lessonNumber] = {
+                    // Collect lesson data
+                    lessonsToSave[lessonNumber] = {
                         date: date,
                         topic: topic,
                         notes: notes,
@@ -5952,33 +6002,50 @@
                     savedCount++;
                 }
                 
+                if (savedCount === 0) {
+                    showErrorMessage("Nenhuma aula para salvar", "Preencha pelo menos uma aula com data antes de salvar.");
+                    if (saveButton) {
+                        saveButton.disabled = false;
+                        saveButton.innerHTML = originalButtonText;
+                    }
+                    return;
+                }
+                
+                // Update local data
+                let attendanceIndex = attendance.findIndex(a => a.id === unitId);
+                if (attendanceIndex === -1) {
+                    attendance.push({ id: unitId, lessons: lessonsToSave });
+                    attendanceIndex = attendance.length - 1;
+                } else {
+                    attendance[attendanceIndex].lessons = lessonsToSave;
+                }
+                
                 // Save to storage (Firebase or localStorage)
                 if (window.isDevelopmentMode) {
                     localStorage.setItem('attendance', JSON.stringify(attendance));
                     playSuccessSound();
                     showSuccessMessage("Sucesso!", `${savedCount} aulas salvas com sucesso.`);
                 } else {
-                    // Save to Firebase
-                    for (let lessonNumber = 1; lessonNumber <= totalLessons; lessonNumber++) {
-                        const lessonData = attendance[attendanceIndex].lessons[lessonNumber];
-                        if (!lessonData) continue;
-                        
-                        const attendanceRef = doc(db, `artifacts/${appId}/public/data/attendance`, unitId);
-                        try {
-                            await updateDoc(attendanceRef, {
-                                [`lessons.${lessonNumber}`]: lessonData
-                            });
-                        } catch (error) {
-                            console.error(`Error saving lesson ${lessonNumber}:`, error);
-                        }
-                    }
+                    // Save to Firebase - single operation with all lessons
+                    const attendanceRef = doc(db, `artifacts/${appId}/public/data/attendance`, unitId);
+                    await setDoc(attendanceRef, {
+                        id: unitId,
+                        lessons: lessonsToSave
+                    }, { merge: true });
+                    
                     playSuccessSound();
                     showSuccessMessage("Sucesso!", `${savedCount} aulas salvas com sucesso.`);
                 }
                 
             } catch (error) {
                 console.error("Error saving all lessons:", error);
-                showErrorMessage("Erro", "Falha ao salvar todas as aulas.");
+                showErrorMessage("Erro", "Falha ao salvar as aulas. Tente novamente.");
+            } finally {
+                // Restore button state
+                if (saveButton) {
+                    saveButton.disabled = false;
+                    saveButton.innerHTML = originalButtonText;
+                }
             }
         }
 
@@ -6753,13 +6820,29 @@
                 </div>
                 
                 <div class="border border-stone-200 rounded-lg p-4 bg-stone-50">
-                    <h4 class="font-semibold text-sm text-stone-700 mb-3">Dia 2 <span class="text-red-500">*</span></h4>
+                    <h4 class="font-semibold text-sm text-stone-700 mb-3">Dia 2 <span class="text-stone-400 text-xs">(opcional)</span></h4>
                     <div class="grid grid-cols-3 gap-4">
-                        <div><label class="font-medium text-xs">Dia da Semana</label><select id="schedule-day2" class="form-input" required ${isTeacher ? 'disabled' : ''}>${dayOptions}</select></div>
-                        <div><label class="font-medium text-xs">Início</label><input type="time" id="schedule-start2" class="form-input" required ${isTeacher ? 'disabled' : ''}></div>
-                        <div><label class="font-medium text-xs">Fim</label><input type="time" id="schedule-end2" class="form-input" required ${isTeacher ? 'disabled' : ''}></div>
+                        <div><label class="font-medium text-xs">Dia da Semana</label><select id="schedule-day2" class="form-input" ${isTeacher ? 'disabled' : ''}>${dayOptions}</select></div>
+                        <div><label class="font-medium text-xs">Início</label><input type="time" id="schedule-start2" class="form-input" ${isTeacher ? 'disabled' : ''}></div>
+                        <div><label class="font-medium text-xs">Fim</label><input type="time" id="schedule-end2" class="form-input" ${isTeacher ? 'disabled' : ''}></div>
                     </div>
                 </div>
+                
+                <div id="day3-container" class="border border-stone-200 rounded-lg p-4 bg-stone-50 hidden">
+                    <h4 class="font-semibold text-sm text-stone-700 mb-3">Dia 3 <span class="text-stone-400 text-xs">(opcional)</span></h4>
+                    <div class="grid grid-cols-3 gap-4">
+                        <div><label class="font-medium text-xs">Dia da Semana</label><select id="schedule-day3" class="form-input" ${isTeacher ? 'disabled' : ''}>${dayOptions}</select></div>
+                        <div><label class="font-medium text-xs">Início</label><input type="time" id="schedule-start3" class="form-input" ${isTeacher ? 'disabled' : ''}></div>
+                        <div><label class="font-medium text-xs">Fim</label><input type="time" id="schedule-end3" class="form-input" ${isTeacher ? 'disabled' : ''}></div>
+                    </div>
+                </div>
+                
+                ${!isTeacher ? `<button type="button" id="add-day-btn" class="w-full py-2 px-4 border-2 border-dashed border-stone-300 rounded-lg text-stone-600 hover:border-[#F1D24B] hover:text-stone-800 transition-colors font-medium text-sm flex items-center justify-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    Adicionar +1 Dia
+                </button>` : ''}
                 <div id="conflict-warning" class="hidden bg-red-50 border border-red-200 rounded-lg p-3 text-red-700">
                     <strong>⚠️ Conflito de horário detectado!</strong>
                     <p>Já existe uma aula agendada para este professor neste horário.</p>
@@ -6821,6 +6904,9 @@
                 const day2 = document.getElementById('schedule-day2').value;
                 const startTime2 = document.getElementById('schedule-start2').value;
                 const endTime2 = document.getElementById('schedule-end2').value;
+                const day3 = document.getElementById('schedule-day3').value;
+                const startTime3 = document.getElementById('schedule-start3').value;
+                const endTime3 = document.getElementById('schedule-end3').value;
                 const scheduleId = document.getElementById('schedule-id').value;
                 const warning = document.getElementById('conflict-warning');
 
@@ -6834,6 +6920,11 @@
                 // Check conflicts for Day 2 if no conflict found yet
                 if (!hasConflict && teacher && day2 && startTime2 && endTime2) {
                     hasConflict = checkTimeConflict(teacher, day2, startTime2, endTime2, scheduleId);
+                }
+                
+                // Check conflicts for Day 3 if no conflict found yet
+                if (!hasConflict && teacher && day3 && startTime3 && endTime3) {
+                    hasConflict = checkTimeConflict(teacher, day3, startTime3, endTime3, scheduleId);
                 }
                 
                 if (hasConflict) {
@@ -6946,6 +7037,28 @@
             document.getElementById('schedule-day2').addEventListener('change', checkConflicts);
             document.getElementById('schedule-start2').addEventListener('change', checkConflicts);
             document.getElementById('schedule-end2').addEventListener('change', checkConflicts);
+            document.getElementById('schedule-day3').addEventListener('change', checkConflicts);
+            document.getElementById('schedule-start3').addEventListener('change', checkConflicts);
+            document.getElementById('schedule-end3').addEventListener('change', checkConflicts);
+
+            // Botão "+1 dia" para mostrar Dia 3
+            const addDayBtn = document.getElementById('add-day-btn');
+            const day3Container = document.getElementById('day3-container');
+            if (addDayBtn) {
+                addDayBtn.addEventListener('click', () => {
+                    day3Container.classList.remove('hidden');
+                    addDayBtn.classList.add('hidden');
+                });
+            }
+
+            // Preencher valores do Dia 3 se já existir (modo edição)
+            if (schedule?.day3) {
+                document.getElementById('schedule-day3').value = schedule.day3 || '';
+                document.getElementById('schedule-start3').value = schedule.startTime3 || '';
+                document.getElementById('schedule-end3').value = schedule.endTime3 || '';
+                day3Container.classList.remove('hidden');
+                if (addDayBtn) addDayBtn.classList.add('hidden');
+            }
 
             updateFormFields();
 
@@ -7000,6 +7113,10 @@
             const day2 = document.getElementById('schedule-day2').value;
             const startTime2 = document.getElementById('schedule-start2').value;
             const endTime2 = document.getElementById('schedule-end2').value;
+            
+            const day3 = document.getElementById('schedule-day3').value;
+            const startTime3 = document.getElementById('schedule-start3').value;
+            const endTime3 = document.getElementById('schedule-end3').value;
 
             const levelSelect = document.getElementById('schedule-level');
             const levelValue = levelSelect.value === 'outro'
@@ -7010,7 +7127,7 @@
             const studentValue = scheduleType === 'break' ? 'Break' : document.getElementById('schedule-student').value;
             const teacherValue = document.getElementById('schedule-teacher').value;
             
-            // Create data for Day 1
+            // Create data for Day 1 (obrigatório)
             const data1 = { 
                 student: studentValue, 
                 level: scheduleType === 'break' ? 'N/A' : levelValue, 
@@ -7021,8 +7138,8 @@
                 endTime: endTime1 
             };
             
-            // Create data for Day 2
-            const data2 = { 
+            // Create data for Day 2 (opcional)
+            const data2 = day2 && startTime2 && endTime2 ? { 
                 student: studentValue, 
                 level: scheduleType === 'break' ? 'N/A' : levelValue, 
                 teacher: teacherValue, 
@@ -7030,7 +7147,18 @@
                 day: day2,
                 startTime: startTime2, 
                 endTime: endTime2 
-            };
+            } : null;
+            
+            // Create data for Day 3 (opcional)
+            const data3 = day3 && startTime3 && endTime3 ? { 
+                student: studentValue, 
+                level: scheduleType === 'break' ? 'N/A' : levelValue, 
+                teacher: teacherValue, 
+                type: scheduleType, 
+                day: day3,
+                startTime: startTime3, 
+                endTime: endTime3 
+            } : null;
 
             if (!db) { console.warn("Offline mode."); closeFormModal(); return; }
             try {
@@ -7055,9 +7183,17 @@
                         const dataWithTimestamp1 = {...data1, createdAt: serverTimestamp() };
                         await addDoc(collection(db, `artifacts/${appId}/public/data/schedules`), dataWithTimestamp1);
                         
-                        // Create Day 2 entry
-                        const dataWithTimestamp2 = {...data2, createdAt: serverTimestamp() };
-                        await addDoc(collection(db, `artifacts/${appId}/public/data/schedules`), dataWithTimestamp2);
+                        // Create Day 2 entry (se preenchido)
+                        if (data2) {
+                            const dataWithTimestamp2 = {...data2, createdAt: serverTimestamp() };
+                            await addDoc(collection(db, `artifacts/${appId}/public/data/schedules`), dataWithTimestamp2);
+                        }
+                        
+                        // Create Day 3 entry (se preenchido)
+                        if (data3) {
+                            const dataWithTimestamp3 = {...data3, createdAt: serverTimestamp() };
+                            await addDoc(collection(db, `artifacts/${appId}/public/data/schedules`), dataWithTimestamp3);
+                        }
                         
                         showSuccessMessage("Sucesso!", "Aula atualizada.");
                     }
@@ -7066,11 +7202,20 @@
                     const dataWithTimestamp1 = {...data1, createdAt: serverTimestamp() };
                     await addDoc(collection(db, `artifacts/${appId}/public/data/schedules`), dataWithTimestamp1); 
                     
-                    // Create Day 2 entry
-                    const dataWithTimestamp2 = {...data2, createdAt: serverTimestamp() };
-                    await addDoc(collection(db, `artifacts/${appId}/public/data/schedules`), dataWithTimestamp2);
+                    // Create Day 2 entry (se preenchido)
+                    if (data2) {
+                        const dataWithTimestamp2 = {...data2, createdAt: serverTimestamp() };
+                        await addDoc(collection(db, `artifacts/${appId}/public/data/schedules`), dataWithTimestamp2);
+                    }
                     
-                    showSuccessMessage("Sucesso!", "Aulas adicionadas (Dia 1 e Dia 2).");
+                    // Create Day 3 entry (se preenchido)
+                    if (data3) {
+                        const dataWithTimestamp3 = {...data3, createdAt: serverTimestamp() };
+                        await addDoc(collection(db, `artifacts/${appId}/public/data/schedules`), dataWithTimestamp3);
+                    }
+                    
+                    const daysCount = 1 + (data2 ? 1 : 0) + (data3 ? 1 : 0);
+                    showSuccessMessage("Sucesso!", `Aula${daysCount > 1 ? 's' : ''} adicionada${daysCount > 1 ? 's' : ''} (${daysCount} ${daysCount === 1 ? 'dia' : 'dias'}).`);
                 }
                 closeFormModal();
             } catch (error) { console.error("Error saving schedule:", error); showErrorMessage("Erro", "Falha ao salvar a aula."); }
