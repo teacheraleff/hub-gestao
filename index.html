@@ -713,7 +713,7 @@
             pendingView.classList.remove('hidden'); 
             pendingView.classList.add('flex');
         }
-        function setActiveNavItem(element) { 
+        function setActiveNavItem(element) {
             document.querySelectorAll('#main-navigation .nav-item').forEach(item => {
                 item.classList.remove('active');
                 item.style.backgroundColor = '';
@@ -9258,7 +9258,7 @@
                 if (turma.finalizada) return;
                 
                 turma.students?.forEach(studentId => {
-                    const student = alunos.find(a => a.id === studentId);
+                    const student = students.find(a => a.id === studentId);
                     if (!student) return;
                     
                     const pef = turma.pef || {};
@@ -9305,7 +9305,7 @@
             vips.forEach(vip => {
                 if (vip.finalizado) return;
                 
-                const student = alunos.find(a => a.id === vip.studentId);
+                const student = students.find(a => a.id === vip.studentId);
                 if (!student) return;
                 
                 const pef = vip.pef || {};
