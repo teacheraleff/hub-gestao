@@ -6110,13 +6110,27 @@
             
             // Adicionar validação para os dias da semana permitidos
             setTimeout(() => {
-                document.querySelectorAll('.lesson-date').forEach(input => {
+                const dateInputs = document.querySelectorAll('.lesson-date');
+                console.log('Adicionando validação de dias para', dateInputs.length, 'inputs');
+                console.log('Dias permitidos da turma:', allowedWeekdays);
+                
+                dateInputs.forEach(input => {
                     input.addEventListener('change', function() {
+                        const allowedDaysStr = this.dataset.allowedDays;
+                        console.log('Data selecionada, allowedDays:', allowedDaysStr);
+                        
+                        if (!allowedDaysStr || allowedDaysStr === '') {
+                            console.warn('Sem dias configurados para esta turma');
+                            return; // Sem validação se não houver dias configurados
+                        }
+                        
                         const selectedDate = new Date(this.value);
                         const dayOfWeek = selectedDate.getDay(); // 0 = domingo, 1 = segunda, etc
-                        const allowedDays = this.dataset.allowedDays.split(',').map(Number);
+                        const allowedDays = allowedDaysStr.split(',').map(Number).filter(n => !isNaN(n));
                         
-                        if (!allowedDays.includes(dayOfWeek)) {
+                        console.log('Dia selecionado:', dayOfWeek, 'Dias permitidos:', allowedDays);
+                        
+                        if (allowedDays.length > 0 && !allowedDays.includes(dayOfWeek)) {
                             const dayNames = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
                             const allowedDayNames = allowedDays.map(d => dayNames[d]).join(', ');
                             showErrorMessage('Data Inválida', `Por favor, selecione apenas ${allowedDayNames} (dias de aula desta turma).`);
@@ -6124,7 +6138,7 @@
                         }
                     });
                 });
-            }, 100);
+            }, 300);
             
             modal.classList.add('visible');
         }
@@ -6207,13 +6221,27 @@
             
             // Adicionar validação para os dias da semana permitidos
             setTimeout(() => {
-                document.querySelectorAll('.lesson-date').forEach(input => {
+                const dateInputs = document.querySelectorAll('.lesson-date');
+                console.log('Adicionando validação de dias para VIP, inputs:', dateInputs.length);
+                console.log('Dias permitidos do VIP:', allowedWeekdays);
+                
+                dateInputs.forEach(input => {
                     input.addEventListener('change', function() {
+                        const allowedDaysStr = this.dataset.allowedDays;
+                        console.log('Data selecionada (VIP), allowedDays:', allowedDaysStr);
+                        
+                        if (!allowedDaysStr || allowedDaysStr === '') {
+                            console.warn('Sem dias configurados para este VIP');
+                            return; // Sem validação se não houver dias configurados
+                        }
+                        
                         const selectedDate = new Date(this.value);
                         const dayOfWeek = selectedDate.getDay(); // 0 = domingo, 1 = segunda, etc
-                        const allowedDays = this.dataset.allowedDays.split(',').map(Number);
+                        const allowedDays = allowedDaysStr.split(',').map(Number).filter(n => !isNaN(n));
                         
-                        if (!allowedDays.includes(dayOfWeek)) {
+                        console.log('Dia selecionado (VIP):', dayOfWeek, 'Dias permitidos:', allowedDays);
+                        
+                        if (allowedDays.length > 0 && !allowedDays.includes(dayOfWeek)) {
                             const dayNames = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
                             const allowedDayNames = allowedDays.map(d => dayNames[d]).join(', ');
                             showErrorMessage('Data Inválida', `Por favor, selecione apenas ${allowedDayNames} (dias de aula deste VIP).`);
@@ -6221,7 +6249,7 @@
                         }
                     });
                 });
-            }, 100);
+            }, 300);
             
             modal.classList.add('visible');
         }
@@ -9263,12 +9291,13 @@
                 <div id="rechamada-section">
                     <div class="mb-6 flex justify-between items-center">
                         <div class="flex gap-3 items-center">
-                            <select id="rechamada-filter-professor" class="form-input !w-auto" onchange="renderRechamadaList()">
+                            <select id="rechamada-filter-professor" class="form-input !w-auto">
                                 <option value="">Todos os professores</option>
                                 ${collaborators.filter(c => c.sector === 'professor').map(c => 
                                     `<option value="${c.id}">${c.name}</option>`
                                 ).join('')}
                             </select>
+                            <input type="text" id="rechamada-filter-aluno" class="form-input !w-auto" placeholder="Buscar aluno...">
                         </div>
                     </div>
                     
@@ -9279,6 +9308,13 @@
             `;
             
             loadRechamadas();
+            
+            // Adicionar event listeners para os filtros
+            setTimeout(() => {
+                document.getElementById('rechamada-filter-professor')?.addEventListener('change', renderRechamadaList);
+                document.getElementById('rechamada-filter-aluno')?.addEventListener('input', renderRechamadaList);
+            }, 100);
+            
             renderRechamadaList();
         }
 
@@ -9399,13 +9435,17 @@
         function renderRechamadaList() {
             const container = document.getElementById('rechamada-list-container');
             const filterProfessor = document.getElementById('rechamada-filter-professor')?.value || '';
+            const filterAluno = document.getElementById('rechamada-filter-aluno')?.value.toLowerCase() || '';
             
             const studentsWithAbsences = detectConsecutiveAbsences();
             
-            // Filtrar por professor
+            // Filtrar por professor e aluno
             let filtered = studentsWithAbsences;
             if (filterProfessor) {
-                filtered = studentsWithAbsences.filter(s => s.teacherId === filterProfessor);
+                filtered = filtered.filter(s => s.teacherId === filterProfessor);
+            }
+            if (filterAluno) {
+                filtered = filtered.filter(s => s.studentName.toLowerCase().includes(filterAluno));
             }
             
             if (filtered.length === 0) {
