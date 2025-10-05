@@ -9209,6 +9209,745 @@
             }
         }
 
+        // --- RECHAMADA SECTION ---
+        let rechamadasData = [];
+
+        function renderRechamadaSection() {
+            document.getElementById('main-title').textContent = 'Rechamada';
+            document.getElementById('main-description').textContent = 'Acompanhe alunos com 2 faltas consecutivas e faça contato de retenção.';
+            
+            const contentArea = document.getElementById('content-area');
+            
+            contentArea.innerHTML = `
+                <div id="rechamada-section">
+                    <div class="mb-6 flex justify-between items-center">
+                        <div class="flex gap-3 items-center">
+                            <select id="rechamada-filter-professor" class="form-input !w-auto" onchange="renderRechamadaList()">
+                                <option value="">Todos os professores</option>
+                                ${collaborators.filter(c => c.sector === 'professor').map(c => 
+                                    `<option value="${c.id}">${c.name}</option>`
+                                ).join('')}
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div id="rechamada-list-container">
+                        <!-- Lista será renderizada aqui -->
+                    </div>
+                </div>
+            `;
+            
+            loadRechamadas();
+            renderRechamadaList();
+        }
+
+        async function loadRechamadas() {
+            if (!db) {
+                const saved = localStorage.getItem('rechamadas');
+                rechamadasData = saved ? JSON.parse(saved) : [];
+                return;
+            }
+            
+            try {
+                const rechamadasRef = collection(db, `artifacts/${appId}/public/data/rechamadas`);
+                const snapshot = await getDocs(rechamadasRef);
+                rechamadasData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            } catch (error) {
+                console.error('Error loading rechamadas:', error);
+                rechamadasData = [];
+            }
+        }
+
+        function detectConsecutiveAbsences() {
+            const studentsWithAbsences = [];
+            
+            // Checar turmas
+            turmas.forEach(turma => {
+                if (turma.finalizada) return;
+                
+                turma.students?.forEach(studentId => {
+                    const student = alunos.find(a => a.id === studentId);
+                    if (!student) return;
+                    
+                    const pef = turma.pef || {};
+                    let consecutiveAbsences = 0;
+                    let absenceLessons = [];
+                    
+                    // Verificar últimas 5 aulas
+                    for (let i = 40; i >= 1; i--) {
+                        const lesson = pef[i];
+                        if (!lesson || !lesson.students) continue;
+                        
+                        const studentAttendance = lesson.students[studentId];
+                        if (studentAttendance === false) {
+                            consecutiveAbsences++;
+                            absenceLessons.unshift(i);
+                            if (consecutiveAbsences >= 2) {
+                                studentsWithAbsences.push({
+                                    studentId: student.id,
+                                    studentName: student.name,
+                                    type: 'turma',
+                                    turmaId: turma.id,
+                                    turmaName: turma.name,
+                                    teacherId: turma.teacher,
+                                    teacherName: collaborators.find(c => c.id === turma.teacher)?.name || 'Sem professor',
+                                    absenceLessons: absenceLessons.slice(0, 2),
+                                    consecutiveCount: consecutiveAbsences
+                                });
+                                break;
+                            }
+                        } else if (studentAttendance === true) {
+                            break; // Para quando encontrar uma presença
+                        }
+                    }
+                });
+            });
+            
+            // Checar VIPs
+            vips.forEach(vip => {
+                if (vip.finalizado) return;
+                
+                const student = alunos.find(a => a.id === vip.studentId);
+                if (!student) return;
+                
+                const pef = vip.pef || {};
+                let consecutiveAbsences = 0;
+                let absenceLessons = [];
+                
+                // Verificar últimas 5 aulas
+                for (let i = 40; i >= 1; i--) {
+                    const lesson = pef[i];
+                    if (!lesson) continue;
+                    
+                    if (lesson.attendance === false || lesson.attendance === 'falta') {
+                        consecutiveAbsences++;
+                        absenceLessons.unshift(i);
+                        if (consecutiveAbsences >= 2) {
+                            studentsWithAbsences.push({
+                                studentId: student.id,
+                                studentName: student.name,
+                                type: 'vip',
+                                vipId: vip.id,
+                                teacherId: vip.teacher,
+                                teacherName: collaborators.find(c => c.id === vip.teacher)?.name || 'Sem professor',
+                                absenceLessons: absenceLessons.slice(0, 2),
+                                consecutiveCount: consecutiveAbsences
+                            });
+                            break;
+                        }
+                    } else if (lesson.attendance === true || lesson.attendance === 'presente') {
+                        break; // Para quando encontrar uma presença
+                    }
+                }
+            });
+            
+            return studentsWithAbsences;
+        }
+
+        function renderRechamadaList() {
+            const container = document.getElementById('rechamada-list-container');
+            const filterProfessor = document.getElementById('rechamada-filter-professor')?.value || '';
+            
+            const studentsWithAbsences = detectConsecutiveAbsences();
+            
+            // Filtrar por professor
+            let filtered = studentsWithAbsences;
+            if (filterProfessor) {
+                filtered = studentsWithAbsences.filter(s => s.teacherId === filterProfessor);
+            }
+            
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12 text-stone-500">
+                        <svg class="w-16 h-16 mx-auto mb-4 text-stone-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <p class="text-lg font-semibold">Nenhum aluno com 2 faltas consecutivas</p>
+                        <p class="text-sm">Ótimo trabalho de retenção!</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = `
+                <div class="overflow-x-auto">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Aluno</th>
+                                <th>Tipo</th>
+                                <th>Turma/VIP</th>
+                                <th>Professor</th>
+                                <th>Aulas Faltadas</th>
+                                <th>Faltas Consecutivas</th>
+                                <th>Status</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${filtered.map(item => {
+                                const hasRechamada = rechamadasData.find(r => 
+                                    r.studentId === item.studentId && 
+                                    (item.type === 'turma' ? r.turmaId === item.turmaId : r.vipId === item.vipId) &&
+                                    !r.resolved
+                                );
+                                
+                                return `
+                                    <tr>
+                                        <td class="font-semibold">${item.studentName}</td>
+                                        <td>
+                                            <span class="inline-block px-2 py-1 text-xs rounded ${item.type === 'vip' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}">
+                                                ${item.type === 'vip' ? 'VIP' : 'TURMA'}
+                                            </span>
+                                        </td>
+                                        <td>${item.type === 'turma' ? item.turmaName : 'VIP'}</td>
+                                        <td>${item.teacherName}</td>
+                                        <td>Aulas ${item.absenceLessons.join(', ')}</td>
+                                        <td>
+                                            <span class="inline-block px-2 py-1 text-xs rounded bg-red-100 text-red-700 font-bold">
+                                                ${item.consecutiveCount} faltas
+                                            </span>
+                                        </td>
+                                        <td>
+                                            ${hasRechamada ? 
+                                                `<span class="inline-block px-2 py-1 text-xs rounded bg-yellow-100 text-yellow-700">Pendente</span>` :
+                                                `<span class="inline-block px-2 py-1 text-xs rounded bg-red-100 text-red-700">Sem contato</span>`
+                                            }
+                                        </td>
+                                        <td>
+                                            <button class="primary-btn w-auto text-sm" onclick='openRechamadaModal(${JSON.stringify(item)})'>
+                                                Fazer Rechamada
+                                            </button>
+                                            ${hasRechamada ? `<button class="secondary-btn w-auto text-sm ml-2" onclick='viewRechamada("${hasRechamada.id}")'>Ver Detalhes</button>` : ''}
+                                        </td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        function openRechamadaModal(studentData) {
+            const modal = document.getElementById('form-modal');
+            
+            const existingRechamada = rechamadasData.find(r => 
+                r.studentId === studentData.studentId && 
+                (studentData.type === 'turma' ? r.turmaId === studentData.turmaId : r.vipId === studentData.vipId) &&
+                !r.resolved
+            );
+            
+            modal.innerHTML = `
+                <div class="modal-content max-w-2xl">
+                    <div class="modal-header">
+                        <h4>${existingRechamada ? 'Atualizar' : 'Fazer'} Rechamada - ${studentData.studentName}</h4>
+                        <button class="modal-close-btn" data-action="close-modal">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="p-6">
+                        <form id="rechamada-form" class="space-y-4">
+                            <div class="bg-stone-50 p-4 rounded-lg mb-4">
+                                <p class="text-sm"><strong>Aluno:</strong> ${studentData.studentName}</p>
+                                <p class="text-sm"><strong>${studentData.type === 'turma' ? 'Turma' : 'VIP'}:</strong> ${studentData.type === 'turma' ? studentData.turmaName : 'VIP'}</p>
+                                <p class="text-sm"><strong>Professor:</strong> ${studentData.teacherName}</p>
+                                <p class="text-sm"><strong>Aulas faltadas:</strong> ${studentData.absenceLessons.join(', ')}</p>
+                            </div>
+                            
+                            <div>
+                                <label class="font-medium text-sm">Data da Rechamada</label>
+                                <input type="date" id="rechamada-date" class="form-input" value="${existingRechamada?.date || new Date().toISOString().split('T')[0]}" required>
+                            </div>
+                            
+                            <div>
+                                <label class="font-medium text-sm">Motivo das Faltas</label>
+                                <textarea id="rechamada-reason" rows="2" class="form-input" placeholder="Ex: Doença, viagem, esquecimento..." required>${existingRechamada?.reason || ''}</textarea>
+                            </div>
+                            
+                            <div>
+                                <label class="font-medium text-sm">Descrição / Observações</label>
+                                <textarea id="rechamada-description" rows="4" class="form-input" placeholder="Descreva o contato realizado, ações tomadas, etc..." required>${existingRechamada?.description || ''}</textarea>
+                            </div>
+                            
+                            <div class="flex items-center gap-2">
+                                <input type="checkbox" id="rechamada-resolved" ${existingRechamada?.resolved ? 'checked' : ''}>
+                                <label for="rechamada-resolved" class="text-sm">Marcar como resolvido</label>
+                            </div>
+                            
+                            <div class="flex justify-end gap-2 pt-4 border-t">
+                                <button type="button" data-action="close-modal" class="secondary-btn">Cancelar</button>
+                                <button type="submit" class="primary-btn w-auto">Salvar Rechamada</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `;
+            
+            modal.classList.add('visible');
+            
+            document.getElementById('rechamada-form').onsubmit = async (e) => {
+                e.preventDefault();
+                await saveRechamada(studentData, existingRechamada?.id);
+            };
+        }
+
+        async function saveRechamada(studentData, existingId = null) {
+            const date = document.getElementById('rechamada-date').value;
+            const reason = document.getElementById('rechamada-reason').value;
+            const description = document.getElementById('rechamada-description').value;
+            const resolved = document.getElementById('rechamada-resolved').checked;
+            
+            if (!date || !reason || !description) {
+                showErrorMessage("Erro", "Todos os campos são obrigatórios.");
+                return;
+            }
+            
+            const rechamadaData = {
+                studentId: studentData.studentId,
+                studentName: studentData.studentName,
+                type: studentData.type,
+                ...(studentData.type === 'turma' ? { turmaId: studentData.turmaId, turmaName: studentData.turmaName } : { vipId: studentData.vipId }),
+                teacherId: studentData.teacherId,
+                teacherName: studentData.teacherName,
+                absenceLessons: studentData.absenceLessons,
+                date,
+                reason,
+                description,
+                resolved,
+                createdBy: currentUser,
+                createdAt: existingId ? rechamadasData.find(r => r.id === existingId)?.createdAt : new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+            
+            try {
+                if (!db) {
+                    // localStorage mode
+                    if (existingId) {
+                        const index = rechamadasData.findIndex(r => r.id === existingId);
+                        if (index !== -1) {
+                            rechamadasData[index] = { ...rechamadasData[index], ...rechamadaData };
+                        }
+                    } else {
+                        rechamadaData.id = generateId();
+                        rechamadasData.push(rechamadaData);
+                    }
+                    localStorage.setItem('rechamadas', JSON.stringify(rechamadasData));
+                } else {
+                    // Firebase mode
+                    const id = existingId || generateId();
+                    const docRef = doc(db, `artifacts/${appId}/public/data/rechamadas`, id);
+                    await setDoc(docRef, rechamadaData);
+                    
+                    if (!existingId) {
+                        rechamadasData.push({ id, ...rechamadaData });
+                    } else {
+                        const index = rechamadasData.findIndex(r => r.id === existingId);
+                        if (index !== -1) {
+                            rechamadasData[index] = { id: existingId, ...rechamadaData };
+                        }
+                    }
+                }
+                
+                document.getElementById('form-modal').classList.remove('visible');
+                renderRechamadaList();
+                showSuccessMessage("Sucesso!", "Rechamada salva com sucesso.");
+                playSuccessSound();
+            } catch (error) {
+                console.error('Error saving rechamada:', error);
+                showErrorMessage("Erro", "Erro ao salvar rechamada: " + error.message);
+                playErrorSound();
+            }
+        }
+
+        function viewRechamada(rechamadaId) {
+            const rechamada = rechamadasData.find(r => r.id === rechamadaId);
+            if (!rechamada) return;
+            
+            const modal = document.getElementById('form-modal');
+            modal.innerHTML = `
+                <div class="modal-content max-w-2xl">
+                    <div class="modal-header">
+                        <h4>Detalhes da Rechamada</h4>
+                        <button class="modal-close-btn" data-action="close-modal">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="p-6 space-y-4">
+                        <div class="grid grid-cols-2 gap-4 text-sm">
+                            <div><strong>Aluno:</strong> ${rechamada.studentName}</div>
+                            <div><strong>Professor:</strong> ${rechamada.teacherName}</div>
+                            <div><strong>Tipo:</strong> ${rechamada.type === 'turma' ? 'Turma' : 'VIP'}</div>
+                            <div><strong>${rechamada.type === 'turma' ? 'Turma' : 'VIP'}:</strong> ${rechamada.type === 'turma' ? rechamada.turmaName : 'VIP'}</div>
+                            <div><strong>Aulas Faltadas:</strong> ${rechamada.absenceLessons.join(', ')}</div>
+                            <div><strong>Data da Rechamada:</strong> ${formatDateBR(rechamada.date)}</div>
+                            <div class="col-span-2"><strong>Status:</strong> 
+                                <span class="inline-block px-2 py-1 text-xs rounded ${rechamada.resolved ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}">
+                                    ${rechamada.resolved ? 'Resolvido' : 'Pendente'}
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <div class="pt-4 border-t">
+                            <h5 class="font-semibold mb-2">Motivo das Faltas</h5>
+                            <p class="text-sm text-stone-600">${rechamada.reason}</p>
+                        </div>
+                        
+                        <div class="pt-4 border-t">
+                            <h5 class="font-semibold mb-2">Descrição / Observações</h5>
+                            <p class="text-sm text-stone-600">${rechamada.description}</p>
+                        </div>
+                        
+                        <div class="flex justify-end gap-2 pt-4 border-t">
+                            <button class="secondary-btn" data-action="close-modal">Fechar</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            modal.classList.add('visible');
+        }
+
+        window.openRechamadaModal = openRechamadaModal;
+        window.viewRechamada = viewRechamada;
+
+        // --- GESTÃO TNs SECTION ---
+        let testesNivel = [];
+
+        function renderGestaoTNsSection() {
+            document.getElementById('main-title').textContent = 'Gestão TNs';
+            document.getElementById('main-description').textContent = 'Gerencie os Testes de Nível realizados na escola.';
+            
+            const contentArea = document.getElementById('content-area');
+            
+            contentArea.innerHTML = `
+                <div id="gestao-tns-section">
+                    <div class="mb-6 flex justify-end">
+                        <button class="primary-btn w-auto" data-action="add-tn">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                            </svg>
+                            Adicionar TN
+                        </button>
+                    </div>
+                    
+                    <div id="tns-list-container">
+                        <!-- Lista será renderizada aqui -->
+                    </div>
+                </div>
+            `;
+            
+            loadTestesNivel();
+            renderTNsList();
+        }
+
+        async function loadTestesNivel() {
+            if (!db) {
+                const saved = localStorage.getItem('testes-nivel');
+                testesNivel = saved ? JSON.parse(saved) : [];
+                return;
+            }
+            
+            try {
+                const tnsRef = collection(db, `artifacts/${appId}/public/data/testes-nivel`);
+                const snapshot = await getDocs(tnsRef);
+                testesNivel = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            } catch (error) {
+                console.error('Error loading testes nivel:', error);
+                testesNivel = [];
+            }
+        }
+
+        function renderTNsList() {
+            const container = document.getElementById('tns-list-container');
+            
+            if (testesNivel.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12 text-stone-500">
+                        <svg class="w-16 h-16 mx-auto mb-4 text-stone-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        <p class="text-lg font-semibold">Nenhum teste de nível registrado</p>
+                        <p class="text-sm">Clique em "Adicionar TN" para registrar um novo teste</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Ordenar por data (mais recente primeiro)
+            const sortedTNs = [...testesNivel].sort((a, b) => {
+                const dateA = new Date(`${a.date}T${a.time || '00:00'}`);
+                const dateB = new Date(`${b.date}T${b.time || '00:00'}`);
+                return dateB - dateA;
+            });
+            
+            container.innerHTML = `
+                <div class="overflow-x-auto">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>Data</th>
+                                <th>Horário</th>
+                                <th>Avaliador</th>
+                                <th>Nível</th>
+                                <th>Observações</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${sortedTNs.map(tn => {
+                                const avaliador = collaborators.find(c => c.id === tn.evaluatorId);
+                                return `
+                                    <tr>
+                                        <td class="font-semibold">${tn.candidateName}</td>
+                                        <td>${formatDateBR(tn.date)}</td>
+                                        <td>${tn.time || '-'}</td>
+                                        <td>${avaliador?.name || 'Não especificado'}</td>
+                                        <td>
+                                            <span class="inline-block px-2 py-1 text-xs rounded bg-blue-100 text-blue-700 font-semibold">
+                                                ${tn.level}
+                                            </span>
+                                        </td>
+                                        <td class="max-w-xs truncate">${tn.observations || '-'}</td>
+                                        <td class="whitespace-nowrap">
+                                            <button class="secondary-btn w-auto text-sm" onclick='viewTN("${tn.id}")'>Ver</button>
+                                            <button class="secondary-btn w-auto text-sm ml-2" onclick='editTN("${tn.id}")'>Editar</button>
+                                            <button class="danger-btn w-auto text-sm ml-2" onclick='deleteTN("${tn.id}")'>Excluir</button>
+                                        </td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        function openTNModal(tnId = null) {
+            const modal = document.getElementById('form-modal');
+            const isEdit = tnId !== null;
+            const tn = isEdit ? testesNivel.find(t => t.id === tnId) : null;
+            
+            modal.innerHTML = `
+                <div class="modal-content max-w-2xl">
+                    <div class="modal-header">
+                        <h4>${isEdit ? 'Editar' : 'Adicionar'} Teste de Nível</h4>
+                        <button class="modal-close-btn" data-action="close-modal">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="p-6">
+                        <form id="tn-form" class="space-y-4">
+                            <div>
+                                <label class="font-medium text-sm">Nome do Candidato *</label>
+                                <input type="text" id="tn-name" class="form-input" value="${tn?.candidateName || ''}" required>
+                            </div>
+                            
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="font-medium text-sm">Data *</label>
+                                    <input type="date" id="tn-date" class="form-input" value="${tn?.date || new Date().toISOString().split('T')[0]}" required>
+                                </div>
+                                <div>
+                                    <label class="font-medium text-sm">Horário</label>
+                                    <input type="time" id="tn-time" class="form-input" value="${tn?.time || ''}">
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label class="font-medium text-sm">Avaliador *</label>
+                                <select id="tn-evaluator" class="form-input" required>
+                                    <option value="">Selecione quem avaliou</option>
+                                    ${collaborators.filter(c => c.sector === 'professor').map(c => 
+                                        `<option value="${c.id}" ${tn?.evaluatorId === c.id ? 'selected' : ''}>${c.name}</option>`
+                                    ).join('')}
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label class="font-medium text-sm">Nível Atribuído *</label>
+                                <select id="tn-level" class="form-input" required>
+                                    <option value="">Selecione o nível</option>
+                                    ${STANDARD_LEVELS.map(level => 
+                                        `<option value="${level}" ${tn?.level === level ? 'selected' : ''}>${level}</option>`
+                                    ).join('')}
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label class="font-medium text-sm">Observações</label>
+                                <textarea id="tn-observations" rows="4" class="form-input" placeholder="Anotações sobre o teste, observações importantes, etc...">${tn?.observations || ''}</textarea>
+                            </div>
+                            
+                            <div class="flex justify-end gap-2 pt-4 border-t">
+                                <button type="button" data-action="close-modal" class="secondary-btn">Cancelar</button>
+                                <button type="submit" class="primary-btn w-auto">Salvar</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `;
+            
+            modal.classList.add('visible');
+            
+            document.getElementById('tn-form').onsubmit = async (e) => {
+                e.preventDefault();
+                await saveTN(tnId);
+            };
+        }
+
+        async function saveTN(tnId = null) {
+            const candidateName = document.getElementById('tn-name').value;
+            const date = document.getElementById('tn-date').value;
+            const time = document.getElementById('tn-time').value;
+            const evaluatorId = document.getElementById('tn-evaluator').value;
+            const level = document.getElementById('tn-level').value;
+            const observations = document.getElementById('tn-observations').value;
+            
+            if (!candidateName || !date || !evaluatorId || !level) {
+                showErrorMessage("Erro", "Preencha todos os campos obrigatórios.");
+                return;
+            }
+            
+            const tnData = {
+                candidateName,
+                date,
+                time,
+                evaluatorId,
+                level,
+                observations,
+                createdBy: currentUser,
+                createdAt: tnId ? testesNivel.find(t => t.id === tnId)?.createdAt : new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+            
+            try {
+                if (!db) {
+                    // localStorage mode
+                    if (tnId) {
+                        const index = testesNivel.findIndex(t => t.id === tnId);
+                        if (index !== -1) {
+                            testesNivel[index] = { ...testesNivel[index], ...tnData };
+                        }
+                    } else {
+                        tnData.id = generateId();
+                        testesNivel.push(tnData);
+                    }
+                    localStorage.setItem('testes-nivel', JSON.stringify(testesNivel));
+                } else {
+                    // Firebase mode
+                    const id = tnId || generateId();
+                    const docRef = doc(db, `artifacts/${appId}/public/data/testes-nivel`, id);
+                    await setDoc(docRef, tnData);
+                    
+                    if (!tnId) {
+                        testesNivel.push({ id, ...tnData });
+                    } else {
+                        const index = testesNivel.findIndex(t => t.id === tnId);
+                        if (index !== -1) {
+                            testesNivel[index] = { id: tnId, ...tnData };
+                        }
+                    }
+                }
+                
+                document.getElementById('form-modal').classList.remove('visible');
+                renderTNsList();
+                showSuccessMessage("Sucesso!", "Teste de nível salvo com sucesso.");
+                playSuccessSound();
+            } catch (error) {
+                console.error('Error saving TN:', error);
+                showErrorMessage("Erro", "Erro ao salvar teste de nível: " + error.message);
+                playErrorSound();
+            }
+        }
+
+        function viewTN(tnId) {
+            const tn = testesNivel.find(t => t.id === tnId);
+            if (!tn) return;
+            
+            const avaliador = collaborators.find(c => c.id === tn.evaluatorId);
+            const modal = document.getElementById('form-modal');
+            
+            modal.innerHTML = `
+                <div class="modal-content max-w-2xl">
+                    <div class="modal-header">
+                        <h4>Detalhes do Teste de Nível</h4>
+                        <button class="modal-close-btn" data-action="close-modal">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="p-6 space-y-4">
+                        <div class="grid grid-cols-2 gap-4 text-sm">
+                            <div><strong>Candidato:</strong> ${tn.candidateName}</div>
+                            <div><strong>Data:</strong> ${formatDateBR(tn.date)}</div>
+                            <div><strong>Horário:</strong> ${tn.time || 'Não especificado'}</div>
+                            <div><strong>Avaliador:</strong> ${avaliador?.name || 'Não especificado'}</div>
+                            <div class="col-span-2">
+                                <strong>Nível Atribuído:</strong> 
+                                <span class="inline-block px-3 py-1 text-sm rounded bg-blue-100 text-blue-700 font-semibold ml-2">
+                                    ${tn.level}
+                                </span>
+                            </div>
+                        </div>
+                        
+                        ${tn.observations ? `
+                            <div class="pt-4 border-t">
+                                <h5 class="font-semibold mb-2">Observações</h5>
+                                <p class="text-sm text-stone-600">${tn.observations}</p>
+                            </div>
+                        ` : ''}
+                        
+                        <div class="flex justify-end gap-2 pt-4 border-t">
+                            <button class="secondary-btn" onclick='editTN("${tn.id}")'>Editar</button>
+                            <button class="secondary-btn" data-action="close-modal">Fechar</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            modal.classList.add('visible');
+        }
+
+        function editTN(tnId) {
+            document.getElementById('form-modal').classList.remove('visible');
+            setTimeout(() => openTNModal(tnId), 300);
+        }
+
+        async function deleteTN(tnId) {
+            if (!confirm('Tem certeza que deseja excluir este teste de nível?')) return;
+            
+            try {
+                if (!db) {
+                    // localStorage mode
+                    testesNivel = testesNivel.filter(t => t.id !== tnId);
+                    localStorage.setItem('testes-nivel', JSON.stringify(testesNivel));
+                } else {
+                    // Firebase mode
+                    const docRef = doc(db, `artifacts/${appId}/public/data/testes-nivel`, tnId);
+                    await deleteDoc(docRef);
+                    testesNivel = testesNivel.filter(t => t.id !== tnId);
+                }
+                
+                renderTNsList();
+                showSuccessMessage("Sucesso!", "Teste de nível excluído com sucesso.");
+            } catch (error) {
+                console.error('Error deleting TN:', error);
+                showErrorMessage("Erro", "Erro ao excluir teste de nível: " + error.message);
+            }
+        }
+
+        window.openTNModal = openTNModal;
+        window.viewTN = viewTN;
+        window.editTN = editTN;
+        window.deleteTN = deleteTN;
+
         function renderCalendarioSection() {
             document.getElementById('main-title').textContent = 'Calendário';
             const contentArea = document.getElementById('content-area');
@@ -11915,6 +12654,8 @@
                 { key: 'vips', label: 'VIPs', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20a6 6 0 0 0-12 0"/><circle cx="12" cy="10" r="4"/><circle cx="12" cy="12" r="10"/></svg>', roles: ['admin', 'pedagogico', 'ap', 'teacher', 'am', 'financeiro'] },
                 { key: 'grade', label: 'Grade', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" x2="16" y1="2" y2="6"></line><line x1="8" x2="8" y1="2" y2="6"></line><line x1="3" x2="21" y1="10" y2="10"></line></svg>', roles: ['admin', 'pedagogico', 'ap', 'teacher', 'am', 'financeiro'] },
                 { key: 'calendario', label: 'Calendário', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>', roles: ['admin', 'pedagogico', 'ap', 'teacher', 'am', 'financeiro'] },
+                { key: 'rechamada', label: 'Rechamada', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>', roles: ['admin', 'pedagogico', 'ap', 'teacher', 'am'] },
+                { key: 'gestao-tns', label: 'Gestão TNs', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>', roles: ['admin', 'pedagogico', 'ap', 'am'] },
                 
                 { key: 'kpis-pedagogico', label: 'KPIs Pedagógico', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/></svg>', roles: ['admin', 'pedagogico', 'ap'] },
                 
@@ -12165,6 +12906,8 @@
                 'colaboradores': ['admin'], // Collaborators - admin only
                 'dojo': ['admin', 'pedagogico', 'ap', 'teacher', 'am'], // Dojo - everyone except financeiro
                 'calendario': ['admin', 'pedagogico', 'ap', 'teacher', 'am', 'financeiro'], // Shared calendar
+                'rechamada': ['admin', 'pedagogico', 'ap', 'teacher', 'am'], // Rechamada - retention system
+                'gestao-tns': ['admin', 'pedagogico', 'ap', 'am'], // Gestão de Testes de Nível
                 'kpis-pedagogico': ['admin', 'pedagogico', 'ap'], // KPIs Pedagógico
             };
             
@@ -12172,7 +12915,7 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            const pageRenderers = { 'inicio': renderInicioSection, 'alunos': renderAlunosSection, 'turmas': renderTurmasSection, 'vips': renderVipsSection, 'tarefas': renderTarefasSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection, 'colaboradores': renderColaboradoresSection, 'dojo': renderDojoSection, 'calendario': renderCalendarioSection, 'kpis-pedagogico': renderKPIsPedagogicoSection  };
+            const pageRenderers = { 'inicio': renderInicioSection, 'alunos': renderAlunosSection, 'turmas': renderTurmasSection, 'vips': renderVipsSection, 'tarefas': renderTarefasSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection, 'colaboradores': renderColaboradoresSection, 'dojo': renderDojoSection, 'calendario': renderCalendarioSection, 'rechamada': renderRechamadaSection, 'gestao-tns': renderGestaoTNsSection, 'kpis-pedagogico': renderKPIsPedagogicoSection  };
 
             document.body.addEventListener('click', (event) => {
                 // Close modals when clicking overlay or close button
@@ -12317,6 +13060,7 @@
                         'add-calendar-event': openCalendarEventForm,
                         'view-calendar-event': () => viewCalendarEvent(id),
                         'edit-calendar-event': () => openCalendarEventForm(id),
+                        'add-tn': () => openTNModal(),
                         'add-guideline': openGuidelineForm,
                         'export-guidelines': exportGuidelinesDoc,
                         'edit-monthly-highlight': openMonthlyHighlightForm,
