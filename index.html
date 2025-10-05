@@ -3196,13 +3196,6 @@
             );
             const totalStudentsWithReprovacao = studentsWithReprovacao.length;
             const reprovacaoPercentage = students.length > 0 ? (totalStudentsWithReprovacao / students.length) * 100 : 0;
-            
-            // Calcular Índice de Rematrícula (alunos que passaram pelo processo de rematrícula)
-            const studentsWithRematricula = students.filter(s => 
-                s.completedLevels && s.completedLevels.length > 0
-            );
-            const totalStudentsWithRematricula = studentsWithRematricula.length;
-            const rematriculaPercentage = students.length > 0 ? (totalStudentsWithRematricula / students.length) * 100 : 0;
 
             // Calcular % de presença e faltas por VIP conectado às PEFs
             const vipAttendanceData = vips.map(vip => {
@@ -3407,21 +3400,6 @@
                             <p class="text-xs text-stone-600 mt-1">${reprovacaoPercentage.toFixed(1)}% dos alunos</p>
                             <div class="mt-2 w-full bg-stone-200 rounded-full h-2">
                                 <div class="bg-red-500 h-2 rounded-full" style="width: ${Math.min(100, reprovacaoPercentage)}%"></div>
-                            </div>
-                        </div>
-
-                        <!-- Índice de Rematrícula -->
-                        <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-6 rounded-lg border border-stone-200 transition-all hover:border-[#F1D24B]">
-                            <div class="flex items-center justify-between mb-2">
-                                <h3 class="text-sm font-medium text-stone-700 uppercase tracking-wide">Índice de Rematrícula</h3>
-                                <svg class="w-8 h-8 text-cyan-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                                </svg>
-                            </div>
-                            <p class="text-4xl font-bold text-stone-800">${totalStudentsWithRematricula}</p>
-                            <p class="text-xs text-stone-600 mt-1">${rematriculaPercentage.toFixed(1)}% dos alunos</p>
-                            <div class="mt-2 w-full bg-stone-200 rounded-full h-2">
-                                <div class="bg-cyan-500 h-2 rounded-full" style="width: ${Math.min(100, rematriculaPercentage)}%"></div>
                             </div>
                         </div>
                     </div>
