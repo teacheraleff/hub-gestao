@@ -713,7 +713,18 @@
             pendingView.classList.remove('hidden'); 
             pendingView.classList.add('flex');
         }
-        function setActiveNavItem(element) { document.querySelectorAll('#main-navigation .nav-item').forEach(item => item.classList.remove('active')); if (element) element.classList.add('active'); }
+        function setActiveNavItem(element) { 
+            document.querySelectorAll('#main-navigation .nav-item').forEach(item => {
+                item.classList.remove('active');
+                item.style.backgroundColor = '';
+                item.style.color = '';
+            }); 
+            if (element) {
+                element.classList.add('active');
+                element.style.backgroundColor = '#FFFBEB';
+                element.style.color = '#F1D24B';
+            }
+        }
         async function handleLogin(event) {
             event.preventDefault();
             const email = event.target.email.value;
@@ -2863,15 +2874,15 @@
                                         </td>
                                         <td class="text-center">
                                             <div class="flex gap-2 justify-center">
-                                                <button class="secondary-btn" data-action="edit-collaborator" data-id="${c.id}">Editar</button>
+                                                <button class="secondary-btn" data-action="edit-collaborator" data-id="${c.id}" onclick="event.stopPropagation()">Editar</button>
                                                 ${c.firebaseUid ? `
-                                                    <button class="secondary-btn !bg-blue-500 !text-white hover:!bg-blue-600" onclick="openEditFirebaseUserModal('${c.firebaseUid}', '${c.id}', '${c.name}', '${c.email || ''}')">
+                                                    <button class="secondary-btn !bg-blue-500 !text-white hover:!bg-blue-600" onclick="event.stopPropagation(); openEditFirebaseUserModal('${c.firebaseUid}', '${c.id}', '${c.name}', '${c.email || ''}')">
                                                         <svg class="inline-block w-3 h-3 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                                             <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
                                                         </svg>
                                                         Editar User
                                                     </button>
-                                                    <button class="danger-btn" onclick="deleteFirebaseUser('${c.firebaseUid}', '${c.id}', '${c.name}')">
+                                                    <button class="danger-btn" onclick="event.stopPropagation(); deleteFirebaseUser('${c.firebaseUid}', '${c.id}', '${c.name}')">
                                                         <svg class="inline-block w-3 h-3 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                                             <polyline points="3 6 5 6 21 6"/>
                                                             <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
@@ -2879,7 +2890,7 @@
                                                         Excluir User
                                                     </button>
                                                 ` : ''}
-                                                <button class="danger-btn" data-action="delete-item" data-collection="collaborators" data-id="${c.id}">Excluir</button>
+                                                <button class="danger-btn" data-action="delete-item" data-collection="collaborators" data-id="${c.id}" onclick="event.stopPropagation()">Excluir</button>
                                             </div>
                                         </td>
                                     </tr>
@@ -6865,6 +6876,8 @@
                 { key: 'vips', label: 'VIPs' },
                 { key: 'grade', label: 'Grade de Horários' },
                 { key: 'calendario', label: 'Calendário' },
+                { key: 'rechamada', label: 'Rechamada' },
+                { key: 'gestao-tns', label: 'Gestão TNs' },
                 { key: 'kpis-pedagogico', label: 'KPIs Pedagógico' },
                 { key: 'colaboradores', label: 'Colaboradores' },
                 { key: 'folha-pagamento', label: 'Financeiro' }
@@ -9260,6 +9273,7 @@
 
         function detectConsecutiveAbsences() {
             const studentsWithAbsences = [];
+            const cutoffDate = new Date('2025-09-22');
             
             // Checar turmas
             turmas.forEach(turma => {
@@ -9277,6 +9291,12 @@
                     for (let i = 40; i >= 1; i--) {
                         const lesson = pef[i];
                         if (!lesson || !lesson.students) continue;
+                        
+                        // Verificar se a aula tem data e se é >= 22/09/2024
+                        if (lesson.date) {
+                            const lessonDate = new Date(lesson.date);
+                            if (lessonDate < cutoffDate) continue;
+                        }
                         
                         const studentAttendance = lesson.students[studentId];
                         if (studentAttendance === false) {
@@ -9318,6 +9338,12 @@
                 for (let i = 40; i >= 1; i--) {
                     const lesson = pef[i];
                     if (!lesson) continue;
+                    
+                    // Verificar se a aula tem data e se é >= 22/09/2024
+                    if (lesson.date) {
+                        const lessonDate = new Date(lesson.date);
+                        if (lessonDate < cutoffDate) continue;
+                    }
                     
                     if (lesson.attendance === false || lesson.attendance === 'falta') {
                         consecutiveAbsences++;
