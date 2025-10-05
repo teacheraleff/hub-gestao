@@ -2874,7 +2874,7 @@
                                         </td>
                                         <td class="text-center">
                                             <div class="flex gap-2 justify-center">
-                                                <button class="secondary-btn" data-action="edit-collaborator" data-id="${c.id}" onclick="event.stopPropagation()">Editar</button>
+                                                <button class="secondary-btn" data-action="edit-collaborator" data-id="${c.id}">Editar</button>
                                                 ${c.firebaseUid ? `
                                                     <button class="secondary-btn !bg-blue-500 !text-white hover:!bg-blue-600" onclick="event.stopPropagation(); openEditFirebaseUserModal('${c.firebaseUid}', '${c.id}', '${c.name}', '${c.email || ''}')">
                                                         <svg class="inline-block w-3 h-3 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -9270,11 +9270,10 @@
                         const lesson = pef[i];
                         if (!lesson || !lesson.students) continue;
                         
-                        // Verificar se a aula tem data e se é >= 22/09/2024
-                        if (lesson.date) {
-                            const lessonDate = new Date(lesson.date);
-                            if (lessonDate < cutoffDate) continue;
-                        }
+                        // Verificar se a aula tem data e se é >= 22/09/2025
+                        if (!lesson.date) continue; // Ignora aulas sem data
+                        const lessonDate = new Date(lesson.date);
+                        if (lessonDate < cutoffDate) continue; // Ignora aulas antes de 22/09/2025
                         
                         const studentAttendance = lesson.students[studentId];
                         if (studentAttendance === false) {
@@ -9317,11 +9316,10 @@
                     const lesson = pef[i];
                     if (!lesson) continue;
                     
-                    // Verificar se a aula tem data e se é >= 22/09/2024
-                    if (lesson.date) {
-                        const lessonDate = new Date(lesson.date);
-                        if (lessonDate < cutoffDate) continue;
-                    }
+                    // Verificar se a aula tem data e se é >= 22/09/2025
+                    if (!lesson.date) continue; // Ignora aulas sem data
+                    const lessonDate = new Date(lesson.date);
+                    if (lessonDate < cutoffDate) continue; // Ignora aulas antes de 22/09/2025
                     
                     if (lesson.attendance === false || lesson.attendance === 'falta') {
                         consecutiveAbsences++;
