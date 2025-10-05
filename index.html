@@ -6051,6 +6051,12 @@
             modalTitle.textContent = `PEF: ${turma.name}`;
 
             const unitAttendance = attendance.find(a => a.id === turmaId);
+            
+            // Obter dias da semana permitidos para esta turma
+            const allowedWeekdays = [];
+            if (turma.day1?.weekday) allowedWeekdays.push(parseInt(turma.day1.weekday));
+            if (turma.day2?.weekday) allowedWeekdays.push(parseInt(turma.day2.weekday));
+            if (turma.day3?.weekday) allowedWeekdays.push(parseInt(turma.day3.weekday));
 
             let lessonsHtml = '';
             for (let i = 1; i <= 40; i++) {
@@ -6076,7 +6082,7 @@
                         <!-- Cabeçalho da aula: Número e Data em linha -->
                         <div class="flex items-center gap-4 mb-3 pb-3 border-b border-stone-200">
                             <span class="font-bold text-stone-700 text-lg">Aula ${i}</span>
-                            <input type="date" class="form-input p-2 text-sm lesson-date flex-1" value="${lessonDate}">
+                            <input type="date" class="form-input p-2 text-sm lesson-date flex-1" value="${lessonDate}" data-allowed-days="${allowedWeekdays.join(',')}">
                         </div>
                         
                         <!-- Tema e Observações lado a lado -->
@@ -6101,6 +6107,25 @@
                     </button>
                 </div>
             `;
+            
+            // Adicionar validação para os dias da semana permitidos
+            setTimeout(() => {
+                document.querySelectorAll('.lesson-date').forEach(input => {
+                    input.addEventListener('change', function() {
+                        const selectedDate = new Date(this.value);
+                        const dayOfWeek = selectedDate.getDay(); // 0 = domingo, 1 = segunda, etc
+                        const allowedDays = this.dataset.allowedDays.split(',').map(Number);
+                        
+                        if (!allowedDays.includes(dayOfWeek)) {
+                            const dayNames = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
+                            const allowedDayNames = allowedDays.map(d => dayNames[d]).join(', ');
+                            showErrorMessage('Data Inválida', `Por favor, selecione apenas ${allowedDayNames} (dias de aula desta turma).`);
+                            this.value = '';
+                        }
+                    });
+                });
+            }, 100);
+            
             modal.classList.add('visible');
         }
 
@@ -6130,6 +6155,12 @@
             modalTitle.textContent = `PEF (VIP): ${vip.studentName}`;
 
             const unitAttendance = attendance.find(a => a.id === vipId);
+            
+            // Obter dias da semana permitidos para este VIP
+            const allowedWeekdays = [];
+            if (vip.day1?.weekday) allowedWeekdays.push(parseInt(vip.day1.weekday));
+            if (vip.day2?.weekday) allowedWeekdays.push(parseInt(vip.day2.weekday));
+            if (vip.day3?.weekday) allowedWeekdays.push(parseInt(vip.day3.weekday));
 
             let lessonsHtml = '';
             for (let i = 1; i <= 40; i++) {
@@ -6154,7 +6185,7 @@
                     <div class="border border-stone-200 rounded-lg p-4 mb-4" id="lesson-row-${vipId}-${i}" data-lesson-number="${i}">
                         <div class="flex items-center gap-4 mb-3 pb-3 border-b border-stone-200">
                             <span class="font-bold text-stone-700 text-lg">Aula ${i}</span>
-                            <input type="date" class="form-input p-2 text-sm lesson-date flex-1" value="${lessonDate}">
+                            <input type="date" class="form-input p-2 text-sm lesson-date flex-1" value="${lessonDate}" data-allowed-days="${allowedWeekdays.join(',')}">
                         </div>
                         <div class="space-y-3">
                             <textarea class="form-input p-2 text-sm w-full lesson-topic" placeholder="Tema da aula" rows="2">${lessonTopic}</textarea>
@@ -6173,6 +6204,25 @@
                     </button>
                 </div>
             `;
+            
+            // Adicionar validação para os dias da semana permitidos
+            setTimeout(() => {
+                document.querySelectorAll('.lesson-date').forEach(input => {
+                    input.addEventListener('change', function() {
+                        const selectedDate = new Date(this.value);
+                        const dayOfWeek = selectedDate.getDay(); // 0 = domingo, 1 = segunda, etc
+                        const allowedDays = this.dataset.allowedDays.split(',').map(Number);
+                        
+                        if (!allowedDays.includes(dayOfWeek)) {
+                            const dayNames = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
+                            const allowedDayNames = allowedDays.map(d => dayNames[d]).join(', ');
+                            showErrorMessage('Data Inválida', `Por favor, selecione apenas ${allowedDayNames} (dias de aula deste VIP).`);
+                            this.value = '';
+                        }
+                    });
+                });
+            }, 100);
+            
             modal.classList.add('visible');
         }
 
