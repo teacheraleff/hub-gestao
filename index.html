@@ -9816,7 +9816,12 @@
                                 <label class="font-medium text-sm">Avaliador *</label>
                                 <select id="tn-evaluator" class="form-input" required>
                                     <option value="">Selecione quem avaliou</option>
-                                    ${collaborators.filter(c => c.sector === 'professor').map(c => 
+                                    ${collaborators.filter(c => {
+                                        // Mostrar colaboradores que têm acesso à Gestão TNs
+                                        const role = c.role || 'teacher';
+                                        const allowedRoles = ['admin', 'pedagogico', 'ap', 'am'];
+                                        return allowedRoles.includes(role) || (c.allowedPages && c.allowedPages.includes('gestao-tns'));
+                                    }).map(c => 
                                         `<option value="${c.id}" ${tn?.evaluatorId === c.id ? 'selected' : ''}>${c.name}</option>`
                                     ).join('')}
                                 </select>
