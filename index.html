@@ -464,6 +464,10 @@
         let currentPage = 1;
         let itemsPerPage = 20;
         
+        // Filter state for turmas and VIPs
+        let currentTurmasFilter = 'todos';
+        let currentVipsFilter = 'todos';
+        
 
         // --- DEVELOPMENT MODE FUNCTIONS ---
         function startAppInDevelopmentMode() {
@@ -579,9 +583,16 @@
                 }
                 if (contentArea.firstElementChild?.id === 'turmas-section') renderTurmasSection();
                 if (contentArea.firstElementChild?.id === 'vips-section') renderVipsSection();
+                if (contentArea.firstElementChild?.id === 'rechamada-section') renderRechamadaList();
             });
-            getCollectionListener('turmas', turmas, renderTurmasSection);
-            getCollectionListener('vips', vips, renderVipsSection);
+            getCollectionListener('turmas', turmas, () => {
+                if (contentArea.firstElementChild?.id === 'turmas-section') renderTurmasSection();
+                if (contentArea.firstElementChild?.id === 'rechamada-section') renderRechamadaList();
+            });
+            getCollectionListener('vips', vips, () => {
+                if (contentArea.firstElementChild?.id === 'vips-section') renderVipsSection();
+                if (contentArea.firstElementChild?.id === 'rechamada-section') renderRechamadaList();
+            });
             getCollectionListener('attendance', attendance, () => {
                 const activeModal = document.querySelector('.modal-overlay.visible');
                 if (activeModal && activeModal.querySelector('[data-pef-modal="true"]')) {
@@ -593,6 +604,7 @@
                         openVipPefModal(unitId);
                     }
                 }
+                if (contentArea.firstElementChild?.id === 'rechamada-section') renderRechamadaList();
             });
             getCollectionListener('tasks', tasks, renderTarefasSection);
 
@@ -601,7 +613,7 @@
                 if (activePageId === 'grade-section') renderGradeSection();
                 if (activePageId === 'tasks-section') renderTarefasSection();
                 if (activePageId === 'colaboradores-section') renderColaboradoresSection();
-
+                if (activePageId === 'rechamada-section') renderRechamadaSection();
                 if (activePageId === 'inicio-section') renderInicioSection();
             });
             getCollectionListener('events', events, () => {
@@ -1394,7 +1406,7 @@
         function getFilteredTurmas() {
             const searchTerm = document.getElementById('turma-search')?.value.toLowerCase() || '';
             const teacherFilter = document.getElementById('turma-teacher-filter')?.value || '';
-            const statusFilter = document.querySelector('#turmas-filter-buttons .filter-btn.active')?.dataset.filter || 'todos';
+            const statusFilter = currentTurmasFilter;
             let filteredTurmas = turmas;
 
             if (currentUserRole === 'teacher') {
@@ -1449,7 +1461,7 @@
         function getFilteredVips() {
             const searchTerm = document.getElementById('vip-search')?.value.toLowerCase() || '';
             const teacherFilter = document.getElementById('vip-teacher-filter')?.value || '';
-            const statusFilter = document.querySelector('#vips-filter-buttons .filter-btn.active')?.dataset.filter || 'todos';
+            const statusFilter = currentVipsFilter;
             
             // Only show students who have actual VIP records, not just VIP modality
             const vipStudents = students.filter(s => {
@@ -1670,7 +1682,7 @@
                             ${isFinalizado ? `<span class="px-2 py-1 text-xs font-semibold bg-stone-300 text-stone-700 rounded">FINALIZADO</span>` : ''}
                         </div>
                         <div class="card-content">
-                            <p class="text-sm ${textColorLight} mb-2"><strong>Status:</strong> <span class="status-tag" style="background-color: ${isFinalizado ? '#D1D5DB' : ''}; color: ${isFinalizado ? '#4B5563' : ''};">${student.status || 'Pendente'}</span></p>
+                            <p class="text-sm ${textColorLight} mb-2"><strong>Status:</strong> <span class="status-tag" style="background-color: ${isFinalizado ? '#D1D5DB' : (student.status === 'Ativo' ? '#D1FAE5' : student.status === 'Inativo' ? '#DBEAFE' : student.status === 'Pendente' ? '#FEF3C7' : '#F3F4F6')}; color: ${isFinalizado ? '#4B5563' : (student.status === 'Ativo' ? '#065F46' : student.status === 'Inativo' ? '#1E40AF' : student.status === 'Pendente' ? '#92400E' : '#4B5563')};">${student.status || 'Pendente'}</span></p>
                             ${vipRecord ? `<p class="text-sm ${textColorLight} mb-2">Professor: ${teacher?.name || 'N/A'}</p>` : ''}
                             ${vipRecord ? `<p class="text-sm ${textColorLight}"><strong>Nível:</strong> ${vipRecord.level || 'N/A'}</p>` : ''}
                             ${vipRecord && vipRecord.endDate ? `<p class="text-sm ${textColorLight}"><strong>Finaliza em:</strong> ${formatDateBR(vipRecord.endDate)}</p>` : ''}
@@ -1846,9 +1858,9 @@
                     </div>
                     
                     <div class="flex gap-2 mb-6" id="turmas-filter-buttons">
-                        <button class="secondary-btn filter-btn active" data-filter="todos">Todos</button>
-                        <button class="secondary-btn filter-btn" data-filter="ativas">Ativas</button>
-                        <button class="secondary-btn filter-btn" data-filter="finalizadas">Finalizadas</button>
+                        <button class="secondary-btn filter-btn ${currentTurmasFilter === 'todos' ? 'active' : ''}" data-filter="todos">Todos</button>
+                        <button class="secondary-btn filter-btn ${currentTurmasFilter === 'ativas' ? 'active' : ''}" data-filter="ativas">Ativas</button>
+                        <button class="secondary-btn filter-btn ${currentTurmasFilter === 'finalizadas' ? 'active' : ''}" data-filter="finalizadas">Finalizadas</button>
                     </div>
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="turmas-grid">
@@ -1905,6 +1917,7 @@
             const filterButtons = document.querySelectorAll('#turmas-filter-buttons .filter-btn');
             filterButtons.forEach(btn => {
                 btn.addEventListener('click', () => {
+                    currentTurmasFilter = btn.dataset.filter;
                     filterButtons.forEach(b => b.classList.remove('active'));
                     btn.classList.add('active');
                     updateTurmasList();
@@ -1950,11 +1963,11 @@
 
                     ${canManage || currentUserRole === 'teacher' ? `
                     <div class="flex gap-2 mb-6" id="vips-filter-buttons">
-                        <button class="secondary-btn filter-btn active" data-filter="todos">Todos</button>
-                        <button class="secondary-btn filter-btn" data-filter="ativos">Ativos</button>
-                        <button class="secondary-btn filter-btn" data-filter="a-finalizar">A Finalizar</button>
-                        <button class="secondary-btn filter-btn" data-filter="expirados">Expirados</button>
-                        <button class="secondary-btn filter-btn" data-filter="finalizados">Finalizados</button>
+                        <button class="secondary-btn filter-btn ${currentVipsFilter === 'todos' ? 'active' : ''}" data-filter="todos">Todos</button>
+                        <button class="secondary-btn filter-btn ${currentVipsFilter === 'ativos' ? 'active' : ''}" data-filter="ativos">Ativos</button>
+                        <button class="secondary-btn filter-btn ${currentVipsFilter === 'a-finalizar' ? 'active' : ''}" data-filter="a-finalizar">A Finalizar</button>
+                        <button class="secondary-btn filter-btn ${currentVipsFilter === 'expirados' ? 'active' : ''}" data-filter="expirados">Expirados</button>
+                        <button class="secondary-btn filter-btn ${currentVipsFilter === 'finalizados' ? 'active' : ''}" data-filter="finalizados">Finalizados</button>
                     </div>
                     ` : ''}
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="vips-grid">
@@ -1988,6 +2001,7 @@
                 const filterButtons = document.querySelectorAll('#vips-filter-buttons .filter-btn');
                 filterButtons.forEach(btn => {
                     btn.addEventListener('click', () => {
+                        currentVipsFilter = btn.dataset.filter;
                         filterButtons.forEach(b => b.classList.remove('active'));
                         btn.classList.add('active');
                         updateVipsList();
@@ -2582,11 +2596,13 @@
             const profit = totalRevenue - totalEffectiveExpenses;
 
             // Load financial profit settings from localStorage
-            const profitSettings = JSON.parse(localStorage.getItem('financialProfitSettings') || '{"vipMonthlyPayment": 0, "vipTeacherPayment": 0, "turmaStudentPayment": 0, "turmaTeacherPayment": 0}');
+            const profitSettings = financialProfitSettings;
             
-            // Calculate ticket médio mensal
-            const activeStudents = students.filter(s => s.status && s.status.toLowerCase() === 'ativo');
-            const ticketMedio = activeStudents.length > 0 ? totalRevenue / activeStudents.length : 0;
+            // Calculate ticket médio mensal (média dos valores pagos pelos alunos)
+            const totalAmountPaid = students.reduce((sum, student) => {
+                return sum + parseFloat(student.amountPaid || 0);
+            }, 0);
+            const ticketMedio = students.length > 0 ? totalAmountPaid / students.length : 0;
             
             // Calculate VIP profit (includes DUPLA)
             const activeVips = students.filter(s => (s.modalidade === 'VIP' || s.modalidade === 'DUPLA') && s.status && s.status.toLowerCase() === 'ativo');
@@ -2699,11 +2715,8 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path>
                             </svg>
                         </div>
-                        <p class="text-3xl font-bold text-stone-800 mb-3">${vipSchoolProfit.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
-                        <div class="space-y-1 text-xs text-stone-600">
-                            <p>Professor: ${vipTotalTeacher.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
-                            <p>Escola: ${vipSchoolProfit.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
-                        </div>
+                        <p class="text-4xl font-bold text-stone-800 card-content">${vipSchoolProfit.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                        <p class="text-xs text-stone-600 mt-1">Valor que a escola recebe</p>
                         <p class="text-xs text-stone-600 mt-2 italic">Clique para configurar</p>
                     </div>
                     
@@ -2715,11 +2728,8 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
                             </svg>
                         </div>
-                        <p class="text-3xl font-bold text-stone-800 mb-3">${turmaSchoolProfit.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
-                        <div class="space-y-1 text-xs text-stone-600">
-                            <p>Professor: ${turmaTotalTeacher.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
-                            <p>Escola: ${turmaSchoolProfit.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
-                        </div>
+                        <p class="text-4xl font-bold text-stone-800 card-content">${turmaSchoolProfit.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                        <p class="text-xs text-stone-600 mt-1">Valor que a escola recebe</p>
                         <p class="text-xs text-stone-600 mt-2 italic">Clique para configurar</p>
                     </div>
                 </div>
@@ -3203,16 +3213,6 @@
                 avgOral = oralScores.length > 0 ? oralScores.reduce((sum, score) => sum + score, 0) / oralScores.length : 0;
             }
 
-            // Calcular Índice de Reprovação (alunos com reprovações registradas)
-            const studentsWithReprovacao = students.filter(s => 
-                (s.reprovacaoHistory && s.reprovacaoHistory.length > 0) ||
-                (s.completedLevels && s.completedLevels.some(level => 
-                    typeof level === 'object' && level.isReprovacao === true
-                ))
-            );
-            const totalStudentsWithReprovacao = studentsWithReprovacao.length;
-            const reprovacaoPercentage = students.length > 0 ? (totalStudentsWithReprovacao / students.length) * 100 : 0;
-
             // Calcular % de presença e faltas por VIP conectado às PEFs
             const vipAttendanceData = vips.map(vip => {
                 const student = students.find(s => s.id === vip.studentId);
@@ -3402,21 +3402,6 @@
                             ${totalLessonsGlobal > 0 ? `<div class="mt-2 w-full bg-stone-200 rounded-full h-2">
                                 <div class="bg-teal-500 h-2 rounded-full" style="width: ${Math.min(100, avgAttendance)}%"></div>
                             </div>` : ''}
-                        </div>
-
-                        <!-- Índice de Reprovação -->
-                        <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-6 rounded-lg border border-stone-200 transition-all hover:border-[#F1D24B]">
-                            <div class="flex items-center justify-between mb-2">
-                                <h3 class="text-sm font-medium text-stone-700 uppercase tracking-wide">Índice de Reprovação</h3>
-                                <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                                </svg>
-                            </div>
-                            <p class="text-4xl font-bold text-stone-800">${totalStudentsWithReprovacao}</p>
-                            <p class="text-xs text-stone-600 mt-1">${reprovacaoPercentage.toFixed(1)}% dos alunos</p>
-                            <div class="mt-2 w-full bg-stone-200 rounded-full h-2">
-                                <div class="bg-red-500 h-2 rounded-full" style="width: ${Math.min(100, reprovacaoPercentage)}%"></div>
-                            </div>
                         </div>
                     </div>
 
@@ -4000,7 +3985,7 @@
         // Funções para configuração de lucro VIP e Turma
         window.openVipProfitModal = function() {
             clearModalHeaderButtons();
-            const profitSettings = JSON.parse(localStorage.getItem('financialProfitSettings') || '{"vipMonthlyPayment": 0, "vipTeacherPayment": 0, "turmaStudentPayment": 0, "turmaTeacherPayment": 0}');
+            const profitSettings = financialProfitSettings;
             
             document.getElementById('form-modal-title').textContent = 'Configurar Lucro por VIP';
             document.getElementById('form-modal-content-area').innerHTML = `
@@ -4069,7 +4054,7 @@
         
         window.openTurmaProfitModal = function() {
             clearModalHeaderButtons();
-            const profitSettings = JSON.parse(localStorage.getItem('financialProfitSettings') || '{"vipMonthlyPayment": 0, "vipTeacherPayment": 0, "turmaStudentPayment": 0, "turmaTeacherPayment": 0}');
+            const profitSettings = financialProfitSettings;
             
             document.getElementById('form-modal-title').textContent = 'Configurar Lucro por Turma';
             document.getElementById('form-modal-content-area').innerHTML = `
@@ -4140,8 +4125,8 @@
             };
         }
         
-        function saveProfitSettings(type) {
-            const currentSettings = JSON.parse(localStorage.getItem('financialProfitSettings') || '{"vipMonthlyPayment": 0, "vipTeacherPayment": 0, "turmaStudentPayment": 0, "turmaTeacherPayment": 0}');
+        async function saveProfitSettings(type) {
+            const currentSettings = { ...financialProfitSettings };
             
             if (type === 'vip') {
                 currentSettings.vipMonthlyPayment = parseFloat(document.getElementById('vip-monthly-payment').value) || 0;
@@ -4151,12 +4136,24 @@
                 currentSettings.turmaTeacherPayment = parseFloat(document.getElementById('turma-teacher-payment').value) || 0;
             }
             
-            localStorage.setItem('financialProfitSettings', JSON.stringify(currentSettings));
-            closeFormModal();
-            showSuccessMessage('Sucesso!', 'Configurações de lucro salvas com sucesso.');
-            
-            // Recarregar a seção financeira para atualizar os cards
-            renderFolhaPagamentoSection();
+            try {
+                if (!db) {
+                    localStorage.setItem('financialProfitSettings', JSON.stringify(currentSettings));
+                    financialProfitSettings = currentSettings;
+                    closeFormModal();
+                    showSuccessMessage('Sucesso!', 'Configurações de lucro salvas com sucesso.');
+                    renderFolhaPagamentoSection();
+                } else {
+                    await setDoc(doc(db, `artifacts/${appId}/public/data/financial-profit-settings`, 'settings'), currentSettings);
+                    financialProfitSettings = currentSettings;
+                    closeFormModal();
+                    showSuccessMessage('Sucesso!', 'Configurações de lucro salvas com sucesso.');
+                    renderFolhaPagamentoSection();
+                }
+            } catch (error) {
+                console.error("Error saving profit settings:", error);
+                showErrorMessage("Erro", "Erro ao salvar configurações: " + error.message);
+            }
         }
 
         // Firebase Admin User Management Functions
@@ -9475,7 +9472,7 @@
         // --- RECHAMADA SECTION ---
         let rechamadasData = [];
 
-        function renderRechamadaSection() {
+        async function renderRechamadaSection() {
             document.getElementById('main-title').textContent = 'Rechamada';
             document.getElementById('main-description').textContent = 'Acompanhe alunos com 2 faltas consecutivas e faça contato de retenção.';
             
@@ -9501,7 +9498,7 @@
                 </div>
             `;
             
-            loadRechamadas();
+            await loadRechamadas();
             
             // Adicionar event listeners para os filtros
             setTimeout(() => {
@@ -9703,7 +9700,10 @@
                                         </td>
                                         <td>${item.type === 'turma' ? item.turmaName : 'VIP'}</td>
                                         <td>${item.teacherName}</td>
-                                        <td>Aulas ${item.absenceLessons.join(', ')}</td>
+                                        <td>${item.absenceDates.map(d => {
+                                            const date = d.toDate ? d.toDate() : new Date(d);
+                                            return date.toLocaleDateString('pt-BR');
+                                        }).join(', ')}</td>
                                         <td>
                                             <span class="inline-block px-2 py-1 text-xs rounded bg-red-100 text-red-700 font-bold">
                                                 ${item.consecutiveCount} faltas
@@ -10118,7 +10118,7 @@
                 evaluatorId,
                 level,
                 observations,
-                createdBy: currentUser,
+                createdBy: currentUserName,
                 createdAt: tnId ? testesNivel.find(t => t.id === tnId)?.createdAt : new Date().toISOString(),
                 updatedAt: new Date().toISOString()
             };
@@ -10377,6 +10377,12 @@
         let currentCalendarDate = new Date();
         let calendarEvents = [];
         let fixedDateCards = [];
+        let financialProfitSettings = {
+            vipMonthlyPayment: 0,
+            vipTeacherPayment: 0,
+            turmaStudentPayment: 0,
+            turmaTeacherPayment: 0
+        };
 
 
         // Brazilian national holidays only for pedagogical calendar
@@ -10403,6 +10409,7 @@
             renderCalendar();
             loadCalendarEvents();
             loadFixedDateCards();
+            loadFinancialProfitSettings();
         }
 
         function changeMonth(direction) {
@@ -10520,6 +10527,45 @@
                 console.error("Error loading fixed date cards:", error);
                 fixedDateCards = [];
                 renderFixedDateCards();
+            }
+        }
+
+        async function loadFinancialProfitSettings() {
+            if (!db) {
+                const localSettings = JSON.parse(localStorage.getItem('financialProfitSettings') || '{"vipMonthlyPayment": 0, "vipTeacherPayment": 0, "turmaStudentPayment": 0, "turmaTeacherPayment": 0}');
+                financialProfitSettings = localSettings;
+                return;
+            }
+
+            try {
+                const settingsDoc = doc(db, `artifacts/${appId}/public/data/financial-profit-settings`, 'settings');
+                const settingsSnapshot = await getDoc(settingsDoc);
+                
+                if (settingsSnapshot.exists()) {
+                    financialProfitSettings = settingsSnapshot.data();
+                } else {
+                    // Initialize with default values in Firebase
+                    await setDoc(settingsDoc, financialProfitSettings);
+                }
+                
+                // Set up real-time listener
+                onSnapshot(settingsDoc, (snapshot) => {
+                    if (snapshot.exists()) {
+                        financialProfitSettings = snapshot.data();
+                        // Re-render financial section if visible
+                        if (currentSection === 'folha-pagamento') {
+                            renderFolhaPagamentoSection();
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error("Error loading financial profit settings:", error);
+                financialProfitSettings = {
+                    vipMonthlyPayment: 0,
+                    vipTeacherPayment: 0,
+                    turmaStudentPayment: 0,
+                    turmaTeacherPayment: 0
+                };
             }
         }
 
