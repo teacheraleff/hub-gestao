@@ -1421,8 +1421,8 @@
                 }
                 
                 teacherNameToFilter = teacherNameToFilter || originalTeacherName;
-                // For teachers, only show turmas assigned to them
-                filteredTurmas = turmas.filter(t => t.teacherName === teacherNameToFilter);
+                // For teachers, only show turmas assigned to them and exclude finalizadas
+                filteredTurmas = turmas.filter(t => t.teacherName === teacherNameToFilter && t.finalizada !== true);
             } else if (teacherFilter) {
                 // Apply teacher filter for non-teacher users
                 filteredTurmas = turmas.filter(t => t.teacherName === teacherFilter);
@@ -1484,10 +1484,10 @@
                 
                 teacherNameToFilter = teacherNameToFilter || originalTeacherName;
                 
-                // For teachers, only show VIPs assigned to them
+                // For teachers, only show VIPs assigned to them and exclude finalizados
                 filteredVips = vipStudents.filter(student => {
                     const vipRecord = vips.find(v => v.studentId === student.id);
-                    return vipRecord && vipRecord.teacherName === teacherNameToFilter;
+                    return vipRecord && vipRecord.teacherName === teacherNameToFilter && vipRecord.finalizado !== true;
                 });
             } else if (teacherFilter) {
                 // Apply teacher filter for non-teacher users
@@ -1681,15 +1681,22 @@
                                     <p class="text-sm text-stone-500 mt-1 italic">${vipRecord.observacoes}</p>
                                 </div>
                             ` : ''}
+                            ${vipRecord ? (() => {
+                                const lastPefDate = getLastPefDate(vipRecord.id);
+                                if (lastPefDate) {
+                                    return `<div class="mt-2"><span class="status-tag" style="background-color: ${isFinalizado ? '#D1D5DB' : '#DBEAFE'}; color: ${isFinalizado ? '#4B5563' : '#1E40AF'}; font-weight: 500;">Última PEF: ${formatDateBR(lastPefDate)}</span></div>`;
+                                }
+                                return '';
+                            })() : ''}
                             ${!isFinalizado ? statusTag : ''}
                         </div>
                     </div>
-                    <div class="mt-auto pt-4 border-t ${borderColor} flex gap-2">
+                    <div class="mt-auto pt-4 border-t ${borderColor} flex flex-wrap gap-2">
                         ${vipRecord ? `
                             <button class="primary-btn !text-sm flex-1 flex items-center justify-center ${isFinalizado ? 'opacity-50' : ''}" data-action="${isFinalizado ? 'vip-finalizado' : 'open-vip-pef'}" data-id="${vipRecord.id}">PEF</button>
                             <button class="secondary-btn !text-sm flex-1 flex items-center justify-center ${isFinalizado ? 'opacity-50' : ''}" data-action="${isFinalizado ? 'vip-finalizado' : 'open-vip-notas'}" data-id="${vipRecord.id}">Notas</button>
                             ${currentUserRole !== 'teacher' ? `<button class="secondary-btn !text-sm flex-1 ${isFinalizado ? 'opacity-50 cursor-not-allowed' : ''}" data-action="${isFinalizado ? 'vip-finalizado' : 'edit-vip'}" data-id="${vipRecord.id}" ${isFinalizado ? 'disabled' : ''}>Configurar</button>` : ''}
-                            ${isFinalizado && currentUserRole !== 'teacher' ? `<button class="secondary-btn !text-sm flex-1" style="background-color: #10B981; color: white;" data-action="reativar-vip" data-id="${vipRecord.id}">Reativar</button>` : ''}
+                            ${isFinalizado && currentUserRole !== 'teacher' ? `<button class="secondary-btn !text-sm flex-1 min-w-[120px]" style="background-color: #10B981; color: white;" data-action="reativar-vip" data-id="${vipRecord.id}">Reativar</button>` : ''}
                         ` : ''}
                     </div>
                 </div>`}).join('') || '<p class="col-span-full text-center py-10 text-stone-500">Nenhum aluno VIP encontrado.</p>';
@@ -1875,13 +1882,20 @@
                                     </p>
                                     <p class="text-sm ${isFinalizada ? 'text-stone-500' : 'text-stone-600'}"><strong>Nível:</strong> ${t.level}</p>
                                     <p class="text-sm ${isFinalizada ? 'text-stone-500' : 'text-stone-600'}"><strong>Semestre:</strong> ${t.semestre || 'N/A'}</p>
+                                    ${(() => {
+                                        const lastPefDate = getLastPefDate(t.id);
+                                        if (lastPefDate) {
+                                            return `<div class="mt-2"><span class="status-tag" style="background-color: ${isFinalizada ? '#D1D5DB' : '#DBEAFE'}; color: ${isFinalizada ? '#4B5563' : '#1E40AF'}; font-weight: 500;">Última PEF: ${formatDateBR(lastPefDate)}</span></div>`;
+                                        }
+                                        return '';
+                                    })()}
                                 </div>
                             </div>
-                            <div class="mt-auto pt-4 border-t ${isFinalizada ? 'border-stone-200' : 'border-stone-100'} flex gap-2">
+                            <div class="mt-auto pt-4 border-t ${isFinalizada ? 'border-stone-200' : 'border-stone-100'} flex flex-wrap gap-2">
                                 ${canManage ? `<button class="secondary-btn !text-sm flex-1 ${isFinalizada ? 'opacity-50 cursor-not-allowed' : ''}" data-action="${isFinalizada ? 'turma-finalizada' : 'edit-turma'}" data-id="${t.id}" ${isFinalizada ? 'disabled' : ''}>Editar</button>` : ''}
                                 <button class="primary-btn !text-sm flex-1 flex items-center justify-center ${isFinalizada ? 'opacity-50' : ''}" data-action="${isFinalizada ? 'turma-finalizada' : 'open-turma-pef'}" data-id="${t.id}">PEF</button>
                                 <button class="secondary-btn !text-sm flex-1 flex items-center justify-center ${isFinalizada ? 'opacity-50' : ''}" data-action="${isFinalizada ? 'turma-finalizada' : 'open-turma-notas'}" data-id="${t.id}">Notas</button>
-                                ${isFinalizada && canManage ? `<button class="secondary-btn !text-sm flex-1" style="background-color: #10B981; color: white;" data-action="reativar-turma" data-id="${t.id}">Reativar</button>` : ''}
+                                ${isFinalizada && canManage ? `<button class="secondary-btn !text-sm flex-1 min-w-[120px]" style="background-color: #10B981; color: white;" data-action="reativar-turma" data-id="${t.id}">Reativar</button>` : ''}
                             </div>
                         </div>`}).join('') || '<p class="col-span-full text-center py-10 text-stone-500">Nenhuma turma encontrada.</p>'}
                     </div>
@@ -3925,6 +3939,64 @@
             return Date.now().toString() + '_' + Math.random().toString(36).substr(2, 9);
         }
 
+        // Função para gerar datas válidas baseadas nos dias da semana permitidos
+        function generateValidDates(allowedWeekdays, monthsAhead = 6, monthsBehind = 6) {
+            if (!allowedWeekdays || allowedWeekdays.length === 0) {
+                return [];
+            }
+            
+            const validDates = [];
+            const today = new Date();
+            
+            // Data inicial (meses atrás)
+            const startDate = new Date();
+            startDate.setMonth(startDate.getMonth() - monthsBehind);
+            
+            // Data final (meses à frente)
+            const endDate = new Date();
+            endDate.setMonth(endDate.getMonth() + monthsAhead);
+            
+            let currentDate = new Date(startDate);
+            
+            while (currentDate <= endDate) {
+                const dayOfWeek = currentDate.getDay();
+                if (allowedWeekdays.includes(dayOfWeek)) {
+                    const dateStr = currentDate.toISOString().split('T')[0];
+                    validDates.push(dateStr);
+                }
+                currentDate.setDate(currentDate.getDate() + 1);
+            }
+            
+            return validDates;
+        }
+
+        // Função para obter a última data de PEF preenchida
+        function getLastPefDate(unitId) {
+            const unitAttendance = attendance.find(a => a.id === unitId);
+            if (!unitAttendance || !unitAttendance.lessons) {
+                return null;
+            }
+            
+            const lessons = unitAttendance.lessons;
+            const dates = [];
+            
+            // Coletar todas as datas preenchidas
+            for (const lessonKey in lessons) {
+                const lesson = lessons[lessonKey];
+                if (lesson && lesson.date) {
+                    dates.push(lesson.date);
+                }
+            }
+            
+            if (dates.length === 0) {
+                return null;
+            }
+            
+            // Ordenar datas e pegar a mais recente
+            dates.sort((a, b) => new Date(b) - new Date(a));
+            return dates[0];
+        }
+
         // Funções para configuração de lucro VIP e Turma
         window.openVipProfitModal = function() {
             clearModalHeaderButtons();
@@ -4847,6 +4919,7 @@
                                 const level = typeof item === 'string' ? item : item.level;
                                 const semester = typeof item === 'string' ? '' : item.semester;
                                 const isReprovacao = typeof item === 'object' ? item.isReprovacao : false;
+                                const modalidadeChange = typeof item === 'object' ? item.modalidadeChange : null;
                                 
                                 if (semester) {
                                     const bgColor = isReprovacao ? 'from-red-50 to-red-100' : 'from-yellow-50 to-yellow-100';
@@ -4859,9 +4932,18 @@
                                         </svg>
                                     ` : '';
                                     
-                                    return `<span class="inline-flex flex-col items-start px-3 py-1 bg-gradient-to-br ${bgColor} border ${borderColor} rounded-lg" title="${isReprovacao ? 'Reprovação - Aluno repetiu este nível' : ''}">
-                                        <span class="text-xs font-semibold ${textColor}">${level}${reprovacaoIcon}</span>
+                                    const modalidadeChangeText = modalidadeChange ? `\nMudança de modalidade: ${modalidadeChange.from} → ${modalidadeChange.to}` : '';
+                                    const modalidadeChangeIcon = modalidadeChange ? `
+                                        <svg class="w-3 h-3 text-blue-600 inline-block ml-1" fill="currentColor" viewBox="0 0 20 20" title="Mudança de modalidade: ${modalidadeChange.from} → ${modalidadeChange.to}">
+                                            <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/>
+                                            <path d="M5 8a1 1 0 011-1h4a1 1 0 110 2H6a1 1 0 01-1-1z"/>
+                                        </svg>
+                                    ` : '';
+                                    
+                                    return `<span class="inline-flex flex-col items-start px-3 py-1 bg-gradient-to-br ${bgColor} border ${borderColor} rounded-lg" title="${isReprovacao ? 'Reprovação - Aluno repetiu este nível' : ''}${modalidadeChangeText}">
+                                        <span class="text-xs font-semibold ${textColor}">${level}${reprovacaoIcon}${modalidadeChangeIcon}</span>
                                         <span class="text-xs ${semesterColor}">${semester}</span>
+                                        ${modalidadeChange ? `<span class="text-xs text-blue-600 mt-0.5">📋 ${modalidadeChange.from} → ${modalidadeChange.to}</span>` : ''}
                                     </span>`;
                                 } else {
                                     return `<span class="keyword-tag !m-0">${level}</span>`;
@@ -4927,27 +5009,41 @@
                 return;
             }
 
-            // Check if student has active enrollment
-            let hasActiveVip = false;
-            let hasActiveTurma = false;
+            // Check if student has enrollment (active or expired)
+            let hasVip = false;
+            let hasTurma = false;
             let currentVip = null;
             let currentTurma = null;
 
-            // Check VIP (compare as strings to ensure match)
-            currentVip = vips.find(v => String(v.studentId) === String(alunoId) && (!v.endDate || new Date(v.endDate) >= new Date()));
-            if (currentVip) hasActiveVip = true;
+            // Check VIP - find the most recent VIP (active or expired)
+            const studentVips = vips.filter(v => String(v.studentId) === String(alunoId));
+            if (studentVips.length > 0) {
+                // Sort by start date (most recent first) or by creation date if available
+                studentVips.sort((a, b) => {
+                    const dateA = new Date(a.startDate || a.createdAt || 0);
+                    const dateB = new Date(b.startDate || b.createdAt || 0);
+                    return dateB - dateA;
+                });
+                currentVip = studentVips[0];
+                hasVip = true;
+            }
 
             // Check Turma (compare as strings to ensure match)
             currentTurma = turmas.find(t => t.studentIds && t.studentIds.some(id => String(id) === String(alunoId)));
-            if (currentTurma) hasActiveTurma = true;
+            if (currentTurma) hasTurma = true;
 
-            if (!hasActiveVip && !hasActiveTurma) {
-                showErrorMessage("Erro", "Este aluno não possui matrícula ativa em VIP ou Turma para finalizar.\n\nPara fazer rematrícula, o aluno precisa estar matriculado em uma turma ou ter um VIP ativo.");
+            if (!hasVip && !hasTurma) {
+                showErrorMessage("Erro", "Este aluno não possui matrícula em VIP ou Turma para rematrícula.\n\nPara fazer rematrícula, o aluno precisa ter histórico de matrícula em turma ou VIP.");
                 return;
             }
 
-            const enrollmentInfo = hasActiveVip 
-                ? `VIP - ${currentVip.level || 'Nível não especificado'}`
+            // Check if VIP contract is expired
+            const isVipExpired = currentVip && currentVip.endDate && new Date(currentVip.endDate) < new Date();
+            const isVipActive = currentVip && (!currentVip.endDate || new Date(currentVip.endDate) >= new Date());
+            const enrollmentStatus = isVipExpired ? ' (contrato expirado)' : (isVipActive ? ' (ativo)' : '');
+            
+            const enrollmentInfo = hasVip 
+                ? `VIP - ${currentVip.level || 'Nível não especificado'}${enrollmentStatus}`
                 : `Turma - ${currentTurma.name || 'Nome não especificado'}`;
 
             // Generate level options for both selects
@@ -5125,12 +5221,27 @@
                 // Initialize completedLevels if it doesn't exist
                 const completedLevels = aluno.completedLevels || [];
                 
-                // Add selected current level to completed levels with reprovacao flag
-                completedLevels.push({
+                // Check if there's a modalidade change
+                const oldModalidade = aluno.modalidade || '';
+                const hasModalidadeChange = newModalidade && newModalidade !== oldModalidade;
+                
+                // Add selected current level to completed levels with reprovacao flag and modalidade change
+                const levelEntry = {
                     level: currentLevelToArchive,
                     semester: semester,
                     isReprovacao: isReprovacao
-                });
+                };
+                
+                // Add modalidade change information if applicable
+                if (hasModalidadeChange) {
+                    levelEntry.modalidadeChange = {
+                        from: oldModalidade,
+                        to: newModalidade,
+                        date: now.toISOString().split('T')[0]
+                    };
+                }
+                
+                completedLevels.push(levelEntry);
                 
                 // Update student - move selected level to completed and set new level
                 const updatedStudentData = {
@@ -5216,9 +5327,12 @@
                         ? `\n\nInformações financeiras atualizadas:${monthlyValue > 0 ? `\n- Mensalidade: R$ ${monthlyValue.toFixed(2)}` : ''}${paymentMethod ? `\n- Forma de pagamento: ${paymentMethod}` : ''}` 
                         : '';
                     
-                    const modalidadeMessage = newModalidade 
-                        ? `\n\nModalidade alterada para: ${newModalidade}` 
-                        : '';
+                    const oldModalidade = aluno.modalidade || '';
+                    const hasModalidadeChange = newModalidade && newModalidade !== oldModalidade;
+                    
+                    const modalidadeMessage = hasModalidadeChange
+                        ? `\n\n📋 MUDANÇA DE MODALIDADE REGISTRADA:\nDe: ${oldModalidade}\nPara: ${newModalidade}\n(Registrado no histórico do aluno)` 
+                        : (newModalidade ? `\n\nModalidade mantida: ${newModalidade}` : '');
                     
                     showSuccessMessage("Sucesso", `Rematrícula concluída com sucesso!\n\nNível "${currentLevelToArchive}" movido para histórico.\n${levelMessage}${reprovacaoMessage}${financialMessage}${modalidadeMessage}\n\n${wasTurma ? 'O aluno permanece vinculado à turma antiga para manter histórico de notas e presença.\n' : ''}O aluno está liberado para nova matrícula em VIP ou Turma.`);
                 }, 300);
@@ -6064,6 +6178,11 @@
             if (turma.day1?.weekday) allowedWeekdays.push(parseInt(turma.day1.weekday));
             if (turma.day2?.weekday) allowedWeekdays.push(parseInt(turma.day2.weekday));
             if (turma.day3?.weekday) allowedWeekdays.push(parseInt(turma.day3.weekday));
+            
+            // Gerar lista de datas válidas
+            const validDates = generateValidDates(allowedWeekdays);
+            const dayNames = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
+            const allowedDayNames = allowedWeekdays.map(d => dayNames[d]).join(', ');
 
             let lessonsHtml = '';
             for (let i = 1; i <= 40; i++) {
@@ -6083,13 +6202,23 @@
                         </div>
                     `;
                 }).join('');
+                
+                // Criar opções do select com as datas válidas
+                const dateOptions = validDates.map(date => {
+                    const dateObj = new Date(date + 'T00:00:00');
+                    const selected = date === lessonDate ? 'selected' : '';
+                    return `<option value="${date}" ${selected}>${formatDateBR(date)}</option>`;
+                }).join('');
 
                 lessonsHtml += `
                     <div class="border border-stone-200 rounded-lg p-4 mb-4" id="lesson-row-${turmaId}-${i}" data-lesson-number="${i}">
                         <!-- Cabeçalho da aula: Número e Data em linha -->
                         <div class="flex items-center gap-4 mb-3 pb-3 border-b border-stone-200">
                             <span class="font-bold text-stone-700 text-lg">Aula ${i}</span>
-                            <input type="date" class="form-input p-2 text-sm lesson-date flex-1" value="${lessonDate}" data-allowed-days="${allowedWeekdays.join(',')}">
+                            <select class="form-input p-2 text-sm lesson-date flex-1" data-allowed-days="${allowedWeekdays.join(',')}">
+                                <option value="">Selecione a data (${allowedDayNames})</option>
+                                ${dateOptions}
+                            </select>
                         </div>
                         
                         <!-- Tema e Observações lado a lado -->
@@ -6114,38 +6243,6 @@
                     </button>
                 </div>
             `;
-            
-            // Adicionar validação para os dias da semana permitidos
-            setTimeout(() => {
-                const dateInputs = document.querySelectorAll('.lesson-date');
-                console.log('Adicionando validação de dias para', dateInputs.length, 'inputs');
-                console.log('Dias permitidos da turma:', allowedWeekdays);
-                
-                dateInputs.forEach(input => {
-                    input.addEventListener('change', function() {
-                        const allowedDaysStr = this.dataset.allowedDays;
-                        console.log('Data selecionada, allowedDays:', allowedDaysStr);
-                        
-                        if (!allowedDaysStr || allowedDaysStr === '') {
-                            console.warn('Sem dias configurados para esta turma');
-                            return; // Sem validação se não houver dias configurados
-                        }
-                        
-                        const selectedDate = new Date(this.value);
-                        const dayOfWeek = selectedDate.getDay(); // 0 = domingo, 1 = segunda, etc
-                        const allowedDays = allowedDaysStr.split(',').map(Number).filter(n => !isNaN(n));
-                        
-                        console.log('Dia selecionado:', dayOfWeek, 'Dias permitidos:', allowedDays);
-                        
-                        if (allowedDays.length > 0 && !allowedDays.includes(dayOfWeek)) {
-                            const dayNames = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
-                            const allowedDayNames = allowedDays.map(d => dayNames[d]).join(', ');
-                            showErrorMessage('Data Inválida', `Por favor, selecione apenas ${allowedDayNames} (dias de aula desta turma).`);
-                            this.value = '';
-                        }
-                    });
-                });
-            }, 300);
             
             modal.classList.add('visible');
         }
@@ -6182,6 +6279,11 @@
             if (vip.day1?.weekday) allowedWeekdays.push(parseInt(vip.day1.weekday));
             if (vip.day2?.weekday) allowedWeekdays.push(parseInt(vip.day2.weekday));
             if (vip.day3?.weekday) allowedWeekdays.push(parseInt(vip.day3.weekday));
+            
+            // Gerar lista de datas válidas
+            const validDates = generateValidDates(allowedWeekdays);
+            const dayNames = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
+            const allowedDayNames = allowedWeekdays.map(d => dayNames[d]).join(', ');
 
             let lessonsHtml = '';
             for (let i = 1; i <= 40; i++) {
@@ -6201,12 +6303,21 @@
                         </div>
                     </div>
                 `;
+                
+                // Criar opções do select com as datas válidas
+                const dateOptions = validDates.map(date => {
+                    const selected = date === lessonDate ? 'selected' : '';
+                    return `<option value="${date}" ${selected}>${formatDateBR(date)}</option>`;
+                }).join('');
 
                 lessonsHtml += `
                     <div class="border border-stone-200 rounded-lg p-4 mb-4" id="lesson-row-${vipId}-${i}" data-lesson-number="${i}">
                         <div class="flex items-center gap-4 mb-3 pb-3 border-b border-stone-200">
                             <span class="font-bold text-stone-700 text-lg">Aula ${i}</span>
-                            <input type="date" class="form-input p-2 text-sm lesson-date flex-1" value="${lessonDate}" data-allowed-days="${allowedWeekdays.join(',')}">
+                            <select class="form-input p-2 text-sm lesson-date flex-1" data-allowed-days="${allowedWeekdays.join(',')}">
+                                <option value="">Selecione a data (${allowedDayNames})</option>
+                                ${dateOptions}
+                            </select>
                         </div>
                         <div class="space-y-3">
                             <textarea class="form-input p-2 text-sm w-full lesson-topic" placeholder="Tema da aula" rows="2">${lessonTopic}</textarea>
@@ -6225,38 +6336,6 @@
                     </button>
                 </div>
             `;
-            
-            // Adicionar validação para os dias da semana permitidos
-            setTimeout(() => {
-                const dateInputs = document.querySelectorAll('.lesson-date');
-                console.log('Adicionando validação de dias para VIP, inputs:', dateInputs.length);
-                console.log('Dias permitidos do VIP:', allowedWeekdays);
-                
-                dateInputs.forEach(input => {
-                    input.addEventListener('change', function() {
-                        const allowedDaysStr = this.dataset.allowedDays;
-                        console.log('Data selecionada (VIP), allowedDays:', allowedDaysStr);
-                        
-                        if (!allowedDaysStr || allowedDaysStr === '') {
-                            console.warn('Sem dias configurados para este VIP');
-                            return; // Sem validação se não houver dias configurados
-                        }
-                        
-                        const selectedDate = new Date(this.value);
-                        const dayOfWeek = selectedDate.getDay(); // 0 = domingo, 1 = segunda, etc
-                        const allowedDays = allowedDaysStr.split(',').map(Number).filter(n => !isNaN(n));
-                        
-                        console.log('Dia selecionado (VIP):', dayOfWeek, 'Dias permitidos:', allowedDays);
-                        
-                        if (allowedDays.length > 0 && !allowedDays.includes(dayOfWeek)) {
-                            const dayNames = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
-                            const allowedDayNames = allowedDays.map(d => dayNames[d]).join(', ');
-                            showErrorMessage('Data Inválida', `Por favor, selecione apenas ${allowedDayNames} (dias de aula deste VIP).`);
-                            this.value = '';
-                        }
-                    });
-                });
-            }, 300);
             
             modal.classList.add('visible');
         }
@@ -6984,6 +7063,26 @@
                         <div class="grid grid-cols-2 gap-2 bg-white p-3 rounded border border-yellow-200">${pageCheckboxes}</div>
                         <p class="text-xs text-yellow-700 mt-2">⚠️ Admin tem acesso total automaticamente</p>
                     </div>
+
+                    ${!collaboratorId ? `
+                    <div class="bg-green-50 p-4 rounded-lg border border-green-200">
+                        <div class="flex items-center mb-3">
+                            <input type="checkbox" id="create-firebase-user-checkbox" class="h-4 w-4 rounded" onchange="toggleFirebaseUserFields()">
+                            <label for="create-firebase-user-checkbox" class="ml-2 font-medium text-sm text-green-900">Criar usuário Firebase para acesso ao sistema</label>
+                        </div>
+                        <div id="firebase-user-fields" class="hidden space-y-3">
+                            <div>
+                                <label class="font-medium text-sm text-green-900">Email para Login</label>
+                                <input type="email" id="firebase-email" class="form-input" placeholder="email@exemplo.com">
+                            </div>
+                            <div>
+                                <label class="font-medium text-sm text-green-900">Senha</label>
+                                <input type="password" id="firebase-password" class="form-input" placeholder="Mínimo 6 caracteres" minlength="6">
+                            </div>
+                            <p class="text-xs text-green-700">O colaborador poderá fazer login no sistema com este email e senha</p>
+                        </div>
+                    </div>
+                    ` : ''}
                     
                     <div class="text-right"><button type="submit" class="primary-btn w-auto">Salvar</button></div>
                 </form>`;
@@ -7005,6 +7104,18 @@
             }
         }
 
+        window.toggleFirebaseUserFields = function() {
+            const checkbox = document.getElementById('create-firebase-user-checkbox');
+            const fields = document.getElementById('firebase-user-fields');
+            if (checkbox && fields) {
+                if (checkbox.checked) {
+                    fields.classList.remove('hidden');
+                } else {
+                    fields.classList.add('hidden');
+                }
+            }
+        };
+
         async function saveCollaborator(event) {
             event.preventDefault();
             const collaboratorId = document.getElementById('collaborator-id').value;
@@ -7022,6 +7133,16 @@
 
             if (!data.name) { showErrorMessage("Erro", "O nome do colaborador é obrigatório."); return; }
             if (!data.role) { showErrorMessage("Erro", "O role de acesso é obrigatório."); return; }
+            
+            // Check if creating Firebase user
+            const createFirebaseUser = !collaboratorId && document.getElementById('create-firebase-user-checkbox')?.checked;
+            const firebaseEmail = document.getElementById('firebase-email')?.value;
+            const firebasePassword = document.getElementById('firebase-password')?.value;
+            
+            if (createFirebaseUser && (!firebaseEmail || !firebasePassword)) {
+                showErrorMessage("Erro", "Por favor, preencha o email e senha para criar o usuário Firebase.");
+                return;
+            }
             
             if (window.isDevelopmentMode) {
                 // Modo desenvolvimento (local storage)
@@ -7045,14 +7166,49 @@
             if (!db) { console.warn("Offline mode."); closeFormModal(); return; }
 
             try {
-                 if (collaboratorId) {
+                let savedCollaboratorId = collaboratorId;
+                
+                if (collaboratorId) {
                     await updateDoc(doc(db, `artifacts/${appId}/public/data/collaborators`, collaboratorId), data);
-                    showSuccessMessage("Sucesso!", "Colaborador atualizado.");
                 } else {
-                    await addDoc(collection(db, `artifacts/${appId}/public/data/collaborators`), data);
-                    showSuccessMessage("Sucesso!", "Colaborador adicionado.");
+                    const docRef = await addDoc(collection(db, `artifacts/${appId}/public/data/collaborators`), data);
+                    savedCollaboratorId = docRef.id;
                 }
+                
+                // Create Firebase user if checkbox is checked
+                if (createFirebaseUser && firebaseEmail && firebasePassword) {
+                    try {
+                        const response = await fetch('/api/firebase/create-user', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ 
+                                email: firebaseEmail, 
+                                password: firebasePassword, 
+                                displayName: data.name 
+                            })
+                        });
+                        
+                        const firebaseData = await response.json();
+                        
+                        if (response.ok) {
+                            // Update collaborator with Firebase UID
+                            await updateDoc(doc(db, `artifacts/${appId}/public/data/collaborators`, savedCollaboratorId), {
+                                firebaseUid: firebaseData.uid,
+                                email: firebaseEmail
+                            });
+                            showSuccessMessage("Sucesso!", `Colaborador e usuário Firebase criados com sucesso!\n\nO colaborador poderá fazer login com: ${firebaseEmail}`);
+                        } else {
+                            showSuccessMessage("Parcial", `Colaborador criado, mas erro ao criar usuário Firebase: ${firebaseData.error}`);
+                        }
+                    } catch (error) {
+                        showSuccessMessage("Parcial", `Colaborador criado, mas erro ao criar usuário Firebase: ${error.message}`);
+                    }
+                } else {
+                    showSuccessMessage("Sucesso!", collaboratorId ? "Colaborador atualizado." : "Colaborador adicionado.");
+                }
+                
                 closeFormModal();
+                renderColaboradoresSection();
             } catch (error) { console.error("Error saving collaborator:", error); showErrorMessage("Erro", "Falha ao salvar o colaborador."); }
         }
 
@@ -7060,6 +7216,31 @@
         function openScheduleForm(scheduleId = null) {
             clearModalHeaderButtons();
             const schedule = scheduleId ? schedules.find(s => s.id === scheduleId) : null;
+            
+            // If editing, find all related schedules (same teacher, student, type)
+            let relatedSchedules = [];
+            let day1Schedule = null;
+            let day2Schedule = null;
+            let day3Schedule = null;
+            
+            if (schedule) {
+                relatedSchedules = schedules.filter(s => 
+                    s.teacher === schedule.teacher &&
+                    s.student === schedule.student &&
+                    s.type === schedule.type
+                );
+                
+                // Sort by day to assign correctly
+                relatedSchedules.sort((a, b) => {
+                    const dayOrder = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
+                    return dayOrder.indexOf(a.day) - dayOrder.indexOf(b.day);
+                });
+                
+                day1Schedule = relatedSchedules[0] || null;
+                day2Schedule = relatedSchedules[1] || null;
+                day3Schedule = relatedSchedules[2] || null;
+            }
+            
             document.getElementById('form-modal-title').textContent = schedule ? "Detalhes da Aula" : "Adicionar Nova Aula";
             const isTeacher = currentUserRole === 'teacher';
 
@@ -7123,8 +7304,8 @@
                     <h4 class="font-semibold text-sm text-stone-700 mb-3">Dia 1 <span class="text-red-500">*</span></h4>
                     <div class="grid grid-cols-3 gap-4">
                         <div><label class="font-medium text-xs">Dia da Semana</label><select id="schedule-day1" class="form-input" required ${isTeacher ? 'disabled' : ''}>${dayOptions}</select></div>
-                        <div><label class="font-medium text-xs">Início</label><input type="time" id="schedule-start1" class="form-input" required value="${schedule?.startTime || ''}" ${isTeacher ? 'disabled' : ''}></div>
-                        <div><label class="font-medium text-xs">Fim</label><input type="time" id="schedule-end1" class="form-input" required value="${schedule?.endTime || ''}" ${isTeacher ? 'disabled' : ''}></div>
+                        <div><label class="font-medium text-xs">Início</label><input type="time" id="schedule-start1" class="form-input" required value="${day1Schedule?.startTime || schedule?.startTime || ''}" ${isTeacher ? 'disabled' : ''}></div>
+                        <div><label class="font-medium text-xs">Fim</label><input type="time" id="schedule-end1" class="form-input" required value="${day1Schedule?.endTime || schedule?.endTime || ''}" ${isTeacher ? 'disabled' : ''}></div>
                     </div>
                 </div>
                 
@@ -7132,8 +7313,8 @@
                     <h4 class="font-semibold text-sm text-stone-700 mb-3">Dia 2 <span class="text-stone-400 text-xs">(opcional)</span></h4>
                     <div class="grid grid-cols-3 gap-4">
                         <div><label class="font-medium text-xs">Dia da Semana</label><select id="schedule-day2" class="form-input" ${isTeacher ? 'disabled' : ''}>${dayOptions}</select></div>
-                        <div><label class="font-medium text-xs">Início</label><input type="time" id="schedule-start2" class="form-input" ${isTeacher ? 'disabled' : ''}></div>
-                        <div><label class="font-medium text-xs">Fim</label><input type="time" id="schedule-end2" class="form-input" ${isTeacher ? 'disabled' : ''}></div>
+                        <div><label class="font-medium text-xs">Início</label><input type="time" id="schedule-start2" class="form-input" value="${day2Schedule?.startTime || ''}" ${isTeacher ? 'disabled' : ''}></div>
+                        <div><label class="font-medium text-xs">Fim</label><input type="time" id="schedule-end2" class="form-input" value="${day2Schedule?.endTime || ''}" ${isTeacher ? 'disabled' : ''}></div>
                     </div>
                 </div>
                 
@@ -7141,8 +7322,8 @@
                     <h4 class="font-semibold text-sm text-stone-700 mb-3">Dia 3 <span class="text-stone-400 text-xs">(opcional)</span></h4>
                     <div class="grid grid-cols-3 gap-4">
                         <div><label class="font-medium text-xs">Dia da Semana</label><select id="schedule-day3" class="form-input" ${isTeacher ? 'disabled' : ''}>${dayOptions}</select></div>
-                        <div><label class="font-medium text-xs">Início</label><input type="time" id="schedule-start3" class="form-input" ${isTeacher ? 'disabled' : ''}></div>
-                        <div><label class="font-medium text-xs">Fim</label><input type="time" id="schedule-end3" class="form-input" ${isTeacher ? 'disabled' : ''}></div>
+                        <div><label class="font-medium text-xs">Início</label><input type="time" id="schedule-start3" class="form-input" value="${day3Schedule?.startTime || ''}" ${isTeacher ? 'disabled' : ''}></div>
+                        <div><label class="font-medium text-xs">Fim</label><input type="time" id="schedule-end3" class="form-input" value="${day3Schedule?.endTime || ''}" ${isTeacher ? 'disabled' : ''}></div>
                     </div>
                 </div>
                 
@@ -7360,11 +7541,17 @@
                 });
             }
 
-            // Preencher valores do Dia 3 se já existir (modo edição)
-            if (schedule?.day3) {
-                document.getElementById('schedule-day3').value = schedule.day3 || '';
-                document.getElementById('schedule-start3').value = schedule.startTime3 || '';
-                document.getElementById('schedule-end3').value = schedule.endTime3 || '';
+            // Preencher valores de Dia 1, Dia 2 e Dia 3 se já existirem (modo edição)
+            if (day1Schedule) {
+                document.getElementById('schedule-day1').value = day1Schedule.day || '';
+            }
+            
+            if (day2Schedule) {
+                document.getElementById('schedule-day2').value = day2Schedule.day || '';
+            }
+            
+            if (day3Schedule) {
+                document.getElementById('schedule-day3').value = day3Schedule.day || '';
                 day3Container.classList.remove('hidden');
                 if (addDayBtn) addDayBtn.classList.add('hidden');
             }
@@ -9349,26 +9536,36 @@
             turmas.forEach(turma => {
                 if (turma.finalizada) return;
                 
-                turma.students?.forEach(studentId => {
-                    const student = students.find(a => a.id === studentId);
-                    if (!student) return;
-                    
-                    const pef = turma.pef || {};
+                const turmaAttendance = attendance.find(a => a.id === turma.id);
+                if (!turmaAttendance || !turmaAttendance.lessons) return;
+                
+                const turmaStudents = students.filter(s => 
+                    (turma.studentIds || []).includes(s.id) && s.modalidade === 'TURMA'
+                );
+                
+                turmaStudents.forEach(student => {
+                    const lessons = turmaAttendance.lessons;
                     let consecutiveAbsences = 0;
-                    let absenceLessons = [];
+                    let absenceDates = [];
                     
-                    // Verificar últimas aulas (mais recente para mais antiga)
-                    for (let i = 40; i >= 1; i--) {
-                        const lesson = pef[i];
-                        if (!lesson || !lesson.students) continue;
+                    // Coletar todas as datas de aula e ordenar da mais recente para mais antiga
+                    const lessonDates = [];
+                    for (const lessonKey in lessons) {
+                        const lesson = lessons[lessonKey];
+                        if (lesson && lesson.date) {
+                            lessonDates.push({ key: lessonKey, date: lesson.date, lesson: lesson });
+                        }
+                    }
+                    lessonDates.sort((a, b) => new Date(b.date) - new Date(a.date));
+                    
+                    // Verificar faltas consecutivas da aula mais recente
+                    for (const lessonData of lessonDates) {
+                        const lesson = lessonData.lesson;
+                        const studentAttendance = lesson.students?.[student.id];
                         
-                        // Verificar se a aula tem data registrada
-                        if (!lesson.date) continue;
-                        
-                        const studentAttendance = lesson.students[studentId];
-                        if (studentAttendance === false) {
+                        if (studentAttendance === false || studentAttendance === 'falta') {
                             consecutiveAbsences++;
-                            absenceLessons.unshift(i);
+                            absenceDates.push(lessonData.date);
                             if (consecutiveAbsences >= 2) {
                                 studentsWithAbsences.push({
                                     studentId: student.id,
@@ -9376,14 +9573,14 @@
                                     type: 'turma',
                                     turmaId: turma.id,
                                     turmaName: turma.name,
-                                    teacherId: turma.teacher,
-                                    teacherName: collaborators.find(c => c.id === turma.teacher)?.name || 'Sem professor',
-                                    absenceLessons: absenceLessons.slice(0, 2),
+                                    teacherId: turma.teacherId,
+                                    teacherName: turma.teacherName || 'Sem professor',
+                                    absenceDates: absenceDates.slice(0, 2),
                                     consecutiveCount: consecutiveAbsences
                                 });
                                 break;
                             }
-                        } else if (studentAttendance === true) {
+                        } else if (studentAttendance === true || studentAttendance === 'presente') {
                             break; // Para quando encontrar uma presença
                         }
                     }
@@ -9394,38 +9591,48 @@
             vips.forEach(vip => {
                 if (vip.finalizado) return;
                 
+                const vipAttendance = attendance.find(a => a.id === vip.id);
+                if (!vipAttendance || !vipAttendance.lessons) return;
+                
                 const student = students.find(a => a.id === vip.studentId);
                 if (!student) return;
                 
-                const pef = vip.pef || {};
+                const lessons = vipAttendance.lessons;
                 let consecutiveAbsences = 0;
-                let absenceLessons = [];
+                let absenceDates = [];
                 
-                // Verificar últimas aulas (mais recente para mais antiga)
-                for (let i = 40; i >= 1; i--) {
-                    const lesson = pef[i];
-                    if (!lesson) continue;
+                // Coletar todas as datas de aula e ordenar da mais recente para mais antiga
+                const lessonDates = [];
+                for (const lessonKey in lessons) {
+                    const lesson = lessons[lessonKey];
+                    if (lesson && lesson.date) {
+                        lessonDates.push({ key: lessonKey, date: lesson.date, lesson: lesson });
+                    }
+                }
+                lessonDates.sort((a, b) => new Date(b.date) - new Date(a.date));
+                
+                // Verificar faltas consecutivas da aula mais recente
+                for (const lessonData of lessonDates) {
+                    const lesson = lessonData.lesson;
+                    const studentAttendance = lesson.students?.[student.id];
                     
-                    // Verificar se a aula tem data registrada
-                    if (!lesson.date) continue;
-                    
-                    if (lesson.attendance === false || lesson.attendance === 'falta') {
+                    if (studentAttendance === false || studentAttendance === 'falta') {
                         consecutiveAbsences++;
-                        absenceLessons.unshift(i);
+                        absenceDates.push(lessonData.date);
                         if (consecutiveAbsences >= 2) {
                             studentsWithAbsences.push({
                                 studentId: student.id,
                                 studentName: student.name,
                                 type: 'vip',
                                 vipId: vip.id,
-                                teacherId: vip.teacher,
-                                teacherName: collaborators.find(c => c.id === vip.teacher)?.name || 'Sem professor',
-                                absenceLessons: absenceLessons.slice(0, 2),
+                                teacherId: vip.teacherId,
+                                teacherName: vip.teacherName || 'Sem professor',
+                                absenceDates: absenceDates.slice(0, 2),
                                 consecutiveCount: consecutiveAbsences
                             });
                             break;
                         }
-                    } else if (lesson.attendance === true || lesson.attendance === 'presente') {
+                    } else if (studentAttendance === true || studentAttendance === 'presente') {
                         break; // Para quando encontrar uma presença
                     }
                 }
@@ -10052,6 +10259,14 @@
             const contentArea = document.getElementById('content-area');
 
             contentArea.innerHTML = `
+                <!-- Fixed Date Cards Section -->
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-stone-800 mb-4">Períodos Fixos</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" id="fixed-date-cards-container">
+                        <!-- Cards will be rendered here -->
+                    </div>
+                </div>
+
                 <div class="calendar-container">
                     <div class="calendar-header">
                         <div class="flex items-center gap-4">
@@ -10074,6 +10289,36 @@
                     </div>
                     <div class="calendar-grid" id="calendar-grid">
                         <!-- Calendar will be rendered here -->
+                    </div>
+                </div>
+
+                <!-- Fixed Date Card Edit Modal -->
+                <div id="fixed-date-card-modal" class="modal-overlay">
+                    <div class="modal-content max-w-md">
+                        <div class="modal-header">
+                            <h4>Editar Período Fixo</h4>
+                            <button data-action="close-fixed-date-modal" class="modal-close-btn">&times;</button>
+                        </div>
+                        <form id="fixed-date-card-form">
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="font-medium text-sm">Título</label>
+                                    <input type="text" id="fixed-card-title" class="form-input" required>
+                                </div>
+                                <div>
+                                    <label class="font-medium text-sm">Data de Início</label>
+                                    <input type="date" id="fixed-card-start-date" class="form-input" required>
+                                </div>
+                                <div>
+                                    <label class="font-medium text-sm">Data de Finalização</label>
+                                    <input type="date" id="fixed-card-end-date" class="form-input" required>
+                                </div>
+                            </div>
+                            <div class="mt-6 flex justify-end gap-3">
+                                <button type="button" class="secondary-btn" data-action="close-fixed-date-modal">Cancelar</button>
+                                <button type="submit" class="primary-btn">Salvar</button>
+                            </div>
+                        </form>
                     </div>
                 </div>
 
@@ -10148,6 +10393,7 @@
 
         let currentCalendarDate = new Date();
         let calendarEvents = [];
+        let fixedDateCards = [];
 
 
         // Brazilian national holidays only for pedagogical calendar
@@ -10173,6 +10419,7 @@
         function initializeCalendar() {
             renderCalendar();
             loadCalendarEvents();
+            loadFixedDateCards();
         }
 
         function changeMonth(direction) {
@@ -10241,6 +10488,58 @@
             return [...events, ...holidays];
         }
 
+        async function loadFixedDateCards() {
+            if (!db) {
+                const localCards = JSON.parse(localStorage.getItem('fixedDateCards') || '[]');
+                if (localCards.length === 0) {
+                    // Initialize 8 empty cards
+                    fixedDateCards = Array.from({ length: 8 }, (_, i) => ({
+                        id: `fixed-${i + 1}`,
+                        title: `Período ${i + 1}`,
+                        startDate: '',
+                        endDate: ''
+                    }));
+                    localStorage.setItem('fixedDateCards', JSON.stringify(fixedDateCards));
+                } else {
+                    fixedDateCards = localCards;
+                }
+                renderFixedDateCards();
+                return;
+            }
+
+            try {
+                const cardsCollection = collection(db, `artifacts/${appId}/public/data/fixed-date-cards`);
+                const cardsSnapshot = await getDocs(cardsCollection);
+                
+                if (cardsSnapshot.empty) {
+                    // Initialize 8 empty cards in Firebase
+                    fixedDateCards = Array.from({ length: 8 }, (_, i) => ({
+                        id: `fixed-${i + 1}`,
+                        title: `Período ${i + 1}`,
+                        startDate: '',
+                        endDate: ''
+                    }));
+                    for (const card of fixedDateCards) {
+                        await setDoc(doc(db, `artifacts/${appId}/public/data/fixed-date-cards`, card.id), card);
+                    }
+                } else {
+                    fixedDateCards = cardsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                }
+                
+                // Set up real-time listener
+                onSnapshot(cardsCollection, (snapshot) => {
+                    fixedDateCards = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    renderFixedDateCards();
+                });
+                
+                renderFixedDateCards();
+            } catch (error) {
+                console.error("Error loading fixed date cards:", error);
+                fixedDateCards = [];
+                renderFixedDateCards();
+            }
+        }
+
         async function loadCalendarEvents() {
             if (!db) {
                 console.warn("Firebase not available, loading from localStorage");
@@ -10280,6 +10579,103 @@
 
         async function saveCalendarEvents() {
             // No longer needed - events are saved individually via saveCalendarEvent
+        }
+
+        function renderFixedDateCards() {
+            const container = document.getElementById('fixed-date-cards-container');
+            if (!container) return;
+
+            const canEdit = currentUserRole !== 'teacher';
+
+            container.innerHTML = fixedDateCards.map(card => {
+                const hasData = card.startDate && card.endDate;
+                const hoverClass = canEdit ? 'hover:shadow-lg cursor-pointer' : 'cursor-default';
+                const clickAction = canEdit ? `data-action="edit-fixed-card" data-card-id="${card.id}"` : '';
+                
+                return `
+                    <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-6 rounded-lg border border-stone-200 ${hoverClass} transition-shadow" ${clickAction}>
+                        <div class="mb-2">
+                            <h3 class="text-sm font-medium text-stone-700 uppercase tracking-wide">${card.title || 'Período'}</h3>
+                        </div>
+                        ${hasData ? `
+                            <div class="space-y-1">
+                                <p class="text-2xl font-bold text-stone-800">${formatDateBR(card.startDate)}</p>
+                                <p class="text-xs text-stone-600 mt-1">Início</p>
+                                <p class="text-2xl font-bold text-stone-800 mt-3">${formatDateBR(card.endDate)}</p>
+                                <p class="text-xs text-stone-600 mt-1">Finalização</p>
+                            </div>
+                        ` : `
+                            <p class="text-lg text-stone-400 italic mt-2">Clique para configurar</p>
+                        `}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function openFixedDateCardModal(cardId) {
+            if (currentUserRole === 'teacher') {
+                return; // Teachers cannot edit
+            }
+
+            const card = fixedDateCards.find(c => c.id === cardId);
+            if (!card) return;
+
+            const modal = document.getElementById('fixed-date-card-modal');
+            const form = document.getElementById('fixed-date-card-form');
+
+            document.getElementById('fixed-card-title').value = card.title || '';
+            document.getElementById('fixed-card-start-date').value = card.startDate || '';
+            document.getElementById('fixed-card-end-date').value = card.endDate || '';
+
+            modal.classList.add('visible');
+
+            form.onsubmit = async (e) => {
+                e.preventDefault();
+                await saveFixedDateCard(cardId);
+                modal.classList.remove('visible');
+            };
+        }
+
+        async function saveFixedDateCard(cardId) {
+            const title = document.getElementById('fixed-card-title').value;
+            const startDate = document.getElementById('fixed-card-start-date').value;
+            const endDate = document.getElementById('fixed-card-end-date').value;
+
+            if (!title || !startDate || !endDate) {
+                showErrorMessage("Erro", "Todos os campos são obrigatórios.");
+                return;
+            }
+
+            const updatedCard = {
+                id: cardId,
+                title: title,
+                startDate: startDate,
+                endDate: endDate
+            };
+
+            const cardIndex = fixedDateCards.findIndex(c => c.id === cardId);
+            if (cardIndex !== -1) {
+                fixedDateCards[cardIndex] = updatedCard;
+            }
+
+            try {
+                if (!db) {
+                    localStorage.setItem('fixedDateCards', JSON.stringify(fixedDateCards));
+                    renderFixedDateCards();
+                    showSuccessMessage("Sucesso!", "Período salvo com sucesso.");
+                } else {
+                    await setDoc(doc(db, `artifacts/${appId}/public/data/fixed-date-cards`, cardId), updatedCard);
+                    showSuccessMessage("Sucesso!", "Período salvo com sucesso.");
+                }
+            } catch (error) {
+                console.error("Error saving fixed date card:", error);
+                showErrorMessage("Erro", "Erro ao salvar período: " + error.message);
+            }
+        }
+
+        function closeFixedDateModal() {
+            const modal = document.getElementById('fixed-date-card-modal');
+            modal.classList.remove('visible');
         }
 
 
@@ -12558,12 +12954,6 @@
 
         // --- Calendar Event Functions ---
         function openCalendarEventForm(eventId = null) {
-            // Check if user has permission to create/edit events
-            if (currentUserRole === 'teacher') {
-                showErrorMessage("Acesso Negado", "Usuários com role 'teacher' não podem criar ou editar este item.");
-                return;
-            }
-
             const modal = document.getElementById('calendar-event-modal');
             const form = document.getElementById('calendar-event-form');
             const title = document.getElementById('event-modal-title');
@@ -13159,6 +13549,15 @@
                         'add-calendar-event': openCalendarEventForm,
                         'view-calendar-event': () => viewCalendarEvent(id),
                         'edit-calendar-event': () => openCalendarEventForm(id),
+                        'edit-fixed-card': () => {
+                            const cardId = actionTarget.dataset.cardId;
+                            openFixedDateCardModal(cardId);
+                        },
+                        'close-fixed-date-modal': closeFixedDateModal,
+                        'close-calendar-modal': () => {
+                            const modal = document.getElementById('calendar-event-modal');
+                            if (modal) modal.classList.remove('visible');
+                        },
                         'add-tn': () => openTNModal(),
                         'add-guideline': openGuidelineForm,
                         'export-guidelines': exportGuidelinesDoc,
