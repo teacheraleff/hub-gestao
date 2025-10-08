@@ -1686,9 +1686,10 @@
                     </div>
                     <div class="mt-auto pt-4 border-t ${borderColor} flex gap-2">
                         ${vipRecord ? `
-                            <button class="primary-btn !text-sm flex-1 flex items-center justify-center" data-action="open-vip-pef" data-id="${vipRecord.id}">PEF</button>
-                            <button class="secondary-btn !text-sm flex-1 flex items-center justify-center" data-action="open-vip-notas" data-id="${vipRecord.id}">Notas</button>
-                            ${currentUserRole !== 'teacher' && !isFinalizado ? `<button class="secondary-btn !text-sm flex-1" data-action="edit-vip" data-id="${vipRecord.id}">Configurar</button>` : ''}
+                            <button class="primary-btn !text-sm flex-1 flex items-center justify-center ${isFinalizado ? 'opacity-50' : ''}" data-action="${isFinalizado ? 'vip-finalizado' : 'open-vip-pef'}" data-id="${vipRecord.id}">PEF</button>
+                            <button class="secondary-btn !text-sm flex-1 flex items-center justify-center ${isFinalizado ? 'opacity-50' : ''}" data-action="${isFinalizado ? 'vip-finalizado' : 'open-vip-notas'}" data-id="${vipRecord.id}">Notas</button>
+                            ${currentUserRole !== 'teacher' ? `<button class="secondary-btn !text-sm flex-1 ${isFinalizado ? 'opacity-50 cursor-not-allowed' : ''}" data-action="${isFinalizado ? 'vip-finalizado' : 'edit-vip'}" data-id="${vipRecord.id}" ${isFinalizado ? 'disabled' : ''}>Configurar</button>` : ''}
+                            ${isFinalizado && currentUserRole !== 'teacher' ? `<button class="secondary-btn !text-sm flex-1" style="background-color: #10B981; color: white;" data-action="reativar-vip" data-id="${vipRecord.id}">Reativar</button>` : ''}
                         ` : ''}
                     </div>
                 </div>`}).join('') || '<p class="col-span-full text-center py-10 text-stone-500">Nenhum aluno VIP encontrado.</p>';
@@ -1877,9 +1878,10 @@
                                 </div>
                             </div>
                             <div class="mt-auto pt-4 border-t ${isFinalizada ? 'border-stone-200' : 'border-stone-100'} flex gap-2">
-                                ${canManage && !isFinalizada ? `<button class="secondary-btn !text-sm flex-1" data-action="edit-turma" data-id="${t.id}">Editar</button>` : ''}
-                                <button class="primary-btn !text-sm flex-1 flex items-center justify-center" data-action="open-turma-pef" data-id="${t.id}">PEF</button>
-                                <button class="secondary-btn !text-sm flex-1 flex items-center justify-center" data-action="open-turma-notas" data-id="${t.id}">Notas</button>
+                                ${canManage ? `<button class="secondary-btn !text-sm flex-1 ${isFinalizada ? 'opacity-50 cursor-not-allowed' : ''}" data-action="${isFinalizada ? 'turma-finalizada' : 'edit-turma'}" data-id="${t.id}" ${isFinalizada ? 'disabled' : ''}>Editar</button>` : ''}
+                                <button class="primary-btn !text-sm flex-1 flex items-center justify-center ${isFinalizada ? 'opacity-50' : ''}" data-action="${isFinalizada ? 'turma-finalizada' : 'open-turma-pef'}" data-id="${t.id}">PEF</button>
+                                <button class="secondary-btn !text-sm flex-1 flex items-center justify-center ${isFinalizada ? 'opacity-50' : ''}" data-action="${isFinalizada ? 'turma-finalizada' : 'open-turma-notas'}" data-id="${t.id}">Notas</button>
+                                ${isFinalizada && canManage ? `<button class="secondary-btn !text-sm flex-1" style="background-color: #10B981; color: white;" data-action="reativar-turma" data-id="${t.id}">Reativar</button>` : ''}
                             </div>
                         </div>`}).join('') || '<p class="col-span-full text-center py-10 text-stone-500">Nenhuma turma encontrada.</p>'}
                     </div>
@@ -3916,6 +3918,11 @@
                 style: 'currency',
                 currency: 'BRL'
             }).format(value);
+        }
+
+        // Função para gerar IDs únicos
+        function generateId() {
+            return Date.now().toString() + '_' + Math.random().toString(36).substr(2, 9);
         }
 
         // Funções para configuração de lucro VIP e Turma
@@ -9337,7 +9344,6 @@
 
         function detectConsecutiveAbsences() {
             const studentsWithAbsences = [];
-            const cutoffDate = new Date('2025-09-15');
             
             // Checar turmas
             turmas.forEach(turma => {
@@ -9351,15 +9357,13 @@
                     let consecutiveAbsences = 0;
                     let absenceLessons = [];
                     
-                    // Verificar últimas 5 aulas
+                    // Verificar últimas aulas (mais recente para mais antiga)
                     for (let i = 40; i >= 1; i--) {
                         const lesson = pef[i];
                         if (!lesson || !lesson.students) continue;
                         
-                        // Verificar se a aula tem data e se é >= 22/09/2025
-                        if (!lesson.date) continue; // Ignora aulas sem data
-                        const lessonDate = new Date(lesson.date);
-                        if (lessonDate < cutoffDate) continue; // Ignora aulas antes de 22/09/2025
+                        // Verificar se a aula tem data registrada
+                        if (!lesson.date) continue;
                         
                         const studentAttendance = lesson.students[studentId];
                         if (studentAttendance === false) {
@@ -9397,15 +9401,13 @@
                 let consecutiveAbsences = 0;
                 let absenceLessons = [];
                 
-                // Verificar últimas 5 aulas
+                // Verificar últimas aulas (mais recente para mais antiga)
                 for (let i = 40; i >= 1; i--) {
                     const lesson = pef[i];
                     if (!lesson) continue;
                     
-                    // Verificar se a aula tem data e se é >= 22/09/2025
-                    if (!lesson.date) continue; // Ignora aulas sem data
-                    const lessonDate = new Date(lesson.date);
-                    if (lessonDate < cutoffDate) continue; // Ignora aulas antes de 22/09/2025
+                    // Verificar se a aula tem data registrada
+                    if (!lesson.date) continue;
                     
                     if (lesson.attendance === false || lesson.attendance === 'falta') {
                         consecutiveAbsences++;
@@ -13173,6 +13175,12 @@
                         'delete-all-vips': deleteAllVips,
 
                         'debug-sync-status': debugSyncStatus,
+                        
+                        // Handlers para turmas/VIPs finalizados
+                        'turma-finalizada': () => showErrorMessage("Turma Finalizada", "Esta turma está finalizada. Reative a turma para poder editá-la ou registrar presenças."),
+                        'vip-finalizado': () => showErrorMessage("VIP Finalizado", "Este VIP está finalizado. Reative o VIP para poder editá-lo ou registrar presenças."),
+                        'reativar-turma': () => reativarTurma(id),
+                        'reativar-vip': () => reativarVip(id),
                     };
                     if (actionHandlers[action]) {
                         console.log('Executing action:', action);
