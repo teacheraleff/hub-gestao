@@ -4561,6 +4561,7 @@
                                 return completedLevels.map((item, index) => {
                                     const level = typeof item === 'string' ? item : item.level;
                                     const semester = typeof item === 'string' ? '' : (item.semester || '');
+                                    const modalidade = typeof item === 'string' ? '' : (item.modalidade || '');
                                     return `
                                         <div class="flex items-center gap-2 bg-white p-2 rounded border border-stone-200" data-level-index="${index}">
                                             <select class="flex-1 text-sm border border-stone-300 rounded px-2 py-1 level-select" onchange="updateLevelData()">
@@ -4574,6 +4575,12 @@
                                                 onchange="updateLevelData()"
                                                 pattern="\\d{4}\\.[12]"
                                                 title="Formato: YYYY.1 ou YYYY.2">
+                                            <select class="w-28 text-sm border border-stone-300 rounded px-2 py-1 modalidade-select" onchange="updateLevelData()">
+                                                <option value="">Modalidade</option>
+                                                <option value="VIP" ${modalidade === 'VIP' ? 'selected' : ''}>VIP</option>
+                                                <option value="TURMA" ${modalidade === 'TURMA' ? 'selected' : ''}>TURMA</option>
+                                                <option value="DUPLA" ${modalidade === 'DUPLA' ? 'selected' : ''}>DUPLA</option>
+                                            </select>
                                             <button type="button" onclick="removeCompletedLevel(${index})" class="text-red-600 hover:text-red-700 p-1">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
@@ -5811,6 +5818,8 @@
                 }
                 showSuccessMessage("Sucesso", "Turma finalizada com sucesso!");
                 document.getElementById('form-modal').classList.remove('visible');
+                // Change filter to show finalizadas so user can see the result
+                currentTurmasFilter = 'finalizadas';
                 // Refresh the turmas list
                 await loadDataFromFirebase();
                 if (currentSection === 'turmas') {
@@ -5841,6 +5850,8 @@
                 }
                 showSuccessMessage("Sucesso", "Turma reativada com sucesso!");
                 document.getElementById('form-modal').classList.remove('visible');
+                // Change filter to show ativas so user can see the result
+                currentTurmasFilter = 'ativas';
                 // Refresh the turmas list
                 await loadDataFromFirebase();
                 if (currentSection === 'turmas') {
@@ -6247,6 +6258,8 @@
                 }
                 showSuccessMessage("Sucesso", "VIP finalizado com sucesso!");
                 document.getElementById('form-modal').classList.remove('visible');
+                // Change filter to show finalizados so user can see the result
+                currentVipsFilter = 'finalizados';
                 // Refresh the VIPs list
                 await loadDataFromFirebase();
                 if (currentSection === 'vips') {
@@ -6278,6 +6291,8 @@
                 }
                 showSuccessMessage("Sucesso", "VIP reativado com sucesso!");
                 document.getElementById('form-modal').classList.remove('visible');
+                // Change filter to show ativos so user can see the result
+                currentVipsFilter = 'ativos';
                 // Refresh the VIPs list
                 await loadDataFromFirebase();
                 if (currentSection === 'vips') {
