@@ -5008,77 +5008,76 @@
             const aluno = students.find(s => s.id === alunoId);
             if (!aluno) return;
             
-            document.getElementById('form-modal-title').textContent = `Editar Níveis - ${aluno.name}`;
-            document.getElementById('form-modal-content-area').innerHTML = `
-                <form id="pedagogical-edit-form" class="space-y-4">
-                    <input type="hidden" id="ped-aluno-id" value="${alunoId}">
+            // Pre-compute the completed levels HTML to avoid nested template literals
+            const completedLevels = aluno?.completedLevels || [];
+            let levelsHtml = '';
+            
+            if (completedLevels.length === 0) {
+                levelsHtml = '<p class="text-sm text-stone-500 text-center py-4">Nenhum nível cursado ainda</p>';
+            } else {
+                levelsHtml = completedLevels.map((item, index) => {
+                    const level = typeof item === 'string' ? item : item.level;
+                    const semester = typeof item === 'string' ? '' : (item.semester || '');
                     
-                    <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                        <p class="text-sm text-blue-800"><strong>Aluno:</strong> ${aluno.name}</p>
-                        <p class="text-sm text-blue-600 mt-1">Você pode editar apenas as informações pedagógicas (níveis cursados e nível atual)</p>
-                    </div>
-
-                    <div>
-                        <div class="flex justify-between items-center mb-2">
-                            <label class="font-medium text-sm">Níveis Cursados (Histórico)</label>
-                            <button type="button" onclick="addCompletedLevel()" class="text-sm bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-md flex items-center gap-1">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                                </svg>
-                                Adicionar Nível
-                            </button>
-                        </div>
-                        <div id="aluno-levels-list" class="space-y-2 max-h-60 overflow-y-auto p-2 border rounded-md bg-stone-50">
-                            ${(() => {
-                                const completedLevels = aluno?.completedLevels || [];
-                                if (completedLevels.length === 0) {
-                                    return '<p class="text-sm text-stone-500 text-center py-4">Nenhum nível cursado ainda</p>';
-                                }
-                                return completedLevels.map((item, index) => {
-                                    const level = typeof item === 'string' ? item : item.level;
-                                    const semester = typeof item === 'string' ? '' : (item.semester || '');
-                                    return `
-                                        <div class="flex items-center gap-2 bg-white p-2 rounded border border-stone-200" data-level-index="${index}">
-                                            <select class="flex-1 text-sm border border-stone-300 rounded px-2 py-1 level-select" onchange="updateLevelData()">
-                                                <option value="">Selecione o nível</option>
-                                                ${STANDARD_LEVELS.map(lv => 
-                                                    `<option value="${lv}" ${lv === level ? 'selected' : ''}>${lv}</option>`
-                                                ).join('')}
-                                            </select>
-                                            <input type="text" placeholder="Ex: 2025.1" value="${semester}" 
-                                                class="w-24 text-sm border border-stone-300 rounded px-2 py-1 semester-input" 
-                                                onchange="updateLevelData()"
-                                                pattern="\\d{4}\\.[12]"
-                                                title="Formato: YYYY.1 ou YYYY.2">
-                                            <button type="button" onclick="removeCompletedLevel(${index})" class="text-red-600 hover:text-red-700 p-1">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                                </svg>
-                                            </button>
-                                        </div>
-                                    `;
-                                }).join('');
-                            })()}
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="font-medium text-sm">Nível Atual (que está cursando agora)</label>
-                        <select id="ped-aluno-currentLevel" class="form-input mt-2">
-                            <option value="">Nenhum (não está cursando)</option>
-                            ${STANDARD_LEVELS.map(lv => 
-                                `<option value="${lv}" ${aluno?.currentLevel === lv ? 'selected' : ''}>${lv}</option>`
-                            ).join('')}
-                        </select>
-                        <p class="text-xs text-stone-500 mt-1">Selecione o nível que o aluno está cursando atualmente</p>
-                    </div>
-
-                    <div class="border-t pt-4 flex justify-end gap-2">
-                        <button type="submit" class="primary-btn">Salvar Alterações</button>
-                        <button type="button" class="secondary-btn" data-action="close-modal">Cancelar</button>
-                    </div>
-                </form>
-            `;
+                    const levelOptions = STANDARD_LEVELS.map(lv => 
+                        '<option value="' + lv + '"' + (lv === level ? ' selected' : '') + '>' + lv + '</option>'
+                    ).join('');
+                    
+                    return '<div class="flex items-center gap-2 bg-white p-2 rounded border border-stone-200" data-level-index="' + index + '">' +
+                        '<select class="flex-1 text-sm border border-stone-300 rounded px-2 py-1 level-select" onchange="updateLevelData()">' +
+                        '<option value="">Selecione o nível</option>' + levelOptions +
+                        '</select>' +
+                        '<input type="text" placeholder="Ex: 2025.1" value="' + semester + '" ' +
+                        'class="w-24 text-sm border border-stone-300 rounded px-2 py-1 semester-input" ' +
+                        'onchange="updateLevelData()" pattern="\\d{4}\\.[12]" title="Formato: YYYY.1 ou YYYY.2">' +
+                        '<button type="button" onclick="removeCompletedLevel(' + index + ')" class="text-red-600 hover:text-red-700 p-1">' +
+                        '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+                        '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>' +
+                        '</svg></button>' +
+                        '</div>';
+                }).join('');
+            }
+            
+            // Pre-compute current level options
+            const currentLevelOptions = STANDARD_LEVELS.map(lv => 
+                '<option value="' + lv + '"' + (aluno?.currentLevel === lv ? ' selected' : '') + '>' + lv + '</option>'
+            ).join('');
+            
+            document.getElementById('form-modal-title').textContent = 'Editar Níveis - ' + aluno.name;
+            document.getElementById('form-modal-content-area').innerHTML =
+                '<form id="pedagogical-edit-form" class="space-y-4">' +
+                    '<input type="hidden" id="ped-aluno-id" value="' + alunoId + '">' +
+                    '<div class="bg-blue-50 p-4 rounded-lg border border-blue-200">' +
+                        '<p class="text-sm text-blue-800"><strong>Aluno:</strong> ' + aluno.name + '</p>' +
+                        '<p class="text-sm text-blue-600 mt-1">Você pode editar apenas as informações pedagógicas (níveis cursados e nível atual)</p>' +
+                    '</div>' +
+                    '<div>' +
+                        '<div class="flex justify-between items-center mb-2">' +
+                            '<label class="font-medium text-sm">Níveis Cursados (Histórico)</label>' +
+                            '<button type="button" onclick="addCompletedLevel()" class="text-sm bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-md flex items-center gap-1">' +
+                                '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+                                    '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>' +
+                                '</svg>' +
+                                'Adicionar Nível' +
+                            '</button>' +
+                        '</div>' +
+                        '<div id="aluno-levels-list" class="space-y-2 max-h-60 overflow-y-auto p-2 border rounded-md bg-stone-50">' +
+                            levelsHtml +
+                        '</div>' +
+                    '</div>' +
+                    '<div>' +
+                        '<label class="font-medium text-sm">Nível Atual (que está cursando agora)</label>' +
+                        '<select id="ped-aluno-currentLevel" class="form-input mt-2">' +
+                            '<option value="">Nenhum (não está cursando)</option>' +
+                            currentLevelOptions +
+                        '</select>' +
+                        '<p class="text-xs text-stone-500 mt-1">Selecione o nível que o aluno está cursando atualmente</p>' +
+                    '</div>' +
+                    '<div class="border-t pt-4 flex justify-end gap-2">' +
+                        '<button type="submit" class="primary-btn">Salvar Alterações</button>' +
+                        '<button type="button" class="secondary-btn" data-action="close-modal">Cancelar</button>' +
+                    '</div>' +
+                '</form>';
 
             const form = document.getElementById('pedagogical-edit-form');
             if (form) {
@@ -5883,6 +5882,89 @@
                         <select id="vip-level" class="form-input"><option value="">Sem nível definido</option>${levelOptions}</select>
                         <input type="text" id="vip-level-custom" class="form-input mt-2 hidden" placeholder="Digite o nível personalizado">
                     </div>
+                    <div class="border border-stone-200 rounded-lg p-4 bg-stone-50">
+                        <h4 class="font-semibold text-sm text-stone-700 mb-3">Dia 1 <span class="text-stone-400 text-xs">(opcional)</span></h4>
+                        <div class="grid grid-cols-3 gap-4">
+                            <div>
+                                <label class="font-medium text-xs">Dia da Semana</label>
+                                <select id="vip-day1" class="form-input">
+                                    <option value="">Selecione</option>
+                                    <option value="Segunda" ${vip?.day1 === 'Segunda' ? 'selected' : ''}>Segunda</option>
+                                    <option value="Terça" ${vip?.day1 === 'Terça' ? 'selected' : ''}>Terça</option>
+                                    <option value="Quarta" ${vip?.day1 === 'Quarta' ? 'selected' : ''}>Quarta</option>
+                                    <option value="Quinta" ${vip?.day1 === 'Quinta' ? 'selected' : ''}>Quinta</option>
+                                    <option value="Sexta" ${vip?.day1 === 'Sexta' ? 'selected' : ''}>Sexta</option>
+                                    <option value="Sábado" ${vip?.day1 === 'Sábado' ? 'selected' : ''}>Sábado</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="font-medium text-xs">Horário Início</label>
+                                <input type="time" id="vip-startTime1" class="form-input" value="${vip?.startTime1 || ''}">
+                            </div>
+                            <div>
+                                <label class="font-medium text-xs">Horário Fim</label>
+                                <input type="time" id="vip-endTime1" class="form-input" value="${vip?.endTime1 || ''}">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="border border-stone-200 rounded-lg p-4 bg-stone-50">
+                        <h4 class="font-semibold text-sm text-stone-700 mb-3">Dia 2 <span class="text-stone-400 text-xs">(opcional)</span></h4>
+                        <div class="grid grid-cols-3 gap-4">
+                            <div>
+                                <label class="font-medium text-xs">Dia da Semana</label>
+                                <select id="vip-day2" class="form-input">
+                                    <option value="">Selecione</option>
+                                    <option value="Segunda" ${vip?.day2 === 'Segunda' ? 'selected' : ''}>Segunda</option>
+                                    <option value="Terça" ${vip?.day2 === 'Terça' ? 'selected' : ''}>Terça</option>
+                                    <option value="Quarta" ${vip?.day2 === 'Quarta' ? 'selected' : ''}>Quarta</option>
+                                    <option value="Quinta" ${vip?.day2 === 'Quinta' ? 'selected' : ''}>Quinta</option>
+                                    <option value="Sexta" ${vip?.day2 === 'Sexta' ? 'selected' : ''}>Sexta</option>
+                                    <option value="Sábado" ${vip?.day2 === 'Sábado' ? 'selected' : ''}>Sábado</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="font-medium text-xs">Horário Início</label>
+                                <input type="time" id="vip-startTime2" class="form-input" value="${vip?.startTime2 || ''}">
+                            </div>
+                            <div>
+                                <label class="font-medium text-xs">Horário Fim</label>
+                                <input type="time" id="vip-endTime2" class="form-input" value="${vip?.endTime2 || ''}">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="vip-day3-container" class="border border-stone-200 rounded-lg p-4 bg-stone-50 hidden">
+                        <h4 class="font-semibold text-sm text-stone-700 mb-3">Dia 3 <span class="text-stone-400 text-xs">(opcional)</span></h4>
+                        <div class="grid grid-cols-3 gap-4">
+                            <div>
+                                <label class="font-medium text-xs">Dia da Semana</label>
+                                <select id="vip-day3" class="form-input">
+                                    <option value="">Selecione</option>
+                                    <option value="Segunda" ${vip?.day3 === 'Segunda' ? 'selected' : ''}>Segunda</option>
+                                    <option value="Terça" ${vip?.day3 === 'Terça' ? 'selected' : ''}>Terça</option>
+                                    <option value="Quarta" ${vip?.day3 === 'Quarta' ? 'selected' : ''}>Quarta</option>
+                                    <option value="Quinta" ${vip?.day3 === 'Quinta' ? 'selected' : ''}>Quinta</option>
+                                    <option value="Sexta" ${vip?.day3 === 'Sexta' ? 'selected' : ''}>Sexta</option>
+                                    <option value="Sábado" ${vip?.day3 === 'Sábado' ? 'selected' : ''}>Sábado</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="font-medium text-xs">Horário Início</label>
+                                <input type="time" id="vip-startTime3" class="form-input" value="${vip?.startTime3 || ''}">
+                            </div>
+                            <div>
+                                <label class="font-medium text-xs">Horário Fim</label>
+                                <input type="time" id="vip-endTime3" class="form-input" value="${vip?.endTime3 || ''}">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button type="button" id="vip-add-day-btn" class="w-full py-2 px-4 border-2 border-dashed border-stone-300 rounded-lg text-stone-600 hover:border-[#F1D24B] hover:text-stone-800 transition-colors font-medium text-sm flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                        </svg>
+                        Adicionar +1 Dia
+                    </button>
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div><label class="font-medium text-sm">Semestre</label><input type="text" id="vip-semestre" class="form-input" placeholder="Ex: 2025.1" value="${vip?.semestre || ''}"></div>
                         <div><label class="font-medium text-sm">Data de Início <span class="text-red-500">*</span></label><input type="date" id="vip-startDate" class="form-input" value="${vip?.startDate || ''}" required></div>
@@ -5913,6 +5995,22 @@
             levelSelect.addEventListener('change', (e) => {
                 levelCustomInput.classList.toggle('hidden', e.target.value !== 'outro');
             });
+
+            // Botão "+1 dia" para mostrar Dia 3
+            const vipAddDayBtn = document.getElementById('vip-add-day-btn');
+            const vipDay3Container = document.getElementById('vip-day3-container');
+            if (vipAddDayBtn) {
+                vipAddDayBtn.addEventListener('click', () => {
+                    vipDay3Container.classList.remove('hidden');
+                    vipAddDayBtn.classList.add('hidden');
+                });
+            }
+
+            // Mostrar Dia 3 se já existir (modo edição)
+            if (vip?.day3) {
+                vipDay3Container.classList.remove('hidden');
+                vipAddDayBtn.classList.add('hidden');
+            }
 
             // VIP student search functionality
             setupVipStudentSearch(availableVipStudents);
@@ -6083,6 +6181,15 @@
                 teacherId: selectedTeacherOption.value || null,
                 teacherName: selectedTeacherOption.getAttribute('data-name') || null,
                 level: levelValue || null,
+                day1: document.getElementById('vip-day1').value || null,
+                startTime1: document.getElementById('vip-startTime1').value || null,
+                endTime1: document.getElementById('vip-endTime1').value || null,
+                day2: document.getElementById('vip-day2').value || null,
+                startTime2: document.getElementById('vip-startTime2').value || null,
+                endTime2: document.getElementById('vip-endTime2').value || null,
+                day3: document.getElementById('vip-day3')?.value || null,
+                startTime3: document.getElementById('vip-startTime3')?.value || null,
+                endTime3: document.getElementById('vip-endTime3')?.value || null,
                 semestre: document.getElementById('vip-semestre').value,
                 observacoes: document.getElementById('vip-observacoes').value.trim(),
                 startDate: document.getElementById('vip-startDate').value,
@@ -7286,7 +7393,24 @@
                 let savedCollaboratorId = collaboratorId;
                 
                 if (collaboratorId) {
-                    await updateDoc(doc(db, `artifacts/${appId}/public/data/collaborators`, collaboratorId), data);
+                    const collaboratorRef = doc(db, `artifacts/${appId}/public/data/collaborators`, collaboratorId);
+                    await updateDoc(collaboratorRef, data);
+                    
+                    // If collaborator has a Firebase UID, also update the user's role
+                    const collaboratorDoc = await getDoc(collaboratorRef);
+                    const collaboratorData = collaboratorDoc.data();
+                    
+                    if (collaboratorData.firebaseUid) {
+                        try {
+                            const userRef = doc(db, `artifacts/${appId}/users`, collaboratorData.firebaseUid);
+                            await updateDoc(userRef, { 
+                                role: data.role,
+                                name: data.name
+                            });
+                        } catch (error) {
+                            console.warn('Could not update user role:', error);
+                        }
+                    }
                 } else {
                     const docRef = await addDoc(collection(db, `artifacts/${appId}/public/data/collaborators`), data);
                     savedCollaboratorId = docRef.id;
@@ -7301,7 +7425,8 @@
                             body: JSON.stringify({ 
                                 email: firebaseEmail, 
                                 password: firebasePassword, 
-                                displayName: data.name 
+                                displayName: data.name,
+                                role: data.role
                             })
                         });
                         
