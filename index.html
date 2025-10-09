@@ -4845,6 +4845,7 @@
             if (!aluno) return;
             document.getElementById('form-modal-title').textContent = `Perfil de ${aluno.name}`;
             const canEdit = ['admin', 'financeiro', 'pedagogico', 'ap'].includes(currentUserRole);
+            const canEditPedagogical = currentUserRole === 'teacher';
             const canViewFinancialInfo = !['teacher', 'pedagogico', 'ap', 'am'].includes(currentUserRole);
 
             let responsibleHtml = '';
@@ -4992,10 +4993,134 @@
                         ${canEdit ? `<button class="primary-btn !bg-[#F1D24B] hover:!bg-[#E5C63F] !text-stone-900" onclick="openRematriculaForm('${aluno.id}'); event.preventDefault();">Rematricular</button>` : ''}
                         ${canEdit ? `<button class="secondary-btn" data-action="edit-aluno" data-id="${aluno.id}">Editar</button>
                         <button class="danger-btn" data-action="delete-item" data-collection="students" data-id="${aluno.id}">Apagar</button>` : ''}
+                        ${canEditPedagogical ? `<button class="secondary-btn" onclick="openPedagogicalEditModal('${aluno.id}'); event.preventDefault();">Editar Níveis</button>` : ''}
                         <button class="primary-btn" data-action="close-modal">Fechar</button>
                     </div>
                 </div>`;
             document.getElementById('form-modal').classList.add('visible');
+        }
+
+        // Pedagogical Edit Modal for Teachers
+        window.openPedagogicalEditModal = function(alunoId) {
+            clearModalHeaderButtons();
+            const aluno = students.find(s => s.id === alunoId);
+            if (!aluno) return;
+            
+            document.getElementById('form-modal-title').textContent = `Editar Níveis - ${aluno.name}`;
+            document.getElementById('form-modal-content-area').innerHTML = `
+                <form id="pedagogical-edit-form" class="space-y-4">
+                    <input type="hidden" id="ped-aluno-id" value="${alunoId}">
+                    
+                    <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                        <p class="text-sm text-blue-800"><strong>Aluno:</strong> ${aluno.name}</p>
+                        <p class="text-sm text-blue-600 mt-1">Você pode editar apenas as informações pedagógicas (níveis cursados e nível atual)</p>
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <label class="font-medium text-sm">Níveis Cursados (Histórico)</label>
+                            <button type="button" onclick="addCompletedLevel()" class="text-sm bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-md flex items-center gap-1">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                                </svg>
+                                Adicionar Nível
+                            </button>
+                        </div>
+                        <div id="aluno-levels-list" class="space-y-2 max-h-60 overflow-y-auto p-2 border rounded-md bg-stone-50">
+                            ${(() => {
+                                const completedLevels = aluno?.completedLevels || [];
+                                if (completedLevels.length === 0) {
+                                    return '<p class="text-sm text-stone-500 text-center py-4">Nenhum nível cursado ainda</p>';
+                                }
+                                return completedLevels.map((item, index) => {
+                                    const level = typeof item === 'string' ? item : item.level;
+                                    const semester = typeof item === 'string' ? '' : (item.semester || '');
+                                    return `
+                                        <div class="flex items-center gap-2 bg-white p-2 rounded border border-stone-200" data-level-index="${index}">
+                                            <select class="flex-1 text-sm border border-stone-300 rounded px-2 py-1 level-select" onchange="updateLevelData()">
+                                                <option value="">Selecione o nível</option>
+                                                ${STANDARD_LEVELS.map(lv => 
+                                                    `<option value="${lv}" ${lv === level ? 'selected' : ''}>${lv}</option>`
+                                                ).join('')}
+                                            </select>
+                                            <input type="text" placeholder="Ex: 2025.1" value="${semester}" 
+                                                class="w-24 text-sm border border-stone-300 rounded px-2 py-1 semester-input" 
+                                                onchange="updateLevelData()"
+                                                pattern="\\d{4}\\.[12]"
+                                                title="Formato: YYYY.1 ou YYYY.2">
+                                            <button type="button" onclick="removeCompletedLevel(${index})" class="text-red-600 hover:text-red-700 p-1">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    `;
+                                }).join('');
+                            })()}
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="font-medium text-sm">Nível Atual (que está cursando agora)</label>
+                        <select id="ped-aluno-currentLevel" class="form-input mt-2">
+                            <option value="">Nenhum (não está cursando)</option>
+                            ${STANDARD_LEVELS.map(lv => 
+                                `<option value="${lv}" ${aluno?.currentLevel === lv ? 'selected' : ''}>${lv}</option>`
+                            ).join('')}
+                        </select>
+                        <p class="text-xs text-stone-500 mt-1">Selecione o nível que o aluno está cursando atualmente</p>
+                    </div>
+
+                    <div class="border-t pt-4 flex justify-end gap-2">
+                        <button type="submit" class="primary-btn">Salvar Alterações</button>
+                        <button type="button" class="secondary-btn" data-action="close-modal">Cancelar</button>
+                    </div>
+                </form>
+            `;
+
+            const form = document.getElementById('pedagogical-edit-form');
+            if (form) {
+                form.onsubmit = savePedagogicalData;
+            }
+            document.getElementById('form-modal').classList.add('visible');
+        };
+
+        async function savePedagogicalData(event) {
+            event.preventDefault();
+            const alunoId = document.getElementById('ped-aluno-id').value;
+            const completedLevels = getCompletedLevelsFromForm();
+            const currentLevel = document.getElementById('ped-aluno-currentLevel').value || '';
+
+            try {
+                if (window.isDevelopmentMode) {
+                    // Development mode - save to localStorage
+                    const index = students.findIndex(s => s.id === alunoId);
+                    if (index !== -1) {
+                        students[index].completedLevels = completedLevels;
+                        students[index].currentLevel = currentLevel;
+                        localStorage.setItem('students', JSON.stringify(students));
+                    }
+                } else {
+                    // Firebase mode
+                    const studentRef = doc(db, `artifacts/${appId}/public/data/students`, alunoId);
+                    await updateDoc(studentRef, {
+                        completedLevels: completedLevels,
+                        currentLevel: currentLevel
+                    });
+                }
+
+                showSuccessMessage("Sucesso!", "Níveis do aluno atualizados com sucesso.");
+                closeFormModal();
+
+                // Re-render if in students section
+                const activePageId = contentArea.firstElementChild?.id;
+                if (activePageId === 'alunos-section') {
+                    renderAlunosSection();
+                }
+            } catch (error) {
+                console.error("Error saving pedagogical data:", error);
+                showErrorMessage("Erro", "Falha ao salvar os níveis do aluno.");
+            }
         }
 
         // Rematrícula Functions
