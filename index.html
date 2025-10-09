@@ -6172,14 +6172,50 @@
             
             // Obter dias da semana permitidos para esta turma
             const allowedWeekdays = [];
-            if (turma.day1?.weekday) allowedWeekdays.push(parseInt(turma.day1.weekday));
-            if (turma.day2?.weekday) allowedWeekdays.push(parseInt(turma.day2.weekday));
-            if (turma.day3?.weekday) allowedWeekdays.push(parseInt(turma.day3.weekday));
+            if (turma.day1?.weekday !== undefined && turma.day1?.weekday !== null && turma.day1?.weekday !== '') {
+                allowedWeekdays.push(parseInt(turma.day1.weekday));
+            }
+            if (turma.day2?.weekday !== undefined && turma.day2?.weekday !== null && turma.day2?.weekday !== '') {
+                allowedWeekdays.push(parseInt(turma.day2.weekday));
+            }
+            if (turma.day3?.weekday !== undefined && turma.day3?.weekday !== null && turma.day3?.weekday !== '') {
+                allowedWeekdays.push(parseInt(turma.day3.weekday));
+            }
+            
+            console.log('DEBUG Turma PEF - Turma:', turma.name);
+            console.log('DEBUG Turma PEF - day1:', turma.day1);
+            console.log('DEBUG Turma PEF - day2:', turma.day2);
+            console.log('DEBUG Turma PEF - day3:', turma.day3);
+            console.log('DEBUG Turma PEF - allowedWeekdays:', allowedWeekdays);
             
             // Gerar lista de datas válidas
-            const validDates = generateValidDates(allowedWeekdays);
+            let validDates = generateValidDates(allowedWeekdays);
+            console.log('DEBUG Turma PEF - validDates generated:', validDates.length);
+            
+            // Se não houver dias permitidos configurados, gerar todas as datas possíveis
+            if (validDates.length === 0) {
+                validDates = generateValidDates([0, 1, 2, 3, 4, 5, 6]); // Todos os dias da semana
+                console.log('DEBUG Turma PEF - Using all weekdays, validDates:', validDates.length);
+            }
+            
+            // Adicionar datas já salvas que não estejam na lista
+            if (unitAttendance?.lessons) {
+                console.log('DEBUG Turma PEF - Has attendance lessons');
+                for (const lessonKey in unitAttendance.lessons) {
+                    const lesson = unitAttendance.lessons[lessonKey];
+                    if (lesson?.date && !validDates.includes(lesson.date)) {
+                        validDates.push(lesson.date);
+                        console.log('DEBUG Turma PEF - Added saved date:', lesson.date);
+                    }
+                }
+                // Reordenar as datas
+                validDates.sort();
+            }
+            
+            console.log('DEBUG Turma PEF - Final validDates count:', validDates.length);
+            
             const dayNames = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
-            const allowedDayNames = allowedWeekdays.map(d => dayNames[d]).join(', ');
+            const allowedDayNames = allowedWeekdays.length > 0 ? allowedWeekdays.map(d => dayNames[d]).join(', ') : 'todos os dias';
 
             let lessonsHtml = '';
             for (let i = 1; i <= 40; i++) {
@@ -6278,9 +6314,27 @@
             if (vip.day3?.weekday) allowedWeekdays.push(parseInt(vip.day3.weekday));
             
             // Gerar lista de datas válidas
-            const validDates = generateValidDates(allowedWeekdays);
+            let validDates = generateValidDates(allowedWeekdays);
+            
+            // Se não houver dias permitidos configurados, gerar todas as datas possíveis
+            if (validDates.length === 0) {
+                validDates = generateValidDates([0, 1, 2, 3, 4, 5, 6]); // Todos os dias da semana
+            }
+            
+            // Adicionar datas já salvas que não estejam na lista
+            if (unitAttendance?.lessons) {
+                for (const lessonKey in unitAttendance.lessons) {
+                    const lesson = unitAttendance.lessons[lessonKey];
+                    if (lesson?.date && !validDates.includes(lesson.date)) {
+                        validDates.push(lesson.date);
+                    }
+                }
+                // Reordenar as datas
+                validDates.sort();
+            }
+            
             const dayNames = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
-            const allowedDayNames = allowedWeekdays.map(d => dayNames[d]).join(', ');
+            const allowedDayNames = allowedWeekdays.length > 0 ? allowedWeekdays.map(d => dayNames[d]).join(', ') : 'todos os dias';
 
             let lessonsHtml = '';
             for (let i = 1; i <= 40; i++) {
