@@ -4690,6 +4690,12 @@
                         onchange="updateLevelData()"
                         pattern="\\d{4}\\.[12]"
                         title="Formato: YYYY.1 ou YYYY.2">
+                    <select class="w-28 text-sm border border-stone-300 rounded px-2 py-1 modalidade-select" onchange="updateLevelData()">
+                        <option value="">Modalidade</option>
+                        <option value="VIP">VIP</option>
+                        <option value="TURMA">TURMA</option>
+                        <option value="DUPLA">DUPLA</option>
+                    </select>
                     <button type="button" onclick="removeCompletedLevel(${index})" class="text-red-600 hover:text-red-700 p-1">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
@@ -4728,13 +4734,16 @@
             levelItems.forEach(item => {
                 const levelSelect = item.querySelector('.level-select');
                 const semesterInput = item.querySelector('.semester-input');
+                const modalidadeSelect = item.querySelector('.modalidade-select');
                 const level = levelSelect.value;
                 const semester = semesterInput.value.trim();
+                const modalidade = modalidadeSelect ? modalidadeSelect.value : '';
                 
                 if (level) {
                     levels.push({
                         level: level,
-                        semester: semester || ''
+                        semester: semester || '',
+                        modalidade: modalidade || ''
                     });
                 }
             });
@@ -4918,6 +4927,7 @@
                             ${(aluno.completedLevels && aluno.completedLevels.length > 0) ? aluno.completedLevels.map(item => {
                                 const level = typeof item === 'string' ? item : item.level;
                                 const semester = typeof item === 'string' ? '' : item.semester;
+                                const modalidade = typeof item === 'string' ? '' : item.modalidade;
                                 const isReprovacao = typeof item === 'object' ? item.isReprovacao : false;
                                 const modalidadeChange = typeof item === 'object' ? item.modalidadeChange : null;
                                 
@@ -4942,7 +4952,7 @@
                                     
                                     return `<span class="inline-flex flex-col items-start px-3 py-1 bg-gradient-to-br ${bgColor} border ${borderColor} rounded-lg" title="${isReprovacao ? 'Reprovação - Aluno repetiu este nível' : ''}${modalidadeChangeText}">
                                         <span class="text-xs font-semibold ${textColor}">${level}${reprovacaoIcon}${modalidadeChangeIcon}</span>
-                                        <span class="text-xs ${semesterColor}">${semester}</span>
+                                        <span class="text-xs ${semesterColor}">${semester}${modalidade ? ` · ${modalidade}` : ''}</span>
                                         ${modalidadeChange ? `<span class="text-xs text-blue-600 mt-0.5">📋 ${modalidadeChange.from} → ${modalidadeChange.to}</span>` : ''}
                                     </span>`;
                                 } else {
@@ -5018,6 +5028,7 @@
                 levelsHtml = completedLevels.map((item, index) => {
                     const level = typeof item === 'string' ? item : item.level;
                     const semester = typeof item === 'string' ? '' : (item.semester || '');
+                    const modalidade = typeof item === 'string' ? '' : (item.modalidade || '');
                     
                     const levelOptions = STANDARD_LEVELS.map(lv => 
                         '<option value="' + lv + '"' + (lv === level ? ' selected' : '') + '>' + lv + '</option>'
@@ -5030,6 +5041,12 @@
                         '<input type="text" placeholder="Ex: 2025.1" value="' + semester + '" ' +
                         'class="w-24 text-sm border border-stone-300 rounded px-2 py-1 semester-input" ' +
                         'onchange="updateLevelData()" pattern="\\d{4}\\.[12]" title="Formato: YYYY.1 ou YYYY.2">' +
+                        '<select class="w-28 text-sm border border-stone-300 rounded px-2 py-1 modalidade-select" onchange="updateLevelData()">' +
+                        '<option value="">Modalidade</option>' +
+                        '<option value="VIP"' + (modalidade === 'VIP' ? ' selected' : '') + '>VIP</option>' +
+                        '<option value="TURMA"' + (modalidade === 'TURMA' ? ' selected' : '') + '>TURMA</option>' +
+                        '<option value="DUPLA"' + (modalidade === 'DUPLA' ? ' selected' : '') + '>DUPLA</option>' +
+                        '</select>' +
                         '<button type="button" onclick="removeCompletedLevel(' + index + ')" class="text-red-600 hover:text-red-700 p-1">' +
                         '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
                         '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>' +
