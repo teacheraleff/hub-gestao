@@ -9655,13 +9655,36 @@
             }
             
             if (filtered.length === 0) {
+                // Verificar o que está faltando para ajudar o usuário
+                const hasStudents = students.length > 0;
+                const hasTurmasOrVips = turmas.length > 0 || vips.length > 0;
+                const hasAttendance = attendance.length > 0;
+                const totalStudentsDetected = studentsWithAbsences.length;
+                
+                let message = '';
+                let icon = '';
+                
+                if (!hasStudents) {
+                    icon = '<svg class="w-16 h-16 mx-auto mb-4 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>';
+                    message = `<p class="text-lg font-semibold text-yellow-600">Nenhum aluno cadastrado</p><p class="text-sm mt-2">Cadastre alunos na seção <strong>Alunos</strong> para começar a usar a Rechamada.</p>`;
+                } else if (!hasTurmasOrVips) {
+                    icon = '<svg class="w-16 h-16 mx-auto mb-4 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>';
+                    message = `<p class="text-lg font-semibold text-yellow-600">Nenhuma Turma ou VIP cadastrado</p><p class="text-sm mt-2">Crie Turmas ou VIPs nas respectivas seções para começar a registrar presenças.</p>`;
+                } else if (!hasAttendance) {
+                    icon = '<svg class="w-16 h-16 mx-auto mb-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>';
+                    message = `<p class="text-lg font-semibold text-blue-600">Sem registros de presença ainda</p><p class="text-sm mt-2">Registre presenças e faltas nas <strong>PEFs</strong> (Turmas ou VIPs) para que a Rechamada detecte alunos com 2 faltas consecutivas automaticamente.</p>`;
+                } else if (totalStudentsDetected === 0 && !filterProfessor && !filterAluno) {
+                    icon = '<svg class="w-16 h-16 mx-auto mb-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>';
+                    message = `<p class="text-lg font-semibold text-green-600">🎉 Nenhum aluno com 2 faltas consecutivas!</p><p class="text-sm mt-2">Excelente trabalho de retenção! Continue monitorando as presenças nas PEFs.</p>`;
+                } else {
+                    icon = '<svg class="w-16 h-16 mx-auto mb-4 text-stone-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>';
+                    message = `<p class="text-lg font-semibold">Nenhum resultado com os filtros aplicados</p><p class="text-sm mt-2">Tente remover os filtros ou ajustar sua busca.</p>`;
+                }
+                
                 container.innerHTML = `
                     <div class="text-center py-12 text-stone-500">
-                        <svg class="w-16 h-16 mx-auto mb-4 text-stone-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                        </svg>
-                        <p class="text-lg font-semibold">Nenhum aluno com 2 faltas consecutivas</p>
-                        <p class="text-sm">Ótimo trabalho de retenção!</p>
+                        ${icon}
+                        ${message}
                     </div>
                 `;
                 return;
@@ -9926,7 +9949,8 @@
             
             contentArea.innerHTML = `
                 <div id="gestao-tns-section">
-                    <div class="mb-6 flex justify-end">
+                    <div class="mb-6 flex justify-between items-center">
+                        <input type="text" id="tn-search" class="form-input !w-auto" placeholder="Buscar por nome do prospect...">
                         <button class="primary-btn w-auto" data-action="add-tn">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
@@ -9943,6 +9967,11 @@
             
             loadTestesNivel();
             renderTNsList();
+            
+            // Adicionar event listener para o campo de busca
+            setTimeout(() => {
+                document.getElementById('tn-search')?.addEventListener('input', renderTNsList);
+            }, 100);
         }
 
         async function loadTestesNivel() {
@@ -9964,25 +9993,32 @@
 
         function renderTNsList() {
             const container = document.getElementById('tns-list-container');
+            const searchTerm = document.getElementById('tn-search')?.value.toLowerCase() || '';
             
-            if (testesNivel.length === 0) {
+            // Filtrar por nome do candidato
+            let filteredTNs = testesNivel;
+            if (searchTerm) {
+                filteredTNs = testesNivel.filter(tn => 
+                    tn.candidateName.toLowerCase().includes(searchTerm)
+                );
+            }
+            
+            if (filteredTNs.length === 0) {
                 container.innerHTML = `
                     <div class="text-center py-12 text-stone-500">
                         <svg class="w-16 h-16 mx-auto mb-4 text-stone-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                         </svg>
-                        <p class="text-lg font-semibold">Nenhum teste de nível registrado</p>
-                        <p class="text-sm">Clique em "Adicionar TN" para registrar um novo teste</p>
+                        <p class="text-lg font-semibold">${testesNivel.length === 0 ? 'Nenhum teste de nível registrado' : 'Nenhum resultado encontrado'}</p>
+                        <p class="text-sm">${testesNivel.length === 0 ? 'Clique em "Adicionar TN" para registrar um novo teste' : 'Tente ajustar sua busca'}</p>
                     </div>
                 `;
                 return;
             }
             
-            // Ordenar por data (mais recente primeiro)
-            const sortedTNs = [...testesNivel].sort((a, b) => {
-                const dateA = new Date(`${a.date}T${a.time || '00:00'}`);
-                const dateB = new Date(`${b.date}T${b.time || '00:00'}`);
-                return dateB - dateA;
+            // Ordenar alfabeticamente por nome do candidato
+            const sortedTNs = [...filteredTNs].sort((a, b) => {
+                return a.candidateName.localeCompare(b.candidateName, 'pt-BR', { sensitivity: 'base' });
             });
             
             container.innerHTML = `
