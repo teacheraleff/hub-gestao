@@ -6182,37 +6182,7 @@
                 allowedWeekdays.push(parseInt(turma.day3.weekday));
             }
             
-            console.log('DEBUG Turma PEF - Turma:', turma.name);
-            console.log('DEBUG Turma PEF - day1:', turma.day1);
-            console.log('DEBUG Turma PEF - day2:', turma.day2);
-            console.log('DEBUG Turma PEF - day3:', turma.day3);
-            console.log('DEBUG Turma PEF - allowedWeekdays:', allowedWeekdays);
-            
-            // Gerar lista de datas válidas
-            let validDates = generateValidDates(allowedWeekdays);
-            console.log('DEBUG Turma PEF - validDates generated:', validDates.length);
-            
-            // Se não houver dias permitidos configurados, gerar todas as datas possíveis
-            if (validDates.length === 0) {
-                validDates = generateValidDates([0, 1, 2, 3, 4, 5, 6]); // Todos os dias da semana
-                console.log('DEBUG Turma PEF - Using all weekdays, validDates:', validDates.length);
-            }
-            
-            // Adicionar datas já salvas que não estejam na lista
-            if (unitAttendance?.lessons) {
-                console.log('DEBUG Turma PEF - Has attendance lessons');
-                for (const lessonKey in unitAttendance.lessons) {
-                    const lesson = unitAttendance.lessons[lessonKey];
-                    if (lesson?.date && !validDates.includes(lesson.date)) {
-                        validDates.push(lesson.date);
-                        console.log('DEBUG Turma PEF - Added saved date:', lesson.date);
-                    }
-                }
-                // Reordenar as datas
-                validDates.sort();
-            }
-            
-            console.log('DEBUG Turma PEF - Final validDates count:', validDates.length);
+            // Não é mais necessário gerar lista de datas - usando input type="date"
             
             const dayNames = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
             const allowedDayNames = allowedWeekdays.length > 0 ? allowedWeekdays.map(d => dayNames[d]).join(', ') : 'todos os dias';
@@ -6236,22 +6206,15 @@
                     `;
                 }).join('');
                 
-                // Criar opções do select com as datas válidas
-                const dateOptions = validDates.map(date => {
-                    const dateObj = new Date(date + 'T00:00:00');
-                    const selected = date === lessonDate ? 'selected' : '';
-                    return `<option value="${date}" ${selected}>${formatDateBR(date)}</option>`;
-                }).join('');
-
                 lessonsHtml += `
                     <div class="border border-stone-200 rounded-lg p-4 mb-4" id="lesson-row-${turmaId}-${i}" data-lesson-number="${i}">
                         <!-- Cabeçalho da aula: Número e Data em linha -->
                         <div class="flex items-center gap-4 mb-3 pb-3 border-b border-stone-200">
                             <span class="font-bold text-stone-700 text-lg">Aula ${i}</span>
-                            <select class="form-input p-2 text-sm lesson-date flex-1" data-allowed-days="${allowedWeekdays.join(',')}">
-                                <option value="">Selecione a data (${allowedDayNames})</option>
-                                ${dateOptions}
-                            </select>
+                            <div class="flex-1">
+                                <input type="date" class="form-input p-2 text-sm lesson-date w-full" value="${lessonDate}" data-allowed-days="${allowedWeekdays.join(',')}">
+                                ${allowedWeekdays.length > 0 ? `<p class="text-xs text-stone-500 mt-1">Dias da turma: ${allowedDayNames}</p>` : ''}
+                            </div>
                         </div>
                         
                         <!-- Tema e Observações lado a lado -->
@@ -6313,25 +6276,7 @@
             if (vip.day2?.weekday) allowedWeekdays.push(parseInt(vip.day2.weekday));
             if (vip.day3?.weekday) allowedWeekdays.push(parseInt(vip.day3.weekday));
             
-            // Gerar lista de datas válidas
-            let validDates = generateValidDates(allowedWeekdays);
-            
-            // Se não houver dias permitidos configurados, gerar todas as datas possíveis
-            if (validDates.length === 0) {
-                validDates = generateValidDates([0, 1, 2, 3, 4, 5, 6]); // Todos os dias da semana
-            }
-            
-            // Adicionar datas já salvas que não estejam na lista
-            if (unitAttendance?.lessons) {
-                for (const lessonKey in unitAttendance.lessons) {
-                    const lesson = unitAttendance.lessons[lessonKey];
-                    if (lesson?.date && !validDates.includes(lesson.date)) {
-                        validDates.push(lesson.date);
-                    }
-                }
-                // Reordenar as datas
-                validDates.sort();
-            }
+            // Não é mais necessário gerar lista de datas - usando input type="date"
             
             const dayNames = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
             const allowedDayNames = allowedWeekdays.length > 0 ? allowedWeekdays.map(d => dayNames[d]).join(', ') : 'todos os dias';
@@ -6355,20 +6300,14 @@
                     </div>
                 `;
                 
-                // Criar opções do select com as datas válidas
-                const dateOptions = validDates.map(date => {
-                    const selected = date === lessonDate ? 'selected' : '';
-                    return `<option value="${date}" ${selected}>${formatDateBR(date)}</option>`;
-                }).join('');
-
                 lessonsHtml += `
                     <div class="border border-stone-200 rounded-lg p-4 mb-4" id="lesson-row-${vipId}-${i}" data-lesson-number="${i}">
                         <div class="flex items-center gap-4 mb-3 pb-3 border-b border-stone-200">
                             <span class="font-bold text-stone-700 text-lg">Aula ${i}</span>
-                            <select class="form-input p-2 text-sm lesson-date flex-1" data-allowed-days="${allowedWeekdays.join(',')}">
-                                <option value="">Selecione a data (${allowedDayNames})</option>
-                                ${dateOptions}
-                            </select>
+                            <div class="flex-1">
+                                <input type="date" class="form-input p-2 text-sm lesson-date w-full" value="${lessonDate}" data-allowed-days="${allowedWeekdays.join(',')}">
+                                ${allowedWeekdays.length > 0 ? `<p class="text-xs text-stone-500 mt-1">Dias do VIP: ${allowedDayNames}</p>` : ''}
+                            </div>
                         </div>
                         <div class="space-y-3">
                             <textarea class="form-input p-2 text-sm w-full lesson-topic" placeholder="Tema da aula" rows="2">${lessonTopic}</textarea>
@@ -9534,8 +9473,8 @@
             
             contentArea.innerHTML = `
                 <div id="rechamada-section">
-                    <div class="mb-6 flex justify-between items-center">
-                        <div class="flex gap-3 items-center">
+                    <div class="mb-6">
+                        <div class="flex gap-3 items-center flex-wrap">
                             <select id="rechamada-filter-professor" class="form-input !w-auto">
                                 <option value="">Todos os professores</option>
                                 ${collaborators.filter(c => c.sector === 'professor').map(c => 
@@ -9543,6 +9482,12 @@
                                 ).join('')}
                             </select>
                             <input type="text" id="rechamada-filter-aluno" class="form-input !w-auto" placeholder="Buscar aluno...">
+                            <div class="flex gap-2 items-center">
+                                <label class="text-sm font-medium text-stone-700">Período:</label>
+                                <input type="date" id="rechamada-filter-date-from" class="form-input !w-auto text-sm" placeholder="De">
+                                <span class="text-stone-500">até</span>
+                                <input type="date" id="rechamada-filter-date-to" class="form-input !w-auto text-sm" placeholder="Até">
+                            </div>
                         </div>
                     </div>
                     
@@ -9558,6 +9503,8 @@
             setTimeout(() => {
                 document.getElementById('rechamada-filter-professor')?.addEventListener('change', renderRechamadaList);
                 document.getElementById('rechamada-filter-aluno')?.addEventListener('input', renderRechamadaList);
+                document.getElementById('rechamada-filter-date-from')?.addEventListener('change', renderRechamadaList);
+                document.getElementById('rechamada-filter-date-to')?.addEventListener('change', renderRechamadaList);
             }, 100);
             
             renderRechamadaList();
@@ -9580,7 +9527,7 @@
             }
         }
 
-        function detectConsecutiveAbsences() {
+        function detectConsecutiveAbsences(dateFrom = null, dateTo = null) {
             const studentsWithAbsences = [];
             
             // Checar turmas
@@ -9604,6 +9551,11 @@
                     for (const lessonKey in lessons) {
                         const lesson = lessons[lessonKey];
                         if (lesson && lesson.date) {
+                            // Filtrar por período de data se especificado
+                            const lessonDate = new Date(lesson.date);
+                            if (dateFrom && lessonDate < new Date(dateFrom)) continue;
+                            if (dateTo && lessonDate > new Date(dateTo)) continue;
+                            
                             lessonDates.push({ key: lessonKey, date: lesson.date, lesson: lesson });
                         }
                     }
@@ -9657,6 +9609,11 @@
                 for (const lessonKey in lessons) {
                     const lesson = lessons[lessonKey];
                     if (lesson && lesson.date) {
+                        // Filtrar por período de data se especificado
+                        const lessonDate = new Date(lesson.date);
+                        if (dateFrom && lessonDate < new Date(dateFrom)) continue;
+                        if (dateTo && lessonDate > new Date(dateTo)) continue;
+                        
                         lessonDates.push({ key: lessonKey, date: lesson.date, lesson: lesson });
                     }
                 }
@@ -9696,8 +9653,10 @@
             const container = document.getElementById('rechamada-list-container');
             const filterProfessor = document.getElementById('rechamada-filter-professor')?.value || '';
             const filterAluno = document.getElementById('rechamada-filter-aluno')?.value.toLowerCase() || '';
+            const filterDateFrom = document.getElementById('rechamada-filter-date-from')?.value || null;
+            const filterDateTo = document.getElementById('rechamada-filter-date-to')?.value || null;
             
-            const studentsWithAbsences = detectConsecutiveAbsences();
+            const studentsWithAbsences = detectConsecutiveAbsences(filterDateFrom, filterDateTo);
             
             // Filtrar por professor e aluno
             let filtered = studentsWithAbsences;
