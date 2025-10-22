@@ -4360,12 +4360,15 @@
                                     const student = students.find(s => s.id === vip.studentId);
                                     if (!student) return;
                                     
-                                    // Verificar se tem configuração de horários (dia1, dia2, dia3)
+                                    // Verificar se tem configuração de horários (day1, day2, day3)
                                     let hasSchedule = false;
-                                    ['dia1', 'dia2', 'dia3'].forEach(dia => {
-                                        if (vip[dia] && vip[dia].startTime && vip[dia].day) {
+                                    [1, 2, 3].forEach(dayNum => {
+                                        const dayField = `day${dayNum}`;
+                                        const startTimeField = `startTime${dayNum}`;
+                                        
+                                        if (vip[dayField] && vip[startTimeField]) {
                                             hasSchedule = true;
-                                            const hour = vip[dia].startTime.split(':')[0] + 'h';
+                                            const hour = vip[startTimeField].split(':')[0] + 'h';
                                             
                                             if (!hourStudents[hour]) {
                                                 hourStudents[hour] = new Set();
@@ -4382,21 +4385,24 @@
                                 
                                 // Percorrer TURMAS ATIVAS e suas configurações de horário
                                 turmas.forEach(turma => {
-                                    if (turma.finalizada || !turma.students || turma.students.length === 0) return;
+                                    if (turma.finalizada || !turma.studentIds || turma.studentIds.length === 0) return;
                                     
-                                    // Verificar se tem configuração de horários (dia1, dia2, dia3)
+                                    // Verificar se tem configuração de horários (day1, day2, day3)
                                     let hasSchedule = false;
-                                    ['dia1', 'dia2', 'dia3'].forEach(dia => {
-                                        if (turma[dia] && turma[dia].startTime && turma[dia].day) {
+                                    [1, 2, 3].forEach(dayNum => {
+                                        const dayField = `day${dayNum}`;
+                                        const startTimeField = `startTime${dayNum}`;
+                                        
+                                        if (turma[dayField] && turma[startTimeField]) {
                                             hasSchedule = true;
-                                            const hour = turma[dia].startTime.split(':')[0] + 'h';
+                                            const hour = turma[startTimeField].split(':')[0] + 'h';
                                             
                                             if (!hourStudents[hour]) {
                                                 hourStudents[hour] = new Set();
                                             }
                                             
                                             // Adicionar cada aluno único da turma
-                                            turma.students.forEach(studentId => {
+                                            turma.studentIds.forEach(studentId => {
                                                 hourStudents[hour].add(`turma_${studentId}`);
                                             });
                                         }
@@ -6619,20 +6625,16 @@
                         turmas[turmaIndex].finalizada = true;
                         localStorage.setItem('turmas', JSON.stringify(turmas));
                     }
+                    renderTurmasSection();
                 } else {
                     const turma = turmas.find(t => t.id === turmaId);
                     await updateDoc(doc(db, `artifacts/${appId}/public/data/turmas`, turmaId), { finalizada: true });
                     if (turma) await logActivity('finalizar', 'turma', turma.name, { nivel: turma.level });
                 }
                 showSuccessMessage("Sucesso", "Turma finalizada com sucesso!");
-                document.getElementById('form-modal').classList.remove('visible');
+                closeFormModal();
                 // Change filter to show finalizadas so user can see the result
                 currentTurmasFilter = 'finalizadas';
-                // Refresh the turmas list
-                await loadDataFromFirebase();
-                if (currentSection === 'turmas') {
-                    renderTurmasSection();
-                }
             } catch (error) {
                 console.error("Error finalizing turma:", error);
                 showErrorMessage("Erro", "Não foi possível finalizar a turma.");
@@ -6653,20 +6655,16 @@
                         turmas[turmaIndex].finalizada = false;
                         localStorage.setItem('turmas', JSON.stringify(turmas));
                     }
+                    renderTurmasSection();
                 } else {
                     const turma = turmas.find(t => t.id === turmaId);
                     await updateDoc(doc(db, `artifacts/${appId}/public/data/turmas`, turmaId), { finalizada: false });
                     if (turma) await logActivity('reativar', 'turma', turma.name, { nivel: turma.level });
                 }
                 showSuccessMessage("Sucesso", "Turma reativada com sucesso!");
-                document.getElementById('form-modal').classList.remove('visible');
+                closeFormModal();
                 // Change filter to show ativas so user can see the result
                 currentTurmasFilter = 'ativas';
-                // Refresh the turmas list
-                await loadDataFromFirebase();
-                if (currentSection === 'turmas') {
-                    renderTurmasSection();
-                }
             } catch (error) {
                 console.error("Error reactivating turma:", error);
                 showErrorMessage("Erro", "Não foi possível reativar a turma.");
@@ -8170,14 +8168,6 @@
                         <p class="text-xs text-purple-700 mt-2">Se marcado, este colaborador aparecerá como opção de avaliador na Gestão de TNs</p>
                     </div>
 
-                    <div class="bg-orange-50 p-4 rounded-lg border border-orange-200">
-                        <div class="flex items-center">
-                            <input type="checkbox" id="can-view-logs-checkbox" class="h-4 w-4 rounded" ${collaborator?.canViewLogs ? 'checked' : ''}>
-                            <label for="can-view-logs-checkbox" class="ml-2 font-medium text-sm text-orange-900">Acesso aos Logs de Atividades</label>
-                        </div>
-                        <p class="text-xs text-orange-700 mt-2">Se marcado, este colaborador poderá visualizar os logs de atividades do sistema</p>
-                    </div>
-
                     ${!collaboratorId ? `
                     <div class="bg-green-50 p-4 rounded-lg border border-green-200">
                         <div class="flex items-center mb-3">
@@ -8276,7 +8266,6 @@
             const selectedPages = Array.from(document.querySelectorAll('input[name="allowedPages"]:checked')).map(cb => cb.value);
             const role = document.getElementById('collaborator-role').value;
             const isEvaluator = document.getElementById('is-evaluator-checkbox')?.checked || false;
-            const canViewLogs = document.getElementById('can-view-logs-checkbox')?.checked || false;
             
             // Get email and find corresponding Firebase UID
             const emailSelect = document.getElementById('collaborator-email');
@@ -8291,8 +8280,7 @@
                 email: selectedEmail,
                 role: role,
                 allowedPages: selectedPages,
-                isEvaluator: isEvaluator,
-                canViewLogs: canViewLogs
+                isEvaluator: isEvaluator
             };
 
             // Auto-link to Firebase user if email matches
