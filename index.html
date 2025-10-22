@@ -1510,7 +1510,10 @@
             // Informações Financeiras (apenas se o usuário tem permissão para ver E aluno está ativo/pendente)
             if (canViewFinancialInfo && isActiveStudent) {
                 if (!student.paymentType) missing.push('Forma de Pagamento');
-                if (!student.amountPaid || parseFloat(student.amountPaid) === 0) missing.push('Valor Pago');
+                // Só exigir valor pago se NÃO for bolsista ou permuta
+                if (student.paymentType !== 'BOLSA' && student.paymentType !== 'Permuta' && (!student.amountPaid || parseFloat(student.amountPaid) === 0)) {
+                    missing.push('Valor Pago');
+                }
             }
             
             // Informações do Responsável (se for menor)
@@ -4881,7 +4884,7 @@
                 const toggleAmountFields = () => {
                     const amountFields = document.getElementById('aluno-amount-fields');
                     if (amountFields) {
-                        if (paymentTypeSelect.value === 'Bolsa') {
+                        if (paymentTypeSelect.value === 'Bolsa' || paymentTypeSelect.value === 'Permuta') {
                             amountFields.classList.add('hidden');
                         } else {
                             amountFields.classList.remove('hidden');
