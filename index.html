@@ -509,16 +509,16 @@
             }
         }
         
-        // Função para limpar logs antigos (> 48 horas)
+        // Função para limpar logs antigos (> 5 dias)
         async function cleanOldActivityLogs() {
             if (!db) return;
             
             try {
-                const twoDaysAgo = new Date();
-                twoDaysAgo.setHours(twoDaysAgo.getHours() - 48);
+                const fiveDaysAgo = new Date();
+                fiveDaysAgo.setHours(fiveDaysAgo.getHours() - 120); // 5 dias = 120 horas
                 
                 const logsRef = collection(db, `artifacts/${appId}/public/data/activity-logs`);
-                const oldLogsQuery = query(logsRef, where('timestamp', '<', twoDaysAgo));
+                const oldLogsQuery = query(logsRef, where('timestamp', '<', fiveDaysAgo));
                 const snapshot = await getDocs(oldLogsQuery);
                 
                 const batch = writeBatch(db);
@@ -676,11 +676,11 @@
             getCollectionListener('dojo_ranking', dojoRanking, renderDojoSection);
             getCollectionListener('dojo_missions', dojoMissions, renderDojoSection, (ref) => query(ref, orderBy("points", "desc")));
             
-            // Activity logs listener (últimas 48 horas)
+            // Activity logs listener (últimos 5 dias)
             getCollectionListener('activity-logs', activityLogs, null, (ref) => {
-                const twoDaysAgo = new Date();
-                twoDaysAgo.setHours(twoDaysAgo.getHours() - 48);
-                return query(ref, where('timestamp', '>=', twoDaysAgo), orderBy('timestamp', 'desc'), limit(100));
+                const fiveDaysAgo = new Date();
+                fiveDaysAgo.setHours(fiveDaysAgo.getHours() - 120); // 5 dias = 120 horas
+                return query(ref, where('timestamp', '>=', fiveDaysAgo), orderBy('timestamp', 'desc'), limit(500));
             });
             
             // Executar limpeza automática de logs antigos ao iniciar
@@ -717,12 +717,20 @@
 
         // --- FIREBASE USERS SYNC ---
         let isSyncing = false;
-        async function syncFirebaseUsersWithCollaborators() {
-            // Evitar múltiplas sincronizações simultâneas
-            if (isSyncing || !db || !usersData || !collaborators) return;
-            if (usersData.length === 0) return; // Esperar dados carregarem
+        async function syncFirebaseUsersWithCollaborators(forceSync = false) {
+            // Evitar múltiplas sincronizações simultâneas (exceto se forçada)
+            if (!forceSync && isSyncing) return;
+            if (!db || !usersData || !collaborators) {
+                console.warn('Sincronização adiada: dados ainda não carregados');
+                return;
+            }
+            if (usersData.length === 0) {
+                console.warn('Sincronização adiada: nenhum usuário Firebase encontrado');
+                return;
+            }
             
             isSyncing = true;
+            let syncCount = 0;
             
             try {
                 // Para cada usuário Firebase, verificar se existe colaborador correspondente
@@ -746,10 +754,18 @@
                         console.log('Sincronizando usuário Firebase com colaboradores:', collaboratorData.name);
                         
                         await addDoc(collection(db, `artifacts/${appId}/public/data/collaborators`), collaboratorData);
+                        syncCount++;
                     }
+                }
+                
+                if (syncCount > 0) {
+                    console.log(`Sincronização completa: ${syncCount} colaborador(es) adicionado(s)`);
+                } else {
+                    console.log('Sincronização completa: todos os usuários já possuem colaboradores');
                 }
             } catch (error) {
                 console.error('Erro ao sincronizar usuários Firebase:', error);
+                throw error; // Propagar erro para o botão de sincronização mostrar mensagem
             } finally {
                 isSyncing = false;
             }
@@ -1503,8 +1519,8 @@
             if (!student.endereco) missing.push('Endereço');
             if (!student.estadoCivil) missing.push('Estado Civil');
             
-            // Informações Pedagógicas
-            if (!student.currentLevel) missing.push('Nível Atual');
+            // Informações Pedagógicas (apenas para alunos ativos ou pendentes)
+            if (isActiveStudent && !student.currentLevel) missing.push('Nível Atual');
             // Não exigimos níveis cursados pois alunos iniciantes não têm histórico
             
             // Informações Financeiras (apenas se o usuário tem permissão para ver E aluno está ativo/pendente)
@@ -3042,7 +3058,16 @@
             
             contentArea.innerHTML = `
                 <section id="colaboradores-section" class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
-                    <div class="flex justify-end items-center mb-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <button 
+                            class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm font-semibold flex items-center gap-2" 
+                            onclick="syncFirebaseUsersWithCollaborators(true).then(() => { showSuccessMessage('Sincronizado!', 'Usuários Firebase sincronizados com colaboradores.'); }).catch(err => showErrorMessage('Erro', 'Erro ao sincronizar: ' + err.message))"
+                        >
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                            </svg>
+                            Sincronizar Usuários Firebase
+                        </button>
                         <button class="primary-btn w-auto" data-action="add-collaborator">+ Adicionar Colaborador</button>
                     </div>
                     <div class="overflow-x-auto">
@@ -7617,6 +7642,14 @@
                         <p class="text-xs text-purple-700 mt-2">Se marcado, este colaborador aparecerá como opção de avaliador na Gestão de TNs</p>
                     </div>
 
+                    <div class="bg-orange-50 p-4 rounded-lg border border-orange-200">
+                        <div class="flex items-center">
+                            <input type="checkbox" id="can-view-logs-checkbox" class="h-4 w-4 rounded" ${collaborator?.canViewLogs ? 'checked' : ''}>
+                            <label for="can-view-logs-checkbox" class="ml-2 font-medium text-sm text-orange-900">Acesso aos Logs de Atividades</label>
+                        </div>
+                        <p class="text-xs text-orange-700 mt-2">Se marcado, este colaborador poderá visualizar os logs de atividades do sistema</p>
+                    </div>
+
                     ${!collaboratorId ? `
                     <div class="bg-green-50 p-4 rounded-lg border border-green-200">
                         <div class="flex items-center mb-3">
@@ -7675,6 +7708,7 @@
             const selectedPages = Array.from(document.querySelectorAll('input[name="allowedPages"]:checked')).map(cb => cb.value);
             const role = document.getElementById('collaborator-role').value;
             const isEvaluator = document.getElementById('is-evaluator-checkbox')?.checked || false;
+            const canViewLogs = document.getElementById('can-view-logs-checkbox')?.checked || false;
 
             const data = {
                 name: document.getElementById('collaborator-name').value,
@@ -7683,7 +7717,8 @@
                 address: document.getElementById('collaborator-address').value,
                 role: role,
                 allowedPages: selectedPages,
-                isEvaluator: isEvaluator
+                isEvaluator: isEvaluator,
+                canViewLogs: canViewLogs
             };
 
             if (!data.name) { showErrorMessage("Erro", "O nome do colaborador é obrigatório."); return; }
@@ -8656,8 +8691,15 @@
             event.preventDefault();
             const competitorId = document.getElementById('dojo-id').value;
             const points = Number(document.getElementById('dojo-points').value);
+            const competitor = dojoRanking.find(c => c.id === competitorId);
             try {
                 await updateDoc(doc(db, `artifacts/${appId}/public/data/dojo_ranking`, competitorId), { points });
+                
+                // Log activity
+                if (competitor) {
+                    await logActivity('editar', 'dojo', competitor.name, { points });
+                }
+                
                 showSuccessMessage("Sucesso", "Pontuação atualizada.");
             } catch (e) { console.error(e); showErrorMessage("Erro", "Não foi possível atualizar a pontuação."); }
         }
@@ -10077,8 +10119,15 @@
             }
 
             try {
+                // Get event data before deleting for logging
+                const event = calendarEvents.find(e => e.id === eventId);
+                const eventTitle = event ? event.title : 'Evento';
+                
                 const eventDoc = doc(db, `artifacts/${appId}/public/data/calendar-events`, eventId);
                 await deleteDoc(eventDoc);
+                
+                // Log activity
+                await logActivity('deletar', 'evento_calendario', eventTitle, { date: event?.date });
                 
                 // Close modal and show success message
                 document.getElementById('form-modal').classList.remove('visible');
@@ -10090,18 +10139,37 @@
         }
 
         // --- LOGS DE ATIVIDADES SECTION ---
+        let currentLogsPage = 1;
+        const logsPerPage = 20;
+        let currentLogsCollaboratorFilter = 'todos'; // Filtro por colaborador
+        
         function renderLogsAtividadesSection() {
             document.getElementById('main-title').textContent = 'Logs de Atividades';
-            document.getElementById('main-description').textContent = 'Acompanhe todas as ações realizadas no Hub nas últimas 48 horas.';
+            document.getElementById('main-description').textContent = 'Acompanhe todas as ações realizadas no Hub nos últimos 5 dias.';
 
             const contentArea = document.getElementById('content-area');
             
-            // Filtrar logs das últimas 48 horas e ordenar por timestamp decrescente
+            // Ordenar logs por timestamp decrescente
             const sortedLogs = [...activityLogs].sort((a, b) => {
                 const timeA = a.timestamp?.toDate ? a.timestamp.toDate() : new Date(a.timestamp);
                 const timeB = b.timestamp?.toDate ? b.timestamp.toDate() : new Date(b.timestamp);
                 return timeB - timeA;
             });
+            
+            // Filtrar por colaborador se necessário
+            const filteredLogs = currentLogsCollaboratorFilter === 'todos' 
+                ? sortedLogs 
+                : sortedLogs.filter(log => log.userName === currentLogsCollaboratorFilter);
+            
+            // Extrair lista única de colaboradores dos logs para o filtro
+            const uniqueCollaborators = [...new Set(sortedLogs.map(log => log.userName))].sort();
+            
+            // Calcular paginação
+            const totalLogs = filteredLogs.length;
+            const totalPages = Math.ceil(totalLogs / logsPerPage);
+            const startIndex = (currentLogsPage - 1) * logsPerPage;
+            const endIndex = startIndex + logsPerPage;
+            const currentPageLogs = filteredLogs.slice(startIndex, endIndex);
             
             // Função para formatar data/hora
             function formatTimestamp(timestamp) {
@@ -10139,7 +10207,7 @@
             }
             
             // Renderizar logs
-            const logsHTML = sortedLogs.length > 0 ? sortedLogs.map(log => {
+            const logsHTML = currentPageLogs.length > 0 ? currentPageLogs.map(log => {
                 const actionColor = getActionColor(log.action);
                 const actionIcon = getActionIcon(log.action);
                 const detailsText = log.details && Object.keys(log.details).length > 0 
@@ -10176,9 +10244,61 @@
                     <svg class="w-16 h-16 mx-auto mb-4 text-stone-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                     </svg>
-                    <p class="text-stone-500 text-lg">Nenhuma atividade registrada nas últimas 48 horas.</p>
+                    <p class="text-stone-500 text-lg">Nenhuma atividade registrada nos últimos 5 dias.</p>
                 </div>
             `;
+            
+            // Renderizar controles de paginação
+            let paginationHTML = '';
+            if (totalPages > 1) {
+                const pageNumbers = [];
+                for (let i = 1; i <= totalPages; i++) {
+                    if (i === 1 || i === totalPages || (i >= currentLogsPage - 1 && i <= currentLogsPage + 1)) {
+                        pageNumbers.push(i);
+                    } else if (pageNumbers[pageNumbers.length - 1] !== '...') {
+                        pageNumbers.push('...');
+                    }
+                }
+                
+                paginationHTML = `
+                    <div class="flex items-center justify-between mt-6 pt-6 border-t border-stone-200">
+                        <div class="text-sm text-stone-600">
+                            Mostrando ${startIndex + 1}-${Math.min(endIndex, totalLogs)} de ${totalLogs} registros
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button 
+                                onclick="currentLogsPage = Math.max(1, currentLogsPage - 1); renderLogsAtividadesSection();"
+                                ${currentLogsPage === 1 ? 'disabled' : ''}
+                                class="px-3 py-1 rounded border border-stone-300 bg-white hover:bg-stone-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            >
+                                Anterior
+                            </button>
+                            ${pageNumbers.map(page => {
+                                if (page === '...') {
+                                    return '<span class="px-3 py-1">...</span>';
+                                }
+                                return `
+                                    <button 
+                                        onclick="currentLogsPage = ${page}; renderLogsAtividadesSection();"
+                                        class="px-3 py-1 rounded border ${page === currentLogsPage 
+                                            ? 'bg-blue-500 text-white border-blue-500' 
+                                            : 'border-stone-300 bg-white hover:bg-stone-50'} transition-colors"
+                                    >
+                                        ${page}
+                                    </button>
+                                `;
+                            }).join('')}
+                            <button 
+                                onclick="currentLogsPage = Math.min(${totalPages}, currentLogsPage + 1); renderLogsAtividadesSection();"
+                                ${currentLogsPage === totalPages ? 'disabled' : ''}
+                                class="px-3 py-1 rounded border border-stone-300 bg-white hover:bg-stone-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            >
+                                Próxima
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
             
             contentArea.innerHTML = `
                 <section id="logs-atividades-section">
@@ -10189,20 +10309,46 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                 </svg>
                                 <strong>Sistema de Auditoria:</strong> Todas as ações são registradas automaticamente. 
-                                Os logs são mantidos por 48 horas e depois automaticamente removidos.
+                                Os logs são mantidos por 5 dias e depois automaticamente removidos.
                             </p>
                         </div>
                     </div>
                     
-                    <div class="mb-4">
+                    <div class="mb-6 flex items-center gap-4">
+                        <label class="text-sm font-semibold text-stone-700">Filtrar por colaborador:</label>
+                        <select 
+                            id="logs-collaborator-filter" 
+                            class="form-input !w-auto min-w-[200px]"
+                            onchange="currentLogsCollaboratorFilter = this.value; currentLogsPage = 1; renderLogsAtividadesSection();"
+                        >
+                            <option value="todos" ${currentLogsCollaboratorFilter === 'todos' ? 'selected' : ''}>Todos os colaboradores</option>
+                            ${uniqueCollaborators.map(collab => 
+                                `<option value="${collab}" ${currentLogsCollaboratorFilter === collab ? 'selected' : ''}>${collab}</option>`
+                            ).join('')}
+                        </select>
+                        ${currentLogsCollaboratorFilter !== 'todos' ? `
+                            <button 
+                                onclick="currentLogsCollaboratorFilter = 'todos'; currentLogsPage = 1; renderLogsAtividadesSection();"
+                                class="text-sm text-blue-600 hover:text-blue-800 underline"
+                            >
+                                Limpar filtro
+                            </button>
+                        ` : ''}
+                    </div>
+                    
+                    <div class="mb-4 flex items-center justify-between">
                         <h3 class="text-lg font-bold text-stone-800">
-                            ${sortedLogs.length} atividade${sortedLogs.length !== 1 ? 's' : ''} registrada${sortedLogs.length !== 1 ? 's' : ''}
+                            ${totalLogs} atividade${totalLogs !== 1 ? 's' : ''} registrada${totalLogs !== 1 ? 's' : ''}
+                            ${currentLogsCollaboratorFilter !== 'todos' ? `<span class="text-blue-600"> (filtrado por ${currentLogsCollaboratorFilter})</span>` : ''}
                         </h3>
+                        ${totalPages > 1 ? `<span class="text-sm text-stone-500">Página ${currentLogsPage} de ${totalPages}</span>` : ''}
                     </div>
                     
                     <div class="space-y-3">
                         ${logsHTML}
                     </div>
+                    
+                    ${paginationHTML}
                 </section>
             `;
         }
@@ -13401,10 +13547,18 @@
                     // Firebase mode - save to database
                     if (eventId) {
                         await updateDoc(doc(db, `artifacts/${appId}/public/data/calendar-events`, eventId), eventData);
+                        
+                        // Log activity
+                        await logActivity('editar', 'evento_calendario', title, { date, type });
+                        
                         showSuccessMessage("Sucesso", "Evento atualizado com sucesso.");
                     } else {
                         eventData.createdAt = serverTimestamp();
                         await addDoc(collection(db, `artifacts/${appId}/public/data/calendar-events`), eventData);
+                        
+                        // Log activity
+                        await logActivity('criar', 'evento_calendario', title, { date, type });
+                        
                         showSuccessMessage("Sucesso", "Evento criado com sucesso.");
                     }
                 }
@@ -13741,6 +13895,14 @@
             
             // Buscar colaborador pelo nome do usuário atual
             const currentCollaborator = collaborators.find(c => c.name === currentUserName);
+            
+            // Verificação especial para Logs de Atividades
+            if (pageKey === 'logs-atividades') {
+                // Admin sempre tem acesso
+                if (userRole === 'admin') return true;
+                // Verificar se o colaborador tem permissão específica
+                return currentCollaborator && currentCollaborator.canViewLogs === true;
+            }
             
             // Se encontrou o colaborador e ele tem permissões customizadas, usar essas permissões
             if (currentCollaborator && currentCollaborator.allowedPages && Array.isArray(currentCollaborator.allowedPages)) {
