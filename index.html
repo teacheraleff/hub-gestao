@@ -8229,11 +8229,13 @@
             let firebaseUsers = [];
             if (!window.isDevelopmentMode && db) {
                 try {
-                    const usersSnapshot = await getDocs(collection(db, `artifacts/${appId}/public/data/users`));
+                    const usersSnapshot = await getDocs(collection(db, 'users'));
                     firebaseUsers = usersSnapshot.docs.map(doc => ({
                         uid: doc.id,
-                        email: doc.data().email
+                        email: doc.data().email,
+                        name: doc.data().name
                     })).filter(u => u.email);
+                    console.log('Firebase users loaded:', firebaseUsers.length);
                 } catch (error) {
                     console.error('Error fetching Firebase users:', error);
                 }
@@ -8241,7 +8243,7 @@
 
             // Build email select dropdown
             const emailOptions = firebaseUsers.map(u => 
-                `<option value="${u.email}" data-uid="${u.uid}" ${collaborator?.email === u.email ? 'selected' : ''}>${u.email}</option>`
+                `<option value="${u.email}" data-uid="${u.uid}" ${collaborator?.email === u.email ? 'selected' : ''}>${u.email} (${u.name || 'Sem nome'})</option>`
             ).join('');
 
             container.innerHTML = `
