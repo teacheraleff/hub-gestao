@@ -3296,7 +3296,7 @@
                 return consecutiveAbsences;
             }
             
-            // Coletar todos os alunos com faltas consecutivas
+            // Coletar todas as rechamadas (uma para cada dupla de faltas consecutivas)
             const studentsWithConsecutiveAbsences = [];
             
             // Verificar VIPs
@@ -3307,25 +3307,28 @@
                 const attendanceRecord = attendance.find(a => a.id === vip.id);
                 const absences = findConsecutiveAbsences(attendanceRecord, student.id);
                 
-                if (absences.length > 0) {
-                    // Tentar buscar professor do VIP, depois da grade
-                    let teacherName = vip.teacherName;
-                    if (!teacherName || teacherName.trim() === '') {
-                        // Buscar na grade
-                        const vipSchedule = schedules.find(s => s.student === student.name);
-                        teacherName = vipSchedule?.teacher || 'Não especificado';
-                    }
-                    
+                // Tentar buscar professor do VIP, depois da grade
+                let teacherName = vip.teacherName;
+                if (!teacherName || teacherName.trim() === '') {
+                    // Buscar na grade
+                    const vipSchedule = schedules.find(s => s.student === student.name);
+                    teacherName = vipSchedule?.teacher || 'Não especificado';
+                }
+                
+                // Criar uma entrada separada para CADA dupla de faltas consecutivas
+                absences.forEach(absence => {
                     studentsWithConsecutiveAbsences.push({
                         studentName: student.name,
                         studentId: student.id,
                         type: 'VIP',
                         typeName: 'VIP',
                         teacher: teacherName,
-                        absences: absences,
-                        totalConsecutive: absences.length
+                        firstLesson: absence.firstLesson,
+                        secondLesson: absence.secondLesson,
+                        firstDate: absence.firstDate,
+                        secondDate: absence.secondDate
                     });
-                }
+                });
             });
             
             // Verificar Turmas
@@ -3339,25 +3342,28 @@
                     
                     const absences = findConsecutiveAbsences(attendanceRecord, studentId);
                     
-                    if (absences.length > 0) {
-                        // Tentar buscar professor da Turma, depois da grade
-                        let teacherName = turma.teacherName;
-                        if (!teacherName || teacherName.trim() === '') {
-                            // Buscar na grade usando o nome da turma
-                            const turmaSchedule = schedules.find(s => s.turma === turma.name);
-                            teacherName = turmaSchedule?.teacher || 'Não especificado';
-                        }
-                        
+                    // Tentar buscar professor da Turma, depois da grade
+                    let teacherName = turma.teacherName;
+                    if (!teacherName || teacherName.trim() === '') {
+                        // Buscar na grade usando o nome da turma
+                        const turmaSchedule = schedules.find(s => s.turma === turma.name);
+                        teacherName = turmaSchedule?.teacher || 'Não especificado';
+                    }
+                    
+                    // Criar uma entrada separada para CADA dupla de faltas consecutivas
+                    absences.forEach(absence => {
                         studentsWithConsecutiveAbsences.push({
                             studentName: student.name,
                             studentId: studentId,
                             type: 'TURMA',
                             typeName: turma.name || 'Turma sem nome',
                             teacher: teacherName,
-                            absences: absences,
-                            totalConsecutive: absences.length
+                            firstLesson: absence.firstLesson,
+                            secondLesson: absence.secondLesson,
+                            firstDate: absence.firstDate,
+                            secondDate: absence.secondDate
                         });
-                    }
+                    });
                 });
             });
             
@@ -3366,16 +3372,31 @@
             
             if (currentUserRole === 'teacher') {
                 // Professores veem apenas seus próprios alunos
-                filteredStudents = studentsWithConsecutiveAbsences.filter(s => s.teacher === currentUserName);
+                // Comparação case-insensitive e trim para evitar problemas com espaços
+                filteredStudents = studentsWithConsecutiveAbsences.filter(s => {
+                    const teacherName = (s.teacher || '').trim().toLowerCase();
+                    const userName = (currentUserName || '').trim().toLowerCase();
+                    return teacherName === userName;
+                });
+                
+                // Debug: mostrar quantos alunos foram encontrados
+                console.log(`Professor ${currentUserName} vendo ${filteredStudents.length} rechamadas de um total de ${studentsWithConsecutiveAbsences.length}`);
+                if (filteredStudents.length === 0 && studentsWithConsecutiveAbsences.length > 0) {
+                    console.log('Professores disponíveis:', [...new Set(studentsWithConsecutiveAbsences.map(s => s.teacher))]);
+                }
             } else {
                 // Admin, pedagógico, ap, am podem filtrar
                 filteredStudents = currentRechamadaTeacherFilter === 'todos' 
                     ? studentsWithConsecutiveAbsences 
-                    : studentsWithConsecutiveAbsences.filter(s => s.teacher === currentRechamadaTeacherFilter);
+                    : studentsWithConsecutiveAbsences.filter(s => {
+                        const teacherName = (s.teacher || '').trim().toLowerCase();
+                        const filterName = (currentRechamadaTeacherFilter || '').trim().toLowerCase();
+                        return teacherName === filterName;
+                    });
             }
             
-            // Ordenar por quantidade de faltas consecutivas (maior primeiro)
-            filteredStudents.sort((a, b) => b.totalConsecutive - a.totalConsecutive);
+            // Ordenar por data da primeira falta (mais recente primeiro)
+            filteredStudents.sort((a, b) => new Date(b.firstDate) - new Date(a.firstDate));
             
             // Lista únicalha de professores
             const uniqueTeachers = [...new Set(studentsWithConsecutiveAbsences.map(s => s.teacher))].filter(t => t && t !== 'Não especificado').sort();
@@ -3430,9 +3451,10 @@
                     
                     <div class="mb-4">
                         <h3 class="text-lg font-bold text-stone-800">
-                            ${filteredStudents.length} aluno${filteredStudents.length !== 1 ? 's' : ''} com faltas consecutivas
+                            ${filteredStudents.length} rechamada${filteredStudents.length !== 1 ? 's' : ''} necessária${filteredStudents.length !== 1 ? 's' : ''}
                             ${currentRechamadaTeacherFilter !== 'todos' ? `<span class="text-blue-600"> (filtrado por ${currentRechamadaTeacherFilter})</span>` : ''}
                         </h3>
+                        <p class="text-sm text-stone-500 mt-1">Cada linha representa uma dupla de faltas consecutivas que requer contato.</p>
                     </div>
                     
                     ${filteredStudents.length === 0 ? `
@@ -3440,7 +3462,7 @@
                             <svg class="w-16 h-16 mx-auto mb-4 text-green-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                             </svg>
-                            <p class="text-stone-500 text-lg font-semibold">Nenhum aluno com faltas consecutivas${currentRechamadaTeacherFilter !== 'todos' ? ' para este professor' : ''}!</p>
+                            <p class="text-stone-500 text-lg font-semibold">Nenhuma rechamada necessária${currentRechamadaTeacherFilter !== 'todos' ? ' para este professor' : ''}!</p>
                             <p class="text-stone-400 text-sm mt-2">Todos os alunos estão com boa frequência.</p>
                         </div>
                     ` : `
@@ -3451,15 +3473,19 @@
                                         <th>Aluno</th>
                                         <th>Modalidade</th>
                                         <th>Professor</th>
-                                        <th>Qtd. Ocorrências</th>
-                                        <th>Detalhes das Faltas</th>
+                                        <th>Aulas Faltadas</th>
+                                        <th>Datas</th>
                                         <th class="text-center">Status / Ações</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     ${filteredStudents.map(item => {
-                                        // Verificar se já foi feita rechamada para este aluno
-                                        const existingRechamada = rechamadas.find(r => r.studentId === item.studentId);
+                                        // Criar ID único para esta rechamada específica (aluno + aulas)
+                                        const rechamadaKey = `${item.studentId}_${item.firstLesson}_${item.secondLesson}`;
+                                        const existingRechamada = rechamadas.find(r => 
+                                            r.studentId === item.studentId && 
+                                            r.lessons === `${item.firstLesson}+${item.secondLesson}`
+                                        );
                                         
                                         return `
                                         <tr>
@@ -3471,24 +3497,12 @@
                                             </td>
                                             <td>${item.teacher}</td>
                                             <td class="text-center">
-                                                <span class="inline-block px-3 py-1 rounded-full bg-red-100 text-red-700 font-bold">
-                                                    ${item.totalConsecutive}
+                                                <span class="font-semibold text-red-600">
+                                                    Aula ${item.firstLesson} + ${item.secondLesson}
                                                 </span>
                                             </td>
-                                            <td>
-                                                <div class="space-y-1 text-sm">
-                                                    ${item.absences.map(absence => `
-                                                        <div class="flex items-center gap-2 text-stone-600">
-                                                            <span class="font-semibold text-red-600">
-                                                                Aula ${absence.firstLesson} + ${absence.secondLesson}
-                                                            </span>
-                                                            <span class="text-stone-400">•</span>
-                                                            <span>
-                                                                ${formatDateBR(absence.firstDate)} e ${formatDateBR(absence.secondDate)}
-                                                            </span>
-                                                        </div>
-                                                    `).join('')}
-                                                </div>
+                                            <td class="text-sm text-stone-600">
+                                                ${formatDateBR(item.firstDate)} <span class="text-stone-400">e</span> ${formatDateBR(item.secondDate)}
                                             </td>
                                             <td class="text-center">
                                                 ${existingRechamada ? `
@@ -3501,10 +3515,10 @@
                                                         </div>
                                                         <button 
                                                             data-action="ver-detalhes-rechamada"
-                                                            data-student-id="${item.studentId}"
+                                                            data-rechamada-id="${existingRechamada.id}"
                                                             class="text-blue-600 hover:text-blue-800 text-xs underline mt-1"
                                                         >
-                                                            Ver detalhes
+                                                            Ver/Editar
                                                         </button>
                                                     </div>
                                                 ` : `
@@ -3513,6 +3527,9 @@
                                                         data-student-id="${item.studentId}"
                                                         data-student-name="${item.studentName}"
                                                         data-teacher-name="${item.teacher}"
+                                                        data-lessons="${item.firstLesson}+${item.secondLesson}"
+                                                        data-first-date="${item.firstDate}"
+                                                        data-second-date="${item.secondDate}"
                                                         class="primary-btn !py-2 !px-4 text-sm w-auto flex items-center gap-2"
                                                     >
                                                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -3533,7 +3550,7 @@
         }
 
         // --- Funções auxiliares de Rechamada ---
-        function openRechamadaModal(studentId, studentName, teacherName) {
+        function openRechamadaModal(studentId, studentName, teacherName, lessons, firstDate, secondDate) {
             clearModalHeaderButtons();
             
             // Buscar lista de professores
@@ -3545,10 +3562,15 @@
             document.getElementById('form-modal-title').textContent = 'Registrar Rechamada';
             document.getElementById('form-modal-content-area').innerHTML = `
                 <form id="rechamada-form" class="space-y-4">
+                    <input type="hidden" id="rechamada-student-id" value="${studentId}">
+                    <input type="hidden" id="rechamada-student-name" value="${studentName}">
+                    <input type="hidden" id="rechamada-lessons" value="${lessons}">
+                    
                     <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
                         <p class="text-sm text-blue-800">
                             <strong>Aluno:</strong> ${studentName}<br>
-                            <strong>Professor do aluno:</strong> ${teacherName}
+                            <strong>Professor do aluno:</strong> ${teacherName}<br>
+                            <strong>Faltas:</strong> Aulas ${lessons} (${formatDateBR(firstDate)} e ${formatDateBR(secondDate)})
                         </p>
                     </div>
                     
@@ -3579,13 +3601,16 @@
             
             document.getElementById('rechamada-form').onsubmit = async (e) => {
                 e.preventDefault();
-                await saveRechamada(studentId, studentName);
+                await saveRechamada();
             };
             
             document.getElementById('form-modal').classList.add('visible');
         }
 
-        async function saveRechamada(studentId, studentName) {
+        async function saveRechamada() {
+            const studentId = document.getElementById('rechamada-student-id').value;
+            const studentName = document.getElementById('rechamada-student-name').value;
+            const lessons = document.getElementById('rechamada-lessons').value;
             const contactDate = document.getElementById('rechamada-date').value;
             const notes = document.getElementById('rechamada-notes').value;
             const responsibleTeacher = document.getElementById('rechamada-responsible').value;
@@ -3598,6 +3623,7 @@
             const rechamadaData = {
                 studentId,
                 studentName,
+                lessons,
                 contactDate,
                 notes,
                 responsibleTeacher,
@@ -3626,8 +3652,8 @@
             }
         }
 
-        function viewRechamadaDetails(studentId) {
-            const rechamada = rechamadas.find(r => r.studentId === studentId);
+        function viewRechamadaDetails(rechamadaId) {
+            const rechamada = rechamadas.find(r => r.id === rechamadaId);
             if (!rechamada) {
                 showErrorMessage("Erro", "Rechamada não encontrada.");
                 return;
@@ -3641,6 +3667,13 @@
                         <p class="text-sm font-semibold text-stone-700">Aluno</p>
                         <p class="text-lg">${rechamada.studentName}</p>
                     </div>
+                    
+                    ${rechamada.lessons ? `
+                        <div class="bg-red-50 border border-red-200 rounded-lg p-3">
+                            <p class="text-sm font-semibold text-red-700">Faltas Consecutivas</p>
+                            <p class="text-lg text-red-800 font-bold">Aulas ${rechamada.lessons}</p>
+                        </div>
+                    ` : ''}
                     
                     <div>
                         <p class="text-sm font-semibold text-stone-700">Quem fez a rechamada</p>
@@ -14684,11 +14717,14 @@
                             const studentId = actionTarget.dataset.studentId;
                             const studentName = actionTarget.dataset.studentName;
                             const teacherName = actionTarget.dataset.teacherName;
-                            openRechamadaModal(studentId, studentName, teacherName);
+                            const lessons = actionTarget.dataset.lessons;
+                            const firstDate = actionTarget.dataset.firstDate;
+                            const secondDate = actionTarget.dataset.secondDate;
+                            openRechamadaModal(studentId, studentName, teacherName, lessons, firstDate, secondDate);
                         },
                         'ver-detalhes-rechamada': () => {
-                            const studentId = actionTarget.dataset.studentId;
-                            viewRechamadaDetails(studentId);
+                            const rechamadaId = actionTarget.dataset.rechamadaId;
+                            viewRechamadaDetails(rechamadaId);
                         },
                         'editar-rechamada': () => {
                             const studentId = actionTarget.dataset.studentId;
