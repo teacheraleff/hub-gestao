@@ -3480,7 +3480,10 @@
                                                     </div>
                                                 ` : `
                                                     <button 
-                                                        onclick="openRechamadaModal('${item.studentId}', '${item.studentName.replace(/'/g, "\\'")}', '${item.teacher.replace(/'/g, "\\'")}')"
+                                                        data-action="fazer-rechamada"
+                                                        data-student-id="${item.studentId}"
+                                                        data-student-name="${item.studentName}"
+                                                        data-teacher-name="${item.teacher}"
                                                         class="primary-btn !py-2 !px-4 text-sm w-auto flex items-center gap-2"
                                                     >
                                                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -14472,6 +14475,14 @@
                         'vip-finalizado': () => showErrorMessage("VIP Finalizado", "Este VIP está finalizado. Reative o VIP para poder editá-lo ou registrar presenças."),
                         'reativar-turma': () => reativarTurma(id),
                         'reativar-vip': () => reativarVip(id),
+                        
+                        // Handler para rechamada
+                        'fazer-rechamada': () => {
+                            const studentId = actionTarget.dataset.studentId;
+                            const studentName = actionTarget.dataset.studentName;
+                            const teacherName = actionTarget.dataset.teacherName;
+                            openRechamadaModal(studentId, studentName, teacherName);
+                        },
                     };
                     if (actionHandlers[action]) {
                         console.log('Executing action:', action);
