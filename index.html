@@ -3309,7 +3309,7 @@
                 
                 if (absences.length > 0) {
                     // Tentar buscar professor do VIP, depois da grade
-                    let teacherName = vip.teacher;
+                    let teacherName = vip.teacherName;
                     if (!teacherName || teacherName.trim() === '') {
                         // Buscar na grade
                         const vipSchedule = schedules.find(s => s.student === student.name);
@@ -3333,7 +3333,7 @@
                 const attendanceRecord = attendance.find(a => a.id === turma.id);
                 
                 // Para cada aluno da turma
-                turma.students?.forEach(studentId => {
+                turma.studentIds?.forEach(studentId => {
                     const student = students.find(s => s.id === studentId);
                     if (!student) return;
                     
@@ -3341,7 +3341,7 @@
                     
                     if (absences.length > 0) {
                         // Tentar buscar professor da Turma, depois da grade
-                        let teacherName = turma.teacher;
+                        let teacherName = turma.teacherName;
                         if (!teacherName || teacherName.trim() === '') {
                             // Buscar na grade usando o nome da turma
                             const turmaSchedule = schedules.find(s => s.turma === turma.name);
