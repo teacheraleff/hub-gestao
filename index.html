@@ -1530,7 +1530,7 @@
             if (canViewFinancialInfo && isActiveStudent) {
                 if (!student.paymentType) missing.push('Forma de Pagamento');
                 // Só exigir valor pago se NÃO for bolsista ou permuta
-                if (student.paymentType !== 'BOLSA' && student.paymentType !== 'Permuta' && (!student.amountPaid || parseFloat(student.amountPaid) === 0)) {
+                if (student.paymentType !== 'Bolsa' && student.paymentType !== 'Permuta' && (!student.amountPaid || parseFloat(student.amountPaid) === 0)) {
                     missing.push('Valor Pago');
                 }
             }
