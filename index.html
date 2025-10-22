@@ -1451,6 +1451,7 @@
         function checkStudentProfileCompleteness(student) {
             const missing = [];
             const canViewFinancialInfo = !['teacher', 'pedagogico', 'ap', 'am'].includes(currentUserRole);
+            const isActiveStudent = student.status === 'Ativo' || student.status === 'Pendente';
             
             // Informações Pessoais
             if (!student.birthDate) missing.push('Data de Nascimento');
@@ -1458,14 +1459,13 @@
             if (!student.cpf) missing.push('CPF');
             if (!student.endereco) missing.push('Endereço');
             if (!student.estadoCivil) missing.push('Estado Civil');
-            if (!student.profissao) missing.push('Profissão');
             
             // Informações Pedagógicas
             if (!student.currentLevel) missing.push('Nível Atual');
             // Não exigimos níveis cursados pois alunos iniciantes não têm histórico
             
-            // Informações Financeiras (apenas se o usuário tem permissão para ver)
-            if (canViewFinancialInfo) {
+            // Informações Financeiras (apenas se o usuário tem permissão para ver E aluno está ativo/pendente)
+            if (canViewFinancialInfo && isActiveStudent) {
                 if (!student.paymentType) missing.push('Forma de Pagamento');
                 if (!student.amountPaid || parseFloat(student.amountPaid) === 0) missing.push('Valor Pago');
             }
@@ -3229,9 +3229,18 @@
             // Calcular alunos por professor baseado na GRADE (schedules)
             const teachersMap = new Map();
             
-            // Percorrer todos os schedules da GRADE e validar se tem aluno/turma válido
+            // Agrupar schedules por professor e aluno/turma única para evitar contagem duplicada
+            const processedEntries = new Set(); // Para rastrear combinações já processadas
+            
             schedules.forEach(schedule => {
                 if (!schedule.teacher || schedule.type === 'break') return;
+                
+                // Criar chave única: professor + tipo + nome do aluno/turma
+                const uniqueKey = `${schedule.teacher}|${schedule.type}|${schedule.student}`;
+                
+                // Pular se já processamos esta combinação
+                if (processedEntries.has(uniqueKey)) return;
+                processedEntries.add(uniqueKey);
                 
                 let isValid = false;
                 let studentCount = 0;
@@ -3265,13 +3274,17 @@
                 // Só contar se for válido
                 if (isValid) {
                     if (!teachersMap.has(schedule.teacher)) {
-                        teachersMap.set(schedule.teacher, { vips: 0, turmas: 0 });
+                        teachersMap.set(schedule.teacher, { vips: 0, turmas: 0, vipCount: 0, turmaCount: 0 });
                     }
                     
+                    const teacherData = teachersMap.get(schedule.teacher);
+                    
                     if (schedule.type === 'vip') {
-                        teachersMap.get(schedule.teacher).vips += studentCount;
+                        teacherData.vips += studentCount; // Total de alunos VIP
+                        teacherData.vipCount += 1; // Quantidade de VIPs
                     } else if (schedule.type === 'turma') {
-                        teachersMap.get(schedule.teacher).turmas += studentCount;
+                        teacherData.turmas += studentCount; // Total de alunos em turmas
+                        teacherData.turmaCount += 1; // Quantidade de turmas
                     }
                 }
             });
@@ -3280,8 +3293,10 @@
             const teacherStats = Array.from(teachersMap.entries())
                 .map(([name, counts]) => ({
                     name,
-                    vips: counts.vips,
-                    turmas: counts.turmas,
+                    vipStudents: counts.vips, // Total de alunos VIP
+                    turmaStudents: counts.turmas, // Total de alunos em turmas
+                    vipCount: counts.vipCount, // Quantidade de VIPs
+                    turmaCount: counts.turmaCount, // Quantidade de turmas
                     total: counts.vips + counts.turmas
                 }))
                 .sort((a, b) => b.total - a.total);
@@ -3849,8 +3864,8 @@
                                 <div style="max-height: 400px; overflow-y: auto;">
                                     <div class="space-y-2">
                                         ${teacherStats.map((teacher, index) => {
-                                            const vipPercentage = teacher.total > 0 ? (teacher.vips / teacher.total) * 100 : 0;
-                                            const turmaPercentage = teacher.total > 0 ? (teacher.turmas / teacher.total) * 100 : 0;
+                                            const vipPercentage = teacher.total > 0 ? (teacher.vipStudents / teacher.total) * 100 : 0;
+                                            const turmaPercentage = teacher.total > 0 ? (teacher.turmaStudents / teacher.total) * 100 : 0;
                                             const isTopTeacher = index < 3;
                                             
                                             return `
@@ -3865,14 +3880,14 @@
                                                             <span class="text-sm font-medium text-stone-700">${teacher.name}</span>
                                                         </div>
                                                         <div class="flex items-center gap-2">
-                                                            <span class="px-2 py-1 bg-amber-100 text-amber-700 rounded text-xs font-bold">${teacher.vips} VIP</span>
-                                                            <span class="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs font-bold">${teacher.turmas} Turma</span>
-                                                            <span class="px-2 py-1 bg-stone-200 text-stone-800 rounded text-xs font-bold">${teacher.total}</span>
+                                                            ${teacher.vipCount > 0 ? `<span class="px-2 py-1 bg-amber-100 text-amber-700 rounded text-xs font-bold" title="${teacher.vipStudents} ${teacher.vipStudents === 1 ? 'aluno' : 'alunos'}">${teacher.vipCount} VIP${teacher.vipCount > 1 ? 's' : ''}</span>` : ''}
+                                                            ${teacher.turmaCount > 0 ? `<span class="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs font-bold" title="${teacher.turmaStudents} ${teacher.turmaStudents === 1 ? 'aluno' : 'alunos'}">${teacher.turmaCount} Turma${teacher.turmaCount > 1 ? 's' : ''}</span>` : ''}
+                                                            <span class="px-2 py-1 bg-stone-200 text-stone-800 rounded text-xs font-bold" title="Total de alunos">${teacher.total} al.</span>
                                                         </div>
                                                     </div>
                                                     <div class="w-full bg-stone-200 rounded-full h-2 overflow-hidden flex">
-                                                        ${teacher.vips > 0 ? `<div class="bg-amber-500 h-2" style="width: ${vipPercentage}%" title="VIPs: ${vipPercentage.toFixed(1)}%"></div>` : ''}
-                                                        ${teacher.turmas > 0 ? `<div class="bg-purple-500 h-2" style="width: ${turmaPercentage}%" title="Turmas: ${turmaPercentage.toFixed(1)}%"></div>` : ''}
+                                                        ${teacher.vipStudents > 0 ? `<div class="bg-amber-500 h-2" style="width: ${vipPercentage}%" title="VIPs: ${vipPercentage.toFixed(1)}%"></div>` : ''}
+                                                        ${teacher.turmaStudents > 0 ? `<div class="bg-purple-500 h-2" style="width: ${turmaPercentage}%" title="Turmas: ${turmaPercentage.toFixed(1)}%"></div>` : ''}
                                                     </div>
                                                 </div>
                                             `;
@@ -4749,6 +4764,10 @@
                                 }).join('');
                             })()}
                         </div>
+                        <div class="mt-3 flex items-center gap-2">
+                            <input type="checkbox" id="aluno-neverCompletedLevels" class="h-4 w-4 rounded text-yellow-500 focus:ring-yellow-400" ${aluno?.neverCompletedLevels ? 'checked' : ''}>
+                            <label for="aluno-neverCompletedLevels" class="text-sm font-medium text-stone-700">Este aluno nunca cursou nenhum nível (iniciante)</label>
+                        </div>
                     </div>
 
                     <div class="mt-4">
@@ -4939,6 +4958,7 @@
                 foraBrasil: document.getElementById('aluno-fora-brasil').checked,
                 currentLevel: document.getElementById('aluno-currentLevel').value || '',
                 completedLevels: completedLevels,
+                neverCompletedLevels: document.getElementById('aluno-neverCompletedLevels').checked,
                 notes: document.getElementById('aluno-notes').value,
                 isMinor: isMinor,
                 responsibleName: isMinor ? document.getElementById('aluno-responsibleName').value : '',
@@ -6850,6 +6870,17 @@
                         lessons: lessonsToSave
                     }, { merge: true });
                     
+                    // Log activity
+                    const turma = turmas.find(t => t.id === unitId);
+                    const vipRecord = vips.find(v => v.id === unitId);
+                    const targetName = turma ? turma.name : (vipRecord ? students.find(s => s.id === vipRecord.studentId)?.name : 'Desconhecido');
+                    const targetType = turma ? 'turma' : 'vip';
+                    
+                    await logActivity('salvar_pef', targetType, targetName, {
+                        quantidadeAulas: savedCount,
+                        salvamentoEmLote: true
+                    });
+                    
                     playSuccessSound();
                     showSuccessMessage("Sucesso!", `${savedCount} aulas salvas com sucesso.`);
                 }
@@ -6956,6 +6987,18 @@
                     }
                 }
 
+                // Log activity
+                const turma = turmas.find(t => t.id === unitId);
+                const vipRecord = vips.find(v => v.id === unitId);
+                const targetName = turma ? turma.name : (vipRecord ? students.find(s => s.id === vipRecord.studentId)?.name : 'Desconhecido');
+                const targetType = turma ? 'turma' : 'vip';
+                
+                await logActivity('salvar_pef', targetType, targetName, {
+                    aulaNumero: lessonNumber,
+                    data: date,
+                    topico: topic
+                });
+                
                 showSuccessMessage("Sucesso!", `Presença da Aula ${lessonNumber} foi salva.`);
             } catch (error) {
                 console.error("Error saving attendance: ", error);
@@ -8140,6 +8183,12 @@
                             await addDoc(collection(db, `artifacts/${appId}/public/data/schedules`), dataWithTimestamp3);
                         }
                         
+                        // Log activity
+                        await logActivity('editar', 'aula_grade', `${studentValue} - ${teacherValue}`, {
+                            dias: [day1, day2, day3].filter(Boolean).join(', '),
+                            tipo: scheduleType
+                        });
+                        
                         showSuccessMessage("Sucesso!", "Aula atualizada.");
                     }
                 } else { 
@@ -8159,7 +8208,14 @@
                         await addDoc(collection(db, `artifacts/${appId}/public/data/schedules`), dataWithTimestamp3);
                     }
                     
+                    // Log activity
                     const daysCount = 1 + (data2 ? 1 : 0) + (data3 ? 1 : 0);
+                    await logActivity('criar', 'aula_grade', `${studentValue} - ${teacherValue}`, {
+                        dias: [day1, day2, day3].filter(Boolean).join(', '),
+                        quantidadeDias: daysCount,
+                        tipo: scheduleType
+                    });
+                    
                     showSuccessMessage("Sucesso!", `Aula${daysCount > 1 ? 's' : ''} adicionada${daysCount > 1 ? 's' : ''} (${daysCount} ${daysCount === 1 ? 'dia' : 'dias'}).`);
                 }
                 closeFormModal();
@@ -8560,7 +8616,36 @@
                 "Tem certeza que deseja apagar este item? Esta ação não pode ser desfeita.",
                 async () => {
                     try {
+                        // Get item data before deleting for logging
+                        let itemName = 'Desconhecido';
+                        let logAction = 'deletar';
+                        let logType = collectionName;
+                        
+                        if (collectionName === 'schedules') {
+                            const schedule = schedules.find(s => s.id === itemId);
+                            if (schedule) {
+                                itemName = `${schedule.student} - ${schedule.teacher}`;
+                                logType = 'aula_grade';
+                            }
+                        } else if (collectionName === 'students') {
+                            const student = students.find(s => s.id === itemId);
+                            if (student) itemName = student.name;
+                        } else if (collectionName === 'turmas') {
+                            const turma = turmas.find(t => t.id === itemId);
+                            if (turma) itemName = turma.name;
+                        } else if (collectionName === 'vips') {
+                            const vip = vips.find(v => v.id === itemId);
+                            if (vip) {
+                                const student = students.find(s => s.id === vip.studentId);
+                                itemName = student ? student.name : 'VIP';
+                            }
+                        }
+                        
                         await deleteDoc(doc(db, `artifacts/${appId}/public/data/${collectionName}`, itemId));
+                        
+                        // Log activity
+                        await logActivity(logAction, logType, itemName);
+                        
                         showSuccessMessage("Sucesso", "Item apagado com sucesso.");
                         closeFormModal();
                     } catch (error) { 
@@ -12056,6 +12141,12 @@
                     const docRef = doc(db, `artifacts/${appId}/public/data/vips`, vipId);
                     await updateDoc(docRef, { grades });
                     console.log('VIP grades saved to Firebase');
+                    
+                    // Log activity
+                    const vip = vips.find(v => v.id === vipId);
+                    const student = vip ? students.find(s => s.id === vip.studentId) : null;
+                    const studentName = student ? student.name : 'VIP Desconhecido';
+                    await logActivity('salvar_notas', 'vip', studentName);
                 }
                 
                 document.getElementById('form-modal').classList.remove('visible');
@@ -12128,6 +12219,14 @@
                     const docRef = doc(db, `artifacts/${appId}/public/data/turmas`, turmaId);
                     await updateDoc(docRef, { studentGrades });
                     console.log('Saved to Firebase');
+                    
+                    // Log activity
+                    const turma = turmas.find(t => t.id === turmaId);
+                    const turmaName = turma ? turma.name : 'Turma Desconhecida';
+                    const studentCount = Object.keys(studentGrades).length;
+                    await logActivity('salvar_notas', 'turma', turmaName, {
+                        quantidadeAlunos: studentCount
+                    });
                 }
                 
                 document.getElementById('form-modal').classList.remove('visible');
