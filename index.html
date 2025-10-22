@@ -620,7 +620,9 @@
                 allUnsubscribers.push(unsubscribe);
             };
 
-            getCollectionListener('users', usersData, null);
+            getCollectionListener('users', usersData, () => {
+                syncFirebaseUsersWithCollaborators();
+            });
             getCollectionListener('students', students, () => {
                 if (contentArea.firstElementChild?.id === 'alunos-section') {
                     resetPagination();
@@ -650,6 +652,7 @@
             getCollectionListener('tasks', tasks, renderTarefasSection);
 
             getCollectionListener('collaborators', collaborators, () => {
+                syncFirebaseUsersWithCollaborators();
                 const activePageId = contentArea.firstElementChild?.id;
                 if (activePageId === 'grade-section') renderGradeSection();
                 if (activePageId === 'tasks-section') renderTarefasSection();
@@ -709,6 +712,46 @@
                     console.error('Error listening to monthly highlight:', error);
                 });
                 allUnsubscribers.push(unsubscribeHighlight);
+            }
+        }
+
+        // --- FIREBASE USERS SYNC ---
+        let isSyncing = false;
+        async function syncFirebaseUsersWithCollaborators() {
+            // Evitar múltiplas sincronizações simultâneas
+            if (isSyncing || !db || !usersData || !collaborators) return;
+            if (usersData.length === 0) return; // Esperar dados carregarem
+            
+            isSyncing = true;
+            
+            try {
+                // Para cada usuário Firebase, verificar se existe colaborador correspondente
+                for (const user of usersData) {
+                    const hasCollaborator = collaborators.some(c => c.firebaseUid === user.id);
+                    
+                    if (!hasCollaborator) {
+                        // Criar colaborador automaticamente para esse usuário Firebase
+                        const collaboratorData = {
+                            name: user.name || user.email || 'Usuário sem nome',
+                            email: user.email || '',
+                            role: user.role || 'teacher',
+                            allowedPages: [],
+                            firebaseUid: user.id,
+                            cpf: '',
+                            birthdate: '',
+                            address: '',
+                            createdAt: new Date()
+                        };
+                        
+                        console.log('Sincronizando usuário Firebase com colaboradores:', collaboratorData.name);
+                        
+                        await addDoc(collection(db, `artifacts/${appId}/public/data/collaborators`), collaboratorData);
+                    }
+                }
+            } catch (error) {
+                console.error('Erro ao sincronizar usuários Firebase:', error);
+            } finally {
+                isSyncing = false;
             }
         }
 
@@ -2375,7 +2418,7 @@
             let filterHtml = '';
 
             if (!isTeacher) {
-                const teacherOptions = collaborators.filter(c => c.sectors && c.sectors.includes('professor')).map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+                const teacherOptions = collaborators.filter(c => c.role === 'teacher').map(c => `<option value="${c.name}">${c.name}</option>`).join('');
                 filterHtml = `
                     <div class="grade-select-container flex-grow">
                         <label for="teacher-filter" class="block text-sm font-medium text-stone-700 mb-1">Filtrar por professor:</label>
@@ -2407,7 +2450,7 @@
             if (isTeacher) {
                 // Find the teacher's name in collaborators to ensure correct mapping
                 const teacherCollaborator = collaborators.find(c => 
-                    c.sectors && c.sectors.includes('professor') && 
+                    c.role === 'teacher' && 
                     (c.name === currentUserName || c.email === currentUserName || c.id === userId)
                 );
                 const originalTeacherName = teacherCollaborator ? teacherCollaborator.name : currentUserName;
@@ -2423,7 +2466,7 @@
                         originalTeacherName,
                         teacherNameToFilter,
                         availableTeachersInSchedules: [...new Set(schedules.map(s => s.teacher))],
-                        collaboratorTeachers: collaborators.filter(c => c.sectors && c.sectors.includes('professor')).map(c => c.name),
+                        collaboratorTeachers: collaborators.filter(c => c.role === 'teacher').map(c => c.name),
                         smartMappingResult: findTeacherByName(originalTeacherName)
                     });
 
@@ -2589,7 +2632,7 @@
             } else if (teacherFilter === 'all' && canViewAllHours && hoursContainer) {
                 // Show summary of all teachers' hours
                 const teacherHours = {};
-                const teachers = collaborators.filter(c => c.sectors && c.sectors.includes('professor'));
+                const teachers = collaborators.filter(c => c.role === 'teacher');
 
                 teachers.forEach(teacher => {
                     teacherHours[teacher.name] = calculateWeeklyHours(teacher.name);
@@ -2989,20 +3032,14 @@
                 'am': { label: 'AM', color: 'bg-pink-100 text-pink-800' }
             };
             
+            // Ordenar colaboradores alfabeticamente por nome
+            const sortedCollaborators = [...collaborators].sort((a, b) => 
+                a.name.localeCompare(b.name, 'pt-BR', { sensitivity: 'base' })
+            );
+            
             contentArea.innerHTML = `
                 <section id="colaboradores-section" class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
-                    <div class="flex justify-between items-center mb-6">
-                        <button class="primary-btn w-auto" onclick="openCreateFirebaseUserModal()">
-                            <svg class="inline-block w-4 h-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
-                                <circle cx="9" cy="7" r="4"/>
-                                <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
-                                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                                <line x1="12" y1="8" x2="12" y2="14"/>
-                                <line x1="9" y1="11" x2="15" y2="11"/>
-                            </svg>
-                            Criar Usuário Firebase
-                        </button>
+                    <div class="flex justify-end items-center mb-6">
                         <button class="primary-btn w-auto" data-action="add-collaborator">+ Adicionar Colaborador</button>
                     </div>
                     <div class="overflow-x-auto">
@@ -3016,7 +3053,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                ${collaborators.map(c => {
+                                ${sortedCollaborators.map(c => {
                                     const roleInfo = roleLabels[c.role] || { label: 'Não definido', color: 'bg-gray-100 text-gray-800' };
                                     const pagesCount = (c.allowedPages || []).length;
                                     return `
@@ -7554,6 +7591,14 @@
                         <p class="text-xs text-yellow-700 mt-2">⚠️ Admin tem acesso total automaticamente</p>
                     </div>
 
+                    <div class="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                        <div class="flex items-center">
+                            <input type="checkbox" id="is-evaluator-checkbox" class="h-4 w-4 rounded" ${collaborator?.isEvaluator ? 'checked' : ''}>
+                            <label for="is-evaluator-checkbox" class="ml-2 font-medium text-sm text-purple-900">Avaliador de TN</label>
+                        </div>
+                        <p class="text-xs text-purple-700 mt-2">Se marcado, este colaborador aparecerá como opção de avaliador na Gestão de TNs</p>
+                    </div>
+
                     ${!collaboratorId ? `
                     <div class="bg-green-50 p-4 rounded-lg border border-green-200">
                         <div class="flex items-center mb-3">
@@ -7611,6 +7656,7 @@
             const collaboratorId = document.getElementById('collaborator-id').value;
             const selectedPages = Array.from(document.querySelectorAll('input[name="allowedPages"]:checked')).map(cb => cb.value);
             const role = document.getElementById('collaborator-role').value;
+            const isEvaluator = document.getElementById('is-evaluator-checkbox')?.checked || false;
 
             const data = {
                 name: document.getElementById('collaborator-name').value,
@@ -7618,7 +7664,8 @@
                 birthdate: document.getElementById('collaborator-birthdate').value,
                 address: document.getElementById('collaborator-address').value,
                 role: role,
-                allowedPages: selectedPages
+                allowedPages: selectedPages,
+                isEvaluator: isEvaluator
             };
 
             if (!data.name) { showErrorMessage("Erro", "O nome do colaborador é obrigatório."); return; }
@@ -7754,7 +7801,7 @@
             document.getElementById('form-modal-title').textContent = schedule ? "Detalhes da Aula" : "Adicionar Nova Aula";
             const isTeacher = currentUserRole === 'teacher';
 
-            const teacherOptions = collaborators.filter(c => c.sectors && c.sectors.includes('professor')).map(c => `<option value="${c.name}" ${schedule?.teacher === c.name ? 'selected' : ''}>${c.name}</option>`).join('');
+            const teacherOptions = collaborators.filter(c => c.role === 'teacher').map(c => `<option value="${c.name}" ${schedule?.teacher === c.name ? 'selected' : ''}>${c.name}</option>`).join('');
             const dayOptions = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"].map(d => `<option value="${d}" ${schedule?.day === d ? 'selected' : ''}>${d}</option>`).join('');
             const typeOptions = ["vip", "turma", "break"].map(t => `<option value="${t}" ${schedule?.type === t ? 'selected' : ''}>${t === 'break' ? 'BREAK' : t.toUpperCase()}</option>`).join('');
             const levelOptions = STANDARD_LEVELS.map(level => `<option value="${level}" ${schedule?.level === level ? 'selected' : ''}>${level}</option>`).join('') + `<option value="outro">Outro (especificar)</option>`;
@@ -10151,10 +10198,22 @@
             
             const contentArea = document.getElementById('content-area');
             
+            // Preparar lista de avaliadores
+            const evaluators = collaborators.filter(c => c.isEvaluator === true);
+            const evaluatorOptions = evaluators.map(e => 
+                `<option value="${e.id}">${e.name}</option>`
+            ).join('');
+            
             contentArea.innerHTML = `
                 <div id="gestao-tns-section">
-                    <div class="mb-6 flex justify-between items-center">
-                        <input type="text" id="tn-search" class="form-input !w-auto" placeholder="Buscar por nome do prospect...">
+                    <div class="mb-6 flex justify-between items-center gap-4">
+                        <div class="flex gap-4 flex-grow">
+                            <input type="text" id="tn-search" class="form-input !w-auto flex-grow" placeholder="Buscar por nome do prospect...">
+                            <select id="tn-evaluator-filter" class="form-input !w-auto">
+                                <option value="">Todos os avaliadores</option>
+                                ${evaluatorOptions}
+                            </select>
+                        </div>
                         <button class="primary-btn w-auto" data-action="add-tn">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
@@ -10172,9 +10231,10 @@
             loadTestesNivel();
             renderTNsList();
             
-            // Adicionar event listener para o campo de busca
+            // Adicionar event listeners para busca e filtro
             setTimeout(() => {
                 document.getElementById('tn-search')?.addEventListener('input', renderTNsList);
+                document.getElementById('tn-evaluator-filter')?.addEventListener('change', renderTNsList);
             }, 100);
         }
 
@@ -10198,13 +10258,19 @@
         function renderTNsList() {
             const container = document.getElementById('tns-list-container');
             const searchTerm = document.getElementById('tn-search')?.value.toLowerCase() || '';
+            const evaluatorFilter = document.getElementById('tn-evaluator-filter')?.value || '';
             
-            // Filtrar por nome do candidato
+            // Filtrar por nome do candidato e avaliador
             let filteredTNs = testesNivel;
+            
             if (searchTerm) {
-                filteredTNs = testesNivel.filter(tn => 
+                filteredTNs = filteredTNs.filter(tn => 
                     tn.candidateName.toLowerCase().includes(searchTerm)
                 );
+            }
+            
+            if (evaluatorFilter) {
+                filteredTNs = filteredTNs.filter(tn => tn.evaluatorId === evaluatorFilter);
             }
             
             if (filteredTNs.length === 0) {
@@ -10297,12 +10363,7 @@
                         <label class="font-medium text-sm">Avaliador *</label>
                         <select id="tn-evaluator" class="form-input" required>
                             <option value="">Selecione quem avaliou</option>
-                            ${collaborators.filter(c => {
-                                // Mostrar colaboradores que têm acesso à Gestão TNs
-                                const role = c.role || 'teacher';
-                                const allowedRoles = ['admin', 'pedagogico', 'ap', 'am'];
-                                return allowedRoles.includes(role) || (c.allowedPages && c.allowedPages.includes('gestao-tns'));
-                            }).map(c => 
+                            ${collaborators.filter(c => c.isEvaluator === true).map(c => 
                                 `<option value="${c.id}" ${tn?.evaluatorId === c.id ? 'selected' : ''}>${c.name}</option>`
                             ).join('')}
                         </select>
