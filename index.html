@@ -3802,48 +3802,57 @@
                                 const uniqueVips = new Set(); // Rastreia VIPs únicos globalmente
                                 const uniqueTurmas = new Set(); // Rastreia Turmas únicas globalmente
                                 
-                                // Percorrer todos os schedules da GRADE e rastrear ALUNOS ÚNICOS por horário
-                                schedules.forEach(schedule => {
-                                    if (!schedule.teacher || !schedule.startTime || schedule.type === 'break') return;
+                                // Percorrer VIPs ATIVOS e suas configurações de horário
+                                vips.forEach(vip => {
+                                    if (vip.finalizado || !vip.studentId) return;
                                     
-                                    const hour = schedule.startTime.split(':')[0] + 'h';
+                                    const student = students.find(s => s.id === vip.studentId);
+                                    if (!student) return;
                                     
-                                    if (!hourStudents[hour]) {
-                                        hourStudents[hour] = new Set();
-                                    }
-                                    
-                                    if (schedule.type === 'turma') {
-                                        // Verificar se existe uma turma ativa com alunos
-                                        const turma = turmas.find(t => 
-                                            !t.finalizada && 
-                                            t.name === schedule.student && 
-                                            t.teacherName === schedule.teacher
-                                        );
-                                        if (turma && turma.studentIds && turma.studentIds.length > 0) {
-                                            // Rastrear turma única
-                                            uniqueTurmas.add(turma.id);
+                                    // Verificar se tem configuração de horários (dia1, dia2, dia3)
+                                    let hasSchedule = false;
+                                    ['dia1', 'dia2', 'dia3'].forEach(dia => {
+                                        if (vip[dia] && vip[dia].startTime && vip[dia].day) {
+                                            hasSchedule = true;
+                                            const hour = vip[dia].startTime.split(':')[0] + 'h';
                                             
-                                            // Adicionar cada aluno único ao Set (evita duplicatas)
+                                            if (!hourStudents[hour]) {
+                                                hourStudents[hour] = new Set();
+                                            }
+                                            
+                                            hourStudents[hour].add(`vip_${vip.studentId}`);
+                                        }
+                                    });
+                                    
+                                    if (hasSchedule) {
+                                        uniqueVips.add(vip.id);
+                                    }
+                                });
+                                
+                                // Percorrer TURMAS ATIVAS e suas configurações de horário
+                                turmas.forEach(turma => {
+                                    if (turma.finalizada || !turma.studentIds || turma.studentIds.length === 0) return;
+                                    
+                                    // Verificar se tem configuração de horários (dia1, dia2, dia3)
+                                    let hasSchedule = false;
+                                    ['dia1', 'dia2', 'dia3'].forEach(dia => {
+                                        if (turma[dia] && turma[dia].startTime && turma[dia].day) {
+                                            hasSchedule = true;
+                                            const hour = turma[dia].startTime.split(':')[0] + 'h';
+                                            
+                                            if (!hourStudents[hour]) {
+                                                hourStudents[hour] = new Set();
+                                            }
+                                            
+                                            // Adicionar cada aluno único da turma
                                             turma.studentIds.forEach(studentId => {
                                                 hourStudents[hour].add(`turma_${studentId}`);
                                             });
                                         }
-                                    } else if (schedule.type === 'vip') {
-                                        // Verificar se existe um VIP ativo com esse aluno
-                                        const vip = vips.find(v => 
-                                            !v.finalizado && 
-                                            v.teacherName === schedule.teacher
-                                        );
-                                        if (vip) {
-                                            const student = students.find(s => s.id === vip.studentId);
-                                            if (student && student.name === schedule.student) {
-                                                // Rastrear VIP único
-                                                uniqueVips.add(vip.id);
-                                                
-                                                // Adicionar VIP único ao Set
-                                                hourStudents[hour].add(`vip_${vip.studentId}`);
-                                            }
-                                        }
+                                    });
+                                    
+                                    if (hasSchedule) {
+                                        uniqueTurmas.add(turma.id);
                                     }
                                 });
                                 
