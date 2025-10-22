@@ -3061,16 +3061,7 @@
             
             contentArea.innerHTML = `
                 <section id="colaboradores-section" class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
-                    <div class="flex justify-between items-center mb-6">
-                        <button 
-                            class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm font-semibold flex items-center gap-2" 
-                            onclick="syncFirebaseUsersWithCollaborators(true).then(() => { showSuccessMessage('Sincronizado!', 'Usuários Firebase sincronizados com colaboradores.'); }).catch(err => showErrorMessage('Erro', 'Erro ao sincronizar: ' + err.message))"
-                        >
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                            </svg>
-                            Sincronizar Usuários Firebase
-                        </button>
+                    <div class="flex justify-end items-center mb-6">
                         <button class="primary-btn w-auto" data-action="add-collaborator">+ Adicionar Colaborador</button>
                     </div>
                     <div class="overflow-x-auto">
@@ -3078,6 +3069,7 @@
                             <thead>
                                 <tr>
                                     <th>Nome</th>
+                                    <th>E-mail</th>
                                     <th>Role</th>
                                     <th>Permissões</th>
                                     <th class="text-center">Ações</th>
@@ -3090,6 +3082,7 @@
                                     return `
                                     <tr>
                                         <td class="font-medium">${c.name}</td>
+                                        <td class="text-sm text-stone-600">${c.email || '<span class="text-stone-400 italic">Não informado</span>'}</td>
                                         <td><span class="px-2 py-1 rounded-full text-xs font-semibold ${roleInfo.color}">${roleInfo.label}</span></td>
                                         <td>
                                             ${c.role === 'admin' ? 
@@ -3315,12 +3308,20 @@
                 const absences = findConsecutiveAbsences(attendanceRecord, student.id);
                 
                 if (absences.length > 0) {
+                    // Tentar buscar professor do VIP, depois da grade
+                    let teacherName = vip.teacher;
+                    if (!teacherName || teacherName.trim() === '') {
+                        // Buscar na grade
+                        const vipSchedule = schedules.find(s => s.student === student.name);
+                        teacherName = vipSchedule?.teacher || 'Não especificado';
+                    }
+                    
                     studentsWithConsecutiveAbsences.push({
                         studentName: student.name,
                         studentId: student.id,
                         type: 'VIP',
                         typeName: 'VIP',
-                        teacher: vip.teacher || 'Não especificado',
+                        teacher: teacherName,
                         absences: absences,
                         totalConsecutive: absences.length
                     });
@@ -3339,12 +3340,20 @@
                     const absences = findConsecutiveAbsences(attendanceRecord, studentId);
                     
                     if (absences.length > 0) {
+                        // Tentar buscar professor da Turma, depois da grade
+                        let teacherName = turma.teacher;
+                        if (!teacherName || teacherName.trim() === '') {
+                            // Buscar na grade usando o nome da turma
+                            const turmaSchedule = schedules.find(s => s.turma === turma.name);
+                            teacherName = turmaSchedule?.teacher || 'Não especificado';
+                        }
+                        
                         studentsWithConsecutiveAbsences.push({
                             studentName: student.name,
                             studentId: studentId,
                             type: 'TURMA',
                             typeName: turma.name || 'Turma sem nome',
-                            teacher: turma.teacher || 'Não especificado',
+                            teacher: teacherName,
                             absences: absences,
                             totalConsecutive: absences.length
                         });
@@ -3352,10 +3361,18 @@
                 });
             });
             
-            // Filtrar por professor se selecionado
-            const filteredStudents = currentRechamadaTeacherFilter === 'todos' 
-                ? studentsWithConsecutiveAbsences 
-                : studentsWithConsecutiveAbsences.filter(s => s.teacher === currentRechamadaTeacherFilter);
+            // Filtrar por professor se selecionado OU se usuário for professor (ver apenas seus alunos)
+            let filteredStudents;
+            
+            if (currentUserRole === 'teacher') {
+                // Professores veem apenas seus próprios alunos
+                filteredStudents = studentsWithConsecutiveAbsences.filter(s => s.teacher === currentUserName);
+            } else {
+                // Admin, pedagógico, ap, am podem filtrar
+                filteredStudents = currentRechamadaTeacherFilter === 'todos' 
+                    ? studentsWithConsecutiveAbsences 
+                    : studentsWithConsecutiveAbsences.filter(s => s.teacher === currentRechamadaTeacherFilter);
+            }
             
             // Ordenar por quantidade de faltas consecutivas (maior primeiro)
             filteredStudents.sort((a, b) => b.totalConsecutive - a.totalConsecutive);
@@ -3376,7 +3393,7 @@
                         </div>
                     </div>
                     
-                    ${uniqueTeachers.length > 0 ? `
+                    ${uniqueTeachers.length > 0 && currentUserRole !== 'teacher' ? `
                         <div class="mb-6 flex items-center gap-4">
                             <label class="text-sm font-semibold text-stone-700">Filtrar por professor:</label>
                             <select 
@@ -3397,6 +3414,17 @@
                                     Limpar filtro
                                 </button>
                             ` : ''}
+                        </div>
+                    ` : ''}
+                    
+                    ${currentUserRole === 'teacher' ? `
+                        <div class="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <p class="text-sm text-blue-800">
+                                <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                Você está vendo apenas os alunos sob sua responsabilidade.
+                            </p>
                         </div>
                     ` : ''}
                     
@@ -3472,7 +3500,8 @@
                                                             <span class="font-semibold">Data:</span> ${formatDateBR(existingRechamada.contactDate)}
                                                         </div>
                                                         <button 
-                                                            onclick="viewRechamadaDetails('${item.studentId}')"
+                                                            data-action="ver-detalhes-rechamada"
+                                                            data-student-id="${item.studentId}"
                                                             class="text-blue-600 hover:text-blue-800 text-xs underline mt-1"
                                                         >
                                                             Ver detalhes
@@ -3507,14 +3536,28 @@
         function openRechamadaModal(studentId, studentName, teacherName) {
             clearModalHeaderButtons();
             
+            // Buscar lista de professores
+            const teachers = collaborators.filter(c => c.role === 'teacher' || c.role === 'pedagogico' || c.role === 'ap' || c.role === 'am');
+            const teacherOptions = teachers.map(t => 
+                `<option value="${t.name}" ${t.name === currentUserName ? 'selected' : ''}>${t.name}</option>`
+            ).join('');
+            
             document.getElementById('form-modal-title').textContent = 'Registrar Rechamada';
             document.getElementById('form-modal-content-area').innerHTML = `
                 <form id="rechamada-form" class="space-y-4">
                     <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
                         <p class="text-sm text-blue-800">
                             <strong>Aluno:</strong> ${studentName}<br>
-                            <strong>Professor:</strong> ${teacherName}
+                            <strong>Professor do aluno:</strong> ${teacherName}
                         </p>
+                    </div>
+                    
+                    <div>
+                        <label class="font-medium text-sm">Quem fez a rechamada? *</label>
+                        <select id="rechamada-responsible" class="form-input" required>
+                            <option value="">-- Selecione --</option>
+                            ${teacherOptions}
+                        </select>
                     </div>
                     
                     <div>
@@ -3545,8 +3588,9 @@
         async function saveRechamada(studentId, studentName) {
             const contactDate = document.getElementById('rechamada-date').value;
             const notes = document.getElementById('rechamada-notes').value;
+            const responsibleTeacher = document.getElementById('rechamada-responsible').value;
             
-            if (!contactDate || !notes) {
+            if (!contactDate || !notes || !responsibleTeacher) {
                 showErrorMessage("Erro", "Preencha todos os campos obrigatórios.");
                 return;
             }
@@ -3556,6 +3600,7 @@
                 studentName,
                 contactDate,
                 notes,
+                responsibleTeacher,
                 createdBy: currentUserName,
                 createdAt: new Date(),
                 timestamp: serverTimestamp()
@@ -3598,6 +3643,11 @@
                     </div>
                     
                     <div>
+                        <p class="text-sm font-semibold text-stone-700">Quem fez a rechamada</p>
+                        <p class="text-lg">${rechamada.responsibleTeacher || 'Não informado'}</p>
+                    </div>
+                    
+                    <div>
                         <p class="text-sm font-semibold text-stone-700">Data do Contato</p>
                         <p class="text-lg">${formatDateBR(rechamada.contactDate)}</p>
                     </div>
@@ -3610,15 +3660,127 @@
                     <div class="text-sm text-stone-500 border-t pt-4">
                         <p>Registrado por: <strong>${rechamada.createdBy}</strong></p>
                         <p>Em: ${rechamada.createdAt ? formatDateBR(rechamada.createdAt instanceof Date ? rechamada.createdAt.toISOString().split('T')[0] : rechamada.createdAt.toDate().toISOString().split('T')[0]) : 'N/A'}</p>
+                        ${rechamada.updatedAt ? `
+                            <p class="mt-2 text-orange-600">
+                                <strong>Editado por:</strong> ${rechamada.updatedBy || 'N/A'}<br>
+                                <strong>Em:</strong> ${formatDateBR(rechamada.updatedAt instanceof Date ? rechamada.updatedAt.toISOString().split('T')[0] : rechamada.updatedAt.toDate().toISOString().split('T')[0])}
+                            </p>
+                        ` : ''}
                     </div>
                     
-                    <div class="flex justify-end pt-4 border-t">
+                    <div class="flex justify-end gap-2 pt-4 border-t">
                         <button class="secondary-btn" onclick="closeFormModal()">Fechar</button>
+                        <button 
+                            data-action="editar-rechamada"
+                            data-student-id="${rechamada.studentId}"
+                            data-student-name="${rechamada.studentName}"
+                            data-rechamada-id="${rechamada.id}"
+                            class="primary-btn w-auto"
+                        >
+                            Editar
+                        </button>
                     </div>
                 </div>
             `;
             
             document.getElementById('form-modal').classList.add('visible');
+        }
+
+        function editRechamada(studentId, studentName, rechamadaId) {
+            const rechamada = rechamadas.find(r => r.id === rechamadaId);
+            if (!rechamada) {
+                showErrorMessage("Erro", "Rechamada não encontrada.");
+                return;
+            }
+            
+            // Buscar lista de professores
+            const teachers = collaborators.filter(c => c.role === 'teacher' || c.role === 'pedagogico' || c.role === 'ap' || c.role === 'am');
+            const teacherOptions = teachers.map(t => 
+                `<option value="${t.name}" ${t.name === rechamada.responsibleTeacher ? 'selected' : ''}>${t.name}</option>`
+            ).join('');
+            
+            clearModalHeaderButtons();
+            document.getElementById('form-modal-title').textContent = 'Editar Rechamada';
+            document.getElementById('form-modal-content-area').innerHTML = `
+                <form id="edit-rechamada-form" class="space-y-4">
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                        <p class="text-sm text-blue-800">
+                            <strong>Aluno:</strong> ${studentName}
+                        </p>
+                    </div>
+                    
+                    <div>
+                        <label class="font-medium text-sm">Quem fez a rechamada? *</label>
+                        <select id="edit-rechamada-responsible" class="form-input" required>
+                            <option value="">-- Selecione --</option>
+                            ${teacherOptions}
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="font-medium text-sm">Data do Contato *</label>
+                        <input type="date" id="edit-rechamada-date" class="form-input" value="${rechamada.contactDate}" required>
+                    </div>
+                    
+                    <div>
+                        <label class="font-medium text-sm">O que o aluno disse? *</label>
+                        <textarea id="edit-rechamada-notes" rows="6" class="form-input" placeholder="Descreva a conversa com o aluno..." required>${rechamada.notes}</textarea>
+                    </div>
+                    
+                    <div class="flex justify-end gap-2 pt-4 border-t">
+                        <button type="button" class="secondary-btn" onclick="closeFormModal()">Cancelar</button>
+                        <button type="submit" class="primary-btn w-auto">Salvar Alterações</button>
+                    </div>
+                </form>
+            `;
+            
+            document.getElementById('edit-rechamada-form').onsubmit = async (e) => {
+                e.preventDefault();
+                await updateRechamada(rechamadaId, studentName);
+            };
+            
+            document.getElementById('form-modal').classList.add('visible');
+        }
+
+        async function updateRechamada(rechamadaId, studentName) {
+            const contactDate = document.getElementById('edit-rechamada-date').value;
+            const notes = document.getElementById('edit-rechamada-notes').value;
+            const responsibleTeacher = document.getElementById('edit-rechamada-responsible').value;
+            
+            if (!contactDate || !notes || !responsibleTeacher) {
+                showErrorMessage("Erro", "Preencha todos os campos obrigatórios.");
+                return;
+            }
+            
+            const updatedData = {
+                contactDate,
+                notes,
+                responsibleTeacher,
+                updatedBy: currentUserName,
+                updatedAt: new Date()
+            };
+            
+            try {
+                if (db) {
+                    await updateDoc(doc(db, `artifacts/${appId}/public/data/rechamadas`, rechamadaId), updatedData);
+                } else {
+                    const index = rechamadas.findIndex(r => r.id === rechamadaId);
+                    if (index !== -1) {
+                        rechamadas[index] = { ...rechamadas[index], ...updatedData };
+                        localStorage.setItem('rechamadas', JSON.stringify(rechamadas));
+                    }
+                }
+                
+                // Log activity
+                await logActivity('editar', 'rechamada', studentName, { data: contactDate });
+                
+                closeFormModal();
+                showSuccessMessage("Sucesso!", "Rechamada atualizada com sucesso.");
+                renderRechamadaSection();
+            } catch (error) {
+                console.error("Erro ao atualizar rechamada:", error);
+                showErrorMessage("Erro", "Erro ao atualizar rechamada: " + error.message);
+            }
         }
 
         function renderKPIsPedagogicoSection() {
@@ -4220,7 +4382,7 @@
                                 
                                 // Percorrer TURMAS ATIVAS e suas configurações de horário
                                 turmas.forEach(turma => {
-                                    if (turma.finalizada || !turma.studentIds || turma.studentIds.length === 0) return;
+                                    if (turma.finalizada || !turma.students || turma.students.length === 0) return;
                                     
                                     // Verificar se tem configuração de horários (dia1, dia2, dia3)
                                     let hasSchedule = false;
@@ -4234,7 +4396,7 @@
                                             }
                                             
                                             // Adicionar cada aluno único da turma
-                                            turma.studentIds.forEach(studentId => {
+                                            turma.students.forEach(studentId => {
                                                 hourStudents[hour].add(`turma_${studentId}`);
                                             });
                                         }
@@ -4293,7 +4455,7 @@
                                             ${totalTurmasScheduled > 0 ? `<span class="text-purple-600 font-medium">${totalTurmasScheduled} Turma${totalTurmasScheduled > 1 ? 's' : ''}</span>` : ''}
                                         </p>
                                     </div>
-                                ` : '<div class="text-center py-8 text-stone-500">Nenhum horário cadastrado na grade</div>';
+                                ` : '<div class="text-center py-8 text-stone-500">Nenhum horário configurado nos VIPs e Turmas</div>';
                             })()}
                         </div>
                     </div>
@@ -7954,7 +8116,9 @@
                 { key: 'grade', label: 'Grade de Horários' },
                 { key: 'calendario', label: 'Calendário' },
                 { key: 'gestao-tns', label: 'Gestão TNs' },
+                { key: 'rechamada', label: 'Rechamada' },
                 { key: 'kpis-pedagogico', label: 'KPIs Pedagógico' },
+                { key: 'logs-atividades', label: 'Logs de Atividades' },
                 { key: 'colaboradores', label: 'Colaboradores' },
                 { key: 'folha-pagamento', label: 'Financeiro' }
             ];
@@ -7980,7 +8144,7 @@
                         <div><label class="font-medium text-sm">Data de Nascimento</label><input type="date" id="collaborator-birthdate" class="form-input" value="${collaborator?.birthdate || ''}"></div>
                     </div>
                     
-                    <div><label class="font-medium text-sm">Endereço</label><input type="text" id="collaborator-address" class="form-input" placeholder="Rua, número, bairro, cidade" value="${collaborator?.address || ''}"></div>
+                    <div id="email-field-container"></div>
                     
                     <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
                         <label class="font-medium text-sm text-blue-900 mb-2 block">Role de Acesso <span class="text-red-500">*</span></label>
@@ -8052,6 +8216,44 @@
                     e.target.value = value;
                 });
             }
+
+            // Populate email field with Firebase users
+            populateEmailField(collaborator);
+        }
+
+        async function populateEmailField(collaborator) {
+            const container = document.getElementById('email-field-container');
+            if (!container) return;
+
+            // Fetch Firebase users
+            let firebaseUsers = [];
+            if (!window.isDevelopmentMode && db) {
+                try {
+                    const usersSnapshot = await getDocs(collection(db, `artifacts/${appId}/public/data/users`));
+                    firebaseUsers = usersSnapshot.docs.map(doc => ({
+                        uid: doc.id,
+                        email: doc.data().email
+                    })).filter(u => u.email);
+                } catch (error) {
+                    console.error('Error fetching Firebase users:', error);
+                }
+            }
+
+            // Build email select dropdown
+            const emailOptions = firebaseUsers.map(u => 
+                `<option value="${u.email}" data-uid="${u.uid}" ${collaborator?.email === u.email ? 'selected' : ''}>${u.email}</option>`
+            ).join('');
+
+            container.innerHTML = `
+                <div>
+                    <label class="font-medium text-sm">E-mail Cadastrado</label>
+                    <select id="collaborator-email" class="form-input">
+                        <option value="">-- Nenhum (sem vínculo Firebase) --</option>
+                        ${emailOptions}
+                    </select>
+                    <p class="text-xs text-stone-500 mt-1">Selecione um e-mail para vincular automaticamente ao usuário Firebase</p>
+                </div>
+            `;
         }
 
         window.toggleFirebaseUserFields = function() {
@@ -8073,17 +8275,28 @@
             const role = document.getElementById('collaborator-role').value;
             const isEvaluator = document.getElementById('is-evaluator-checkbox')?.checked || false;
             const canViewLogs = document.getElementById('can-view-logs-checkbox')?.checked || false;
+            
+            // Get email and find corresponding Firebase UID
+            const emailSelect = document.getElementById('collaborator-email');
+            const selectedEmail = emailSelect?.value || '';
+            const selectedOption = emailSelect?.options[emailSelect.selectedIndex];
+            const firebaseUid = selectedOption?.getAttribute('data-uid') || null;
 
             const data = {
                 name: document.getElementById('collaborator-name').value,
                 cpf: document.getElementById('collaborator-cpf').value,
                 birthdate: document.getElementById('collaborator-birthdate').value,
-                address: document.getElementById('collaborator-address').value,
+                email: selectedEmail,
                 role: role,
                 allowedPages: selectedPages,
                 isEvaluator: isEvaluator,
                 canViewLogs: canViewLogs
             };
+
+            // Auto-link to Firebase user if email matches
+            if (firebaseUid) {
+                data.firebaseUid = firebaseUid;
+            }
 
             if (!data.name) { showErrorMessage("Erro", "O nome do colaborador é obrigatório."); return; }
             if (!data.role) { showErrorMessage("Erro", "O role de acesso é obrigatório."); return; }
@@ -14476,12 +14689,22 @@
                         'reativar-turma': () => reativarTurma(id),
                         'reativar-vip': () => reativarVip(id),
                         
-                        // Handler para rechamada
+                        // Handlers para rechamada
                         'fazer-rechamada': () => {
                             const studentId = actionTarget.dataset.studentId;
                             const studentName = actionTarget.dataset.studentName;
                             const teacherName = actionTarget.dataset.teacherName;
                             openRechamadaModal(studentId, studentName, teacherName);
+                        },
+                        'ver-detalhes-rechamada': () => {
+                            const studentId = actionTarget.dataset.studentId;
+                            viewRechamadaDetails(studentId);
+                        },
+                        'editar-rechamada': () => {
+                            const studentId = actionTarget.dataset.studentId;
+                            const studentName = actionTarget.dataset.studentName;
+                            const rechamadaId = actionTarget.dataset.rechamadaId;
+                            editRechamada(studentId, studentName, rechamadaId);
                         },
                     };
                     if (actionHandlers[action]) {
