@@ -1857,9 +1857,9 @@
                 const vipRecord = (student.modalidade === 'VIP' || student.modalidade === 'DUPLA') ? vips.find(v => v.studentId === student.id) : null;
                 const profileCheck = checkStudentProfileCompleteness(student);
                 const fichaStatus = profileCheck.isComplete 
-                    ? '<span class="status-tag status-green">Completa</span>' 
+                    ? '<span class="status-tag" style="background-color: #D1FAE5; color: #065F46; border-color: #6EE7B7;">Completa</span>' 
                     : `<div class="relative group">
-                        <span class="status-tag status-red cursor-help">Incompleta</span>
+                        <span class="status-tag cursor-help" style="background-color: #FEE2E2; color: #991B1B; border-color: #FCA5A5;">Incompleta</span>
                         <div class="absolute left-0 top-full mt-1 hidden group-hover:block bg-stone-800 text-white text-xs rounded-lg p-3 z-50 shadow-lg min-w-[200px]">
                             <p class="font-bold mb-2">Faltam:</p>
                             <ul class="list-disc list-inside space-y-1">
@@ -2491,30 +2491,29 @@
                 let isValid = false;
                 
                 if (schedule.type === 'turma') {
-                    // Verificar se existe uma turma ativa com alunos
+                    // Verificar se existe uma turma ativa com alunos e esse nome
                     const turma = turmas.find(t => 
                         !t.finalizada && 
                         t.name === schedule.student && 
-                        t.teacherName === actualTeacherName
+                        t.teacherName === actualTeacherName &&
+                        t.studentIds && 
+                        t.studentIds.length > 0
                     );
-                    if (turma && turma.studentIds && turma.studentIds.length > 0) {
-                        isValid = true;
-                    }
+                    isValid = !!turma;
                 } else if (schedule.type === 'vip') {
-                    // Verificar se existe um VIP ativo com esse aluno
-                    const vip = vips.find(v => 
-                        !v.finalizado && 
-                        v.teacherName === actualTeacherName
-                    );
-                    if (vip) {
-                        const student = students.find(s => s.id === vip.studentId);
-                        if (student && student.name === schedule.student) {
-                            isValid = true;
-                        }
+                    // Verificar se existe um VIP ativo com esse aluno específico e professor
+                    const student = students.find(s => s.name === schedule.student);
+                    if (student) {
+                        const vip = vips.find(v => 
+                            !v.finalizado && 
+                            v.studentId === student.id &&
+                            v.teacherName === actualTeacherName
+                        );
+                        isValid = !!vip;
                     }
                 }
                 
-                // Só contar horas de horários válidos
+                // Contar horas de horários válidos
                 if (isValid) {
                     const duration = calculateClassDuration(schedule.startTime, schedule.endTime);
                     totalHours += duration;
@@ -4787,7 +4786,7 @@
                         <div><label class="font-medium text-sm">Tipo de Pagamento</label><select id="aluno-paymentType" class="form-input">${paymentTypeOptions}</select></div>
                         <div><label class="font-medium text-sm">Quantidade de Parcelas</label><input type="number" min="1" max="24" id="aluno-parcelas" class="form-input" placeholder="Ex: 12" value="${aluno?.parcelas || ''}"></div>
                     </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div id="aluno-amount-fields" class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div><label class="font-medium text-sm">Valor Pago (R$)</label><input type="number" step="0.01" id="aluno-amountPaid" class="form-input" value="${aluno?.amountPaid || ''}"></div>
                         <div><label class="font-medium text-sm">Valor Recebido (R$)</label><input type="number" step="0.01" id="aluno-amountReceived" class="form-input" value="${aluno?.amountReceived || ''}"></div>
                     </div>
@@ -4838,6 +4837,25 @@
                     cancellationFields.classList.add('hidden');
                 }
             });
+
+            // Show/hide amount fields based on payment type
+            const paymentTypeSelect = document.getElementById('aluno-paymentType');
+            if (paymentTypeSelect) {
+                const toggleAmountFields = () => {
+                    const amountFields = document.getElementById('aluno-amount-fields');
+                    if (amountFields) {
+                        if (paymentTypeSelect.value === 'Bolsa') {
+                            amountFields.classList.add('hidden');
+                        } else {
+                            amountFields.classList.remove('hidden');
+                        }
+                    }
+                };
+                
+                paymentTypeSelect.addEventListener('change', toggleAmountFields);
+                // Initialize visibility on form open
+                toggleAmountFields();
+            }
 
             const form = document.getElementById('form-modal-content-area');
             if (form) {
