@@ -446,7 +446,7 @@
         const pendingView = document.getElementById('pending-view');
 
         let db, auth, storage, userId, currentUserName, currentUserRole;
-        let usersData = [], students = [], turmas = [], vips = [], attendance = [], tasks = [], events = [], collaborators = [], schedules = [], expenses = [], dojoRanking = [], dojoMissions = [];
+        let usersData = [], students = [], turmas = [], vips = [], attendance = [], tasks = [], events = [], collaborators = [], schedules = [], expenses = [], dojoRanking = [], dojoMissions = [], activityLogs = [];
         let userProfiles = {};
         let monthlyHighlight = {
             name: 'João Silva',
@@ -487,6 +487,51 @@
             renderMenu();
         }
 
+
+        // --- ACTIVITY LOGGING SYSTEM ---
+        async function logActivity(action, targetType, targetName, details = {}) {
+            if (!db || !currentUserName) return;
+            
+            try {
+                const logData = {
+                    action, // 'criar', 'editar', 'deletar', 'finalizar', 'reativar'
+                    targetType, // 'aluno', 'turma', 'vip', 'colaborador', 'aula', 'tarefa', etc
+                    targetName, // Nome do item afetado
+                    userName: currentUserName,
+                    userRole: currentUserRole || 'unknown',
+                    timestamp: serverTimestamp(),
+                    details: details // Objeto com informações adicionais
+                };
+                
+                await addDoc(collection(db, `artifacts/${appId}/public/data/activity-logs`), logData);
+            } catch (error) {
+                console.error('Erro ao registrar atividade:', error);
+            }
+        }
+        
+        // Função para limpar logs antigos (> 48 horas)
+        async function cleanOldActivityLogs() {
+            if (!db) return;
+            
+            try {
+                const twoDaysAgo = new Date();
+                twoDaysAgo.setHours(twoDaysAgo.getHours() - 48);
+                
+                const logsRef = collection(db, `artifacts/${appId}/public/data/activity-logs`);
+                const oldLogsQuery = query(logsRef, where('timestamp', '<', twoDaysAgo));
+                const snapshot = await getDocs(oldLogsQuery);
+                
+                const batch = writeBatch(db);
+                snapshot.docs.forEach(doc => {
+                    batch.delete(doc.ref);
+                });
+                
+                await batch.commit();
+                console.log(`Limpeza automática: ${snapshot.docs.length} logs antigos removidos`);
+            } catch (error) {
+                console.error('Erro ao limpar logs antigos:', error);
+            }
+        }
 
         function safeDeleteItem(collection, id, itemName = 'item') {
             
@@ -583,15 +628,12 @@
                 }
                 if (contentArea.firstElementChild?.id === 'turmas-section') renderTurmasSection();
                 if (contentArea.firstElementChild?.id === 'vips-section') renderVipsSection();
-                if (contentArea.firstElementChild?.id === 'rechamada-section') renderRechamadaList();
             });
             getCollectionListener('turmas', turmas, () => {
                 if (contentArea.firstElementChild?.id === 'turmas-section') renderTurmasSection();
-                if (contentArea.firstElementChild?.id === 'rechamada-section') renderRechamadaList();
             });
             getCollectionListener('vips', vips, () => {
                 if (contentArea.firstElementChild?.id === 'vips-section') renderVipsSection();
-                if (contentArea.firstElementChild?.id === 'rechamada-section') renderRechamadaList();
             });
             getCollectionListener('attendance', attendance, () => {
                 const activeModal = document.querySelector('.modal-overlay.visible');
@@ -604,7 +646,6 @@
                         openVipPefModal(unitId);
                     }
                 }
-                if (contentArea.firstElementChild?.id === 'rechamada-section') renderRechamadaList();
             });
             getCollectionListener('tasks', tasks, renderTarefasSection);
 
@@ -613,7 +654,6 @@
                 if (activePageId === 'grade-section') renderGradeSection();
                 if (activePageId === 'tasks-section') renderTarefasSection();
                 if (activePageId === 'colaboradores-section') renderColaboradoresSection();
-                if (activePageId === 'rechamada-section') renderRechamadaSection();
                 if (activePageId === 'inicio-section') renderInicioSection();
             });
             getCollectionListener('events', events, () => {
@@ -632,6 +672,19 @@
 
             getCollectionListener('dojo_ranking', dojoRanking, renderDojoSection);
             getCollectionListener('dojo_missions', dojoMissions, renderDojoSection, (ref) => query(ref, orderBy("points", "desc")));
+            
+            // Activity logs listener (últimas 48 horas)
+            getCollectionListener('activity-logs', activityLogs, null, (ref) => {
+                const twoDaysAgo = new Date();
+                twoDaysAgo.setHours(twoDaysAgo.getHours() - 48);
+                return query(ref, where('timestamp', '>=', twoDaysAgo), orderBy('timestamp', 'desc'), limit(100));
+            });
+            
+            // Executar limpeza automática de logs antigos ao iniciar
+            cleanOldActivityLogs();
+            
+            // Limpar logs antigos a cada 6 horas
+            setInterval(cleanOldActivityLogs, 6 * 60 * 60 * 1000);
 
             
             // Load monthly highlight with real-time updates
@@ -1284,11 +1337,17 @@
                     </div>
 
                     <div class="flex justify-between items-center mb-6 flex-wrap gap-4">
-                        <div class="flex gap-2" id="alunos-filter-buttons">
+                        <div class="flex gap-2 flex-wrap" id="alunos-filter-buttons">
                             <button class="secondary-btn filter-btn active" data-filter="todos">Todos</button>
                             <button class="secondary-btn filter-btn" data-filter="ativo">Ativos</button>
                             <button class="secondary-btn filter-btn" data-filter="pendente">Pendentes</button>
                             <button class="secondary-btn filter-btn" data-filter="cancelado">Cancelados</button>
+                            <button class="secondary-btn filter-btn" data-filter="ficha-incompleta" style="background-color: #FEF3C7; color: #92400E; font-weight: 600;">
+                                <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                </svg>
+                                Ficha Incompleta
+                            </button>
                         </div>
                         <div class="flex gap-2">
                             <button class="secondary-btn w-auto" data-action="export-alunos-doc">Exportar Documento</button>
@@ -1301,6 +1360,7 @@
                                 <tr>
                                     <th>Nome do Aluno</th>
                                     <th>Status</th>
+                                    <th>Ficha</th>
                                     ${canViewFinancialInfo ? '<th>Valor Pago</th>' : ''}
                                     ${canViewFinancialInfo ? '<th>Valor Recebido</th>' : '<th>Responsável</th>'}
                                 </tr>
@@ -1387,12 +1447,52 @@
             updateAlunosList('todos');
         }
 
+        // Função para verificar se a ficha do aluno está completa
+        function checkStudentProfileCompleteness(student) {
+            const missing = [];
+            const canViewFinancialInfo = !['teacher', 'pedagogico', 'ap', 'am'].includes(currentUserRole);
+            
+            // Informações Pessoais
+            if (!student.birthDate) missing.push('Data de Nascimento');
+            if (!student.gender) missing.push('Gênero');
+            if (!student.cpf) missing.push('CPF');
+            if (!student.endereco) missing.push('Endereço');
+            if (!student.estadoCivil) missing.push('Estado Civil');
+            if (!student.profissao) missing.push('Profissão');
+            
+            // Informações Pedagógicas
+            if (!student.currentLevel) missing.push('Nível Atual');
+            if (!student.completedLevels || student.completedLevels.length === 0) {
+                missing.push('Níveis Cursados');
+            }
+            
+            // Informações Financeiras (apenas se o usuário tem permissão para ver)
+            if (canViewFinancialInfo) {
+                if (!student.paymentType) missing.push('Forma de Pagamento');
+                if (!student.amountPaid || parseFloat(student.amountPaid) === 0) missing.push('Valor Pago');
+            }
+            
+            // Informações do Responsável (se for menor)
+            if (student.isMinor) {
+                if (!student.responsibleName) missing.push('Nome do Responsável');
+                if (!student.responsiblePhone) missing.push('Telefone do Responsável');
+            }
+            
+            return {
+                isComplete: missing.length === 0,
+                missing: missing
+            };
+        }
+
         function getFilteredStudents() {
             const filter = document.querySelector('#alunos-filter-buttons .filter-btn.active')?.dataset.filter || 'todos';
             const searchTerm = document.getElementById('aluno-search')?.value.toLowerCase() || '';
 
             let filteredStudents = students;
-            if (filter !== 'todos') {
+            if (filter === 'ficha-incompleta') {
+                // Filtrar apenas alunos com ficha incompleta
+                filteredStudents = students.filter(s => !checkStudentProfileCompleteness(s).isComplete);
+            } else if (filter !== 'todos') {
                 filteredStudents = students.filter(s => s.status && s.status.toLowerCase() === filter);
             }
 
@@ -1738,7 +1838,7 @@
             const paginatedStudents = filteredStudents.slice(startIndex, endIndex);
 
             if (filteredStudents.length === 0) {
-                const colspanCount = canViewFinancialInfo ? 4 : 3;
+                const colspanCount = canViewFinancialInfo ? 5 : 4;
                 listBody.innerHTML = `<tr><td colspan="${colspanCount}" class="text-center py-10 text-stone-500">Nenhum aluno encontrado.</td></tr>`;
                 updatePaginationControls(0, 0, 0);
                 return;
@@ -1746,6 +1846,19 @@
 
             listBody.innerHTML = paginatedStudents.map(student => {
                 const vipRecord = (student.modalidade === 'VIP' || student.modalidade === 'DUPLA') ? vips.find(v => v.studentId === student.id) : null;
+                const profileCheck = checkStudentProfileCompleteness(student);
+                const fichaStatus = profileCheck.isComplete 
+                    ? '<span class="status-tag status-green">Completa</span>' 
+                    : `<div class="relative group">
+                        <span class="status-tag status-red cursor-help">Incompleta</span>
+                        <div class="absolute left-0 top-full mt-1 hidden group-hover:block bg-stone-800 text-white text-xs rounded-lg p-3 z-50 shadow-lg min-w-[200px]">
+                            <p class="font-bold mb-2">Faltam:</p>
+                            <ul class="list-disc list-inside space-y-1">
+                                ${profileCheck.missing.map(item => `<li>${item}</li>`).join('')}
+                            </ul>
+                        </div>
+                       </div>`;
+                
                 return `
                 <tr id="student-row-${student.id}" class="cursor-pointer">
                     <td class="font-medium" data-action="view-aluno" data-id="${student.id}">
@@ -1759,6 +1872,7 @@
                         </div>
                     </td>
                     <td data-action="view-aluno" data-id="${student.id}"><span class="status-tag status-${(student.status || 'pendente').toLowerCase()}">${student.status || 'Pendente'}</span></td>
+                    <td>${fichaStatus}</td>
                     ${canViewFinancialInfo ? `<td class="font-mono" data-action="view-aluno" data-id="${student.id}">R$ ${parseFloat(student.amountPaid || 0).toFixed(2)}</td>` : ''}
                     ${canViewFinancialInfo ? `<td class="font-mono" data-action="view-aluno" data-id="${student.id}">R$ ${parseFloat(student.amountReceived || student.amountPaid || 0).toFixed(2)}</td>` : `<td data-action="view-aluno" data-id="${student.id}">${student.responsibleName || 'N/A'}</td>`}
                 </tr>
@@ -2362,32 +2476,41 @@
             const actualTeacherName = findTeacherByName(teacherName) || teacherName;
             const teacherSchedules = schedules.filter(s => s.teacher === actualTeacherName && s.type !== 'break');
 
-            // Debug específico para Anael
-            if (teacherName.toLowerCase().includes('anael')) {
-                console.log('DEBUG ANAEL - Cálculo de horas:', {
-                    teacherName,
-                    actualTeacherName,
-                    allSchedules: schedules.length,
-                    anaelSchedules: teacherSchedules,
-                    allTeachers: [...new Set(schedules.map(s => s.teacher))]
-                });
-            }
-
             let totalHours = 0;
             teacherSchedules.forEach(schedule => {
-                const duration = calculateClassDuration(schedule.startTime, schedule.endTime);
-                totalHours += duration;
+                // Verificar se o horário tem um aluno/turma válido
+                let isValid = false;
                 
-                // Debug para Anael
-                if (teacherName.toLowerCase().includes('anael')) {
-                    console.log(`DEBUG ANAEL - Aula: ${schedule.day} ${schedule.startTime}-${schedule.endTime}, Duração: ${duration}h`);
+                if (schedule.type === 'turma') {
+                    // Verificar se existe uma turma ativa com alunos
+                    const turma = turmas.find(t => 
+                        !t.finalizada && 
+                        t.name === schedule.student && 
+                        t.teacherName === actualTeacherName
+                    );
+                    if (turma && turma.studentIds && turma.studentIds.length > 0) {
+                        isValid = true;
+                    }
+                } else if (schedule.type === 'vip') {
+                    // Verificar se existe um VIP ativo com esse aluno
+                    const vip = vips.find(v => 
+                        !v.finalizado && 
+                        v.teacherName === actualTeacherName
+                    );
+                    if (vip) {
+                        const student = students.find(s => s.id === vip.studentId);
+                        if (student && student.name === schedule.student) {
+                            isValid = true;
+                        }
+                    }
+                }
+                
+                // Só contar horas de horários válidos
+                if (isValid) {
+                    const duration = calculateClassDuration(schedule.startTime, schedule.endTime);
+                    totalHours += duration;
                 }
             });
-
-            // Log final para Anael
-            if (teacherName.toLowerCase().includes('anael')) {
-                console.log(`DEBUG ANAEL - Total final: ${totalHours} horas`);
-            }
 
             return totalHours;
         }
@@ -3090,30 +3213,57 @@
                 averageAge = ages.reduce((sum, age) => sum + age, 0) / ages.length;
             }
 
-            // Contar professores ativos (professores únicos nos schedules)
-            const uniqueProfessors = [...new Set(schedules.map(s => s.professor))].filter(p => p && p.trim() !== '');
+            // Contar professores ativos (professores únicos nos schedules da GRADE)
+            const uniqueProfessors = [...new Set(schedules.map(s => s.teacher))].filter(p => p && p.trim() !== '');
             const totalProfessors = uniqueProfessors.length;
 
-            // Calcular alunos por professor (VIPs + Turmas)
+            // Calcular alunos por professor baseado na GRADE (schedules)
             const teachersMap = new Map();
             
-            // Contar professores das turmas
-            turmas.forEach(turma => {
-                if (turma.teacherName && turma.studentIds && turma.studentIds.length > 0) {
-                    if (!teachersMap.has(turma.teacherName)) {
-                        teachersMap.set(turma.teacherName, { vips: 0, turmas: 0 });
+            // Percorrer todos os schedules da GRADE e validar se tem aluno/turma válido
+            schedules.forEach(schedule => {
+                if (!schedule.teacher || schedule.type === 'break') return;
+                
+                let isValid = false;
+                let studentCount = 0;
+                
+                if (schedule.type === 'turma') {
+                    // Verificar se existe uma turma ativa com alunos
+                    const turma = turmas.find(t => 
+                        !t.finalizada && 
+                        t.name === schedule.student && 
+                        t.teacherName === schedule.teacher
+                    );
+                    if (turma && turma.studentIds && turma.studentIds.length > 0) {
+                        isValid = true;
+                        studentCount = turma.studentIds.length;
                     }
-                    teachersMap.get(turma.teacherName).turmas += turma.studentIds.length;
+                } else if (schedule.type === 'vip') {
+                    // Verificar se existe um VIP ativo com esse aluno
+                    const vip = vips.find(v => 
+                        !v.finalizado && 
+                        v.teacherName === schedule.teacher
+                    );
+                    if (vip) {
+                        const student = students.find(s => s.id === vip.studentId);
+                        if (student && student.name === schedule.student) {
+                            isValid = true;
+                            studentCount = 1; // VIP sempre tem 1 aluno
+                        }
+                    }
                 }
-            });
-            
-            // Contar professores dos VIPs
-            vips.forEach(vip => {
-                if (vip.teacherName) {
-                    if (!teachersMap.has(vip.teacherName)) {
-                        teachersMap.set(vip.teacherName, { vips: 0, turmas: 0 });
+                
+                // Só contar se for válido
+                if (isValid) {
+                    if (!teachersMap.has(schedule.teacher)) {
+                        teachersMap.set(schedule.teacher, { vips: 0, turmas: 0 });
                     }
-                    teachersMap.get(vip.teacherName).vips += 1;
+                    
+                    if (schedule.type === 'vip') {
+                        teachersMap.get(schedule.teacher).vips += studentCount;
+                    } else if (schedule.type === 'turma') {
+                        teachersMap.get(schedule.teacher).turmas += studentCount;
+                    }
                 }
             });
             
@@ -3614,49 +3764,48 @@
                             ${(() => {
                                 const hourCount = {};
                                 
-                                // Contar aulas por hora de início das TURMAS (independente do dia)
-                                turmas.forEach(turma => {
-                                    // Processar Day 1
-                                    if (turma.day1 && turma.startTime1) {
+                                // Percorrer todos os schedules da GRADE e contar ALUNOS por horário
+                                schedules.forEach(schedule => {
+                                    if (!schedule.teacher || !schedule.startTime || schedule.type === 'break') return;
+                                    
+                                    let studentCount = 0;
+                                    
+                                    if (schedule.type === 'turma') {
+                                        // Verificar se existe uma turma ativa com alunos
+                                        const turma = turmas.find(t => 
+                                            !t.finalizada && 
+                                            t.name === schedule.student && 
+                                            t.teacherName === schedule.teacher
+                                        );
+                                        if (turma && turma.studentIds && turma.studentIds.length > 0) {
+                                            studentCount = turma.studentIds.length;
+                                        }
+                                    } else if (schedule.type === 'vip') {
+                                        // Verificar se existe um VIP ativo com esse aluno
+                                        const vip = vips.find(v => 
+                                            !v.finalizado && 
+                                            v.teacherName === schedule.teacher
+                                        );
+                                        if (vip) {
+                                            const student = students.find(s => s.id === vip.studentId);
+                                            if (student && student.name === schedule.student) {
+                                                studentCount = 1; // VIP sempre tem 1 aluno
+                                            }
+                                        }
+                                    }
+                                    
+                                    // Só contar se for válido (tem alunos)
+                                    if (studentCount > 0) {
                                         // Extrair hora (ex: "19:00" -> "19h")
-                                        const hour = turma.startTime1.split(':')[0] + 'h';
-                                        hourCount[hour] = (hourCount[hour] || 0) + 1;
-                                    }
-                                    // Processar Day 2
-                                    if (turma.day2 && turma.startTime2) {
-                                        // Extrair hora (ex: "20:00" -> "20h")
-                                        const hour = turma.startTime2.split(':')[0] + 'h';
-                                        hourCount[hour] = (hourCount[hour] || 0) + 1;
-                                    }
-                                    // Processar Day 3
-                                    if (turma.day3 && turma.startTime3) {
-                                        // Extrair hora (ex: "21:00" -> "21h")
-                                        const hour = turma.startTime3.split(':')[0] + 'h';
-                                        hourCount[hour] = (hourCount[hour] || 0) + 1;
+                                        const hour = schedule.startTime.split(':')[0] + 'h';
+                                        hourCount[hour] = (hourCount[hour] || 0) + studentCount;
                                     }
                                 });
                                 
-                                // Contar aulas por hora de início dos VIPs (independente do dia)
-                                vips.forEach(vip => {
-                                    // VIPs também podem ter day1/day2/day3 e startTime1/startTime2/startTime3
-                                    if (vip.day1 && vip.startTime1) {
-                                        const hour = vip.startTime1.split(':')[0] + 'h';
-                                        hourCount[hour] = (hourCount[hour] || 0) + 1;
-                                    }
-                                    if (vip.day2 && vip.startTime2) {
-                                        const hour = vip.startTime2.split(':')[0] + 'h';
-                                        hourCount[hour] = (hourCount[hour] || 0) + 1;
-                                    }
-                                    if (vip.day3 && vip.startTime3) {
-                                        const hour = vip.startTime3.split(':')[0] + 'h';
-                                        hourCount[hour] = (hourCount[hour] || 0) + 1;
-                                    }
-                                });
-                                
-                                // Ordenar por quantidade e pegar top 10
+                                // Ordenar por quantidade de alunos e pegar top 8
                                 const sortedHours = Object.entries(hourCount)
                                     .sort((a, b) => b[1] - a[1])
-                                    .slice(0, 10);
+                                    .slice(0, 8);
                                 
                                 const maxCount = sortedHours.length > 0 ? sortedHours[0][1] : 1;
                                 
@@ -3668,7 +3817,7 @@
                                                 <div class="p-3 bg-stone-50 rounded-lg border border-stone-200 transition-all hover:border-[#F1D24B]">
                                                     <div class="flex items-center justify-between mb-2">
                                                         <span class="text-sm font-medium text-stone-700">${hour}</span>
-                                                        <span class="px-2 py-1 bg-indigo-100 text-indigo-700 rounded text-xs font-bold">${count} ${count === 1 ? 'aula' : 'aulas'}</span>
+                                                        <span class="px-2 py-1 bg-indigo-100 text-indigo-700 rounded text-xs font-bold">${count} ${count === 1 ? 'aluno' : 'alunos'}</span>
                                                     </div>
                                                     <div class="w-full bg-stone-200 rounded-full h-2">
                                                         <div class="bg-indigo-500 h-2 rounded-full transition-all duration-300" style="width: ${percentage}%"></div>
@@ -4833,9 +4982,11 @@
                     // Firebase mode
                     if (alunoId) {
                         await updateDoc(doc(db, `artifacts/${appId}/public/data/students`, alunoId), data);
+                        await logActivity('editar', 'aluno', data.name, { modalidade: data.modalidade, status: data.status });
                     } else {
                         data.createdAt = serverTimestamp();
                         await addDoc(collection(db, `artifacts/${appId}/public/data/students`), data);
+                        await logActivity('criar', 'aluno', data.name, { modalidade: data.modalidade });
                     }
                 }
                 
@@ -5788,10 +5939,12 @@
             try {
                 if (turmaId) {
                     await updateDoc(doc(db, `artifacts/${appId}/public/data/turmas`, turmaId), data);
+                    await logActivity('editar', 'turma', generatedName, { nivel: levelValue, professor: data.teacherName });
                     showSuccessMessage("Sucesso", "Turma atualizada.");
                 } else {
                     data.createdAt = serverTimestamp();
                     await addDoc(collection(db, `artifacts/${appId}/public/data/turmas`), data);
+                    await logActivity('criar', 'turma', generatedName, { nivel: levelValue, professor: data.teacherName });
                     showSuccessMessage("Sucesso", "Nova turma criada.");
                 }
             } catch (error) {
@@ -5814,7 +5967,9 @@
                         localStorage.setItem('turmas', JSON.stringify(turmas));
                     }
                 } else {
+                    const turma = turmas.find(t => t.id === turmaId);
                     await updateDoc(doc(db, `artifacts/${appId}/public/data/turmas`, turmaId), { finalizada: true });
+                    if (turma) await logActivity('finalizar', 'turma', turma.name, { nivel: turma.level });
                 }
                 showSuccessMessage("Sucesso", "Turma finalizada com sucesso!");
                 document.getElementById('form-modal').classList.remove('visible');
@@ -5846,7 +6001,9 @@
                         localStorage.setItem('turmas', JSON.stringify(turmas));
                     }
                 } else {
+                    const turma = turmas.find(t => t.id === turmaId);
                     await updateDoc(doc(db, `artifacts/${appId}/public/data/turmas`, turmaId), { finalizada: false });
+                    if (turma) await logActivity('reativar', 'turma', turma.name, { nivel: turma.level });
                 }
                 showSuccessMessage("Sucesso", "Turma reativada com sucesso!");
                 document.getElementById('form-modal').classList.remove('visible');
@@ -6228,10 +6385,12 @@
             try {
                 if (vipId) {
                     await updateDoc(doc(db, `artifacts/${appId}/public/data/vips`, vipId), data);
+                    await logActivity('editar', 'vip', studentName, { nivel: levelValue, professor: data.teacherName });
                     showSuccessMessage("Sucesso", "VIP atualizado.");
                 } else {
                     data.createdAt = serverTimestamp();
                     await addDoc(collection(db, `artifacts/${appId}/public/data/vips`), data);
+                    await logActivity('criar', 'vip', studentName, { nivel: levelValue });
                     showSuccessMessage("Sucesso", "Novo VIP criado.");
                 }
             } catch (error) {
@@ -6254,7 +6413,9 @@
                         localStorage.setItem('vips', JSON.stringify(vips));
                     }
                 } else {
+                    const vip = vips.find(v => v.id === vipId);
                     await updateDoc(doc(db, `artifacts/${appId}/public/data/vips`, vipId), { finalizado: true });
+                    if (vip) await logActivity('finalizar', 'vip', vip.studentName, { nivel: vip.level });
                 }
                 showSuccessMessage("Sucesso", "VIP finalizado com sucesso!");
                 document.getElementById('form-modal').classList.remove('visible');
@@ -6287,7 +6448,9 @@
                         localStorage.setItem('vips', JSON.stringify(vips));
                     }
                 } else {
+                    const vip = vips.find(v => v.id === vipId);
                     await updateDoc(doc(db, `artifacts/${appId}/public/data/vips`, vipId), { finalizado: false });
+                    if (vip) await logActivity('reativar', 'vip', vip.studentName, { nivel: vip.level });
                 }
                 showSuccessMessage("Sucesso", "VIP reativado com sucesso!");
                 document.getElementById('form-modal').classList.remove('visible');
@@ -6310,11 +6473,13 @@
             if (!confirm('Tem certeza que deseja excluir este VIP?')) return;
 
             try {
+                const vip = vips.find(v => v.id === vipId);
                 if (window.isDevelopmentMode) {
                     vips = vips.filter(v => v.id !== vipId);
                     localStorage.setItem('vips', JSON.stringify(vips));
                 } else {
                     await deleteDoc(doc(db, `artifacts/${appId}/public/data/vips`, vipId));
+                    if (vip) await logActivity('deletar', 'vip', vip.studentName, {});
                 }
                 showSuccessMessage("Sucesso!", "VIP excluído com sucesso.");
                 closeFormModal();
@@ -7274,7 +7439,6 @@
                 { key: 'vips', label: 'VIPs' },
                 { key: 'grade', label: 'Grade de Horários' },
                 { key: 'calendario', label: 'Calendário' },
-                { key: 'rechamada', label: 'Rechamada' },
                 { key: 'gestao-tns', label: 'Gestão TNs' },
                 { key: 'kpis-pedagogico', label: 'KPIs Pedagógico' },
                 { key: 'colaboradores', label: 'Colaboradores' },
@@ -7427,6 +7591,7 @@
                 if (collaboratorId) {
                     const collaboratorRef = doc(db, `artifacts/${appId}/public/data/collaborators`, collaboratorId);
                     await updateDoc(collaboratorRef, data);
+                    await logActivity('editar', 'colaborador', data.name, { cargo: data.role });
                     
                     // If collaborator has a Firebase UID, also update the user's role
                     const collaboratorDoc = await getDoc(collaboratorRef);
@@ -7446,6 +7611,7 @@
                 } else {
                     const docRef = await addDoc(collection(db, `artifacts/${appId}/public/data/collaborators`), data);
                     savedCollaboratorId = docRef.id;
+                    await logActivity('criar', 'colaborador', data.name, { cargo: data.role });
                 }
                 
                 // Create Firebase user if checkbox is checked
@@ -9746,494 +9912,123 @@
             }
         }
 
-        // --- RECHAMADA SECTION ---
-        let rechamadasData = [];
+        // --- LOGS DE ATIVIDADES SECTION ---
+        function renderLogsAtividadesSection() {
+            document.getElementById('main-title').textContent = 'Logs de Atividades';
+            document.getElementById('main-description').textContent = 'Acompanhe todas as ações realizadas no Hub nas últimas 48 horas.';
 
-        async function renderRechamadaSection() {
-            document.getElementById('main-title').textContent = 'Rechamada';
-            document.getElementById('main-description').textContent = 'Acompanhe alunos com 2 faltas consecutivas e faça contato de retenção.';
-            
             const contentArea = document.getElementById('content-area');
             
-            contentArea.innerHTML = `
-                <div id="rechamada-section">
-                    <div class="mb-6">
-                        <div class="flex gap-3 items-center flex-wrap">
-                            <select id="rechamada-filter-professor" class="form-input !w-auto">
-                                <option value="">Todos os professores</option>
-                                ${collaborators.filter(c => c.sector === 'professor').map(c => 
-                                    `<option value="${c.id}">${c.name}</option>`
-                                ).join('')}
-                            </select>
-                            <input type="text" id="rechamada-filter-aluno" class="form-input !w-auto" placeholder="Buscar aluno...">
-                            <div class="flex gap-2 items-center">
-                                <label class="text-sm font-medium text-stone-700">Período:</label>
-                                <input type="date" id="rechamada-filter-date-from" class="form-input !w-auto text-sm" placeholder="De">
-                                <span class="text-stone-500">até</span>
-                                <input type="date" id="rechamada-filter-date-to" class="form-input !w-auto text-sm" placeholder="Até">
-                            </div>
+            // Filtrar logs das últimas 48 horas e ordenar por timestamp decrescente
+            const sortedLogs = [...activityLogs].sort((a, b) => {
+                const timeA = a.timestamp?.toDate ? a.timestamp.toDate() : new Date(a.timestamp);
+                const timeB = b.timestamp?.toDate ? b.timestamp.toDate() : new Date(b.timestamp);
+                return timeB - timeA;
+            });
+            
+            // Função para formatar data/hora
+            function formatTimestamp(timestamp) {
+                if (!timestamp) return 'Data indisponível';
+                const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+                const day = date.getDate().toString().padStart(2, '0');
+                const month = (date.getMonth() + 1).toString().padStart(2, '0');
+                const hours = date.getHours().toString().padStart(2, '0');
+                const minutes = date.getMinutes().toString().padStart(2, '0');
+                return `${day}/${month} às ${hours}:${minutes}`;
+            }
+            
+            // Função para obter cor da ação
+            function getActionColor(action) {
+                const colors = {
+                    'criar': 'green',
+                    'editar': 'blue',
+                    'deletar': 'red',
+                    'finalizar': 'purple',
+                    'reativar': 'yellow'
+                };
+                return colors[action] || 'gray';
+            }
+            
+            // Função para obter ícone da ação
+            function getActionIcon(action) {
+                const icons = {
+                    'criar': '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>',
+                    'editar': '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>',
+                    'deletar': '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>',
+                    'finalizar': '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
+                    'reativar': '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>'
+                };
+                return icons[action] || '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg>';
+            }
+            
+            // Renderizar logs
+            const logsHTML = sortedLogs.length > 0 ? sortedLogs.map(log => {
+                const actionColor = getActionColor(log.action);
+                const actionIcon = getActionIcon(log.action);
+                const detailsText = log.details && Object.keys(log.details).length > 0 
+                    ? Object.entries(log.details).map(([key, value]) => `${key}: ${value}`).join(', ')
+                    : '';
+                
+                return `
+                    <div class="base-card !p-4 flex items-start gap-4 hover:shadow-md transition-shadow">
+                        <div class="status-tag status-${actionColor} !py-2 !px-2 flex-shrink-0">
+                            ${actionIcon}
                         </div>
-                    </div>
-                    
-                    <div id="rechamada-list-container">
-                        <!-- Lista será renderizada aqui -->
-                    </div>
-                </div>
-            `;
-            
-            await loadRechamadas();
-            
-            // Adicionar event listeners para os filtros
-            setTimeout(() => {
-                document.getElementById('rechamada-filter-professor')?.addEventListener('change', renderRechamadaList);
-                document.getElementById('rechamada-filter-aluno')?.addEventListener('input', renderRechamadaList);
-                document.getElementById('rechamada-filter-date-from')?.addEventListener('change', renderRechamadaList);
-                document.getElementById('rechamada-filter-date-to')?.addEventListener('change', renderRechamadaList);
-            }, 100);
-            
-            renderRechamadaList();
-        }
-
-        async function loadRechamadas() {
-            if (!db) {
-                const saved = localStorage.getItem('rechamadas');
-                rechamadasData = saved ? JSON.parse(saved) : [];
-                return;
-            }
-            
-            try {
-                const rechamadasRef = collection(db, `artifacts/${appId}/public/data/rechamadas`);
-                const snapshot = await getDocs(rechamadasRef);
-                rechamadasData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            } catch (error) {
-                console.error('Error loading rechamadas:', error);
-                rechamadasData = [];
-            }
-        }
-
-        function detectConsecutiveAbsences(dateFrom = null, dateTo = null) {
-            const studentsWithAbsences = [];
-            
-            // Checar turmas
-            turmas.forEach(turma => {
-                if (turma.finalizada) return;
-                
-                const turmaAttendance = attendance.find(a => a.id === turma.id);
-                if (!turmaAttendance || !turmaAttendance.lessons) return;
-                
-                const turmaStudents = students.filter(s => 
-                    (turma.studentIds || []).includes(s.id) && s.modalidade === 'TURMA'
-                );
-                
-                turmaStudents.forEach(student => {
-                    const lessons = turmaAttendance.lessons;
-                    let consecutiveAbsences = 0;
-                    let absenceDates = [];
-                    
-                    // Coletar todas as datas de aula e ordenar da mais recente para mais antiga
-                    const lessonDates = [];
-                    for (const lessonKey in lessons) {
-                        const lesson = lessons[lessonKey];
-                        if (lesson && lesson.date) {
-                            // Filtrar por período de data se especificado
-                            const lessonDate = new Date(lesson.date);
-                            if (dateFrom && lessonDate < new Date(dateFrom)) continue;
-                            if (dateTo && lessonDate > new Date(dateTo)) continue;
-                            
-                            lessonDates.push({ key: lessonKey, date: lesson.date, lesson: lesson });
-                        }
-                    }
-                    lessonDates.sort((a, b) => new Date(b.date) - new Date(a.date));
-                    
-                    // Verificar faltas consecutivas da aula mais recente
-                    for (const lessonData of lessonDates) {
-                        const lesson = lessonData.lesson;
-                        const studentAttendance = lesson.students?.[student.id];
-                        
-                        if (studentAttendance === false || studentAttendance === 'falta') {
-                            consecutiveAbsences++;
-                            absenceDates.push(lessonData.date);
-                            if (consecutiveAbsences >= 2) {
-                                studentsWithAbsences.push({
-                                    studentId: student.id,
-                                    studentName: student.name,
-                                    type: 'turma',
-                                    turmaId: turma.id,
-                                    turmaName: turma.name,
-                                    teacherId: turma.teacherId,
-                                    teacherName: turma.teacherName || 'Sem professor',
-                                    absenceDates: absenceDates.slice(0, 2),
-                                    consecutiveCount: consecutiveAbsences
-                                });
-                                break;
-                            }
-                        } else if (studentAttendance === true || studentAttendance === 'presente') {
-                            break; // Para quando encontrar uma presença
-                        }
-                    }
-                });
-            });
-            
-            // Checar VIPs
-            vips.forEach(vip => {
-                if (vip.finalizado) return;
-                
-                const vipAttendance = attendance.find(a => a.id === vip.id);
-                if (!vipAttendance || !vipAttendance.lessons) return;
-                
-                const student = students.find(a => a.id === vip.studentId);
-                if (!student) return;
-                
-                const lessons = vipAttendance.lessons;
-                let consecutiveAbsences = 0;
-                let absenceDates = [];
-                
-                // Coletar todas as datas de aula e ordenar da mais recente para mais antiga
-                const lessonDates = [];
-                for (const lessonKey in lessons) {
-                    const lesson = lessons[lessonKey];
-                    if (lesson && lesson.date) {
-                        // Filtrar por período de data se especificado
-                        const lessonDate = new Date(lesson.date);
-                        if (dateFrom && lessonDate < new Date(dateFrom)) continue;
-                        if (dateTo && lessonDate > new Date(dateTo)) continue;
-                        
-                        lessonDates.push({ key: lessonKey, date: lesson.date, lesson: lesson });
-                    }
-                }
-                lessonDates.sort((a, b) => new Date(b.date) - new Date(a.date));
-                
-                // Verificar faltas consecutivas da aula mais recente
-                for (const lessonData of lessonDates) {
-                    const lesson = lessonData.lesson;
-                    const studentAttendance = lesson.students?.[student.id];
-                    
-                    if (studentAttendance === false || studentAttendance === 'falta') {
-                        consecutiveAbsences++;
-                        absenceDates.push(lessonData.date);
-                        if (consecutiveAbsences >= 2) {
-                            studentsWithAbsences.push({
-                                studentId: student.id,
-                                studentName: student.name,
-                                type: 'vip',
-                                vipId: vip.id,
-                                teacherId: vip.teacherId,
-                                teacherName: vip.teacherName || 'Sem professor',
-                                absenceDates: absenceDates.slice(0, 2),
-                                consecutiveCount: consecutiveAbsences
-                            });
-                            break;
-                        }
-                    } else if (studentAttendance === true || studentAttendance === 'presente') {
-                        break; // Para quando encontrar uma presença
-                    }
-                }
-            });
-            
-            return studentsWithAbsences;
-        }
-
-        function renderRechamadaList() {
-            const container = document.getElementById('rechamada-list-container');
-            const filterProfessor = document.getElementById('rechamada-filter-professor')?.value || '';
-            const filterAluno = document.getElementById('rechamada-filter-aluno')?.value.toLowerCase() || '';
-            const filterDateFrom = document.getElementById('rechamada-filter-date-from')?.value || null;
-            const filterDateTo = document.getElementById('rechamada-filter-date-to')?.value || null;
-            
-            const studentsWithAbsences = detectConsecutiveAbsences(filterDateFrom, filterDateTo);
-            
-            // Filtrar por professor e aluno
-            let filtered = studentsWithAbsences;
-            if (filterProfessor) {
-                filtered = filtered.filter(s => s.teacherId === filterProfessor);
-            }
-            if (filterAluno) {
-                filtered = filtered.filter(s => s.studentName.toLowerCase().includes(filterAluno));
-            }
-            
-            if (filtered.length === 0) {
-                // Verificar o que está faltando para ajudar o usuário
-                const hasStudents = students.length > 0;
-                const hasTurmasOrVips = turmas.length > 0 || vips.length > 0;
-                const hasAttendance = attendance.length > 0;
-                const totalStudentsDetected = studentsWithAbsences.length;
-                
-                let message = '';
-                let icon = '';
-                
-                if (!hasStudents) {
-                    icon = '<svg class="w-16 h-16 mx-auto mb-4 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>';
-                    message = `<p class="text-lg font-semibold text-yellow-600">Nenhum aluno cadastrado</p><p class="text-sm mt-2">Cadastre alunos na seção <strong>Alunos</strong> para começar a usar a Rechamada.</p>`;
-                } else if (!hasTurmasOrVips) {
-                    icon = '<svg class="w-16 h-16 mx-auto mb-4 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>';
-                    message = `<p class="text-lg font-semibold text-yellow-600">Nenhuma Turma ou VIP cadastrado</p><p class="text-sm mt-2">Crie Turmas ou VIPs nas respectivas seções para começar a registrar presenças.</p>`;
-                } else if (!hasAttendance) {
-                    icon = '<svg class="w-16 h-16 mx-auto mb-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>';
-                    message = `<p class="text-lg font-semibold text-blue-600">Sem registros de presença ainda</p><p class="text-sm mt-2">Registre presenças e faltas nas <strong>PEFs</strong> (Turmas ou VIPs) para que a Rechamada detecte alunos com 2 faltas consecutivas automaticamente.</p>`;
-                } else if (totalStudentsDetected === 0 && !filterProfessor && !filterAluno) {
-                    icon = '<svg class="w-16 h-16 mx-auto mb-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>';
-                    message = `<p class="text-lg font-semibold text-green-600">🎉 Nenhum aluno com 2 faltas consecutivas!</p><p class="text-sm mt-2">Excelente trabalho de retenção! Continue monitorando as presenças nas PEFs.</p>`;
-                } else {
-                    icon = '<svg class="w-16 h-16 mx-auto mb-4 text-stone-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>';
-                    message = `<p class="text-lg font-semibold">Nenhum resultado com os filtros aplicados</p><p class="text-sm mt-2">Tente remover os filtros ou ajustar sua busca.</p>`;
-                }
-                
-                container.innerHTML = `
-                    <div class="text-center py-12 text-stone-500">
-                        ${icon}
-                        ${message}
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-start justify-between gap-2 mb-1">
+                                <div class="flex-1">
+                                    <p class="font-bold text-stone-800">
+                                        ${log.userName} 
+                                        <span class="font-normal">${log.action} ${log.targetType}</span>
+                                    </p>
+                                    <p class="text-stone-600 mt-1">
+                                        <span class="font-semibold">${log.targetName}</span>
+                                    </p>
+                                </div>
+                                <div class="text-right flex-shrink-0">
+                                    <p class="text-sm text-stone-500">${formatTimestamp(log.timestamp)}</p>
+                                    <p class="text-xs text-stone-400 mt-1">${log.userRole}</p>
+                                </div>
+                            </div>
+                            ${detailsText ? `<p class="text-sm text-stone-500 mt-2">${detailsText}</p>` : ''}
+                        </div>
                     </div>
                 `;
-                return;
-            }
-            
-            container.innerHTML = `
-                <div class="overflow-x-auto">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Aluno</th>
-                                <th>Tipo</th>
-                                <th>Turma/VIP</th>
-                                <th>Professor</th>
-                                <th>Aulas Faltadas</th>
-                                <th>Faltas Consecutivas</th>
-                                <th>Status</th>
-                                <th>Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${filtered.map(item => {
-                                const hasRechamada = rechamadasData.find(r => 
-                                    r.studentId === item.studentId && 
-                                    (item.type === 'turma' ? r.turmaId === item.turmaId : r.vipId === item.vipId) &&
-                                    !r.resolved
-                                );
-                                
-                                return `
-                                    <tr>
-                                        <td class="font-semibold">${item.studentName}</td>
-                                        <td>
-                                            <span class="inline-block px-2 py-1 text-xs rounded ${item.type === 'vip' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}">
-                                                ${item.type === 'vip' ? 'VIP' : 'TURMA'}
-                                            </span>
-                                        </td>
-                                        <td>${item.type === 'turma' ? item.turmaName : 'VIP'}</td>
-                                        <td>${item.teacherName}</td>
-                                        <td>${item.absenceDates.map(d => {
-                                            const date = d.toDate ? d.toDate() : new Date(d);
-                                            return date.toLocaleDateString('pt-BR');
-                                        }).join(', ')}</td>
-                                        <td>
-                                            <span class="inline-block px-2 py-1 text-xs rounded bg-red-100 text-red-700 font-bold">
-                                                ${item.consecutiveCount} faltas
-                                            </span>
-                                        </td>
-                                        <td>
-                                            ${hasRechamada ? 
-                                                `<span class="inline-block px-2 py-1 text-xs rounded bg-yellow-100 text-yellow-700">Pendente</span>` :
-                                                `<span class="inline-block px-2 py-1 text-xs rounded bg-red-100 text-red-700">Sem contato</span>`
-                                            }
-                                        </td>
-                                        <td>
-                                            <button class="primary-btn w-auto text-sm" onclick='openRechamadaModal(${JSON.stringify(item)})'>
-                                                Fazer Rechamada
-                                            </button>
-                                            ${hasRechamada ? `<button class="secondary-btn w-auto text-sm ml-2" onclick='viewRechamada("${hasRechamada.id}")'>Ver Detalhes</button>` : ''}
-                                        </td>
-                                    </tr>
-                                `;
-                            }).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            `;
-        }
-
-        function openRechamadaModal(studentData) {
-            const modal = document.getElementById('form-modal');
-            
-            const existingRechamada = rechamadasData.find(r => 
-                r.studentId === studentData.studentId && 
-                (studentData.type === 'turma' ? r.turmaId === studentData.turmaId : r.vipId === studentData.vipId) &&
-                !r.resolved
-            );
-            
-            modal.innerHTML = `
-                <div class="modal-content max-w-2xl">
-                    <div class="modal-header">
-                        <h4>${existingRechamada ? 'Atualizar' : 'Fazer'} Rechamada - ${studentData.studentName}</h4>
-                        <button class="modal-close-btn" data-action="close-modal">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>
-                            </svg>
-                        </button>
-                    </div>
-                    <div class="p-6">
-                        <form id="rechamada-form" class="space-y-4">
-                            <div class="bg-stone-50 p-4 rounded-lg mb-4">
-                                <p class="text-sm"><strong>Aluno:</strong> ${studentData.studentName}</p>
-                                <p class="text-sm"><strong>${studentData.type === 'turma' ? 'Turma' : 'VIP'}:</strong> ${studentData.type === 'turma' ? studentData.turmaName : 'VIP'}</p>
-                                <p class="text-sm"><strong>Professor:</strong> ${studentData.teacherName}</p>
-                                <p class="text-sm"><strong>Aulas faltadas:</strong> ${studentData.absenceLessons.join(', ')}</p>
-                            </div>
-                            
-                            <div>
-                                <label class="font-medium text-sm">Data da Rechamada</label>
-                                <input type="date" id="rechamada-date" class="form-input" value="${existingRechamada?.date || new Date().toISOString().split('T')[0]}" required>
-                            </div>
-                            
-                            <div>
-                                <label class="font-medium text-sm">Motivo das Faltas</label>
-                                <textarea id="rechamada-reason" rows="2" class="form-input" placeholder="Ex: Doença, viagem, esquecimento..." required>${existingRechamada?.reason || ''}</textarea>
-                            </div>
-                            
-                            <div>
-                                <label class="font-medium text-sm">Descrição / Observações</label>
-                                <textarea id="rechamada-description" rows="4" class="form-input" placeholder="Descreva o contato realizado, ações tomadas, etc..." required>${existingRechamada?.description || ''}</textarea>
-                            </div>
-                            
-                            <div class="flex items-center gap-2">
-                                <input type="checkbox" id="rechamada-resolved" ${existingRechamada?.resolved ? 'checked' : ''}>
-                                <label for="rechamada-resolved" class="text-sm">Marcar como resolvido</label>
-                            </div>
-                            
-                            <div class="flex justify-end gap-2 pt-4 border-t">
-                                <button type="button" data-action="close-modal" class="secondary-btn">Cancelar</button>
-                                <button type="submit" class="primary-btn w-auto">Salvar Rechamada</button>
-                            </div>
-                        </form>
-                    </div>
+            }).join('') : `
+                <div class="text-center p-12 bg-stone-50 rounded-lg">
+                    <svg class="w-16 h-16 mx-auto mb-4 text-stone-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    <p class="text-stone-500 text-lg">Nenhuma atividade registrada nas últimas 48 horas.</p>
                 </div>
             `;
             
-            modal.classList.add('visible');
-            
-            document.getElementById('rechamada-form').onsubmit = async (e) => {
-                e.preventDefault();
-                await saveRechamada(studentData, existingRechamada?.id);
-            };
-        }
-
-        async function saveRechamada(studentData, existingId = null) {
-            const date = document.getElementById('rechamada-date').value;
-            const reason = document.getElementById('rechamada-reason').value;
-            const description = document.getElementById('rechamada-description').value;
-            const resolved = document.getElementById('rechamada-resolved').checked;
-            
-            if (!date || !reason || !description) {
-                showErrorMessage("Erro", "Todos os campos são obrigatórios.");
-                return;
-            }
-            
-            const rechamadaData = {
-                studentId: studentData.studentId,
-                studentName: studentData.studentName,
-                type: studentData.type,
-                ...(studentData.type === 'turma' ? { turmaId: studentData.turmaId, turmaName: studentData.turmaName } : { vipId: studentData.vipId }),
-                teacherId: studentData.teacherId,
-                teacherName: studentData.teacherName,
-                absenceLessons: studentData.absenceLessons,
-                date,
-                reason,
-                description,
-                resolved,
-                createdBy: currentUser,
-                createdAt: existingId ? rechamadasData.find(r => r.id === existingId)?.createdAt : new Date().toISOString(),
-                updatedAt: new Date().toISOString()
-            };
-            
-            try {
-                if (!db) {
-                    // localStorage mode
-                    if (existingId) {
-                        const index = rechamadasData.findIndex(r => r.id === existingId);
-                        if (index !== -1) {
-                            rechamadasData[index] = { ...rechamadasData[index], ...rechamadaData };
-                        }
-                    } else {
-                        rechamadaData.id = generateId();
-                        rechamadasData.push(rechamadaData);
-                    }
-                    localStorage.setItem('rechamadas', JSON.stringify(rechamadasData));
-                } else {
-                    // Firebase mode
-                    const id = existingId || generateId();
-                    const docRef = doc(db, `artifacts/${appId}/public/data/rechamadas`, id);
-                    await setDoc(docRef, rechamadaData);
+            contentArea.innerHTML = `
+                <section id="logs-atividades-section">
+                    <div class="mb-6">
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <p class="text-sm text-blue-800">
+                                <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                <strong>Sistema de Auditoria:</strong> Todas as ações são registradas automaticamente. 
+                                Os logs são mantidos por 48 horas e depois automaticamente removidos.
+                            </p>
+                        </div>
+                    </div>
                     
-                    if (!existingId) {
-                        rechamadasData.push({ id, ...rechamadaData });
-                    } else {
-                        const index = rechamadasData.findIndex(r => r.id === existingId);
-                        if (index !== -1) {
-                            rechamadasData[index] = { id: existingId, ...rechamadaData };
-                        }
-                    }
-                }
-                
-                document.getElementById('form-modal').classList.remove('visible');
-                renderRechamadaList();
-                showSuccessMessage("Sucesso!", "Rechamada salva com sucesso.");
-                playSuccessSound();
-            } catch (error) {
-                console.error('Error saving rechamada:', error);
-                showErrorMessage("Erro", "Erro ao salvar rechamada: " + error.message);
-                playErrorSound();
-            }
-        }
-
-        function viewRechamada(rechamadaId) {
-            const rechamada = rechamadasData.find(r => r.id === rechamadaId);
-            if (!rechamada) return;
-            
-            const modal = document.getElementById('form-modal');
-            modal.innerHTML = `
-                <div class="modal-content max-w-2xl">
-                    <div class="modal-header">
-                        <h4>Detalhes da Rechamada</h4>
-                        <button class="modal-close-btn" data-action="close-modal">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>
-                            </svg>
-                        </button>
+                    <div class="mb-4">
+                        <h3 class="text-lg font-bold text-stone-800">
+                            ${sortedLogs.length} atividade${sortedLogs.length !== 1 ? 's' : ''} registrada${sortedLogs.length !== 1 ? 's' : ''}
+                        </h3>
                     </div>
-                    <div class="p-6 space-y-4">
-                        <div class="grid grid-cols-2 gap-4 text-sm">
-                            <div><strong>Aluno:</strong> ${rechamada.studentName}</div>
-                            <div><strong>Professor:</strong> ${rechamada.teacherName}</div>
-                            <div><strong>Tipo:</strong> ${rechamada.type === 'turma' ? 'Turma' : 'VIP'}</div>
-                            <div><strong>${rechamada.type === 'turma' ? 'Turma' : 'VIP'}:</strong> ${rechamada.type === 'turma' ? rechamada.turmaName : 'VIP'}</div>
-                            <div><strong>Aulas Faltadas:</strong> ${rechamada.absenceLessons.join(', ')}</div>
-                            <div><strong>Data da Rechamada:</strong> ${formatDateBR(rechamada.date)}</div>
-                            <div class="col-span-2"><strong>Status:</strong> 
-                                <span class="inline-block px-2 py-1 text-xs rounded ${rechamada.resolved ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}">
-                                    ${rechamada.resolved ? 'Resolvido' : 'Pendente'}
-                                </span>
-                            </div>
-                        </div>
-                        
-                        <div class="pt-4 border-t">
-                            <h5 class="font-semibold mb-2">Motivo das Faltas</h5>
-                            <p class="text-sm text-stone-600">${rechamada.reason}</p>
-                        </div>
-                        
-                        <div class="pt-4 border-t">
-                            <h5 class="font-semibold mb-2">Descrição / Observações</h5>
-                            <p class="text-sm text-stone-600">${rechamada.description}</p>
-                        </div>
-                        
-                        <div class="flex justify-end gap-2 pt-4 border-t">
-                            <button class="secondary-btn" data-action="close-modal">Fechar</button>
-                        </div>
+                    
+                    <div class="space-y-3">
+                        ${logsHTML}
                     </div>
-                </div>
+                </section>
             `;
-            modal.classList.add('visible');
         }
-
-        window.openRechamadaModal = openRechamadaModal;
-        window.viewRechamada = viewRechamada;
 
         // --- GESTÃO TNs SECTION ---
         let testesNivel = [];
@@ -13509,10 +13304,11 @@
                 { key: 'vips', label: 'VIPs', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20a6 6 0 0 0-12 0"/><circle cx="12" cy="10" r="4"/><circle cx="12" cy="12" r="10"/></svg>', roles: ['admin', 'pedagogico', 'ap', 'teacher', 'am', 'financeiro'] },
                 { key: 'grade', label: 'Grade', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" x2="16" y1="2" y2="6"></line><line x1="8" x2="8" y1="2" y2="6"></line><line x1="3" x2="21" y1="10" y2="10"></line></svg>', roles: ['admin', 'pedagogico', 'ap', 'teacher', 'am', 'financeiro'] },
                 { key: 'calendario', label: 'Calendário', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>', roles: ['admin', 'pedagogico', 'ap', 'teacher', 'am', 'financeiro'] },
-                { key: 'rechamada', label: 'Rechamada', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>', roles: ['admin', 'pedagogico', 'ap', 'teacher', 'am'] },
                 { key: 'gestao-tns', label: 'Gestão TNs', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>', roles: ['admin', 'pedagogico', 'ap', 'am'] },
                 
                 { key: 'kpis-pedagogico', label: 'KPIs Pedagógico', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/></svg>', roles: ['admin', 'pedagogico', 'ap'] },
+                
+                { key: 'logs-atividades', label: 'Logs de Atividades', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>', roles: ['admin'] },
                 
                 { key: 'colaboradores', label: 'Colaboradores', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>', roles: ['admin'] },
                 
@@ -13761,16 +13557,16 @@
                 'colaboradores': ['admin'], // Collaborators - admin only
                 'dojo': ['admin', 'pedagogico', 'ap', 'teacher', 'am'], // Dojo - everyone except financeiro
                 'calendario': ['admin', 'pedagogico', 'ap', 'teacher', 'am', 'financeiro'], // Shared calendar
-                'rechamada': ['admin', 'pedagogico', 'ap', 'teacher', 'am'], // Rechamada - retention system
                 'gestao-tns': ['admin', 'pedagogico', 'ap', 'am'], // Gestão de Testes de Nível
                 'kpis-pedagogico': ['admin', 'pedagogico', 'ap'], // KPIs Pedagógico
+                'logs-atividades': ['admin'], // Activity logs - admin only
             };
             
             return pagePermissions[pageKey]?.includes(userRole) || false;
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            const pageRenderers = { 'inicio': renderInicioSection, 'alunos': renderAlunosSection, 'turmas': renderTurmasSection, 'vips': renderVipsSection, 'tarefas': renderTarefasSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection, 'colaboradores': renderColaboradoresSection, 'dojo': renderDojoSection, 'calendario': renderCalendarioSection, 'rechamada': renderRechamadaSection, 'gestao-tns': renderGestaoTNsSection, 'kpis-pedagogico': renderKPIsPedagogicoSection  };
+            const pageRenderers = { 'inicio': renderInicioSection, 'alunos': renderAlunosSection, 'turmas': renderTurmasSection, 'vips': renderVipsSection, 'tarefas': renderTarefasSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection, 'colaboradores': renderColaboradoresSection, 'dojo': renderDojoSection, 'calendario': renderCalendarioSection, 'gestao-tns': renderGestaoTNsSection, 'kpis-pedagogico': renderKPIsPedagogicoSection, 'logs-atividades': renderLogsAtividadesSection  };
 
             document.body.addEventListener('click', (event) => {
                 // Close modals when clicking overlay or close button
