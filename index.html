@@ -446,7 +446,7 @@
         const pendingView = document.getElementById('pending-view');
 
         let db, auth, storage, userId, currentUserName, currentUserRole;
-        let usersData = [], students = [], turmas = [], vips = [], attendance = [], tasks = [], events = [], collaborators = [], schedules = [], expenses = [], dojoRanking = [], dojoMissions = [], activityLogs = [];
+        let usersData = [], students = [], turmas = [], vips = [], attendance = [], tasks = [], events = [], collaborators = [], schedules = [], expenses = [], dojoRanking = [], dojoMissions = [], activityLogs = [], rechamadas = [];
         let userProfiles = {};
         let monthlyHighlight = {
             name: 'João Silva',
@@ -682,6 +682,9 @@
                 fiveDaysAgo.setHours(fiveDaysAgo.getHours() - 120); // 5 dias = 120 horas
                 return query(ref, where('timestamp', '>=', fiveDaysAgo), orderBy('timestamp', 'desc'), limit(500));
             });
+            
+            // Rechamadas listener
+            getCollectionListener('rechamadas', rechamadas);
             
             // Executar limpeza automática de logs antigos ao iniciar
             cleanOldActivityLogs();
@@ -3255,6 +3258,361 @@
                     </div>
                 </section>
             `;
+        }
+
+        // --- RECHAMADA SECTION ---
+        let currentRechamadaTeacherFilter = 'todos';
+        
+        function renderRechamadaSection() {
+            document.getElementById('main-title').textContent = 'Rechamada';
+            document.getElementById('main-description').textContent = 'Alunos com faltas consecutivas desde 01/10/2025 - Entre em contato para apoio.';
+            
+            const contentArea = document.getElementById('content-area');
+            const cutoffDate = new Date('2025-10-01');
+            
+            // Função para detectar faltas consecutivas
+            function findConsecutiveAbsences(attendanceRecord, studentId) {
+                const lessons = attendanceRecord?.lessons || {};
+                const consecutiveAbsences = [];
+                
+                // Percorrer todas as aulas (1 a 40)
+                for (let lessonNum = 1; lessonNum <= 40; lessonNum++) {
+                    const currentLesson = lessons[lessonNum];
+                    const nextLesson = lessons[lessonNum + 1];
+                    
+                    // Verificar se a aula atual tem data e é >= 01/10/2025
+                    if (!currentLesson?.date) continue;
+                    const lessonDate = new Date(currentLesson.date);
+                    if (lessonDate < cutoffDate) continue;
+                    
+                    // Verificar se o aluno faltou nesta aula
+                    const currentStatus = currentLesson.students?.[studentId];
+                    const nextStatus = nextLesson?.students?.[studentId];
+                    
+                    // Se faltou nesta aula E na próxima
+                    if (currentStatus === 'F' && nextStatus === 'F') {
+                        consecutiveAbsences.push({
+                            firstLesson: lessonNum,
+                            secondLesson: lessonNum + 1,
+                            firstDate: currentLesson.date,
+                            secondDate: nextLesson?.date || 'N/A'
+                        });
+                    }
+                }
+                
+                return consecutiveAbsences;
+            }
+            
+            // Coletar todos os alunos com faltas consecutivas
+            const studentsWithConsecutiveAbsences = [];
+            
+            // Verificar VIPs
+            vips.forEach(vip => {
+                const student = students.find(s => s.id === vip.studentId);
+                if (!student) return;
+                
+                const attendanceRecord = attendance.find(a => a.id === vip.id);
+                const absences = findConsecutiveAbsences(attendanceRecord, student.id);
+                
+                if (absences.length > 0) {
+                    studentsWithConsecutiveAbsences.push({
+                        studentName: student.name,
+                        studentId: student.id,
+                        type: 'VIP',
+                        typeName: 'VIP',
+                        teacher: vip.teacher || 'Não especificado',
+                        absences: absences,
+                        totalConsecutive: absences.length
+                    });
+                }
+            });
+            
+            // Verificar Turmas
+            turmas.forEach(turma => {
+                const attendanceRecord = attendance.find(a => a.id === turma.id);
+                
+                // Para cada aluno da turma
+                turma.students?.forEach(studentId => {
+                    const student = students.find(s => s.id === studentId);
+                    if (!student) return;
+                    
+                    const absences = findConsecutiveAbsences(attendanceRecord, studentId);
+                    
+                    if (absences.length > 0) {
+                        studentsWithConsecutiveAbsences.push({
+                            studentName: student.name,
+                            studentId: studentId,
+                            type: 'TURMA',
+                            typeName: turma.name || 'Turma sem nome',
+                            teacher: turma.teacher || 'Não especificado',
+                            absences: absences,
+                            totalConsecutive: absences.length
+                        });
+                    }
+                });
+            });
+            
+            // Filtrar por professor se selecionado
+            const filteredStudents = currentRechamadaTeacherFilter === 'todos' 
+                ? studentsWithConsecutiveAbsences 
+                : studentsWithConsecutiveAbsences.filter(s => s.teacher === currentRechamadaTeacherFilter);
+            
+            // Ordenar por quantidade de faltas consecutivas (maior primeiro)
+            filteredStudents.sort((a, b) => b.totalConsecutive - a.totalConsecutive);
+            
+            // Lista únicalha de professores
+            const uniqueTeachers = [...new Set(studentsWithConsecutiveAbsences.map(s => s.teacher))].filter(t => t && t !== 'Não especificado').sort();
+            
+            contentArea.innerHTML = `
+                <section id="rechamada-section">
+                    <div class="mb-6">
+                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                            <p class="text-sm text-yellow-800">
+                                <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                </svg>
+                                <strong>Atenção:</strong> Esta lista mostra alunos que faltaram em aulas <strong>consecutivas</strong> (ex: aula 3 e aula 4) desde 01/10/2025.
+                            </p>
+                        </div>
+                    </div>
+                    
+                    ${uniqueTeachers.length > 0 ? `
+                        <div class="mb-6 flex items-center gap-4">
+                            <label class="text-sm font-semibold text-stone-700">Filtrar por professor:</label>
+                            <select 
+                                id="rechamada-teacher-filter" 
+                                class="form-input !w-auto min-w-[200px]"
+                                onchange="currentRechamadaTeacherFilter = this.value; renderRechamadaSection();"
+                            >
+                                <option value="todos" ${currentRechamadaTeacherFilter === 'todos' ? 'selected' : ''}>Todos os professores</option>
+                                ${uniqueTeachers.map(teacher => 
+                                    `<option value="${teacher}" ${currentRechamadaTeacherFilter === teacher ? 'selected' : ''}>${teacher}</option>`
+                                ).join('')}
+                            </select>
+                            ${currentRechamadaTeacherFilter !== 'todos' ? `
+                                <button 
+                                    onclick="currentRechamadaTeacherFilter = 'todos'; renderRechamadaSection();"
+                                    class="text-sm text-blue-600 hover:text-blue-800 underline"
+                                >
+                                    Limpar filtro
+                                </button>
+                            ` : ''}
+                        </div>
+                    ` : ''}
+                    
+                    <div class="mb-4">
+                        <h3 class="text-lg font-bold text-stone-800">
+                            ${filteredStudents.length} aluno${filteredStudents.length !== 1 ? 's' : ''} com faltas consecutivas
+                            ${currentRechamadaTeacherFilter !== 'todos' ? `<span class="text-blue-600"> (filtrado por ${currentRechamadaTeacherFilter})</span>` : ''}
+                        </h3>
+                    </div>
+                    
+                    ${filteredStudents.length === 0 ? `
+                        <div class="text-center p-12 bg-stone-50 rounded-lg">
+                            <svg class="w-16 h-16 mx-auto mb-4 text-green-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <p class="text-stone-500 text-lg font-semibold">Nenhum aluno com faltas consecutivas${currentRechamadaTeacherFilter !== 'todos' ? ' para este professor' : ''}!</p>
+                            <p class="text-stone-400 text-sm mt-2">Todos os alunos estão com boa frequência.</p>
+                        </div>
+                    ` : `
+                        <div class="overflow-x-auto">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Aluno</th>
+                                        <th>Modalidade</th>
+                                        <th>Professor</th>
+                                        <th>Qtd. Ocorrências</th>
+                                        <th>Detalhes das Faltas</th>
+                                        <th class="text-center">Status / Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${filteredStudents.map(item => {
+                                        // Verificar se já foi feita rechamada para este aluno
+                                        const existingRechamada = rechamadas.find(r => r.studentId === item.studentId);
+                                        
+                                        return `
+                                        <tr>
+                                            <td class="font-semibold">${item.studentName}</td>
+                                            <td>
+                                                <span class="inline-block px-2 py-1 text-xs rounded font-semibold ${item.type === 'VIP' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}">
+                                                    ${item.typeName}
+                                                </span>
+                                            </td>
+                                            <td>${item.teacher}</td>
+                                            <td class="text-center">
+                                                <span class="inline-block px-3 py-1 rounded-full bg-red-100 text-red-700 font-bold">
+                                                    ${item.totalConsecutive}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <div class="space-y-1 text-sm">
+                                                    ${item.absences.map(absence => `
+                                                        <div class="flex items-center gap-2 text-stone-600">
+                                                            <span class="font-semibold text-red-600">
+                                                                Aula ${absence.firstLesson} + ${absence.secondLesson}
+                                                            </span>
+                                                            <span class="text-stone-400">•</span>
+                                                            <span>
+                                                                ${formatDateBR(absence.firstDate)} e ${formatDateBR(absence.secondDate)}
+                                                            </span>
+                                                        </div>
+                                                    `).join('')}
+                                                </div>
+                                            </td>
+                                            <td class="text-center">
+                                                ${existingRechamada ? `
+                                                    <div class="text-sm">
+                                                        <div class="inline-block px-3 py-1 rounded-full bg-green-100 text-green-700 font-semibold mb-2">
+                                                            ✓ Rechamada feita
+                                                        </div>
+                                                        <div class="text-stone-600">
+                                                            <span class="font-semibold">Data:</span> ${formatDateBR(existingRechamada.contactDate)}
+                                                        </div>
+                                                        <button 
+                                                            onclick="viewRechamadaDetails('${item.studentId}')"
+                                                            class="text-blue-600 hover:text-blue-800 text-xs underline mt-1"
+                                                        >
+                                                            Ver detalhes
+                                                        </button>
+                                                    </div>
+                                                ` : `
+                                                    <button 
+                                                        onclick="openRechamadaModal('${item.studentId}', '${item.studentName.replace(/'/g, "\\'")}', '${item.teacher.replace(/'/g, "\\'")}')"
+                                                        class="primary-btn !py-2 !px-4 text-sm w-auto"
+                                                    >
+                                                        📞 Fazer Rechamada
+                                                    </button>
+                                                `}
+                                            </td>
+                                        </tr>
+                                    `}).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    `}
+                </section>
+            `;
+        }
+
+        // --- Funções auxiliares de Rechamada ---
+        function openRechamadaModal(studentId, studentName, teacherName) {
+            clearModalHeaderButtons();
+            
+            document.getElementById('form-modal-title').textContent = 'Registrar Rechamada';
+            document.getElementById('form-modal-content-area').innerHTML = `
+                <form id="rechamada-form" class="space-y-4">
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                        <p class="text-sm text-blue-800">
+                            <strong>Aluno:</strong> ${studentName}<br>
+                            <strong>Professor:</strong> ${teacherName}
+                        </p>
+                    </div>
+                    
+                    <div>
+                        <label class="font-medium text-sm">Data do Contato *</label>
+                        <input type="date" id="rechamada-date" class="form-input" value="${new Date().toISOString().split('T')[0]}" required>
+                    </div>
+                    
+                    <div>
+                        <label class="font-medium text-sm">O que o aluno disse? *</label>
+                        <textarea id="rechamada-notes" rows="6" class="form-input" placeholder="Descreva a conversa com o aluno, motivo das faltas, como está se sentindo, se precisa de ajuda, etc..." required></textarea>
+                    </div>
+                    
+                    <div class="flex justify-end gap-2 pt-4 border-t">
+                        <button type="button" class="secondary-btn" onclick="closeFormModal()">Cancelar</button>
+                        <button type="submit" class="primary-btn w-auto">Salvar Rechamada</button>
+                    </div>
+                </form>
+            `;
+            
+            document.getElementById('rechamada-form').onsubmit = async (e) => {
+                e.preventDefault();
+                await saveRechamada(studentId, studentName);
+            };
+            
+            document.getElementById('form-modal').classList.add('visible');
+        }
+
+        async function saveRechamada(studentId, studentName) {
+            const contactDate = document.getElementById('rechamada-date').value;
+            const notes = document.getElementById('rechamada-notes').value;
+            
+            if (!contactDate || !notes) {
+                showErrorMessage("Erro", "Preencha todos os campos obrigatórios.");
+                return;
+            }
+            
+            const rechamadaData = {
+                studentId,
+                studentName,
+                contactDate,
+                notes,
+                createdBy: currentUserName,
+                createdAt: new Date(),
+                timestamp: serverTimestamp()
+            };
+            
+            try {
+                if (db) {
+                    await addDoc(collection(db, `artifacts/${appId}/public/data/rechamadas`), rechamadaData);
+                } else {
+                    rechamadas.push({ id: Date.now().toString(), ...rechamadaData });
+                    localStorage.setItem('rechamadas', JSON.stringify(rechamadas));
+                }
+                
+                // Log activity
+                await logActivity('criar', 'rechamada', studentName, { data: contactDate });
+                
+                closeFormModal();
+                showSuccessMessage("Sucesso!", "Rechamada registrada com sucesso.");
+                renderRechamadaSection();
+            } catch (error) {
+                console.error("Erro ao salvar rechamada:", error);
+                showErrorMessage("Erro", "Erro ao salvar rechamada: " + error.message);
+            }
+        }
+
+        function viewRechamadaDetails(studentId) {
+            const rechamada = rechamadas.find(r => r.studentId === studentId);
+            if (!rechamada) {
+                showErrorMessage("Erro", "Rechamada não encontrada.");
+                return;
+            }
+            
+            clearModalHeaderButtons();
+            document.getElementById('form-modal-title').textContent = 'Detalhes da Rechamada';
+            document.getElementById('form-modal-content-area').innerHTML = `
+                <div class="space-y-4">
+                    <div>
+                        <p class="text-sm font-semibold text-stone-700">Aluno</p>
+                        <p class="text-lg">${rechamada.studentName}</p>
+                    </div>
+                    
+                    <div>
+                        <p class="text-sm font-semibold text-stone-700">Data do Contato</p>
+                        <p class="text-lg">${formatDateBR(rechamada.contactDate)}</p>
+                    </div>
+                    
+                    <div>
+                        <p class="text-sm font-semibold text-stone-700">Observações</p>
+                        <p class="text-stone-600">${rechamada.notes}</p>
+                    </div>
+                    
+                    <div class="text-sm text-stone-500 border-t pt-4">
+                        <p>Registrado por: <strong>${rechamada.createdBy}</strong></p>
+                        <p>Em: ${rechamada.createdAt ? formatDateBR(rechamada.createdAt instanceof Date ? rechamada.createdAt.toISOString().split('T')[0] : rechamada.createdAt.toDate().toISOString().split('T')[0]) : 'N/A'}</p>
+                    </div>
+                    
+                    <div class="flex justify-end pt-4 border-t">
+                        <button class="secondary-btn" onclick="closeFormModal()">Fechar</button>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('form-modal').classList.add('visible');
         }
 
         function renderKPIsPedagogicoSection() {
@@ -13664,6 +14022,7 @@
                 { key: 'grade', label: 'Grade', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" x2="16" y1="2" y2="6"></line><line x1="8" x2="8" y1="2" y2="6"></line><line x1="3" x2="21" y1="10" y2="10"></line></svg>', roles: ['admin', 'pedagogico', 'ap', 'teacher', 'am', 'financeiro'] },
                 { key: 'calendario', label: 'Calendário', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>', roles: ['admin', 'pedagogico', 'ap', 'teacher', 'am', 'financeiro'] },
                 { key: 'gestao-tns', label: 'Gestão TNs', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>', roles: ['admin', 'pedagogico', 'ap', 'am'] },
+                { key: 'rechamada', label: 'Rechamada', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>', roles: ['admin', 'pedagogico', 'ap', 'am', 'teacher'] },
                 
                 { key: 'kpis-pedagogico', label: 'KPIs Pedagógico', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/></svg>', roles: ['admin', 'pedagogico', 'ap'] },
                 
@@ -13925,6 +14284,7 @@
                 'dojo': ['admin', 'pedagogico', 'ap', 'teacher', 'am'], // Dojo - everyone except financeiro
                 'calendario': ['admin', 'pedagogico', 'ap', 'teacher', 'am', 'financeiro'], // Shared calendar
                 'gestao-tns': ['admin', 'pedagogico', 'ap', 'am'], // Gestão de Testes de Nível
+                'rechamada': ['admin', 'pedagogico', 'ap', 'am', 'teacher'], // Rechamada - teachers, admin, pedagogico, ap, am
                 'kpis-pedagogico': ['admin', 'pedagogico', 'ap'], // KPIs Pedagógico
                 'logs-atividades': ['admin'], // Activity logs - admin only
             };
@@ -13933,7 +14293,7 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            const pageRenderers = { 'inicio': renderInicioSection, 'alunos': renderAlunosSection, 'turmas': renderTurmasSection, 'vips': renderVipsSection, 'tarefas': renderTarefasSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection, 'colaboradores': renderColaboradoresSection, 'dojo': renderDojoSection, 'calendario': renderCalendarioSection, 'gestao-tns': renderGestaoTNsSection, 'kpis-pedagogico': renderKPIsPedagogicoSection, 'logs-atividades': renderLogsAtividadesSection  };
+            const pageRenderers = { 'inicio': renderInicioSection, 'alunos': renderAlunosSection, 'turmas': renderTurmasSection, 'vips': renderVipsSection, 'tarefas': renderTarefasSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection, 'colaboradores': renderColaboradoresSection, 'dojo': renderDojoSection, 'calendario': renderCalendarioSection, 'gestao-tns': renderGestaoTNsSection, 'rechamada': renderRechamadaSection, 'kpis-pedagogico': renderKPIsPedagogicoSection, 'logs-atividades': renderLogsAtividadesSection  };
 
             document.body.addEventListener('click', (event) => {
                 // Close modals when clicking overlay or close button
