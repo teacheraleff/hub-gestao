@@ -3265,65 +3265,36 @@
             const uniqueProfessors = [...new Set(schedules.map(s => s.teacher))].filter(p => p && p.trim() !== '');
             const totalProfessors = uniqueProfessors.length;
 
-            // Calcular alunos por professor baseado na GRADE (schedules)
+            // Calcular alunos por professor DIRETAMENTE das Turmas e VIPs ativos
             const teachersMap = new Map();
             
-            // Agrupar schedules por professor e aluno/turma única para evitar contagem duplicada
-            const processedEntries = new Set(); // Para rastrear combinações já processadas
-            
-            schedules.forEach(schedule => {
-                if (!schedule.teacher || schedule.type === 'break') return;
-                
-                // Criar chave única: professor + tipo + nome do aluno/turma
-                const uniqueKey = `${schedule.teacher}|${schedule.type}|${schedule.student}`;
-                
-                // Pular se já processamos esta combinação
-                if (processedEntries.has(uniqueKey)) return;
-                processedEntries.add(uniqueKey);
-                
-                let isValid = false;
-                let studentCount = 0;
-                
-                if (schedule.type === 'turma') {
-                    // Verificar se existe uma turma ativa com alunos
-                    const turma = turmas.find(t => 
-                        !t.finalizada && 
-                        t.name === schedule.student && 
-                        t.teacherName === schedule.teacher
-                    );
-                    if (turma && turma.studentIds && turma.studentIds.length > 0) {
-                        isValid = true;
-                        studentCount = turma.studentIds.length;
+            // Contar alunos das TURMAS ATIVAS
+            turmas.forEach(turma => {
+                // Só contar turmas não finalizadas com alunos matriculados
+                if (!turma.finalizada && turma.teacherName && turma.studentIds && turma.studentIds.length > 0) {
+                    if (!teachersMap.has(turma.teacherName)) {
+                        teachersMap.set(turma.teacherName, { vips: 0, turmas: 0, vipCount: 0, turmaCount: 0 });
                     }
-                } else if (schedule.type === 'vip') {
-                    // Verificar se existe um VIP ativo com esse aluno
-                    const vip = vips.find(v => 
-                        !v.finalizado && 
-                        v.teacherName === schedule.teacher
-                    );
-                    if (vip) {
-                        const student = students.find(s => s.id === vip.studentId);
-                        if (student && student.name === schedule.student) {
-                            isValid = true;
-                            studentCount = 1; // VIP sempre tem 1 aluno
-                        }
-                    }
+                    
+                    const teacherData = teachersMap.get(turma.teacherName);
+                    teacherData.turmas += turma.studentIds.length; // Total de alunos em turmas
+                    teacherData.turmaCount += 1; // Quantidade de turmas
                 }
-                
-                // Só contar se for válido
-                if (isValid) {
-                    if (!teachersMap.has(schedule.teacher)) {
-                        teachersMap.set(schedule.teacher, { vips: 0, turmas: 0, vipCount: 0, turmaCount: 0 });
-                    }
-                    
-                    const teacherData = teachersMap.get(schedule.teacher);
-                    
-                    if (schedule.type === 'vip') {
-                        teacherData.vips += studentCount; // Total de alunos VIP
+            });
+            
+            // Contar alunos dos VIPs ATIVOS
+            vips.forEach(vip => {
+                // Só contar VIPs não finalizados com aluno válido
+                if (!vip.finalizado && vip.teacherName && vip.studentId) {
+                    const student = students.find(s => s.id === vip.studentId);
+                    if (student) {
+                        if (!teachersMap.has(vip.teacherName)) {
+                            teachersMap.set(vip.teacherName, { vips: 0, turmas: 0, vipCount: 0, turmaCount: 0 });
+                        }
+                        
+                        const teacherData = teachersMap.get(vip.teacherName);
+                        teacherData.vips += 1; // Total de alunos VIP (sempre 1 por VIP)
                         teacherData.vipCount += 1; // Quantidade de VIPs
-                    } else if (schedule.type === 'turma') {
-                        teacherData.turmas += studentCount; // Total de alunos em turmas
-                        teacherData.turmaCount += 1; // Quantidade de turmas
                     }
                 }
             });
@@ -3825,13 +3796,17 @@
                         <div class="bg-white p-6 rounded-lg border border-stone-200">
                             <h3 class="text-lg font-semibold text-stone-800 mb-4">Horários Mais Ocupados</h3>
                             ${(() => {
-                                const hourCount = {};
+                                const hourStudents = {}; // Mapeia hora -> Set de IDs únicos de alunos
                                 
-                                // Percorrer todos os schedules da GRADE e contar ALUNOS por horário
+                                // Percorrer todos os schedules da GRADE e rastrear ALUNOS ÚNICOS por horário
                                 schedules.forEach(schedule => {
                                     if (!schedule.teacher || !schedule.startTime || schedule.type === 'break') return;
                                     
-                                    let studentCount = 0;
+                                    const hour = schedule.startTime.split(':')[0] + 'h';
+                                    
+                                    if (!hourStudents[hour]) {
+                                        hourStudents[hour] = new Set();
+                                    }
                                     
                                     if (schedule.type === 'turma') {
                                         // Verificar se existe uma turma ativa com alunos
@@ -3841,7 +3816,10 @@
                                             t.teacherName === schedule.teacher
                                         );
                                         if (turma && turma.studentIds && turma.studentIds.length > 0) {
-                                            studentCount = turma.studentIds.length;
+                                            // Adicionar cada aluno único ao Set (evita duplicatas)
+                                            turma.studentIds.forEach(studentId => {
+                                                hourStudents[hour].add(`turma_${studentId}`);
+                                            });
                                         }
                                     } else if (schedule.type === 'vip') {
                                         // Verificar se existe um VIP ativo com esse aluno
@@ -3852,17 +3830,21 @@
                                         if (vip) {
                                             const student = students.find(s => s.id === vip.studentId);
                                             if (student && student.name === schedule.student) {
-                                                studentCount = 1; // VIP sempre tem 1 aluno
+                                                // Adicionar VIP único ao Set
+                                                hourStudents[hour].add(`vip_${vip.studentId}`);
                                             }
                                         }
                                     }
-                                    
-                                    // Só contar se for válido (tem alunos)
-                                    if (studentCount > 0) {
-                                        // Extrair hora (ex: "19:00" -> "19h")
-                                        const hour = schedule.startTime.split(':')[0] + 'h';
-                                        hourCount[hour] = (hourCount[hour] || 0) + studentCount;
-                                    }
+                                });
+                                
+                                // Converter Sets em contagem de alunos únicos
+                                const hourCount = {};
+                                let totalStudents = 0;
+                                
+                                Object.keys(hourStudents).forEach(hour => {
+                                    const count = hourStudents[hour].size;
+                                    hourCount[hour] = count;
+                                    totalStudents += count;
                                 });
                                 
                                 // Ordenar por quantidade de alunos e pegar top 8
@@ -3870,24 +3852,28 @@
                                     .sort((a, b) => b[1] - a[1])
                                     .slice(0, 8);
                                 
-                                const maxCount = sortedHours.length > 0 ? sortedHours[0][1] : 1;
-                                
                                 return sortedHours.length > 0 ? `
-                                    <div class="space-y-2">
-                                        ${sortedHours.map(([hour, count]) => {
-                                            const percentage = (count / maxCount) * 100;
-                                            return `
-                                                <div class="p-3 bg-stone-50 rounded-lg border border-stone-200 transition-all hover:border-[#F1D24B]">
-                                                    <div class="flex items-center justify-between mb-2">
-                                                        <span class="text-sm font-medium text-stone-700">${hour}</span>
-                                                        <span class="px-2 py-1 bg-indigo-100 text-indigo-700 rounded text-xs font-bold">${count} ${count === 1 ? 'aluno' : 'alunos'}</span>
+                                    <div style="max-height: 400px; overflow-y: auto;">
+                                        <div class="grid grid-cols-2 gap-2">
+                                            ${sortedHours.map(([hour, count]) => {
+                                                const percentage = totalStudents > 0 ? (count / totalStudents) * 100 : 0;
+                                                return `
+                                                    <div class="p-3 bg-gradient-to-br from-stone-50 to-stone-100 rounded-lg border border-stone-200 transition-all hover:border-[#F1D24B]">
+                                                        <p class="text-xs font-medium text-stone-700 uppercase tracking-wide mb-1">${hour}</p>
+                                                        <div class="flex items-baseline gap-2 mb-1">
+                                                            <p class="text-2xl font-bold text-stone-800">${count}</p>
+                                                            <p class="text-xs font-medium text-stone-600">(${percentage.toFixed(1)}%)</p>
+                                                        </div>
+                                                        <div class="w-full bg-stone-200 rounded-full h-1.5 overflow-hidden">
+                                                            <div class="bg-indigo-500 h-1.5 rounded-full transition-all duration-300" style="width: ${Math.min(100, percentage)}%"></div>
+                                                        </div>
                                                     </div>
-                                                    <div class="w-full bg-stone-200 rounded-full h-2">
-                                                        <div class="bg-indigo-500 h-2 rounded-full transition-all duration-300" style="width: ${percentage}%"></div>
-                                                    </div>
-                                                </div>
-                                            `;
-                                        }).join('')}
+                                                `;
+                                            }).join('')}
+                                        </div>
+                                    </div>
+                                    <div class="mt-4 text-center">
+                                        <p class="text-sm font-semibold text-stone-700">Total: <span class="text-xl ${totalStudents === 0 ? 'text-stone-500' : 'text-stone-900'}">${totalStudents}</span> ${totalStudents === 1 ? 'aluno' : 'alunos'}</p>
                                     </div>
                                 ` : '<div class="text-center py-8 text-stone-500">Nenhum horário cadastrado na grade</div>';
                             })()}
