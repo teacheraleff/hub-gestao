@@ -1462,9 +1462,7 @@
             
             // Informações Pedagógicas
             if (!student.currentLevel) missing.push('Nível Atual');
-            if (!student.completedLevels || student.completedLevels.length === 0) {
-                missing.push('Níveis Cursados');
-            }
+            // Não exigimos níveis cursados pois alunos iniciantes não têm histórico
             
             // Informações Financeiras (apenas se o usuário tem permissão para ver)
             if (canViewFinancialInfo) {
@@ -1671,41 +1669,52 @@
             
             if (!turmasGrid) return;
 
+            const canManage = ['admin', 'pedagogico', 'ap'].includes(currentUserRole);
+
             turmasGrid.innerHTML = filteredTurmas.map(t => {
                 // Count only TURMA modality students in the class
                 const turmaStudents = students.filter(s => 
                     (t.studentIds || []).includes(s.id) && s.modalidade === 'TURMA'
                 );
                 
-                const canManage = ['admin', 'pedagogico', 'ap'].includes(currentUserRole);
+                // Check if turma is finalized
                 const isFinalizada = t.finalizada === true;
+                const cardBg = isFinalizada ? 'bg-stone-100' : 'bg-white';
+                const opacity = isFinalizada ? 'opacity-75' : '';
+                const textColor = isFinalizada ? 'text-stone-600' : 'text-stone-800';
                 
                 return `
-                <div class="base-card flex flex-col">
+                <div class="base-card flex flex-col ${cardBg} ${opacity} border ${isFinalizada ? 'border-stone-300' : ''}">
                     <div class="flex-1">
-                        <div class="flex justify-between items-start mb-2">
-                            <h3 class="text-xl font-bold text-stone-800">${t.name}</h3>
-                            <span class="text-sm font-semibold text-stone-600">${turmaStudents.length} aluno(s)</span>
+                        <div class="flex justify-between items-start mb-3">
+                            <h3 class="text-xl font-bold ${textColor}">${t.name}</h3>
+                            ${isFinalizada ? `<span class="px-2 py-1 text-xs font-semibold bg-stone-300 text-stone-700 rounded">FINALIZADA</span>` : ''}
                         </div>
-                        <p class="text-sm text-stone-500 mb-2">Professor: ${t.teacherName}</p>
-                        <p class="text-sm text-stone-600"><strong>Nível:</strong> ${t.level}</p>
-                        <p class="text-sm text-stone-600"><strong>Semestre:</strong> ${t.semestre || 'N/A'}</p>
-                        
-                        ${turmaStudents.length > 0 ? `
-                        <div class="mt-3 pt-3 border-t border-stone-100">
-                            <p class="text-xs font-medium text-stone-500 mb-2">Alunos:</p>
-                            <div class="space-y-1">
-                                ${turmaStudents.map(s => `
-                                    <div class="text-xs text-stone-700">${s.name}</div>
-                                `).join('')}
-                            </div>
+                        <div class="space-y-2 mb-3">
+                            <p class="text-sm ${isFinalizada ? 'text-stone-500' : 'text-stone-600'}">
+                                <strong>Professor:</strong> 
+                                <span class="status-tag" style="background-color: ${isFinalizada ? '#D1D5DB' : '#E0E7FF'}; color: ${isFinalizada ? '#4B5563' : '#3730A3'}; font-weight: 500;">${t.teacherName}</span>
+                            </p>
+                            <p class="text-sm ${isFinalizada ? 'text-stone-500' : 'text-stone-600'}">
+                                <strong>Alunos:</strong> 
+                                <span class="status-tag" style="background-color: ${isFinalizada ? '#D1D5DB' : '#D1FAE5'}; color: ${isFinalizada ? '#4B5563' : '#065F46'}; font-weight: 500;">${turmaStudents.length}</span>
+                            </p>
+                            <p class="text-sm ${isFinalizada ? 'text-stone-500' : 'text-stone-600'}"><strong>Nível:</strong> ${t.level}</p>
+                            <p class="text-sm ${isFinalizada ? 'text-stone-500' : 'text-stone-600'}"><strong>Semestre:</strong> ${t.semestre || 'N/A'}</p>
+                            ${(() => {
+                                const lastPefDate = getLastPefDate(t.id);
+                                if (lastPefDate) {
+                                    return `<div class="mt-2"><span class="status-tag" style="background-color: ${isFinalizada ? '#D1D5DB' : '#DBEAFE'}; color: ${isFinalizada ? '#4B5563' : '#1E40AF'}; font-weight: 500;">Última PEF: ${formatDateBR(lastPefDate)}</span></div>`;
+                                }
+                                return '';
+                            })()}
                         </div>
-                        ` : ''}
                     </div>
-                    <div class="mt-auto pt-4 border-t border-stone-100 flex gap-2">
-                        ${canManage && !isFinalizada ? `<button class="secondary-btn !text-sm flex-1" data-action="edit-turma" data-id="${t.id}">Editar</button>` : ''}
-                        <button class="primary-btn !text-sm flex-1 flex items-center justify-center" data-action="open-turma-pef" data-id="${t.id}">PEF</button>
-                        <button class="secondary-btn !text-sm flex-1 flex items-center justify-center" data-action="open-turma-notas" data-id="${t.id}">Notas</button>
+                    <div class="mt-auto pt-4 border-t ${isFinalizada ? 'border-stone-200' : 'border-stone-100'} flex flex-wrap gap-2">
+                        ${canManage ? `<button class="secondary-btn !text-sm flex-1 ${isFinalizada ? 'opacity-50 cursor-not-allowed' : ''}" data-action="${isFinalizada ? 'turma-finalizada' : 'edit-turma'}" data-id="${t.id}" ${isFinalizada ? 'disabled' : ''}>Editar</button>` : ''}
+                        <button class="primary-btn !text-sm flex-1 flex items-center justify-center ${isFinalizada ? 'opacity-50' : ''}" data-action="${isFinalizada ? 'turma-finalizada' : 'open-turma-pef'}" data-id="${t.id}">PEF</button>
+                        <button class="secondary-btn !text-sm flex-1 flex items-center justify-center ${isFinalizada ? 'opacity-50' : ''}" data-action="${isFinalizada ? 'turma-finalizada' : 'open-turma-notas'}" data-id="${t.id}">Notas</button>
+                        ${isFinalizada && canManage ? `<button class="secondary-btn !text-sm flex-1 min-w-[120px]" style="background-color: #10B981; color: white;" data-action="reativar-turma" data-id="${t.id}">Reativar</button>` : ''}
                     </div>
                 </div>`}).join('') || '<p class="col-span-full text-center py-10 text-stone-500">Nenhuma turma encontrada.</p>';
         }
