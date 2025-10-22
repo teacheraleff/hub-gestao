@@ -3557,14 +3557,16 @@
                                         <div class="w-3 h-3 rounded-full bg-blue-500"></div>
                                         <span class="text-xs text-stone-600">Masculino</span>
                                     </div>
-                                    <p class="text-2xl font-bold text-stone-800">${maleCount}</p>
+                                    <p class="text-2xl font-bold text-stone-800">${activeStudents.length > 0 ? (maleCount / activeStudents.length * 100).toFixed(1) : 0}%</p>
+                                    <p class="text-xs text-stone-500 mt-1">${maleCount} ${maleCount === 1 ? 'aluno' : 'alunos'}</p>
                                 </div>
                                 <div>
                                     <div class="flex items-center gap-2 mb-1">
                                         <div class="w-3 h-3 rounded-full bg-pink-500"></div>
                                         <span class="text-xs text-stone-600">Feminino</span>
                                     </div>
-                                    <p class="text-2xl font-bold text-stone-800">${femaleCount}</p>
+                                    <p class="text-2xl font-bold text-stone-800">${activeStudents.length > 0 ? (femaleCount / activeStudents.length * 100).toFixed(1) : 0}%</p>
+                                    <p class="text-xs text-stone-500 mt-1">${femaleCount} ${femaleCount === 1 ? 'aluna' : 'alunas'}</p>
                                 </div>
                             </div>
                             <div class="mt-3 flex gap-2">
@@ -3797,6 +3799,8 @@
                             <h3 class="text-lg font-semibold text-stone-800 mb-4">Horários Mais Ocupados</h3>
                             ${(() => {
                                 const hourStudents = {}; // Mapeia hora -> Set de IDs únicos de alunos
+                                const uniqueVips = new Set(); // Rastreia VIPs únicos globalmente
+                                const uniqueTurmas = new Set(); // Rastreia Turmas únicas globalmente
                                 
                                 // Percorrer todos os schedules da GRADE e rastrear ALUNOS ÚNICOS por horário
                                 schedules.forEach(schedule => {
@@ -3816,6 +3820,9 @@
                                             t.teacherName === schedule.teacher
                                         );
                                         if (turma && turma.studentIds && turma.studentIds.length > 0) {
+                                            // Rastrear turma única
+                                            uniqueTurmas.add(turma.id);
+                                            
                                             // Adicionar cada aluno único ao Set (evita duplicatas)
                                             turma.studentIds.forEach(studentId => {
                                                 hourStudents[hour].add(`turma_${studentId}`);
@@ -3830,6 +3837,9 @@
                                         if (vip) {
                                             const student = students.find(s => s.id === vip.studentId);
                                             if (student && student.name === schedule.student) {
+                                                // Rastrear VIP único
+                                                uniqueVips.add(vip.id);
+                                                
                                                 // Adicionar VIP único ao Set
                                                 hourStudents[hour].add(`vip_${vip.studentId}`);
                                             }
@@ -3846,6 +3856,9 @@
                                     hourCount[hour] = count;
                                     totalStudents += count;
                                 });
+                                
+                                const totalVips = uniqueVips.size;
+                                const totalTurmasScheduled = uniqueTurmas.size;
                                 
                                 // Ordenar por quantidade de alunos e pegar top 8
                                 const sortedHours = Object.entries(hourCount)
@@ -3873,7 +3886,14 @@
                                         </div>
                                     </div>
                                     <div class="mt-4 text-center">
-                                        <p class="text-sm font-semibold text-stone-700">Total: <span class="text-xl ${totalStudents === 0 ? 'text-stone-500' : 'text-stone-900'}">${totalStudents}</span> ${totalStudents === 1 ? 'aluno' : 'alunos'}</p>
+                                        <p class="text-sm font-semibold text-stone-700">
+                                            Total: <span class="text-xl ${totalStudents === 0 ? 'text-stone-500' : 'text-stone-900'}">${totalStudents}</span> ${totalStudents === 1 ? 'aluno' : 'alunos'}
+                                        </p>
+                                        <p class="text-xs text-stone-500 mt-1">
+                                            ${totalVips > 0 ? `<span class="text-amber-600 font-medium">${totalVips} VIP${totalVips > 1 ? 's' : ''}</span>` : ''}
+                                            ${totalVips > 0 && totalTurmasScheduled > 0 ? ' + ' : ''}
+                                            ${totalTurmasScheduled > 0 ? `<span class="text-purple-600 font-medium">${totalTurmasScheduled} Turma${totalTurmasScheduled > 1 ? 's' : ''}</span>` : ''}
+                                        </p>
                                     </div>
                                 ` : '<div class="text-center py-8 text-stone-500">Nenhum horário cadastrado na grade</div>';
                             })()}
