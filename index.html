@@ -523,6 +523,15 @@
                         'delete_event': { label: 'Pode excluir evento no calendário', default: false }
                     }
                 },
+                'links-uteis': {
+                    label: 'Links Úteis',
+                    actions: {
+                        'full_access': { label: 'Acesso total', default: false },
+                        'add_link': { label: 'Pode adicionar links', default: false },
+                        'edit_link': { label: 'Pode editar links', default: false },
+                        'delete_link': { label: 'Pode excluir links', default: false }
+                    }
+                },
                 'gestao-tns': {
                     label: 'Gestão TNs',
                     actions: {
@@ -597,6 +606,7 @@
                         'calendario.add_event': true,
                         'calendario.edit_event': true,
                         'calendario.delete_event': true,
+                        'links-uteis.full_access': true,
                         'gestao-tns.full_access': true,
                         'rechamada.full_access': true,
                         'kpis-pedagogico.full_access': true,
@@ -937,6 +947,12 @@
             
             // Links Úteis listener
             getCollectionListener('links-uteis', linksUteis, renderLinksUteisSection);
+            
+            // Testes de Nível listener
+            getCollectionListener('testes-nivel', testesNivel, () => {
+                const activePageId = contentArea.firstElementChild?.id;
+                if (activePageId === 'gestao-tns-section') renderTNsList();
+            });
             
             // Executar limpeza automática de logs antigos ao iniciar
             cleanOldActivityLogs();
@@ -4120,52 +4136,74 @@
             }
 
             // Calcular % de presença e faltas por VIP conectado às PEFs
-            const vipAttendanceData = vips.map(vip => {
-                const student = students.find(s => s.id === vip.studentId);
-                // Match attendance by id (VIP attendance records use vip.id as their id)
-                const unitAttendance = attendance.find(a => a.id === vip.id);
-                
-                let totalLessons = 0;
-                let presentCount = 0;
-                let absentCount = 0;
-                
-                // Buscar dados de presença das PEFs do VIP
-                if (unitAttendance && unitAttendance.lessons && student) {
-                    for (let i = 1; i <= 40; i++) {
-                        const lessonData = unitAttendance.lessons[i];
-                        // VIP lessons: verificar se tem data registrada (aula realizada)
-                        if (lessonData && lessonData.date && lessonData.students && lessonData.students[student.id]) {
-                            totalLessons++;
-                            const status = lessonData.students[student.id];
-                            if (status === 'P') {
-                                presentCount++;
-                            } else if (status === 'PP') {
-                                presentCount += 0.5; // Presença parcial conta como 0.5
-                            } else if (status === 'F') {
-                                absentCount++;
+            // Filtrar VIPs ativos e com student válido, removendo duplicatas
+            const vipAttendanceData = vips
+                .filter(vip => {
+                    // Verificar se tem student válido
+                    const student = students.find(s => s.id === vip.studentId);
+                    return student && student.status === 'Ativo';
+                })
+                .reduce((uniqueVips, vip) => {
+                    // Remover duplicatas baseado em studentId
+                    const existingIndex = uniqueVips.findIndex(v => v.studentId === vip.studentId);
+                    if (existingIndex === -1) {
+                        uniqueVips.push(vip);
+                    } else {
+                        // Se já existe, manter o VIP não finalizado ou o mais recente
+                        const existing = uniqueVips[existingIndex];
+                        if (vip.status !== 'finalizada' && existing.status === 'finalizada') {
+                            uniqueVips[existingIndex] = vip;
+                        }
+                    }
+                    return uniqueVips;
+                }, [])
+                .map(vip => {
+                    const student = students.find(s => s.id === vip.studentId);
+                    // Match attendance by id (VIP attendance records use vip.id as their id)
+                    const unitAttendance = attendance.find(a => a.id === vip.id);
+                    
+                    let totalLessons = 0;
+                    let presentCount = 0;
+                    let absentCount = 0;
+                    
+                    // Buscar dados de presença das PEFs do VIP
+                    if (unitAttendance && unitAttendance.lessons && student) {
+                        for (let i = 1; i <= 40; i++) {
+                            const lessonData = unitAttendance.lessons[i];
+                            // VIP lessons: verificar se tem data registrada (aula realizada)
+                            if (lessonData && lessonData.date && lessonData.students && lessonData.students[student.id]) {
+                                totalLessons++;
+                                const status = lessonData.students[student.id];
+                                if (status === 'P') {
+                                    presentCount++;
+                                } else if (status === 'PP') {
+                                    presentCount += 0.5; // Presença parcial conta como 0.5
+                                } else if (status === 'F') {
+                                    absentCount++;
+                                }
                             }
                         }
                     }
-                }
-                
-                const presencePercentage = totalLessons > 0 ? (presentCount / totalLessons) * 100 : 0;
-                const absencePercentage = totalLessons > 0 ? (absentCount / totalLessons) * 100 : 0;
-                
-                return {
-                    name: student?.name || 'Desconhecido',
-                    teacherName: vip.teacherName || 'Sem professor',
-                    level: vip.level || 'N/A',
-                    presencePercentage: presencePercentage,
-                    absencePercentage: absencePercentage,
-                    totalLessons: totalLessons,
-                    hasPef: totalLessons > 0
-                };
-            }).sort((a, b) => {
-                // Ordenar: primeiro os que têm PEF (por presença), depois os sem PEF
-                if (a.hasPef && !b.hasPef) return -1;
-                if (!a.hasPef && b.hasPef) return 1;
-                return b.presencePercentage - a.presencePercentage;
-            });
+                    
+                    const presencePercentage = totalLessons > 0 ? (presentCount / totalLessons) * 100 : 0;
+                    const absencePercentage = totalLessons > 0 ? (absentCount / totalLessons) * 100 : 0;
+                    
+                    return {
+                        name: student.name,
+                        teacherName: vip.teacherName || 'Sem professor',
+                        level: vip.level || 'N/A',
+                        presencePercentage: presencePercentage,
+                        absencePercentage: absencePercentage,
+                        totalLessons: totalLessons,
+                        hasPef: totalLessons > 0
+                    };
+                })
+                .sort((a, b) => {
+                    // Ordenar: primeiro os que têm PEF (por presença), depois os sem PEF
+                    if (a.hasPef && !b.hasPef) return -1;
+                    if (!a.hasPef && b.hasPef) return 1;
+                    return b.presencePercentage - a.presencePercentage;
+                });
 
             // Calcular % de presença e faltas por turma
             const turmaAttendanceData = turmas.map(turma => {
@@ -8484,6 +8522,36 @@
                                     </div>
                                 </div>
                                 
+                                <!-- Links Úteis -->
+                                <div class="border-b pb-3">
+                                    <h4 class="font-semibold text-sm mb-2 flex items-center gap-2">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+                                        Links Úteis
+                                    </h4>
+                                    <div class="space-y-1">
+                                        <label class="flex items-center text-sm">
+                                            <input type="radio" name="perm_links-uteis_access" value="full_access" class="h-4 w-4 mr-2">
+                                            Acesso total
+                                        </label>
+                                        <label class="flex items-center text-sm">
+                                            <input type="radio" name="perm_links-uteis_access" value="add_only" class="h-4 w-4 mr-2">
+                                            Adicionar links
+                                        </label>
+                                        <label class="flex items-center text-sm">
+                                            <input type="radio" name="perm_links-uteis_access" value="edit_only" class="h-4 w-4 mr-2">
+                                            Editar links
+                                        </label>
+                                        <label class="flex items-center text-sm">
+                                            <input type="radio" name="perm_links-uteis_access" value="delete_only" class="h-4 w-4 mr-2">
+                                            Excluir links
+                                        </label>
+                                        <label class="flex items-center text-sm">
+                                            <input type="radio" name="perm_links-uteis_access" value="none" class="h-4 w-4 mr-2" checked>
+                                            Sem acesso
+                                        </label>
+                                    </div>
+                                </div>
+                                
                                 <!-- Gestão TNs -->
                                 <div class="border-b pb-3">
                                     <h4 class="font-semibold text-sm mb-2 flex items-center gap-2">
@@ -11222,6 +11290,12 @@
         const logsPerPage = 20;
         let currentLogsCollaboratorFilter = 'todos'; // Filtro por colaborador
         
+        function changeLogsCollaboratorFilter(value) {
+            currentLogsCollaboratorFilter = value;
+            currentLogsPage = 1;
+            renderLogsAtividadesSection();
+        }
+        
         function renderLogsAtividadesSection() {
             document.getElementById('main-title').textContent = 'Logs de Atividades';
             document.getElementById('main-description').textContent = 'Acompanhe todas as ações realizadas no Hub nos últimos 5 dias.';
@@ -11398,7 +11472,7 @@
                         <select 
                             id="logs-collaborator-filter" 
                             class="form-input !w-auto min-w-[200px]"
-                            onchange="currentLogsCollaboratorFilter = this.value; currentLogsPage = 1; renderLogsAtividadesSection();"
+                            onchange="changeLogsCollaboratorFilter(this.value);"
                         >
                             <option value="todos" ${currentLogsCollaboratorFilter === 'todos' ? 'selected' : ''}>Todos os colaboradores</option>
                             ${uniqueCollaborators.map(collab => 
@@ -11407,7 +11481,7 @@
                         </select>
                         ${currentLogsCollaboratorFilter !== 'todos' ? `
                             <button 
-                                onclick="currentLogsCollaboratorFilter = 'todos'; currentLogsPage = 1; renderLogsAtividadesSection();"
+                                onclick="changeLogsCollaboratorFilter('todos');"
                                 class="text-sm text-blue-600 hover:text-blue-800 underline"
                             >
                                 Limpar filtro
@@ -11431,6 +11505,8 @@
                 </section>
             `;
         }
+        
+        window.changeLogsCollaboratorFilter = changeLogsCollaboratorFilter;
 
         // --- GESTÃO TNs SECTION ---
         let testesNivel = [];
@@ -11471,7 +11547,11 @@
                 </div>
             `;
             
-            loadTestesNivel();
+            // Load TNs only in localStorage mode (Firebase uses listener)
+            if (!db) {
+                const saved = localStorage.getItem('testes-nivel');
+                testesNivel = saved ? JSON.parse(saved) : [];
+            }
             renderTNsList();
             
             // Adicionar event listeners para busca e filtro
@@ -11479,23 +11559,6 @@
                 document.getElementById('tn-search')?.addEventListener('input', renderTNsList);
                 document.getElementById('tn-evaluator-filter')?.addEventListener('change', renderTNsList);
             }, 100);
-        }
-
-        async function loadTestesNivel() {
-            if (!db) {
-                const saved = localStorage.getItem('testes-nivel');
-                testesNivel = saved ? JSON.parse(saved) : [];
-                return;
-            }
-            
-            try {
-                const tnsRef = collection(db, `artifacts/${appId}/public/data/testes-nivel`);
-                const snapshot = await getDocs(tnsRef);
-                testesNivel = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            } catch (error) {
-                console.error('Error loading testes nivel:', error);
-                testesNivel = [];
-            }
         }
 
         function renderTNsList() {
@@ -11680,24 +11743,15 @@
                         testesNivel.push(tnData);
                     }
                     localStorage.setItem('testes-nivel', JSON.stringify(testesNivel));
+                    renderTNsList();
                 } else {
-                    // Firebase mode
+                    // Firebase mode - listener will update automatically
                     const id = tnId || generateId();
                     const docRef = doc(db, `artifacts/${appId}/public/data/testes-nivel`, id);
                     await setDoc(docRef, tnData);
-                    
-                    if (!tnId) {
-                        testesNivel.push({ id, ...tnData });
-                    } else {
-                        const index = testesNivel.findIndex(t => t.id === tnId);
-                        if (index !== -1) {
-                            testesNivel[index] = { id: tnId, ...tnData };
-                        }
-                    }
                 }
                 
                 document.getElementById('form-modal').classList.remove('visible');
-                renderTNsList();
                 showSuccessMessage("Sucesso!", "Teste de nível salvo com sucesso.");
                 playSuccessSound();
             } catch (error) {
@@ -11761,14 +11815,13 @@
                     // localStorage mode
                     testesNivel = testesNivel.filter(t => t.id !== tnId);
                     localStorage.setItem('testes-nivel', JSON.stringify(testesNivel));
+                    renderTNsList();
                 } else {
-                    // Firebase mode
+                    // Firebase mode - listener will update automatically
                     const docRef = doc(db, `artifacts/${appId}/public/data/testes-nivel`, tnId);
                     await deleteDoc(docRef);
-                    testesNivel = testesNivel.filter(t => t.id !== tnId);
                 }
                 
-                renderTNsList();
                 showSuccessMessage("Sucesso!", "Teste de nível excluído com sucesso.");
             } catch (error) {
                 console.error('Error deleting TN:', error);
@@ -11923,11 +11976,11 @@
             document.getElementById('main-description').textContent = 'Recursos e links compartilhados pela equipe.';
             const contentArea = document.getElementById('content-area');
 
-            const isAdmin = currentUserRole === 'admin';
+            const canAddLink = can('links-uteis.full_access') || can('links-uteis.add_link');
 
             contentArea.innerHTML = `
                 <div id="links-uteis-section" class="max-w-7xl mx-auto">
-                    ${isAdmin ? `
+                    ${canAddLink ? `
                     <div class="mb-6 flex justify-end">
                         <button class="primary-btn" onclick="openLinkUtilModal()">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -12047,7 +12100,8 @@
                 return;
             }
 
-            const isAdmin = currentUserRole === 'admin';
+            const canEditLink = can('links-uteis.full_access') || can('links-uteis.edit_link');
+            const canDeleteLink = can('links-uteis.full_access') || can('links-uteis.delete_link');
 
             container.innerHTML = linksUteis.map(link => `
                 <a href="${link.url}" target="_blank" rel="noopener noreferrer" 
@@ -12065,8 +12119,9 @@
                                 <p class="text-xs text-stone-400 truncate mt-1">${link.url}</p>
                             </div>
                         </div>
-                        ${isAdmin ? `
+                        ${canEditLink || canDeleteLink ? `
                         <div class="flex gap-1 ml-2" onclick="event.preventDefault(); event.stopPropagation();">
+                            ${canEditLink ? `
                             <button onclick="editLinkUtil('${link.id}')" 
                                     class="p-2 text-stone-400 hover:text-stone-600 transition-colors"
                                     title="Editar">
@@ -12074,6 +12129,8 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                                 </svg>
                             </button>
+                            ` : ''}
+                            ${canDeleteLink ? `
                             <button onclick="deleteLinkUtil('${link.id}')" 
                                     class="p-2 text-stone-400 hover:text-red-600 transition-colors"
                                     title="Excluir">
@@ -12081,6 +12138,7 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                                 </svg>
                             </button>
+                            ` : ''}
                         </div>
                         ` : ''}
                     </div>
