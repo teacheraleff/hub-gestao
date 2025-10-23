@@ -11957,6 +11957,10 @@
                                     <input type="text" id="link-title" class="form-input" required placeholder="Ex: Drive da SLAP">
                                 </div>
                                 <div>
+                                    <label class="font-medium text-sm">Descrição</label>
+                                    <input type="text" id="link-description" class="form-input" placeholder="Breve descrição do link (opcional)">
+                                </div>
+                                <div>
                                     <label class="font-medium text-sm">URL</label>
                                     <input type="url" id="link-url" class="form-input" required placeholder="https://...">
                                 </div>
@@ -12057,7 +12061,8 @@
                                 <h3 class="font-semibold text-stone-800 group-hover:text-yellow-600 transition-colors">
                                     ${link.title}
                                 </h3>
-                                <p class="text-sm text-stone-500 truncate mt-1">${link.url}</p>
+                                ${link.description ? `<p class="text-sm text-stone-600 mt-1">${link.description}</p>` : ''}
+                                <p class="text-xs text-stone-400 truncate mt-1">${link.url}</p>
                             </div>
                         </div>
                         ${isAdmin ? `
@@ -12097,6 +12102,7 @@
                 if (link) {
                     modalTitle.textContent = 'Editar Link';
                     document.getElementById('link-title').value = link.title;
+                    document.getElementById('link-description').value = link.description || '';
                     document.getElementById('link-url').value = link.url;
                     document.getElementById('link-icon').value = link.icon;
                     setTimeout(() => selectIcon(link.icon), 100);
@@ -12123,16 +12129,17 @@
             event.preventDefault();
             
             const title = document.getElementById('link-title').value;
+            const description = document.getElementById('link-description').value;
             const url = document.getElementById('link-url').value;
             const icon = document.getElementById('link-icon').value;
             
             if (!title || !url || !icon) {
-                showErrorMessage('Erro', 'Preencha todos os campos.');
+                showErrorMessage('Erro', 'Preencha todos os campos obrigatórios.');
                 return;
             }
             
             try {
-                const linkData = { title, url, icon };
+                const linkData = { title, description: description || '', url, icon };
                 
                 if (editingLinkId) {
                     await updateDoc(doc(db, `artifacts/${appId}/public/data/links-uteis`, editingLinkId), linkData);
