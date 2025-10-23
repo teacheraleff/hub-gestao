@@ -471,234 +471,103 @@
         // --- PERMISSION REGISTRY SYSTEM ---
         const PermissionRegistry = {
             sections: {
+                'inicio': {
+                    label: 'Início',
+                    actions: {
+                        'edit_employee_month': { label: 'Pode editar funcionário do mês', default: false }
+                    }
+                },
+                'dojo': {
+                    label: 'Dojo',
+                    actions: {
+                        'add_competitor': { label: 'Pode adicionar competidor', default: false },
+                        'edit_points': { label: 'Pode editar pontos', default: false },
+                        'delete_competitor': { label: 'Pode excluir competidor', default: false },
+                        'add_active_mission': { label: 'Pode adicionar missão ativa', default: false }
+                    }
+                },
                 'alunos': {
                     label: 'Alunos',
                     actions: {
-                        'view': { label: 'Visualizar alunos', default: true },
-                        'edit': { label: 'Editar informações', default: false },
-                        'create': { label: 'Criar novos alunos', default: false },
-                        'delete': { label: 'Excluir alunos', default: false },
-                        'view_financials': { label: 'Ver informações financeiras', default: false },
-                        'export': { label: 'Exportar documentos', default: false }
-                    }
-                },
-                'vips': {
-                    label: 'VIPs',
-                    actions: {
-                        'view': { label: 'Visualizar VIPs', default: true },
-                        'edit': { label: 'Editar VIPs', default: false },
-                        'create': { label: 'Criar VIPs', default: false },
-                        'delete': { label: 'Excluir VIPs', default: false },
-                        'manage_pef': { label: 'Gerenciar PEF (frequência)', default: false },
-                        'finalize': { label: 'Finalizar VIPs', default: false },
-                        'view_financials': { label: 'Ver informações financeiras', default: false }
+                        'full_access': { label: 'Acesso total', default: false },
+                        'access_no_financials': { label: 'Acesso total, exceto informações financeiras', default: false }
                     }
                 },
                 'turmas': {
                     label: 'Turmas',
                     actions: {
-                        'view': { label: 'Visualizar Turmas', default: true },
-                        'edit': { label: 'Editar Turmas', default: false },
-                        'create': { label: 'Criar Turmas', default: false },
-                        'delete': { label: 'Excluir Turmas', default: false },
-                        'manage_pef': { label: 'Gerenciar PEF (frequência)', default: false },
-                        'finalize': { label: 'Finalizar Turmas', default: false },
-                        'view_financials': { label: 'Ver informações financeiras', default: false }
+                        'full_access': { label: 'Acesso total', default: false },
+                        'teacher_view_only': { label: 'Se for teacher pode ver apenas as suas turmas e não pode ter o botão de EDITAR', default: false }
+                    }
+                },
+                'vips': {
+                    label: 'VIPs',
+                    actions: {
+                        'full_access': { label: 'Acesso total', default: false },
+                        'teacher_view_only': { label: 'Se for teacher pode ver apenas seus VIPs e não pode ter o botão de CONFIGURAR', default: false }
                     }
                 },
                 'grade': {
-                    label: 'Grade de Horários',
+                    label: 'Grade',
                     actions: {
-                        'view': { label: 'Visualizar grade', default: true },
-                        'edit': { label: 'Editar horários', default: false },
-                        'create': { label: 'Adicionar horários', default: false },
-                        'delete': { label: 'Excluir horários', default: false }
-                    }
-                },
-                'folha-pagamento': {
-                    label: 'Folha de Pagamento',
-                    actions: {
-                        'view': { label: 'Visualizar despesas', default: false },
-                        'edit': { label: 'Editar despesas', default: false },
-                        'create': { label: 'Criar despesas', default: false },
-                        'delete': { label: 'Excluir despesas', default: false },
-                        'mark_paid': { label: 'Marcar como pago', default: false }
-                    }
-                },
-                'colaboradores': {
-                    label: 'Colaboradores',
-                    actions: {
-                        'view': { label: 'Visualizar colaboradores', default: false },
-                        'edit': { label: 'Editar colaboradores', default: false },
-                        'create': { label: 'Criar colaboradores', default: false },
-                        'delete': { label: 'Excluir colaboradores', default: false },
-                        'manage_permissions': { label: 'Gerenciar permissões', default: false }
-                    }
-                },
-                'dojo': {
-                    label: 'Sistema Dojo',
-                    actions: {
-                        'view': { label: 'Visualizar ranking', default: true },
-                        'edit': { label: 'Editar pontos', default: false },
-                        'manage_missions': { label: 'Gerenciar missões', default: false }
+                        'full_access': { label: 'Acesso total', default: false },
+                        'teacher_own_only': { label: 'Se for teacher ver apenas a sua grade individual', default: false }
                     }
                 },
                 'calendario': {
                     label: 'Calendário',
                     actions: {
-                        'view': { label: 'Visualizar eventos', default: true },
-                        'edit': { label: 'Editar eventos', default: false },
-                        'create': { label: 'Criar eventos', default: false },
-                        'delete': { label: 'Excluir eventos', default: false }
+                        'edit_fixed_periods': { label: 'Pode editar períodos fixos', default: false },
+                        'add_event': { label: 'Pode adicionar evento no calendário', default: false },
+                        'edit_event': { label: 'Pode editar eventos no calendário', default: false },
+                        'delete_event': { label: 'Pode excluir evento no calendário', default: false }
                     }
                 },
                 'gestao-tns': {
-                    label: 'Gestão de TNs',
+                    label: 'Gestão TNs',
                     actions: {
-                        'view': { label: 'Visualizar TNs', default: false },
-                        'evaluate': { label: 'Avaliar TNs', default: false }
+                        'full_access': { label: 'Acesso total', default: false }
                     }
                 },
                 'rechamada': {
                     label: 'Rechamada',
                     actions: {
-                        'view': { label: 'Visualizar rechamadas', default: false },
-                        'manage': { label: 'Gerenciar tentativas', default: false }
+                        'full_access': { label: 'Acesso total', default: false },
+                        'teacher_own_students': { label: 'Se for teacher ver apenas seus alunos', default: false }
                     }
                 },
                 'kpis-pedagogico': {
-                    label: 'KPIs Pedagógicos',
+                    label: 'KPIs pedagógicos',
                     actions: {
-                        'view': { label: 'Visualizar KPIs', default: false }
+                        'full_access': { label: 'Acesso total', default: false }
                     }
                 },
                 'logs-atividades': {
                     label: 'Logs de Atividades',
                     actions: {
-                        'view': { label: 'Visualizar logs', default: false }
-                    }
-                }
-            },
-            
-            // Presets de permissões por role
-            presets: {
-                'admin': {
-                    label: 'Administrador',
-                    description: 'Acesso total ao sistema',
-                    permissions: {} // Será preenchido com todas as permissões = true
-                },
-                'teacher': {
-                    label: 'Professor',
-                    description: 'Acesso limitado a suas próprias informações',
-                    permissions: {
-                        'alunos.view': true,
-                        'alunos.view_financials': false,
-                        'vips.view': true,
-                        'vips.manage_pef': true,
-                        'turmas.view': true,
-                        'turmas.manage_pef': true,
-                        'grade.view': true,
-                        'dojo.view': true,
-                        'calendario.view': true,
-                        'rechamada.view': true,
-                        'rechamada.manage': true
+                        'full_access': { label: 'Acesso total', default: false }
                     }
                 },
-                'pedagogico': {
-                    label: 'Pedagógico',
-                    description: 'Acesso a gestão pedagógica sem finanças',
-                    permissions: {
-                        'alunos.view': true,
-                        'alunos.edit': true,
-                        'alunos.create': true,
-                        'alunos.view_financials': false,
-                        'vips.view': true,
-                        'vips.edit': true,
-                        'vips.create': true,
-                        'vips.manage_pef': true,
-                        'vips.finalize': true,
-                        'turmas.view': true,
-                        'turmas.edit': true,
-                        'turmas.create': true,
-                        'turmas.manage_pef': true,
-                        'turmas.finalize': true,
-                        'grade.view': true,
-                        'grade.edit': true,
-                        'grade.create': true,
-                        'dojo.view': true,
-                        'dojo.edit': true,
-                        'calendario.view': true,
-                        'calendario.edit': true,
-                        'calendario.create': true,
-                        'gestao-tns.view': true,
-                        'gestao-tns.evaluate': true,
-                        'rechamada.view': true,
-                        'rechamada.manage': true,
-                        'kpis-pedagogico.view': true
+                'colaboradores': {
+                    label: 'Colaboradores',
+                    actions: {
+                        'full_access': { label: 'Acesso total', default: false }
                     }
                 },
                 'financeiro': {
                     label: 'Financeiro',
-                    description: 'Acesso total a informações financeiras',
-                    permissions: {
-                        'alunos.view': true,
-                        'alunos.edit': true,
-                        'alunos.create': true,
-                        'alunos.view_financials': true,
-                        'alunos.export': true,
-                        'vips.view': true,
-                        'vips.edit': true,
-                        'vips.create': true,
-                        'vips.view_financials': true,
-                        'turmas.view': true,
-                        'turmas.edit': true,
-                        'turmas.create': true,
-                        'turmas.view_financials': true,
-                        'folha-pagamento.view': true,
-                        'folha-pagamento.edit': true,
-                        'folha-pagamento.create': true,
-                        'folha-pagamento.delete': true,
-                        'folha-pagamento.mark_paid': true,
-                        'calendario.view': true,
-                        'kpis-pedagogico.view': true
+                    actions: {
+                        'full_access': { label: 'Acesso total', default: false }
                     }
-                },
-                'ap': {
-                    label: 'Assistente Pedagógico',
-                    description: 'Acesso pedagógico sem finanças',
-                    permissions: {
-                        'alunos.view': true,
-                        'alunos.edit': true,
-                        'alunos.create': true,
-                        'alunos.view_financials': false,
-                        'vips.view': true,
-                        'vips.edit': true,
-                        'vips.create': true,
-                        'vips.manage_pef': true,
-                        'turmas.view': true,
-                        'turmas.edit': true,
-                        'turmas.create': true,
-                        'turmas.manage_pef': true,
-                        'grade.view': true,
-                        'grade.edit': true,
-                        'dojo.view': true,
-                        'calendario.view': true,
-                        'calendario.edit': true,
-                        'rechamada.view': true,
-                        'kpis-pedagogico.view': true
-                    }
-                },
-                'am': {
-                    label: 'Assistente de Marketing',
-                    description: 'Acesso a informações de marketing',
-                    permissions: {
-                        'alunos.view': true,
-                        'alunos.view_financials': false,
-                        'calendario.view': true,
-                        'calendario.edit': true,
-                        'calendario.create': true,
-                        'dojo.view': true
-                    }
+                }
+            },
+            
+            // Presets de permissões por role (simplificado - admin apenas)
+            presets: {
+                'admin': {
+                    label: 'Administrador',
+                    description: 'Acesso total ao sistema',
+                    permissions: {} // Será preenchido automaticamente com todas as permissões
                 }
             }
         };
@@ -740,25 +609,18 @@
             return currentCollaborator.permissions[permissionKey] === true;
         }
         
-        // Funções helper específicas para facilitar uso
+        // Funções helper específicas para o novo sistema
+        function canEditEmployeeOfMonth() {
+            return can('inicio.edit_employee_month');
+        }
+        
         function canViewStudentFinancials() {
-            return can('alunos.view_financials');
+            // Retorna true se tem acesso total OU se tem acesso exceto financeiro = false
+            return can('alunos.full_access');
         }
         
-        function canViewVIPFinancials() {
-            return can('vips.view_financials');
-        }
-        
-        function canViewTurmaFinancials() {
-            return can('turmas.view_financials');
-        }
-        
-        function canManagePEF() {
-            return can('vips.manage_pef') || can('turmas.manage_pef');
-        }
-        
-        function canViewSection(sectionKey) {
-            return can(`${sectionKey}.view`);
+        function hasStudentAccessNoFinancials() {
+            return can('alunos.access_no_financials');
         }
         
 
@@ -8528,9 +8390,206 @@
                     </div>
 
                     <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-                        <label class="font-medium text-sm text-yellow-900 mb-3 block">Permissões de Acesso (Páginas)</label>
-                        <p class="text-xs text-yellow-700 mb-3">Marque as seções que este colaborador pode acessar:</p>
-                        <div class="grid grid-cols-2 gap-2 bg-white p-3 rounded border border-yellow-200">${pageCheckboxes}</div>
+                        <label class="font-medium text-sm text-yellow-900 mb-3 block">Permissões Granulares por Seção</label>
+                        <p class="text-xs text-yellow-700 mb-3">Configure as permissões específicas para cada seção do sistema:</p>
+                        <div class="space-y-4 bg-white p-4 rounded border border-yellow-200 max-h-96 overflow-y-auto">
+                            
+                            <!-- Início -->
+                            <div class="border-b pb-3">
+                                <h4 class="font-semibold text-sm mb-2">📊 Início</h4>
+                                <label class="flex items-center text-sm">
+                                    <input type="checkbox" name="perm_inicio_edit_employee_month" class="h-4 w-4 rounded mr-2">
+                                    Pode editar funcionário do mês
+                                </label>
+                            </div>
+                            
+                            <!-- Dojo -->
+                            <div class="border-b pb-3">
+                                <h4 class="font-semibold text-sm mb-2">🥋 Dojo</h4>
+                                <div class="space-y-1">
+                                    <label class="flex items-center text-sm">
+                                        <input type="checkbox" name="perm_dojo_add_competitor" class="h-4 w-4 rounded mr-2">
+                                        Pode adicionar competidor
+                                    </label>
+                                    <label class="flex items-center text-sm">
+                                        <input type="checkbox" name="perm_dojo_edit_points" class="h-4 w-4 rounded mr-2">
+                                        Pode editar pontos
+                                    </label>
+                                    <label class="flex items-center text-sm">
+                                        <input type="checkbox" name="perm_dojo_delete_competitor" class="h-4 w-4 rounded mr-2">
+                                        Pode excluir competidor
+                                    </label>
+                                    <label class="flex items-center text-sm">
+                                        <input type="checkbox" name="perm_dojo_add_active_mission" class="h-4 w-4 rounded mr-2">
+                                        Pode adicionar missão ativa
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <!-- Alunos -->
+                            <div class="border-b pb-3">
+                                <h4 class="font-semibold text-sm mb-2">👥 Alunos</h4>
+                                <div class="space-y-1">
+                                    <label class="flex items-center text-sm">
+                                        <input type="radio" name="perm_alunos_access" value="full_access" class="h-4 w-4 mr-2">
+                                        Acesso total
+                                    </label>
+                                    <label class="flex items-center text-sm">
+                                        <input type="radio" name="perm_alunos_access" value="access_no_financials" class="h-4 w-4 mr-2">
+                                        Acesso total, exceto informações financeiras
+                                    </label>
+                                    <label class="flex items-center text-sm">
+                                        <input type="radio" name="perm_alunos_access" value="none" class="h-4 w-4 mr-2" checked>
+                                        Sem acesso
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <!-- Turmas -->
+                            <div class="border-b pb-3">
+                                <h4 class="font-semibold text-sm mb-2">🎓 Turmas</h4>
+                                <div class="space-y-1">
+                                    <label class="flex items-center text-sm">
+                                        <input type="radio" name="perm_turmas_access" value="full_access" class="h-4 w-4 mr-2">
+                                        Acesso total
+                                    </label>
+                                    <label class="flex items-center text-sm">
+                                        <input type="radio" name="perm_turmas_access" value="teacher_view_only" class="h-4 w-4 mr-2">
+                                        Se for teacher pode ver apenas as suas turmas e não pode ter o botão de EDITAR
+                                    </label>
+                                    <label class="flex items-center text-sm">
+                                        <input type="radio" name="perm_turmas_access" value="none" class="h-4 w-4 mr-2" checked>
+                                        Sem acesso
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <!-- VIPs -->
+                            <div class="border-b pb-3">
+                                <h4 class="font-semibold text-sm mb-2">⭐ VIPs</h4>
+                                <div class="space-y-1">
+                                    <label class="flex items-center text-sm">
+                                        <input type="radio" name="perm_vips_access" value="full_access" class="h-4 w-4 mr-2">
+                                        Acesso total
+                                    </label>
+                                    <label class="flex items-center text-sm">
+                                        <input type="radio" name="perm_vips_access" value="teacher_view_only" class="h-4 w-4 mr-2">
+                                        Se for teacher pode ver apenas seus VIPs e não pode ter o botão de CONFIGURAR
+                                    </label>
+                                    <label class="flex items-center text-sm">
+                                        <input type="radio" name="perm_vips_access" value="none" class="h-4 w-4 mr-2" checked>
+                                        Sem acesso
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <!-- Grade -->
+                            <div class="border-b pb-3">
+                                <h4 class="font-semibold text-sm mb-2">📅 Grade</h4>
+                                <div class="space-y-1">
+                                    <label class="flex items-center text-sm">
+                                        <input type="radio" name="perm_grade_access" value="full_access" class="h-4 w-4 mr-2">
+                                        Acesso total
+                                    </label>
+                                    <label class="flex items-center text-sm">
+                                        <input type="radio" name="perm_grade_access" value="teacher_own_only" class="h-4 w-4 mr-2">
+                                        Se for teacher ver apenas a sua grade individual
+                                    </label>
+                                    <label class="flex items-center text-sm">
+                                        <input type="radio" name="perm_grade_access" value="none" class="h-4 w-4 mr-2" checked>
+                                        Sem acesso
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <!-- Calendário -->
+                            <div class="border-b pb-3">
+                                <h4 class="font-semibold text-sm mb-2">📆 Calendário</h4>
+                                <div class="space-y-1">
+                                    <label class="flex items-center text-sm">
+                                        <input type="checkbox" name="perm_calendario_edit_fixed_periods" class="h-4 w-4 rounded mr-2">
+                                        Pode editar períodos fixos
+                                    </label>
+                                    <label class="flex items-center text-sm">
+                                        <input type="checkbox" name="perm_calendario_add_event" class="h-4 w-4 rounded mr-2">
+                                        Pode adicionar evento no calendário
+                                    </label>
+                                    <label class="flex items-center text-sm">
+                                        <input type="checkbox" name="perm_calendario_edit_event" class="h-4 w-4 rounded mr-2">
+                                        Pode editar eventos no calendário
+                                    </label>
+                                    <label class="flex items-center text-sm">
+                                        <input type="checkbox" name="perm_calendario_delete_event" class="h-4 w-4 rounded mr-2">
+                                        Pode excluir evento no calendário
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <!-- Gestão TNs -->
+                            <div class="border-b pb-3">
+                                <h4 class="font-semibold text-sm mb-2">🎯 Gestão TNs</h4>
+                                <label class="flex items-center text-sm">
+                                    <input type="checkbox" name="perm_gestao-tns_full_access" class="h-4 w-4 rounded mr-2">
+                                    Acesso total
+                                </label>
+                            </div>
+                            
+                            <!-- Rechamada -->
+                            <div class="border-b pb-3">
+                                <h4 class="font-semibold text-sm mb-2">📞 Rechamada</h4>
+                                <div class="space-y-1">
+                                    <label class="flex items-center text-sm">
+                                        <input type="radio" name="perm_rechamada_access" value="full_access" class="h-4 w-4 mr-2">
+                                        Acesso total
+                                    </label>
+                                    <label class="flex items-center text-sm">
+                                        <input type="radio" name="perm_rechamada_access" value="teacher_own_students" class="h-4 w-4 mr-2">
+                                        Se for teacher ver apenas seus alunos
+                                    </label>
+                                    <label class="flex items-center text-sm">
+                                        <input type="radio" name="perm_rechamada_access" value="none" class="h-4 w-4 mr-2" checked>
+                                        Sem acesso
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <!-- KPIs pedagógicos -->
+                            <div class="border-b pb-3">
+                                <h4 class="font-semibold text-sm mb-2">📊 KPIs pedagógicos</h4>
+                                <label class="flex items-center text-sm">
+                                    <input type="checkbox" name="perm_kpis-pedagogico_full_access" class="h-4 w-4 rounded mr-2">
+                                    Acesso total
+                                </label>
+                            </div>
+                            
+                            <!-- Logs de Atividades -->
+                            <div class="border-b pb-3">
+                                <h4 class="font-semibold text-sm mb-2">📝 Logs de Atividades</h4>
+                                <label class="flex items-center text-sm">
+                                    <input type="checkbox" name="perm_logs-atividades_full_access" class="h-4 w-4 rounded mr-2">
+                                    Acesso total
+                                </label>
+                            </div>
+                            
+                            <!-- Colaboradores -->
+                            <div class="border-b pb-3">
+                                <h4 class="font-semibold text-sm mb-2">👤 Colaboradores</h4>
+                                <label class="flex items-center text-sm">
+                                    <input type="checkbox" name="perm_colaboradores_full_access" class="h-4 w-4 rounded mr-2">
+                                    Acesso total
+                                </label>
+                            </div>
+                            
+                            <!-- Financeiro -->
+                            <div>
+                                <h4 class="font-semibold text-sm mb-2">💰 Financeiro</h4>
+                                <label class="flex items-center text-sm">
+                                    <input type="checkbox" name="perm_financeiro_full_access" class="h-4 w-4 rounded mr-2">
+                                    Acesso total
+                                </label>
+                            </div>
+                            
+                        </div>
                         <p class="text-xs text-yellow-700 mt-2">⚠️ Admin tem acesso total automaticamente</p>
                     </div>
 
@@ -8583,6 +8642,38 @@
 
             // Populate email field with Firebase users
             populateEmailField(collaborator);
+            
+            // NOVO: Carregar permissões granulares se estiver editando
+            if (collaborator && collaborator.permissions) {
+                setTimeout(() => {
+                    Object.keys(collaborator.permissions).forEach(permKey => {
+                        if (collaborator.permissions[permKey] === true) {
+                            // Converter permKey de volta para nome do input
+                            const inputName = 'perm_' + permKey.replace(/\./g, '_');
+                            
+                            // Tentar marcar checkbox
+                            const checkbox = document.querySelector(`input[type="checkbox"][name="${inputName}"]`);
+                            if (checkbox) {
+                                checkbox.checked = true;
+                            }
+                            
+                            // Tentar marcar radio button
+                            // Ex: alunos.full_access -> perm_alunos_access com value=full_access
+                            const parts = permKey.split('.');
+                            if (parts.length === 2) {
+                                const section = parts[0];
+                                const action = parts[1];
+                                const radioName = `perm_${section}_access`;
+                                const radio = document.querySelector(`input[type="radio"][name="${radioName}"][value="${action}"]`);
+                                if (radio) {
+                                    radio.checked = true;
+                                }
+                            }
+                        }
+                    });
+                    console.log('✅ Permissões carregadas para colaborador:', collaborator.name);
+                }, 100);
+            }
         }
 
         async function populateEmailField(collaborator) {
@@ -8637,7 +8728,6 @@
         async function saveCollaborator(event) {
             event.preventDefault();
             const collaboratorId = document.getElementById('collaborator-id').value;
-            const selectedPages = Array.from(document.querySelectorAll('input[name="allowedPages"]:checked')).map(cb => cb.value);
             const role = document.getElementById('collaborator-role').value;
             const isEvaluator = document.getElementById('is-evaluator-checkbox')?.checked || false;
             
@@ -8647,13 +8737,33 @@
             const selectedOption = emailSelect?.options[emailSelect.selectedIndex];
             const firebaseUid = selectedOption?.getAttribute('data-uid') || null;
 
+            // NOVO: Coletar permissões granulares
+            const permissions = {};
+            
+            // Checkboxes simples
+            const checkboxes = document.querySelectorAll('input[type="checkbox"][name^="perm_"]:checked');
+            checkboxes.forEach(cb => {
+                const permKey = cb.name.replace('perm_', '').replace(/_/g, '.');
+                permissions[permKey] = true;
+            });
+            
+            // Radio buttons (pegar valores selecionados que não sejam "none")
+            const radioGroups = ['perm_alunos_access', 'perm_turmas_access', 'perm_vips_access', 'perm_grade_access', 'perm_rechamada_access'];
+            radioGroups.forEach(groupName => {
+                const selected = document.querySelector(`input[name="${groupName}"]:checked`);
+                if (selected && selected.value !== 'none') {
+                    const section = groupName.replace('perm_', '').replace('_access', '');
+                    permissions[`${section}.${selected.value}`] = true;
+                }
+            });
+
             const data = {
                 name: document.getElementById('collaborator-name').value,
                 cpf: document.getElementById('collaborator-cpf').value,
                 birthdate: document.getElementById('collaborator-birthdate').value,
                 email: selectedEmail,
                 role: role,
-                allowedPages: selectedPages,
+                permissions: permissions, // NOVO: salvar permissões granulares
                 isEvaluator: isEvaluator
             };
 
