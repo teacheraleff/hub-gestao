@@ -468,6 +468,299 @@
         let currentTurmasFilter = 'todos';
         let currentVipsFilter = 'todos';
         
+        // --- PERMISSION REGISTRY SYSTEM ---
+        const PermissionRegistry = {
+            sections: {
+                'alunos': {
+                    label: 'Alunos',
+                    actions: {
+                        'view': { label: 'Visualizar alunos', default: true },
+                        'edit': { label: 'Editar informações', default: false },
+                        'create': { label: 'Criar novos alunos', default: false },
+                        'delete': { label: 'Excluir alunos', default: false },
+                        'view_financials': { label: 'Ver informações financeiras', default: false },
+                        'export': { label: 'Exportar documentos', default: false }
+                    }
+                },
+                'vips': {
+                    label: 'VIPs',
+                    actions: {
+                        'view': { label: 'Visualizar VIPs', default: true },
+                        'edit': { label: 'Editar VIPs', default: false },
+                        'create': { label: 'Criar VIPs', default: false },
+                        'delete': { label: 'Excluir VIPs', default: false },
+                        'manage_pef': { label: 'Gerenciar PEF (frequência)', default: false },
+                        'finalize': { label: 'Finalizar VIPs', default: false },
+                        'view_financials': { label: 'Ver informações financeiras', default: false }
+                    }
+                },
+                'turmas': {
+                    label: 'Turmas',
+                    actions: {
+                        'view': { label: 'Visualizar Turmas', default: true },
+                        'edit': { label: 'Editar Turmas', default: false },
+                        'create': { label: 'Criar Turmas', default: false },
+                        'delete': { label: 'Excluir Turmas', default: false },
+                        'manage_pef': { label: 'Gerenciar PEF (frequência)', default: false },
+                        'finalize': { label: 'Finalizar Turmas', default: false },
+                        'view_financials': { label: 'Ver informações financeiras', default: false }
+                    }
+                },
+                'grade': {
+                    label: 'Grade de Horários',
+                    actions: {
+                        'view': { label: 'Visualizar grade', default: true },
+                        'edit': { label: 'Editar horários', default: false },
+                        'create': { label: 'Adicionar horários', default: false },
+                        'delete': { label: 'Excluir horários', default: false }
+                    }
+                },
+                'folha-pagamento': {
+                    label: 'Folha de Pagamento',
+                    actions: {
+                        'view': { label: 'Visualizar despesas', default: false },
+                        'edit': { label: 'Editar despesas', default: false },
+                        'create': { label: 'Criar despesas', default: false },
+                        'delete': { label: 'Excluir despesas', default: false },
+                        'mark_paid': { label: 'Marcar como pago', default: false }
+                    }
+                },
+                'colaboradores': {
+                    label: 'Colaboradores',
+                    actions: {
+                        'view': { label: 'Visualizar colaboradores', default: false },
+                        'edit': { label: 'Editar colaboradores', default: false },
+                        'create': { label: 'Criar colaboradores', default: false },
+                        'delete': { label: 'Excluir colaboradores', default: false },
+                        'manage_permissions': { label: 'Gerenciar permissões', default: false }
+                    }
+                },
+                'dojo': {
+                    label: 'Sistema Dojo',
+                    actions: {
+                        'view': { label: 'Visualizar ranking', default: true },
+                        'edit': { label: 'Editar pontos', default: false },
+                        'manage_missions': { label: 'Gerenciar missões', default: false }
+                    }
+                },
+                'calendario': {
+                    label: 'Calendário',
+                    actions: {
+                        'view': { label: 'Visualizar eventos', default: true },
+                        'edit': { label: 'Editar eventos', default: false },
+                        'create': { label: 'Criar eventos', default: false },
+                        'delete': { label: 'Excluir eventos', default: false }
+                    }
+                },
+                'gestao-tns': {
+                    label: 'Gestão de TNs',
+                    actions: {
+                        'view': { label: 'Visualizar TNs', default: false },
+                        'evaluate': { label: 'Avaliar TNs', default: false }
+                    }
+                },
+                'rechamada': {
+                    label: 'Rechamada',
+                    actions: {
+                        'view': { label: 'Visualizar rechamadas', default: false },
+                        'manage': { label: 'Gerenciar tentativas', default: false }
+                    }
+                },
+                'kpis-pedagogico': {
+                    label: 'KPIs Pedagógicos',
+                    actions: {
+                        'view': { label: 'Visualizar KPIs', default: false }
+                    }
+                },
+                'logs-atividades': {
+                    label: 'Logs de Atividades',
+                    actions: {
+                        'view': { label: 'Visualizar logs', default: false }
+                    }
+                }
+            },
+            
+            // Presets de permissões por role
+            presets: {
+                'admin': {
+                    label: 'Administrador',
+                    description: 'Acesso total ao sistema',
+                    permissions: {} // Será preenchido com todas as permissões = true
+                },
+                'teacher': {
+                    label: 'Professor',
+                    description: 'Acesso limitado a suas próprias informações',
+                    permissions: {
+                        'alunos.view': true,
+                        'alunos.view_financials': false,
+                        'vips.view': true,
+                        'vips.manage_pef': true,
+                        'turmas.view': true,
+                        'turmas.manage_pef': true,
+                        'grade.view': true,
+                        'dojo.view': true,
+                        'calendario.view': true,
+                        'rechamada.view': true,
+                        'rechamada.manage': true
+                    }
+                },
+                'pedagogico': {
+                    label: 'Pedagógico',
+                    description: 'Acesso a gestão pedagógica sem finanças',
+                    permissions: {
+                        'alunos.view': true,
+                        'alunos.edit': true,
+                        'alunos.create': true,
+                        'alunos.view_financials': false,
+                        'vips.view': true,
+                        'vips.edit': true,
+                        'vips.create': true,
+                        'vips.manage_pef': true,
+                        'vips.finalize': true,
+                        'turmas.view': true,
+                        'turmas.edit': true,
+                        'turmas.create': true,
+                        'turmas.manage_pef': true,
+                        'turmas.finalize': true,
+                        'grade.view': true,
+                        'grade.edit': true,
+                        'grade.create': true,
+                        'dojo.view': true,
+                        'dojo.edit': true,
+                        'calendario.view': true,
+                        'calendario.edit': true,
+                        'calendario.create': true,
+                        'gestao-tns.view': true,
+                        'gestao-tns.evaluate': true,
+                        'rechamada.view': true,
+                        'rechamada.manage': true,
+                        'kpis-pedagogico.view': true
+                    }
+                },
+                'financeiro': {
+                    label: 'Financeiro',
+                    description: 'Acesso total a informações financeiras',
+                    permissions: {
+                        'alunos.view': true,
+                        'alunos.edit': true,
+                        'alunos.create': true,
+                        'alunos.view_financials': true,
+                        'alunos.export': true,
+                        'vips.view': true,
+                        'vips.edit': true,
+                        'vips.create': true,
+                        'vips.view_financials': true,
+                        'turmas.view': true,
+                        'turmas.edit': true,
+                        'turmas.create': true,
+                        'turmas.view_financials': true,
+                        'folha-pagamento.view': true,
+                        'folha-pagamento.edit': true,
+                        'folha-pagamento.create': true,
+                        'folha-pagamento.delete': true,
+                        'folha-pagamento.mark_paid': true,
+                        'calendario.view': true,
+                        'kpis-pedagogico.view': true
+                    }
+                },
+                'ap': {
+                    label: 'Assistente Pedagógico',
+                    description: 'Acesso pedagógico sem finanças',
+                    permissions: {
+                        'alunos.view': true,
+                        'alunos.edit': true,
+                        'alunos.create': true,
+                        'alunos.view_financials': false,
+                        'vips.view': true,
+                        'vips.edit': true,
+                        'vips.create': true,
+                        'vips.manage_pef': true,
+                        'turmas.view': true,
+                        'turmas.edit': true,
+                        'turmas.create': true,
+                        'turmas.manage_pef': true,
+                        'grade.view': true,
+                        'grade.edit': true,
+                        'dojo.view': true,
+                        'calendario.view': true,
+                        'calendario.edit': true,
+                        'rechamada.view': true,
+                        'kpis-pedagogico.view': true
+                    }
+                },
+                'am': {
+                    label: 'Assistente de Marketing',
+                    description: 'Acesso a informações de marketing',
+                    permissions: {
+                        'alunos.view': true,
+                        'alunos.view_financials': false,
+                        'calendario.view': true,
+                        'calendario.edit': true,
+                        'calendario.create': true,
+                        'dojo.view': true
+                    }
+                }
+            }
+        };
+        
+        // Inicializar permissões do admin (todas = true)
+        function initializeAdminPermissions() {
+            const adminPerms = {};
+            Object.keys(PermissionRegistry.sections).forEach(sectionKey => {
+                Object.keys(PermissionRegistry.sections[sectionKey].actions).forEach(actionKey => {
+                    adminPerms[`${sectionKey}.${actionKey}`] = true;
+                });
+            });
+            PermissionRegistry.presets.admin.permissions = adminPerms;
+            console.log('✅ Admin permissions initialized:', Object.keys(adminPerms).length, 'permissions');
+        }
+        
+        // Executar inicialização
+        initializeAdminPermissions();
+        
+        // Variável para armazenar colaborador atual
+        let currentCollaborator = null;
+        
+        // Função helper centralizada para verificar permissões
+        function can(permissionKey) {
+            // Admin SEMPRE tem acesso total - verificação dupla de segurança
+            if (currentUserRole === 'admin') return true;
+            
+            // Se não tem colaborador logado, usar fallback baseado em role
+            if (!currentCollaborator || !currentCollaborator.permissions) {
+                // Usar preset da role se existir
+                const preset = PermissionRegistry.presets[currentUserRole];
+                if (preset && preset.permissions) {
+                    return preset.permissions[permissionKey] === true;
+                }
+                return false;
+            }
+            
+            // Usar permissões customizadas do colaborador
+            return currentCollaborator.permissions[permissionKey] === true;
+        }
+        
+        // Funções helper específicas para facilitar uso
+        function canViewStudentFinancials() {
+            return can('alunos.view_financials');
+        }
+        
+        function canViewVIPFinancials() {
+            return can('vips.view_financials');
+        }
+        
+        function canViewTurmaFinancials() {
+            return can('turmas.view_financials');
+        }
+        
+        function canManagePEF() {
+            return can('vips.manage_pef') || can('turmas.manage_pef');
+        }
+        
+        function canViewSection(sectionKey) {
+            return can(`${sectionKey}.view`);
+        }
+        
 
         // --- DEVELOPMENT MODE FUNCTIONS ---
         function startAppInDevelopmentMode() {
@@ -586,6 +879,8 @@
 
                 if (['admin', 'am', 'ap', 'pedagogico', 'financeiro', 'teacher'].includes(currentUserRole)) {
                     setupFirestoreListeners();
+                    // Carregar colaborador e suas permissões
+                    await loadCurrentCollaborator();
                     updateWelcomeMessages(currentUserName);
                     showHubView();
                 } else {
@@ -593,6 +888,31 @@
                 }
             } else {
                 showPendingView();
+            }
+        }
+        
+        // Função para carregar o colaborador atual e suas permissões
+        async function loadCurrentCollaborator() {
+            if (!db || !userId) return;
+            
+            try {
+                // Buscar colaborador pelo Firebase UID
+                const collaboratorsRef = collection(db, `artifacts/${appId}/public/data/collaborators`);
+                const q = query(collaboratorsRef, where('firebaseUid', '==', userId));
+                const snapshot = await getDocs(q);
+                
+                if (!snapshot.empty) {
+                    const collabDoc = snapshot.docs[0];
+                    currentCollaborator = { id: collabDoc.id, ...collabDoc.data() };
+                    console.log('✅ Colaborador carregado:', currentCollaborator.name);
+                    console.log('🔑 Permissões:', currentCollaborator.permissions ? 'Customizadas' : 'Usando preset da role');
+                } else {
+                    console.log('⚠️ Colaborador não encontrado no banco. Usando preset da role:', currentUserRole);
+                    currentCollaborator = null;
+                }
+            } catch (error) {
+                console.error('Erro ao carregar colaborador:', error);
+                currentCollaborator = null;
             }
         }
 
@@ -909,7 +1229,7 @@
             const totalRevenue = students.reduce((sum, s) => sum + (parseFloat(s.amountReceived || s.amountPaid) || 0), 0);
 
             // Check if user can see financial information
-            const canViewFinancialInfo = !['teacher', 'pedagogico', 'ap', 'am'].includes(currentUserRole);
+            const canViewFinancialInfo = canViewStudentFinancials();
 
             contentArea.innerHTML = `
                 <div id="inicio-section" class="space-y-6">
@@ -1286,7 +1606,7 @@
             document.getElementById('main-title').textContent = 'Gestão de Alunos';
             document.getElementById('main-description').textContent = 'Cadastre e gerencie todos os alunos da escola.';
             const canAdd = ['admin', 'financeiro', 'pedagogico', 'ap'].includes(currentUserRole);
-            const canViewFinancialInfo = !['teacher', 'pedagogico', 'ap', 'am'].includes(currentUserRole);
+            const canViewFinancialInfo = canViewStudentFinancials();
 
             const totalCount = students.length;
             const activeCount = students.filter(s => s.status === 'Ativo').length;
@@ -1512,7 +1832,7 @@
         // Função para verificar se a ficha do aluno está completa
         function checkStudentProfileCompleteness(student) {
             const missing = [];
-            const canViewFinancialInfo = !['teacher', 'pedagogico', 'ap', 'am'].includes(currentUserRole);
+            const canViewFinancialInfo = canViewStudentFinancials();
             const isActiveStudent = student.status === 'Ativo' || student.status === 'Pendente';
             
             // Informações Pessoais
@@ -1895,7 +2215,7 @@
             const listBody = document.getElementById('alunos-list');
             if (!listBody) return;
             const canEdit = ['admin', 'financeiro', 'pedagogico', 'ap'].includes(currentUserRole);
-            const canViewFinancialInfo = !['teacher', 'pedagogico', 'ap', 'am'].includes(currentUserRole);
+            const canViewFinancialInfo = canViewStudentFinancials();
 
             const filteredStudents = getFilteredStudents();
             const totalItems = filteredStudents.length;
@@ -2550,10 +2870,18 @@
             const actualTeacherName = findTeacherByName(teacherName) || teacherName;
             const teacherSchedules = schedules.filter(s => s.teacher === actualTeacherName && s.type !== 'break');
 
+            console.log(`📊 CALCULANDO HORAS - Professor: ${teacherName}`);
+            console.log(`  Nome real usado: ${actualTeacherName}`);
+            console.log(`  Total de horários na grade: ${teacherSchedules.length}`);
+
             let totalHours = 0;
+            let validCount = 0;
+            let invalidCount = 0;
+            
             teacherSchedules.forEach(schedule => {
                 // Verificar se o horário tem um aluno/turma válido
                 let isValid = false;
+                let reason = '';
                 
                 if (schedule.type === 'turma') {
                     // Verificar se existe uma turma ativa com alunos e esse nome
@@ -2565,6 +2893,7 @@
                         t.studentIds.length > 0
                     );
                     isValid = !!turma;
+                    reason = turma ? 'Turma ativa encontrada' : 'Turma finalizada ou sem alunos';
                 } else if (schedule.type === 'vip') {
                     // Verificar se existe um VIP ativo com esse aluno específico e professor
                     const student = students.find(s => s.name === schedule.student);
@@ -2575,6 +2904,9 @@
                             v.teacherName === actualTeacherName
                         );
                         isValid = !!vip;
+                        reason = vip ? 'VIP ativo encontrado' : 'VIP finalizado ou professor diferente';
+                    } else {
+                        reason = 'Aluno não encontrado';
                     }
                 }
                 
@@ -2582,8 +2914,17 @@
                 if (isValid) {
                     const duration = calculateClassDuration(schedule.startTime, schedule.endTime);
                     totalHours += duration;
+                    validCount++;
+                    console.log(`  ✅ ${schedule.day} ${schedule.startTime}-${schedule.endTime} | ${schedule.type.toUpperCase()}: ${schedule.student} | ${duration}h | ${reason}`);
+                } else {
+                    invalidCount++;
+                    console.log(`  ❌ ${schedule.day} ${schedule.startTime}-${schedule.endTime} | ${schedule.type.toUpperCase()}: ${schedule.student} | 0h | ${reason}`);
                 }
             });
+
+            console.log(`  ✅ Horários válidos: ${validCount}`);
+            console.log(`  ❌ Horários inválidos: ${invalidCount}`);
+            console.log(`  📊 TOTAL: ${totalHours} horas semanais\n`);
 
             return totalHours;
         }
@@ -5279,7 +5620,7 @@
                 aluno.completedLevels = aluno.completedLevels.map(level => levelMapping[level] || level);
             }
             
-            const canViewFinancialInfo = !['teacher', 'pedagogico', 'ap', 'am'].includes(currentUserRole);
+            const canViewFinancialInfo = canViewStudentFinancials();
             document.getElementById('form-modal-title').textContent = aluno ? "Editar Aluno" : "Adicionar Novo Aluno";
 
             const statusOptions = ['Ativo', 'Inativo', 'Cancelado', 'Pendente'].map(s => `<option value="${s}" ${aluno?.status === s ? 'selected' : ''}>${s}</option>`).join('');
@@ -5602,7 +5943,7 @@
             event.preventDefault();
             const alunoId = document.getElementById('aluno-id').value;
             const isMinor = document.getElementById('aluno-isMinor').checked;
-            const canViewFinancialInfo = !['teacher', 'pedagogico', 'ap', 'am'].includes(currentUserRole);
+            const canViewFinancialInfo = canViewStudentFinancials();
 
             const completedLevels = getCompletedLevelsFromForm();
 
@@ -5705,7 +6046,7 @@
             document.getElementById('form-modal-title').textContent = `Perfil de ${aluno.name}`;
             const canEdit = ['admin', 'financeiro', 'pedagogico', 'ap'].includes(currentUserRole);
             const canEditPedagogical = currentUserRole === 'teacher';
-            const canViewFinancialInfo = !['teacher', 'pedagogico', 'ap', 'am'].includes(currentUserRole);
+            const canViewFinancialInfo = canViewStudentFinancials();
 
             let responsibleHtml = '';
             if (aluno.isMinor && aluno.responsibleName) {
@@ -12262,7 +12603,7 @@
         }
 
         function exportAlunosDoc() {
-            const canViewFinancialInfo = !['teacher', 'pedagogico', 'ap', 'am'].includes(currentUserRole);
+            const canViewFinancialInfo = canViewStudentFinancials();
             let studentsList = '';
             // Export all students (not just active ones) to have complete data
             const allStudents = students.sort((a, b) => a.name.localeCompare(b.name));
