@@ -1464,8 +1464,13 @@
 
         function getTeacherDaySchedule(day, teacherName) {
             const actualTeacherName = findTeacherByName(teacherName) || teacherName;
-            return schedules.filter(s => s.day === day && s.teacher === actualTeacherName && s.type !== 'break')
-                           .sort((a, b) => a.startTime.localeCompare(b.startTime));
+            const normalizedTeacherName = normalizeTeacherName(actualTeacherName);
+            // ROBUST FILTERING: Use normalized comparison
+            return schedules.filter(s => {
+                if (s.day !== day || s.type === 'break') return false;
+                const normalizedScheduleTeacher = normalizeTeacherName(s.teacher || '');
+                return normalizedScheduleTeacher === normalizedTeacherName;
+            }).sort((a, b) => a.startTime.localeCompare(b.startTime));
         }
 
         function getNewStudentsThisMonth() {
@@ -2663,33 +2668,64 @@
             }
         }
 
-        // Helper function to find teacher by first name matching
+        // ROBUST NAME NORMALIZATION - Central function to ensure consistent teacher name matching
+        function normalizeTeacherName(name) {
+            if (!name) return '';
+            // Remove extra spaces, convert to lowercase, remove special invisible chars
+            return name.trim().replace(/\s+/g, ' ').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        }
+
+        // Helper function to find teacher by name with ROBUST matching
         function findTeacherByName(searchName) {
             if (!searchName) return null;
 
-            // First try exact match
-            const exactMatch = schedules.find(s => s.teacher === searchName);
-            if (exactMatch) return searchName;
-
-            // Then try first name matching
-            const searchFirstName = searchName.trim().split(' ')[0].toLowerCase();
-            const teachers = [...new Set(schedules.map(s => s.teacher))];
-
-            const firstNameMatch = teachers.find(teacher => {
-                const teacherFirstName = teacher.trim().split(' ')[0].toLowerCase();
-                return teacherFirstName === searchFirstName;
+            const normalizedSearch = normalizeTeacherName(searchName);
+            
+            // Build a map of normalized names to original names
+            const teacherMap = new Map();
+            schedules.forEach(s => {
+                if (s.teacher) {
+                    const normalized = normalizeTeacherName(s.teacher);
+                    if (!teacherMap.has(normalized)) {
+                        teacherMap.set(normalized, s.teacher);
+                    }
+                }
             });
 
-            return firstNameMatch || null;
+            // First try exact normalized match (most reliable)
+            if (teacherMap.has(normalizedSearch)) {
+                return teacherMap.get(normalizedSearch);
+            }
+
+            // Then try first name matching as fallback
+            const searchFirstName = normalizedSearch.split(' ')[0];
+            for (const [normalizedName, originalName] of teacherMap.entries()) {
+                const teacherFirstName = normalizedName.split(' ')[0];
+                if (teacherFirstName === searchFirstName) {
+                    return originalName;
+                }
+            }
+
+            return null;
         }
 
         function calculateWeeklyHours(teacherName) {
+            // Use robust name matching to find the actual teacher name
             const actualTeacherName = findTeacherByName(teacherName) || teacherName;
-            const teacherSchedules = schedules.filter(s => s.teacher === actualTeacherName && s.type !== 'break');
+            
+            // ROBUST FILTERING: Use normalized comparison to catch ALL schedules for this teacher
+            const normalizedTeacherName = normalizeTeacherName(actualTeacherName);
+            const teacherSchedules = schedules.filter(s => {
+                if (s.type === 'break') return false;
+                const normalizedScheduleTeacher = normalizeTeacherName(s.teacher || '');
+                return normalizedScheduleTeacher === normalizedTeacherName;
+            });
 
             console.log(`📊 CALCULANDO HORAS - Professor: ${teacherName}`);
-            console.log(`  Nome real usado: ${actualTeacherName}`);
-            console.log(`  Total de horários na grade: ${teacherSchedules.length}`);
+            console.log(`  Nome original: ${teacherName}`);
+            console.log(`  Nome encontrado na grade: ${actualTeacherName}`);
+            console.log(`  Nome normalizado para busca: ${normalizedTeacherName}`);
+            console.log(`  Total de horários encontrados: ${teacherSchedules.length}`);
 
             let totalHours = 0;
             
@@ -2720,14 +2756,17 @@
         }
 
         function checkTimeConflict(teacher, day, startTime, endTime, excludeId = null) {
-            return schedules.some(s => 
-                s.teacher === teacher && 
-                s.day === day && 
-                s.id !== excludeId &&
-                ((startTime >= s.startTime && startTime < s.endTime) || 
-                 (endTime > s.startTime && endTime <= s.endTime) ||
-                 (startTime <= s.startTime && endTime >= s.endTime))
-            );
+            const normalizedTeacher = normalizeTeacherName(teacher);
+            // ROBUST FILTERING: Use normalized comparison for conflict checking
+            return schedules.some(s => {
+                const normalizedScheduleTeacher = normalizeTeacherName(s.teacher || '');
+                return normalizedScheduleTeacher === normalizedTeacher && 
+                    s.day === day && 
+                    s.id !== excludeId &&
+                    ((startTime >= s.startTime && startTime < s.endTime) || 
+                     (endTime > s.startTime && endTime <= s.endTime) ||
+                     (startTime <= s.startTime && endTime >= s.endTime));
+            });
         }
 
         function renderScheduleGrid(teacherFilter) {
@@ -2740,7 +2779,12 @@
 
             if (teacherFilter !== 'all') {
                 const actualTeacherName = findTeacherByName(teacherFilter) || teacherFilter;
-                filteredSchedules = filteredSchedules.filter(s => s.teacher === actualTeacherName);
+                const normalizedTeacherName = normalizeTeacherName(actualTeacherName);
+                // ROBUST FILTERING: Use normalized comparison
+                filteredSchedules = filteredSchedules.filter(s => {
+                    const normalizedScheduleTeacher = normalizeTeacherName(s.teacher || '');
+                    return normalizedScheduleTeacher === normalizedTeacherName;
+                });
             }
 
             // Debug log for teachers to help identify mapping issues
@@ -8356,6 +8400,10 @@
                                     </h4>
                                     <div class="space-y-1">
                                         <label class="flex items-center text-sm">
+                                            <input type="checkbox" name="perm_dojo_view_only" class="h-4 w-4 rounded mr-2">
+                                            Apenas visualizar (teacher view)
+                                        </label>
+                                        <label class="flex items-center text-sm">
                                             <input type="checkbox" name="perm_dojo_add_competitor" class="h-4 w-4 rounded mr-2">
                                             Pode adicionar competidor
                                         </label>
@@ -8499,24 +8547,24 @@
                                     </h4>
                                     <div class="space-y-1">
                                         <label class="flex items-center text-sm">
-                                            <input type="radio" name="perm_links-uteis_access" value="full_access" class="h-4 w-4 mr-2">
+                                            <input type="checkbox" name="perm_links-uteis_view_only" class="h-4 w-4 rounded mr-2">
+                                            Apenas visualizar (teacher view)
+                                        </label>
+                                        <label class="flex items-center text-sm">
+                                            <input type="checkbox" name="perm_links-uteis_full_access" class="h-4 w-4 rounded mr-2">
                                             Acesso total
                                         </label>
                                         <label class="flex items-center text-sm">
-                                            <input type="radio" name="perm_links-uteis_access" value="add_only" class="h-4 w-4 mr-2">
-                                            Adicionar links
+                                            <input type="checkbox" name="perm_links-uteis_add_link" class="h-4 w-4 rounded mr-2">
+                                            Pode adicionar links
                                         </label>
                                         <label class="flex items-center text-sm">
-                                            <input type="radio" name="perm_links-uteis_access" value="edit_only" class="h-4 w-4 mr-2">
-                                            Editar links
+                                            <input type="checkbox" name="perm_links-uteis_edit_link" class="h-4 w-4 rounded mr-2">
+                                            Pode editar links
                                         </label>
                                         <label class="flex items-center text-sm">
-                                            <input type="radio" name="perm_links-uteis_access" value="delete_only" class="h-4 w-4 mr-2">
-                                            Excluir links
-                                        </label>
-                                        <label class="flex items-center text-sm">
-                                            <input type="radio" name="perm_links-uteis_access" value="none" class="h-4 w-4 mr-2" checked>
-                                            Sem acesso
+                                            <input type="checkbox" name="perm_links-uteis_delete_link" class="h-4 w-4 rounded mr-2">
+                                            Pode excluir links
                                         </label>
                                     </div>
                                 </div>
