@@ -480,6 +480,7 @@
                 'dojo': {
                     label: 'Dojo',
                     actions: {
+                        'view_only': { label: 'Apenas visualizar (teacher view)', default: false },
                         'add_competitor': { label: 'Pode adicionar competidor', default: false },
                         'edit_points': { label: 'Pode editar pontos', default: false },
                         'delete_competitor': { label: 'Pode excluir competidor', default: false },
@@ -526,6 +527,7 @@
                 'links-uteis': {
                     label: 'Links Úteis',
                     actions: {
+                        'view_only': { label: 'Apenas visualizar (teacher view)', default: false },
                         'full_access': { label: 'Acesso total', default: false },
                         'add_link': { label: 'Pode adicionar links', default: false },
                         'edit_link': { label: 'Pode editar links', default: false },
@@ -582,10 +584,12 @@
                     label: 'Professor',
                     description: 'Acesso às suas próprias turmas, VIPs e grade',
                     permissions: {
+                        'dojo.view_only': true,
                         'alunos.access_no_financials': true,
                         'turmas.teacher_view_only': true,
                         'vips.teacher_view_only': true,
                         'grade.teacher_own_only': true,
+                        'links-uteis.view_only': true,
                         'rechamada.teacher_own_students': true
                     }
                 },
@@ -2688,55 +2692,13 @@
             console.log(`  Total de horários na grade: ${teacherSchedules.length}`);
 
             let totalHours = 0;
-            let validCount = 0;
-            let invalidCount = 0;
             
             teacherSchedules.forEach(schedule => {
-                // Verificar se o horário tem um aluno/turma válido
-                let isValid = false;
-                let reason = '';
-                
-                if (schedule.type === 'turma') {
-                    // Verificar se existe uma turma ativa com alunos e esse nome
-                    const turma = turmas.find(t => 
-                        !t.finalizada && 
-                        t.name === schedule.student && 
-                        t.teacherName === actualTeacherName &&
-                        t.studentIds && 
-                        t.studentIds.length > 0
-                    );
-                    isValid = !!turma;
-                    reason = turma ? 'Turma ativa encontrada' : 'Turma finalizada ou sem alunos';
-                } else if (schedule.type === 'vip') {
-                    // Verificar se existe um VIP ativo com esse aluno específico e professor
-                    const student = students.find(s => s.name === schedule.student);
-                    if (student) {
-                        const vip = vips.find(v => 
-                            !v.finalizado && 
-                            v.studentId === student.id &&
-                            v.teacherName === actualTeacherName
-                        );
-                        isValid = !!vip;
-                        reason = vip ? 'VIP ativo encontrado' : 'VIP finalizado ou professor diferente';
-                    } else {
-                        reason = 'Aluno não encontrado';
-                    }
-                }
-                
-                // Contar horas de horários válidos
-                if (isValid) {
-                    const duration = calculateClassDuration(schedule.startTime, schedule.endTime);
-                    totalHours += duration;
-                    validCount++;
-                    console.log(`  ✅ ${schedule.day} ${schedule.startTime}-${schedule.endTime} | ${schedule.type.toUpperCase()}: ${schedule.student} | ${duration}h | ${reason}`);
-                } else {
-                    invalidCount++;
-                    console.log(`  ❌ ${schedule.day} ${schedule.startTime}-${schedule.endTime} | ${schedule.type.toUpperCase()}: ${schedule.student} | 0h | ${reason}`);
-                }
+                const duration = calculateClassDuration(schedule.startTime, schedule.endTime);
+                totalHours += duration;
+                console.log(`  ✅ ${schedule.day} ${schedule.startTime}-${schedule.endTime} | ${schedule.type.toUpperCase()}: ${schedule.student} | ${duration}h`);
             });
 
-            console.log(`  ✅ Horários válidos: ${validCount}`);
-            console.log(`  ❌ Horários inválidos: ${invalidCount}`);
             console.log(`  📊 TOTAL: ${totalHours} horas semanais\n`);
 
             return totalHours;
@@ -3281,9 +3243,13 @@
         function renderDojoSection() {
             document.getElementById('main-title').textContent = 'SLAP Dojo';
             document.getElementById('main-description').textContent = 'Gerencie a pontuação dos competidores e as missões ativas.';
-            const canEdit = ['admin', 'ap'].includes(currentUserRole);
-            const addCompetitorBtn = canEdit ? `<button class="primary-btn w-auto" data-action="add-dojo-competitor">+ Adicionar Competidor</button>` : '';
-            const addMissionBtn = canEdit ? `<button class="primary-btn w-auto" data-action="add-dojo-mission">+ Adicionar Missão</button>` : '';
+            const canAddCompetitor = can('dojo.add_competitor');
+            const canEditPoints = can('dojo.edit_points');
+            const canDeleteCompetitor = can('dojo.delete_competitor');
+            const canAddMission = can('dojo.add_active_mission');
+            const canEdit = canAddCompetitor || canEditPoints || canDeleteCompetitor || canAddMission;
+            const addCompetitorBtn = canAddCompetitor ? `<button class="primary-btn w-auto" data-action="add-dojo-competitor">+ Adicionar Competidor</button>` : '';
+            const addMissionBtn = canAddMission ? `<button class="primary-btn w-auto" data-action="add-dojo-mission">+ Adicionar Missão</button>` : '';
 
             const sortedRanking = [...dojoRanking].sort((a, b) => b.points - a.points);
 
@@ -3409,6 +3375,19 @@
 
         // --- RECHAMADA SECTION ---
         let currentRechamadaTeacherFilter = 'todos';
+        
+        // Helper: Verificar se rechamada está expirada (>6 meses da data de contato)
+        function isRechamadaExpired(contactDate) {
+            if (!contactDate) return false;
+            
+            const contact = new Date(contactDate);
+            const today = new Date();
+            const sixMonthsAgo = new Date(today);
+            sixMonthsAgo.setMonth(today.getMonth() - 6);
+            
+            // Se a data de contato foi antes de 6 meses atrás, está expirada
+            return contact < sixMonthsAgo;
+        }
         
         function renderRechamadaSection() {
             document.getElementById('main-title').textContent = 'Rechamada';
@@ -3557,13 +3536,21 @@
             
             contentArea.innerHTML = `
                 <section id="rechamada-section">
-                    <div class="mb-6">
+                    <div class="mb-6 space-y-3">
                         <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                             <p class="text-sm text-yellow-800">
                                 <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                                 </svg>
                                 <strong>Atenção:</strong> Esta lista mostra alunos que faltaram em aulas <strong>consecutivas</strong> (ex: aula 3 e aula 4) desde 01/10/2025.
+                            </p>
+                        </div>
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <p class="text-sm text-blue-800">
+                                <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                <strong>Informação:</strong> Rechamadas registradas desaparecem automaticamente após <strong>6 meses</strong> da data do contato.
                             </p>
                         </div>
                     </div>
@@ -3636,9 +3623,12 @@
                                     ${filteredStudents.map(item => {
                                         // Criar ID único para esta rechamada específica (aluno + aulas)
                                         const rechamadaKey = `${item.studentId}_${item.firstLesson}_${item.secondLesson}`;
+                                        
+                                        // Buscar rechamada existente que NÃO esteja expirada (>6 meses)
                                         const existingRechamada = rechamadas.find(r => 
                                             r.studentId === item.studentId && 
-                                            r.lessons === `${item.firstLesson}+${item.secondLesson}`
+                                            r.lessons === `${item.firstLesson}+${item.secondLesson}` &&
+                                            !isRechamadaExpired(r.contactDate)
                                         );
                                         
                                         return `
@@ -4003,49 +3993,62 @@
             const uniqueProfessors = [...new Set(schedules.map(s => s.teacher))].filter(p => p && p.trim() !== '');
             const totalProfessors = uniqueProfessors.length;
 
-            // Calcular alunos por professor DIRETAMENTE das Turmas e VIPs ativos
+            // Calcular alunos por professor USANDO A GRADE como fonte da verdade
             const teachersMap = new Map();
             
-            // Contar alunos das TURMAS ATIVAS
-            turmas.forEach(turma => {
-                // Só contar turmas não finalizadas com alunos matriculados
-                if (!turma.finalizada && turma.teacherName && turma.studentIds && turma.studentIds.length > 0) {
-                    if (!teachersMap.has(turma.teacherName)) {
-                        teachersMap.set(turma.teacherName, { vips: 0, turmas: 0, vipCount: 0, turmaCount: 0 });
+            // Percorrer todos os horários da grade (exceto breaks)
+            schedules.forEach(schedule => {
+                if (schedule.type === 'break' || !schedule.teacher || !schedule.student) return;
+                
+                if (!teachersMap.has(schedule.teacher)) {
+                    teachersMap.set(schedule.teacher, { 
+                        vipStudents: new Set(), 
+                        turmaStudents: new Set(),
+                        vipCount: 0,
+                        turmaCount: 0
+                    });
+                }
+                
+                const teacherData = teachersMap.get(schedule.teacher);
+                
+                if (schedule.type === 'vip' || schedule.type === 'dupla') {
+                    // Para VIPs e DUPLAS, adicionar o aluno único ao Set
+                    teacherData.vipStudents.add(schedule.student);
+                } else if (schedule.type === 'turma') {
+                    // Para turmas, encontrar a turma e adicionar seus alunos ao Set
+                    const turma = turmas.find(t => t.name === schedule.student);
+                    if (turma && turma.studentIds) {
+                        turma.studentIds.forEach(studentId => {
+                            teacherData.turmaStudents.add(studentId);
+                        });
                     }
-                    
-                    const teacherData = teachersMap.get(turma.teacherName);
-                    teacherData.turmas += turma.studentIds.length; // Total de alunos em turmas
-                    teacherData.turmaCount += 1; // Quantidade de turmas
                 }
             });
             
-            // Contar alunos dos VIPs ATIVOS
-            vips.forEach(vip => {
-                // Só contar VIPs não finalizados com aluno válido
-                if (!vip.finalizado && vip.teacherName && vip.studentId) {
-                    const student = students.find(s => s.id === vip.studentId);
-                    if (student) {
-                        if (!teachersMap.has(vip.teacherName)) {
-                            teachersMap.set(vip.teacherName, { vips: 0, turmas: 0, vipCount: 0, turmaCount: 0 });
-                        }
-                        
-                        const teacherData = teachersMap.get(vip.teacherName);
-                        teacherData.vips += 1; // Total de alunos VIP (sempre 1 por VIP)
-                        teacherData.vipCount += 1; // Quantidade de VIPs
+            // Contar VIPs e Turmas únicos por professor
+            teachersMap.forEach((data, teacher) => {
+                // Contar VIPs únicos (quantidade de alunos VIP distintos)
+                data.vipCount = data.vipStudents.size;
+                
+                // Contar Turmas únicas
+                const teacherTurmas = new Set();
+                schedules.forEach(schedule => {
+                    if (schedule.teacher === teacher && schedule.type === 'turma') {
+                        teacherTurmas.add(schedule.student);
                     }
-                }
+                });
+                data.turmaCount = teacherTurmas.size;
             });
             
             // Converter para array e ordenar por total de alunos
             const teacherStats = Array.from(teachersMap.entries())
-                .map(([name, counts]) => ({
+                .map(([name, data]) => ({
                     name,
-                    vipStudents: counts.vips, // Total de alunos VIP
-                    turmaStudents: counts.turmas, // Total de alunos em turmas
-                    vipCount: counts.vipCount, // Quantidade de VIPs
-                    turmaCount: counts.turmaCount, // Quantidade de turmas
-                    total: counts.vips + counts.turmas
+                    vipStudents: data.vipStudents.size, // Total de alunos VIP únicos
+                    turmaStudents: data.turmaStudents.size, // Total de alunos em turmas únicos
+                    vipCount: data.vipCount, // Quantidade de VIPs
+                    turmaCount: data.turmaCount, // Quantidade de turmas
+                    total: data.vipStudents.size + data.turmaStudents.size
                 }))
                 .sort((a, b) => b.total - a.total);
 
@@ -4559,66 +4562,32 @@
                             <h3 class="text-lg font-semibold text-stone-800 mb-4">Horários Mais Ocupados</h3>
                             ${(() => {
                                 const hourStudents = {}; // Mapeia hora -> Set de IDs únicos de alunos
-                                const uniqueVips = new Set(); // Rastreia VIPs únicos globalmente
-                                const uniqueTurmas = new Set(); // Rastreia Turmas únicas globalmente
+                                const uniqueVips = new Set(); // Rastreia alunos VIP únicos
+                                const uniqueTurmas = new Set(); // Rastreia turmas únicas
                                 
-                                // Percorrer VIPs ATIVOS e suas configurações de horário
-                                vips.forEach(vip => {
-                                    if (vip.finalizado || !vip.studentId) return;
+                                // Percorrer todos os horários da GRADE (exceto breaks)
+                                schedules.forEach(schedule => {
+                                    if (schedule.type === 'break' || !schedule.startTime) return;
                                     
-                                    const student = students.find(s => s.id === vip.studentId);
-                                    if (!student) return;
+                                    const hour = schedule.startTime.split(':')[0] + 'h';
                                     
-                                    // Verificar se tem configuração de horários (day1, day2, day3)
-                                    let hasSchedule = false;
-                                    [1, 2, 3].forEach(dayNum => {
-                                        const dayField = `day${dayNum}`;
-                                        const startTimeField = `startTime${dayNum}`;
-                                        
-                                        if (vip[dayField] && vip[startTimeField]) {
-                                            hasSchedule = true;
-                                            const hour = vip[startTimeField].split(':')[0] + 'h';
-                                            
-                                            if (!hourStudents[hour]) {
-                                                hourStudents[hour] = new Set();
-                                            }
-                                            
-                                            hourStudents[hour].add(`vip_${vip.studentId}`);
-                                        }
-                                    });
-                                    
-                                    if (hasSchedule) {
-                                        uniqueVips.add(vip.id);
+                                    if (!hourStudents[hour]) {
+                                        hourStudents[hour] = new Set();
                                     }
-                                });
-                                
-                                // Percorrer TURMAS ATIVAS e suas configurações de horário
-                                turmas.forEach(turma => {
-                                    if (turma.finalizada || !turma.studentIds || turma.studentIds.length === 0) return;
                                     
-                                    // Verificar se tem configuração de horários (day1, day2, day3)
-                                    let hasSchedule = false;
-                                    [1, 2, 3].forEach(dayNum => {
-                                        const dayField = `day${dayNum}`;
-                                        const startTimeField = `startTime${dayNum}`;
-                                        
-                                        if (turma[dayField] && turma[startTimeField]) {
-                                            hasSchedule = true;
-                                            const hour = turma[startTimeField].split(':')[0] + 'h';
-                                            
-                                            if (!hourStudents[hour]) {
-                                                hourStudents[hour] = new Set();
-                                            }
-                                            
-                                            // Adicionar cada aluno único da turma
+                                    if (schedule.type === 'vip' || schedule.type === 'dupla') {
+                                        // Para VIPs e DUPLAS, adicionar o aluno único
+                                        hourStudents[hour].add(`vip_${schedule.student}`);
+                                        uniqueVips.add(schedule.student);
+                                    } else if (schedule.type === 'turma') {
+                                        // Para turmas, adicionar todos os alunos da turma
+                                        const turma = turmas.find(t => t.name === schedule.student);
+                                        if (turma && turma.studentIds && turma.studentIds.length > 0) {
                                             turma.studentIds.forEach(studentId => {
                                                 hourStudents[hour].add(`turma_${studentId}`);
                                             });
+                                            uniqueTurmas.add(schedule.student);
                                         }
-                                    });
-                                    
-                                    if (hasSchedule) {
-                                        uniqueTurmas.add(turma.id);
                                     }
                                 });
                                 
@@ -4670,7 +4639,7 @@
                                             ${totalTurmasScheduled > 0 ? `<span class="text-purple-600 font-medium">${totalTurmasScheduled} Turma${totalTurmasScheduled > 1 ? 's' : ''}</span>` : ''}
                                         </p>
                                     </div>
-                                ` : '<div class="text-center py-8 text-stone-500">Nenhum horário configurado nos VIPs e Turmas</div>';
+                                ` : '<div class="text-center py-8 text-stone-500">Nenhum horário na grade</div>';
                             })()}
                         </div>
                     </div>
