@@ -537,9 +537,15 @@
                 'tasks-prazos': {
                     label: 'Tasks & Prazos',
                     actions: {
-                        'view_all': { label: 'Pode visualizar tasks de todos', default: true },
-                        'manage_own': { label: 'Pode gerenciar suas próprias tasks', default: true },
-                        'manage_all': { label: 'Pode gerenciar tasks de todos', default: false }
+                        'view_all': { label: 'Ver todas as tasks', default: true },
+                        'complete_own': { label: 'Marcar apenas suas tasks como concluídas', default: true },
+                        'complete_all': { label: 'Marcar todas as tasks como concluídas', default: false },
+                        'add_task': { label: 'Adicionar tasks', default: false },
+                        'edit_task': { label: 'Editar tasks', default: false },
+                        'delete_task': { label: 'Excluir tasks', default: false },
+                        'add_person': { label: 'Adicionar pessoas/colaboradores', default: false },
+                        'edit_person': { label: 'Editar pessoas', default: false },
+                        'delete_person': { label: 'Excluir pessoas', default: false }
                     }
                 },
                 'gestao-tns': {
@@ -8512,7 +8518,7 @@
                             </label>
                         </div>
                         <div class="flex gap-2">
-                            ${(currentUserRole === 'admin' || task.assignedBy === currentUserName) ? `
+                            ${can('tasks-prazos.edit_task') ? `
                             <button class="secondary-btn" data-action="edit-task" data-id="${task.id}">Editar</button>
                             ` : ''}
                             <button class="primary-btn" data-action="close-modal">Fechar</button>
@@ -13092,7 +13098,7 @@
 
             contentArea.innerHTML = `
                 <div id="tasks-prazos-section" class="max-w-7xl mx-auto">
-                    ${can('tasks-prazos.manage_all') ? `
+                    ${can('tasks-prazos.add_person') ? `
                     <div class="mb-6 flex justify-between">
                         <button class="primary-btn" style="background-color: #84C7DF;" onmouseover="this.style.backgroundColor='#6DB5CD'" onmouseout="this.style.backgroundColor='#84C7DF'" onclick="openMultipleTaskModal()">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -13159,7 +13165,7 @@
                             </div>
                         </div>
                         <div class="p-6">
-                            ${can('tasks-prazos.manage_own') || can('tasks-prazos.manage_all') ? `
+                            ${can('tasks-prazos.add_task') ? `
                             <div class="mb-6 flex justify-end gap-3">
                                 <button class="primary-btn" style="background-color: #F1D24B;" onmouseover="this.style.backgroundColor='#E0C03D'" onmouseout="this.style.backgroundColor='#F1D24B'" onclick="openAddTaskForm()">
                                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -13385,7 +13391,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
                         </svg>
                         <p class="mt-2 text-stone-600 font-semibold">Nenhuma pessoa cadastrada ainda.</p>
-                        ${can('tasks-prazos.manage_all') ? `<button class="mt-4 primary-btn" onclick="openAddPersonModal()">+ Adicionar Primeira Pessoa</button>` : ''}
+                        ${can('tasks-prazos.add_person') ? `<button class="mt-4 primary-btn" onclick="openAddPersonModal()">+ Adicionar Primeira Pessoa</button>` : ''}
                     </div>
                 `;
                 return;
@@ -13427,18 +13433,22 @@
                 return `
                     <div class="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow border border-stone-200 cursor-pointer relative"
                          onclick="openTaskManagementModal('${person.id}')">
-                        ${can('tasks-prazos.manage_all') ? `
+                        ${(can('tasks-prazos.edit_person') || can('tasks-prazos.delete_person')) ? `
                         <div class="absolute top-2 right-2 flex gap-1">
+                            ${can('tasks-prazos.edit_person') ? `
                             <button onclick="event.stopPropagation(); editPerson('${person.id}')" class="p-1.5 text-stone-400 hover:text-blue-600 transition-colors" title="Editar pessoa">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                                 </svg>
                             </button>
+                            ` : ''}
+                            ${can('tasks-prazos.delete_person') ? `
                             <button onclick="event.stopPropagation(); deletePerson('${person.id}')" class="p-1.5 text-stone-400 hover:text-red-600 transition-colors" title="Excluir pessoa">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                                 </svg>
                             </button>
+                            ` : ''}
                         </div>
                         ` : ''}
                         <div class="flex flex-col items-center text-center">
@@ -13629,8 +13639,8 @@
             const selectedPerson = taskPeople.find(p => p.id === selectedPersonForTasks);
             
             // Secure permission check: use firebaseUid if available, fallback to name comparison
-            let canManage = can('tasks-prazos.manage_all');
-            if (!canManage && can('tasks-prazos.manage_own') && selectedPerson && currentCollaborator) {
+            let canManage = can('tasks-prazos.complete_all');
+            if (!canManage && can('tasks-prazos.complete_own') && selectedPerson && currentCollaborator) {
                 if (selectedPerson.firebaseUid && currentCollaborator.firebaseUid) {
                     // Secure comparison by Firebase UID
                     canManage = selectedPerson.firebaseUid === currentCollaborator.firebaseUid;
@@ -13638,7 +13648,7 @@
                     // Fallback to name comparison (less secure, but necessary for manually added people)
                     canManage = currentCollaborator.name === selectedPerson.name;
                     if (canManage) {
-                        console.warn('⚠️ Using name-based permission check for manage_own. Consider linking person to collaborator via firebaseUid for better security.');
+                        console.warn('⚠️ Using name-based permission check for complete_own. Consider linking person to collaborator via firebaseUid for better security.');
                     }
                 }
             }
@@ -13708,13 +13718,11 @@
                                     
                                     return `
                                         <div class="flex items-center gap-3 p-2 rounded ${item.completed ? 'bg-green-50' : itemOverdue ? 'bg-red-100' : itemToday ? 'bg-yellow-100' : 'bg-white'}">
-                                            ${canManage ? `
                                             <input type="checkbox" 
                                                    ${item.completed ? 'checked' : ''}
                                                    onchange="toggleChecklistItemStatus('${task.id}', ${index})"
                                                    class="h-4 w-4 rounded border-gray-300"
                                                    style="color: #8671D1; accent-color: #8671D1;">
-                                            ` : ''}
                                             <div class="flex-1">
                                                 <span class="text-sm ${item.completed ? 'line-through text-stone-500' : 'text-stone-800'}">${item.title}</span>
                                                 <div class="flex items-center gap-2 mt-1 text-xs text-stone-500">
