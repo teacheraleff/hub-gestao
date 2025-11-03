@@ -12529,7 +12529,13 @@
             contentArea.innerHTML = `
                 <div id="tasks-prazos-section" class="max-w-7xl mx-auto">
                     ${can('tasks-prazos.manage_all') ? `
-                    <div class="mb-6 flex justify-end">
+                    <div class="mb-6 flex justify-between">
+                        <button class="primary-btn" style="background-color: #84C7DF;" onmouseover="this.style.backgroundColor='#6DB5CD'" onmouseout="this.style.backgroundColor='#84C7DF'" onclick="openMultipleTaskModal()">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                            </svg>
+                            Task para Múltiplos
+                        </button>
                         <button class="primary-btn" onclick="openAddPersonModal()">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
@@ -12631,6 +12637,11 @@
                                     <label class="font-medium text-sm">Prazo <span class="text-red-500">*</span></label>
                                     <input type="date" id="task-due-date" class="form-input" required>
                                 </div>
+                                <div>
+                                    <label class="font-medium text-sm">Link do Documento <span class="text-stone-400 text-xs">(opcional)</span></label>
+                                    <input type="url" id="task-link" class="form-input" placeholder="https://drive.google.com/...">
+                                    <p class="text-xs text-stone-500 mt-1">Adicione um link para Drive, Notion, etc.</p>
+                                </div>
                             </div>
                             <div class="mt-6 flex justify-end gap-3">
                                 <button type="button" class="secondary-btn" onclick="closeTaskFormModal()">Cancelar</button>
@@ -12662,6 +12673,11 @@
                                     <input type="date" id="checklist-due-date" class="form-input" required>
                                     <p class="text-xs text-stone-500 mt-1">Prazo final para toda a checklist</p>
                                 </div>
+                                <div>
+                                    <label class="font-medium text-sm">Link do Documento <span class="text-stone-400 text-xs">(opcional)</span></label>
+                                    <input type="url" id="checklist-link" class="form-input" placeholder="https://drive.google.com/...">
+                                    <p class="text-xs text-stone-500 mt-1">Adicione um link para Drive, Notion, etc.</p>
+                                </div>
 
                                 <div class="border-t border-stone-200 pt-4">
                                     <div class="flex justify-between items-center mb-3">
@@ -12682,9 +12698,109 @@
                         </form>
                     </div>
                 </div>
+
+                <!-- Multiple Task Modal -->
+                <div id="multiple-task-modal" class="modal-overlay">
+                    <div class="modal-content max-w-3xl">
+                        <div class="modal-header">
+                            <h4>Criar Task para Múltiplos Colaboradores</h4>
+                            <button onclick="closeMultipleTaskModal()" class="modal-close-btn">&times;</button>
+                        </div>
+                        <form id="multiple-task-form" onsubmit="saveMultipleTask(event)">
+                            <div class="space-y-6">
+                                <!-- People Selection -->
+                                <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                                    <label class="font-medium text-sm text-blue-900 mb-3 block">
+                                        Selecione os Colaboradores <span class="text-red-500">*</span>
+                                    </label>
+                                    <div id="multiple-people-checkboxes" class="grid grid-cols-2 md:grid-cols-3 gap-3 max-h-60 overflow-y-auto">
+                                        <!-- Checkboxes will be populated here -->
+                                    </div>
+                                    <p class="text-xs text-blue-700 mt-2">Selecione um ou mais colaboradores para receber a mesma task</p>
+                                </div>
+
+                                <!-- Task Type Selection -->
+                                <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-300">
+                                    <label class="font-medium text-sm text-yellow-900 mb-3 block">
+                                        Tipo de Task <span class="text-red-500">*</span>
+                                    </label>
+                                    <div class="flex gap-4">
+                                        <label class="flex items-center cursor-pointer">
+                                            <input type="radio" name="multiple-task-type" value="normal" checked class="mr-2">
+                                            <span class="text-sm font-medium">Task Normal</span>
+                                        </label>
+                                        <label class="flex items-center cursor-pointer">
+                                            <input type="radio" name="multiple-task-type" value="checklist" class="mr-2">
+                                            <span class="text-sm font-medium" style="color: #8671D1;">Checklist</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <!-- Task Details -->
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="font-medium text-sm">Título da Task <span class="text-red-500">*</span></label>
+                                        <input type="text" id="multiple-task-title" class="form-input" required placeholder="Ex: Revisar documentação">
+                                    </div>
+                                    <div>
+                                        <label class="font-medium text-sm">Descrição</label>
+                                        <textarea id="multiple-task-description" rows="3" class="form-input" placeholder="Detalhes da task (opcional)"></textarea>
+                                    </div>
+                                    <div>
+                                        <label class="font-medium text-sm">Prazo <span class="text-red-500">*</span></label>
+                                        <input type="date" id="multiple-task-due-date" class="form-input" required>
+                                    </div>
+                                    <div>
+                                        <label class="font-medium text-sm">Link do Documento <span class="text-stone-400 text-xs">(opcional)</span></label>
+                                        <input type="url" id="multiple-task-link" class="form-input" placeholder="https://drive.google.com/...">
+                                        <p class="text-xs text-stone-500 mt-1">Adicione um link para Drive, Notion, etc.</p>
+                                    </div>
+                                </div>
+
+                                <!-- Checklist Items (only for checklist type) -->
+                                <div id="multiple-checklist-section" class="hidden border-t border-stone-200 pt-4">
+                                    <div class="flex justify-between items-center mb-3">
+                                        <label class="font-medium text-sm">Itens da Checklist</label>
+                                        <button type="button" class="text-sm font-medium" style="color: #8671D1;" onclick="addMultipleChecklistItem()">
+                                            + Adicionar Item
+                                        </button>
+                                    </div>
+                                    <div id="multiple-checklist-items-container" class="space-y-3">
+                                        <!-- Checklist items will be added here -->
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-6 flex justify-end gap-3">
+                                <button type="button" class="secondary-btn" onclick="closeMultipleTaskModal()">Cancelar</button>
+                                <button type="submit" class="primary-btn" style="background-color: #84C7DF;" onmouseover="this.style.backgroundColor='#6DB5CD'" onmouseout="this.style.backgroundColor='#84C7DF'">
+                                    Criar para Todos
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
             `;
 
             renderPeopleTasksCards();
+            
+            // Toggle checklist section based on task type
+            document.addEventListener('change', function(e) {
+                if (e.target.name === 'multiple-task-type') {
+                    const checklistSection = document.getElementById('multiple-checklist-section');
+                    if (checklistSection) {
+                        if (e.target.value === 'checklist') {
+                            checklistSection.classList.remove('hidden');
+                            // Add initial checklist item if empty
+                            const container = document.getElementById('multiple-checklist-items-container');
+                            if (container && container.children.length === 0) {
+                                addMultipleChecklistItem();
+                            }
+                        } else {
+                            checklistSection.classList.add('hidden');
+                        }
+                    }
+                }
+            });
         }
 
         let selectedPersonForTasks = null;
@@ -12950,6 +13066,15 @@
                                         </h4>
                                     </div>
                                     ${task.description ? `<p class="text-sm text-stone-600 mt-2">${task.description}</p>` : ''}
+                                    ${task.link ? `
+                                    <a href="${task.link}" target="_blank" rel="noopener noreferrer" 
+                                       class="inline-flex items-center gap-1 mt-2 text-xs font-medium text-blue-600 hover:text-blue-800 hover:underline">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                                        </svg>
+                                        Abrir documento
+                                    </a>
+                                    ` : ''}
                                     <div class="flex items-center gap-4 mt-2 text-xs text-stone-500">
                                         <span class="flex items-center gap-1">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -13026,6 +13151,15 @@
                                     </h4>
                                 </div>
                                 ${task.description ? `<p class="text-sm text-stone-600 mt-2 ml-8">${task.description}</p>` : ''}
+                                ${task.link ? `
+                                <a href="${task.link}" target="_blank" rel="noopener noreferrer" 
+                                   class="inline-flex items-center gap-1 mt-2 ml-8 text-xs font-medium text-blue-600 hover:text-blue-800 hover:underline">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                                    </svg>
+                                    Abrir documento
+                                </a>
+                                ` : ''}
                                 <div class="flex items-center gap-4 mt-2 ml-8 text-xs text-stone-500">
                                     <span class="flex items-center gap-1">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -13077,6 +13211,7 @@
             document.getElementById('task-title').value = task.title;
             document.getElementById('task-description').value = task.description || '';
             document.getElementById('task-due-date').value = task.dueDate;
+            document.getElementById('task-link').value = task.link || '';
             
             document.getElementById('task-form-modal').classList.add('visible');
         }
@@ -13092,6 +13227,7 @@
             const title = document.getElementById('task-title').value;
             const description = document.getElementById('task-description').value;
             const dueDate = document.getElementById('task-due-date').value;
+            const link = document.getElementById('task-link').value;
 
             if (!title || !dueDate) {
                 showErrorMessage('Erro', 'Preencha todos os campos obrigatórios.');
@@ -13102,6 +13238,7 @@
                 title,
                 description,
                 dueDate,
+                link: link || null,
                 personId: selectedPersonForTasks,
                 type: 'normal',
                 status: editingTaskId ? (tasks.find(t => t.id === editingTaskId)?.status || 'pending') : 'pending',
@@ -13231,6 +13368,7 @@
             const title = document.getElementById('checklist-title').value;
             const description = document.getElementById('checklist-description').value;
             const dueDate = document.getElementById('checklist-due-date').value;
+            const link = document.getElementById('checklist-link').value;
 
             // Collect all checklist items
             const itemElements = document.querySelectorAll('#checklist-items-container > div');
@@ -13263,6 +13401,7 @@
                 title,
                 description,
                 dueDate,
+                link: link || null,
                 personId: selectedPersonForTasks,
                 type: 'checklist',
                 checklistItems: checklistItems,
@@ -13316,6 +13455,182 @@
                 showErrorMessage('Erro', 'Erro ao atualizar item da checklist.');
             }
         }
+
+        // --- MULTIPLE TASK FUNCTIONS ---
+        let multipleChecklistItemCounter = 0;
+        
+        window.openMultipleTaskModal = function() {
+            // Populate people checkboxes
+            const container = document.getElementById('multiple-people-checkboxes');
+            if (!container) return;
+            
+            if (taskPeople.length === 0) {
+                container.innerHTML = '<p class="text-sm text-stone-600 col-span-full text-center">Nenhum colaborador cadastrado ainda.</p>';
+                return;
+            }
+            
+            container.innerHTML = taskPeople.map(person => `
+                <label class="flex items-center gap-2 p-2 hover:bg-blue-100 rounded cursor-pointer">
+                    <input type="checkbox" name="selected-people" value="${person.id}" class="rounded">
+                    <span class="text-sm">${person.name}</span>
+                </label>
+            `).join('');
+            
+            // Reset form
+            document.getElementById('multiple-task-form').reset();
+            document.getElementById('multiple-checklist-items-container').innerHTML = '';
+            document.getElementById('multiple-checklist-section').classList.add('hidden');
+            multipleChecklistItemCounter = 0;
+            
+            // Show modal
+            document.getElementById('multiple-task-modal').classList.add('visible');
+        };
+        
+        window.closeMultipleTaskModal = function() {
+            document.getElementById('multiple-task-modal').classList.remove('visible');
+            multipleChecklistItemCounter = 0;
+        };
+        
+        window.addMultipleChecklistItem = function(title = '', dueDate = '') {
+            const itemId = multipleChecklistItemCounter++;
+            const container = document.getElementById('multiple-checklist-items-container');
+            
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'flex gap-2 items-start p-3 bg-stone-50 rounded-lg';
+            itemDiv.id = `multiple-checklist-item-${itemId}`;
+            itemDiv.innerHTML = `
+                <div class="flex-1 space-y-2">
+                    <input type="text" 
+                           placeholder="Título do item (Ex: Aula 1)" 
+                           value="${title}"
+                           class="form-input multiple-checklist-item-title" 
+                           required>
+                    <input type="date" 
+                           value="${dueDate}"
+                           class="form-input multiple-checklist-item-due-date" 
+                           required>
+                </div>
+                <button type="button" 
+                        class="text-red-600 hover:text-red-800 mt-2" 
+                        onclick="removeMultipleChecklistItem(${itemId})"
+                        title="Remover item">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            `;
+            
+            container.appendChild(itemDiv);
+        };
+        
+        window.removeMultipleChecklistItem = function(itemId) {
+            const item = document.getElementById(`multiple-checklist-item-${itemId}`);
+            if (item) item.remove();
+        };
+        
+        window.saveMultipleTask = async function(event) {
+            event.preventDefault();
+            
+            // Get selected people
+            const selectedCheckboxes = document.querySelectorAll('input[name="selected-people"]:checked');
+            if (selectedCheckboxes.length === 0) {
+                showErrorMessage('Erro', 'Selecione pelo menos um colaborador.');
+                return;
+            }
+            
+            const selectedPeopleIds = Array.from(selectedCheckboxes).map(cb => cb.value);
+            
+            // Get task type
+            const taskType = document.querySelector('input[name="multiple-task-type"]:checked').value;
+            
+            // Get task data
+            const title = document.getElementById('multiple-task-title').value;
+            const description = document.getElementById('multiple-task-description').value;
+            const dueDate = document.getElementById('multiple-task-due-date').value;
+            const link = document.getElementById('multiple-task-link').value;
+            
+            if (!title || !dueDate) {
+                showErrorMessage('Erro', 'Preencha todos os campos obrigatórios.');
+                return;
+            }
+            
+            try {
+                let tasksCreated = 0;
+                
+                if (taskType === 'normal') {
+                    // Create normal task for each selected person
+                    for (const personId of selectedPeopleIds) {
+                        const taskData = {
+                            title,
+                            description,
+                            dueDate,
+                            link: link || null,
+                            personId: personId,
+                            type: 'normal',
+                            status: 'pending',
+                            createdAt: new Date().toISOString()
+                        };
+                        
+                        await addDoc(collection(db, `artifacts/${appId}/public/data/tasks`), taskData);
+                        tasksCreated++;
+                    }
+                    
+                    await logActivity('Criou task para múltiplos colaboradores', 'task', `${title} (${tasksCreated} pessoas)`);
+                    showSuccessMessage('Sucesso!', `Task criada para ${tasksCreated} colaborador(es).`);
+                    
+                } else if (taskType === 'checklist') {
+                    // Collect checklist items
+                    const itemElements = document.querySelectorAll('#multiple-checklist-items-container > div');
+                    const checklistItems = [];
+                    
+                    itemElements.forEach(elem => {
+                        const itemTitle = elem.querySelector('.multiple-checklist-item-title').value;
+                        const itemDueDate = elem.querySelector('.multiple-checklist-item-due-date').value;
+                        
+                        if (itemTitle && itemDueDate) {
+                            checklistItems.push({
+                                title: itemTitle,
+                                dueDate: itemDueDate,
+                                completed: false
+                            });
+                        }
+                    });
+                    
+                    if (checklistItems.length === 0) {
+                        showErrorMessage('Erro', 'Adicione pelo menos um item à checklist.');
+                        return;
+                    }
+                    
+                    // Create checklist for each selected person
+                    for (const personId of selectedPeopleIds) {
+                        const checklistData = {
+                            title,
+                            description,
+                            dueDate,
+                            link: link || null,
+                            personId: personId,
+                            type: 'checklist',
+                            checklistItems: checklistItems,
+                            status: 'pending',
+                            createdAt: new Date().toISOString()
+                        };
+                        
+                        await addDoc(collection(db, `artifacts/${appId}/public/data/tasks`), checklistData);
+                        tasksCreated++;
+                    }
+                    
+                    await logActivity('Criou checklist para múltiplos colaboradores', 'task', `${title} (${tasksCreated} pessoas)`);
+                    showSuccessMessage('Sucesso!', `Checklist criada para ${tasksCreated} colaborador(es).`);
+                }
+                
+                closeMultipleTaskModal();
+                renderPeopleTasksCards();
+                
+            } catch (error) {
+                console.error('Error saving multiple tasks:', error);
+                showErrorMessage('Erro', 'Erro ao criar tasks: ' + error.message);
+            }
+        };
 
         window.openTaskManagementModal = openTaskManagementModal;
         window.closeTaskManagementModal = closeTaskManagementModal;
