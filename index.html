@@ -8525,13 +8525,23 @@
                     ` : ''}
                     
                     <div class="border-t pt-4 flex justify-between items-center">
-                        <div class="flex items-center gap-3">
-                            <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" ${task.completed ? 'checked' : ''} 
-                                       class="h-4 w-4 rounded text-yellow-500"
-                                       onchange="toggleTaskCompletion('${task.id}', this.checked)">
-                                <span class="text-sm font-medium text-stone-700">Marcar como ${task.completed ? 'pendente' : 'concluída'}</span>
+                        <div class="flex items-center gap-6">
+                            <label class="flex items-center gap-2 cursor-pointer" title="Marcar como feito (todos podem)">
+                                <input type="checkbox" ${task.completedByUser ? 'checked' : ''} 
+                                       class="h-4 w-4 rounded"
+                                       style="accent-color: #10b981;"
+                                       onchange="toggleUserCompletion('${task.id}', this.checked)">
+                                <span class="text-sm font-medium text-green-700">Feito</span>
                             </label>
+                            ${currentUserRole === 'admin' ? `
+                            <label class="flex items-center gap-2 cursor-pointer" title="Aprovar (só admin)">
+                                <input type="checkbox" ${task.approved ? 'checked' : ''} 
+                                       class="h-4 w-4 rounded"
+                                       style="accent-color: #F1D24B;"
+                                       onchange="toggleAdminApproval('${task.id}', this.checked)">
+                                <span class="text-sm font-medium" style="color: #F1D24B;">Aprovado</span>
+                            </label>
+                            ` : ''}
                         </div>
                         <div class="flex gap-2">
                             ${can('tasks-prazos.edit_task') ? `
@@ -10263,7 +10273,42 @@
         }
 
 
-        async function toggleTaskCompletion(taskId, isCompleted) { if (!db) return; const taskRef = doc(db, `artifacts/${appId}/public/data/tasks`, taskId); try { await updateDoc(taskRef, { completed: isCompleted }); } catch (error) { console.error("Error updating task status:", error); } }
+        // Função para usuário marcar task como feita (todos podem usar)
+        async function toggleUserCompletion(taskId, isCompleted) {
+            if (!db) return;
+            const taskRef = doc(db, `artifacts/${appId}/public/data/tasks`, taskId);
+            try {
+                await updateDoc(taskRef, { completedByUser: isCompleted });
+                const task = tasks.find(t => t.id === taskId);
+                if (task) {
+                    await logActivity(isCompleted ? 'Marcou task como feita' : 'Desmarcou task como feita', 'task', task.title);
+                }
+            } catch (error) {
+                console.error("Error updating user completion:", error);
+            }
+        }
+
+        // Função para admin aprovar task (só admin)
+        async function toggleAdminApproval(taskId, isApproved) {
+            if (!db) return;
+            if (currentUserRole !== 'admin') {
+                showErrorMessage('Erro', 'Apenas administradores podem aprovar tasks.');
+                return;
+            }
+            const taskRef = doc(db, `artifacts/${appId}/public/data/tasks`, taskId);
+            try {
+                await updateDoc(taskRef, { 
+                    approved: isApproved,
+                    status: isApproved ? 'completed' : 'pending'
+                });
+                const task = tasks.find(t => t.id === taskId);
+                if (task) {
+                    await logActivity(isApproved ? 'Aprovou task' : 'Removeu aprovação de task', 'task', task.title);
+                }
+            } catch (error) {
+                console.error("Error updating admin approval:", error);
+            }
+        }
 
         async function deleteItem(collectionName, itemId) {
             if (!db) { console.warn("Offline mode."); return; }
@@ -11569,7 +11614,7 @@
 
             // Function to render task card
             const renderTaskCard = (task) => {
-                const dueDate = new Date(task.dueDate);
+                const dueDate = new Date(task.dueDate + 'T00:00:00');
                 dueDate.setHours(0, 0, 0, 0);
                 const isOverdue = task.status === 'pending' && dueDate < today;
                 const isToday = dueDate.getTime() === today.getTime();
@@ -11580,7 +11625,7 @@
                     const allCompleted = completedCount === totalCount;
 
                     const checklistItemsHtml = task.checklistItems.map(item => {
-                        const itemDate = new Date(item.dueDate);
+                        const itemDate = new Date(item.dueDate + 'T00:00:00');
                         itemDate.setHours(0, 0, 0, 0);
                         const itemOverdue = !item.completed && itemDate < today;
                         const itemToday = itemDate.getTime() === today.getTime();
@@ -13231,6 +13276,13 @@
                                     <input type="url" id="task-link" class="form-input" placeholder="https://drive.google.com/...">
                                     <p class="text-xs text-stone-500 mt-1">Adicione um link para Drive, Notion, etc.</p>
                                 </div>
+                                <div>
+                                    <label class="font-medium text-sm">Urgência</label>
+                                    <select id="task-urgency" class="form-input">
+                                        <option value="normal">Sem Urgência</option>
+                                        <option value="urgent">Urgente</option>
+                                    </select>
+                                </div>
                             </div>
                             <div class="mt-6 flex justify-end gap-3">
                                 <button type="button" class="secondary-btn" onclick="closeTaskFormModal()">Cancelar</button>
@@ -13266,6 +13318,13 @@
                                     <label class="font-medium text-sm">Link do Documento <span class="text-stone-400 text-xs">(opcional)</span></label>
                                     <input type="url" id="checklist-link" class="form-input" placeholder="https://drive.google.com/...">
                                     <p class="text-xs text-stone-500 mt-1">Adicione um link para Drive, Notion, etc.</p>
+                                </div>
+                                <div>
+                                    <label class="font-medium text-sm">Urgência</label>
+                                    <select id="checklist-urgency" class="form-input">
+                                        <option value="normal">Sem Urgência</option>
+                                        <option value="urgent">Urgente</option>
+                                    </select>
                                 </div>
 
                                 <div class="border-t border-stone-200 pt-4">
@@ -13418,7 +13477,7 @@
 
             container.innerHTML = taskPeople.map(person => {
                 const personTasks = tasks.filter(t => t.personId === person.id);
-                const pendingTasks = personTasks.filter(t => t.status === 'pending');
+                const pendingTasks = personTasks.filter(t => !t.approved); // Só aprovadas contam como concluídas
                 
                 // Count overdue items (each checklist item counts as 1)
                 let overdueCount = 0;
@@ -13426,8 +13485,8 @@
                     if (t.type === 'checklist' && t.checklistItems) {
                         // For checklists, count each overdue item individually
                         t.checklistItems.forEach(item => {
-                            if (!item.completed) {
-                                const itemDueDate = new Date(item.dueDate);
+                            if (!item.approved) { // Mudar de completed para approved
+                                const itemDueDate = new Date(item.dueDate + 'T00:00:00');
                                 itemDueDate.setHours(0, 0, 0, 0);
                                 if (itemDueDate < today) {
                                     overdueCount++;
@@ -13436,7 +13495,7 @@
                         });
                     } else {
                         // For normal tasks, check if the entire task is overdue
-                        const dueDate = new Date(t.dueDate);
+                        const dueDate = new Date(t.dueDate + 'T00:00:00');
                         dueDate.setHours(0, 0, 0, 0);
                         if (dueDate < today) {
                             overdueCount++;
@@ -13638,15 +13697,15 @@
                 return;
             }
 
-            // Sort: Pending first (overdue first), then completed
+            // Sort: Não aprovadas primeiro (mais atrasadas primeiro), depois aprovadas
             const sortedTasks = [...collaboratorTasks].sort((a, b) => {
-                if (a.status !== b.status) {
-                    return a.status === 'pending' ? -1 : 1;
+                if (a.approved !== b.approved) {
+                    return a.approved ? 1 : -1; // Não aprovadas primeiro
                 }
-                if (a.status === 'pending') {
-                    return new Date(a.dueDate) - new Date(b.dueDate);
+                if (!a.approved) {
+                    return new Date(a.dueDate) - new Date(b.dueDate); // Mais antigas primeiro
                 }
-                return new Date(b.dueDate) - new Date(a.dueDate);
+                return new Date(b.dueDate) - new Date(a.dueDate); // Aprovadas: mais recentes primeiro
             });
 
             const today = new Date();
@@ -13670,24 +13729,26 @@
             }
 
             container.innerHTML = sortedTasks.map(task => {
-                const dueDate = new Date(task.dueDate);
+                const dueDate = new Date(task.dueDate + 'T00:00:00');
                 dueDate.setHours(0, 0, 0, 0);
-                const isOverdue = task.status === 'pending' && dueDate < today;
+                const isOverdue = !task.approved && dueDate < today;
                 const isToday = dueDate.getTime() === today.getTime();
 
                 // For checklists, render differently
                 if (task.type === 'checklist' && task.checklistItems && task.checklistItems.length > 0) {
-                    const completedCount = task.checklistItems.filter(item => item.completed).length;
+                    const approvedCount = task.checklistItems.filter(item => item.approved).length;
+                    const completedByUserCount = task.checklistItems.filter(item => item.completedByUser).length;
                     const totalCount = task.checklistItems.length;
-                    const allCompleted = completedCount === totalCount;
+                    const allApproved = approvedCount === totalCount;
                     
                     return `
-                        <div class="mb-4 p-4 rounded-lg border-2" style="${allCompleted ? 'background-color: #f5f5f4; border-color: #e7e5e4;' : isOverdue ? 'background-color: #fef2f2; border-color: #fca5a5;' : isToday ? 'background-color: #fefce8; border-color: #fde047;' : 'background-color: #faf5ff; border-color: #8671D1;'}">
+                        <div class="mb-4 p-4 rounded-lg border-2" style="${allApproved ? 'background-color: #f5f5f4; border-color: #e7e5e4;' : isOverdue ? 'background-color: #fef2f2; border-color: #fca5a5;' : isToday ? 'background-color: #fefce8; border-color: #fde047;' : 'background-color: #faf5ff; border-color: #8671D1;'}">
                             <div class="flex items-start justify-between mb-3">
                                 <div class="flex-1">
-                                    <div class="flex items-center gap-2">
+                                    <div class="flex items-center gap-2 flex-wrap">
                                         <span class="text-white text-xs px-2 py-1 rounded font-semibold" style="background-color: #8671D1;">CHECKLIST</span>
-                                        <h4 class="font-semibold text-stone-800 ${allCompleted ? 'line-through text-stone-500' : ''}">
+                                        ${task.urgency === 'urgent' ? '<span class="px-2 py-0.5 text-xs font-semibold rounded" style="background-color: #fecaca; color: #991b1b;">URGENTE</span>' : '<span class="px-2 py-0.5 text-xs font-semibold rounded" style="background-color: #d1fae5; color: #065f46;">SEM URGÊNCIA</span>'}
+                                        <h4 class="font-semibold text-stone-800 ${allApproved ? 'line-through text-stone-500' : ''}">
                                             ${task.title}
                                         </h4>
                                     </div>
@@ -13708,9 +13769,10 @@
                                             </svg>
                                             Prazo Geral: ${formatDateBR(task.dueDate)}
                                         </span>
-                                        <span class="font-semibold" style="color: #8671D1;">${completedCount}/${totalCount} concluídos</span>
-                                        ${isOverdue && !allCompleted ? '<span class="text-red-600 font-semibold">ATRASADA</span>' : ''}
-                                        ${isToday && !allCompleted ? '<span class="text-yellow-600 font-semibold">HOJE</span>' : ''}
+                                        <span class="font-semibold text-green-600">${completedByUserCount}/${totalCount} feitos</span>
+                                        <span class="font-semibold" style="color: #8671D1;">${approvedCount}/${totalCount} aprovados</span>
+                                        ${isOverdue && !allApproved ? '<span class="text-red-600 font-semibold">ATRASADA</span>' : ''}
+                                        ${isToday && !allApproved ? '<span class="text-yellow-600 font-semibold">HOJE</span>' : ''}
                                     </div>
                                 </div>
                                 ${canManage ? `
@@ -13727,25 +13789,41 @@
                             </div>
                             <div class="mt-3 space-y-2 pl-4 border-l-2" style="border-color: #8671D1;">
                                 ${task.checklistItems.map((item, index) => {
-                                    const itemDate = new Date(item.dueDate);
+                                    const itemDate = new Date(item.dueDate + 'T00:00:00');
                                     itemDate.setHours(0, 0, 0, 0);
-                                    const itemOverdue = !item.completed && itemDate < today;
+                                    const itemOverdue = !item.approved && itemDate < today;
                                     const itemToday = itemDate.getTime() === today.getTime();
                                     
                                     return `
-                                        <div class="flex items-center gap-3 p-2 rounded ${item.completed ? 'bg-green-50' : itemOverdue ? 'bg-red-100' : itemToday ? 'bg-yellow-100' : 'bg-white'}">
-                                            <input type="checkbox" 
-                                                   ${item.completed ? 'checked' : ''}
-                                                   onchange="toggleChecklistItemStatus('${task.id}', ${index})"
-                                                   class="h-4 w-4 rounded border-gray-300"
-                                                   style="color: #8671D1; accent-color: #8671D1;">
+                                        <div class="flex items-start gap-3 p-3 rounded border" style="${item.approved ? 'background-color: #f5f5f4; border-color: #e7e5e4;' : itemOverdue ? 'background-color: #fef2f2; border-color: #fca5a5;' : itemToday ? 'background-color: #fefce8; border-color: #fde047;' : 'background-color: white; border-color: #e7e5e4;'}">
+                                            <div class="flex flex-col gap-2">
+                                                <label class="flex items-center gap-2 cursor-pointer" title="Marcar como feito (todos podem)">
+                                                    <input type="checkbox" 
+                                                           ${item.completedByUser ? 'checked' : ''}
+                                                           onchange="toggleChecklistUserCompletion('${task.id}', ${index})"
+                                                           class="h-4 w-4 rounded border-gray-300"
+                                                           style="accent-color: #10b981;">
+                                                    <span class="text-xs font-medium text-green-700">Feito</span>
+                                                </label>
+                                                ${currentUserRole === 'admin' ? `
+                                                <label class="flex items-center gap-2 cursor-pointer" title="Aprovar (só admin)">
+                                                    <input type="checkbox" 
+                                                           ${item.approved ? 'checked' : ''}
+                                                           onchange="toggleChecklistAdminApproval('${task.id}', ${index})"
+                                                           class="h-4 w-4 rounded border-gray-300"
+                                                           style="accent-color: #F1D24B;">
+                                                    <span class="text-xs font-medium" style="color: #F1D24B;">Aprovado</span>
+                                                </label>
+                                                ` : ''}
+                                            </div>
                                             <div class="flex-1">
-                                                <span class="text-sm ${item.completed ? 'line-through text-stone-500' : 'text-stone-800'}">${item.title}</span>
+                                                <span class="text-sm font-medium ${item.approved ? 'line-through text-stone-500' : 'text-stone-800'}">${item.title}</span>
                                                 <div class="flex items-center gap-2 mt-1 text-xs text-stone-500">
                                                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                                                     </svg>
                                                     ${formatDateBR(item.dueDate)}
+                                                    ${item.completedByUser && !item.approved ? '<span class="text-green-600 font-semibold ml-2">AGUARDANDO APROVAÇÃO</span>' : ''}
                                                     ${itemOverdue ? '<span class="text-red-600 font-semibold ml-2">ATRASADO</span>' : ''}
                                                     ${itemToday ? '<span class="text-yellow-600 font-semibold ml-2">HOJE</span>' : ''}
                                                 </div>
@@ -13760,19 +13838,39 @@
 
                 // Normal task rendering
                 return `
-                    <div class="mb-4 p-4 rounded-lg border-2 ${task.status === 'completed' ? 'bg-stone-50 border-stone-200' : isOverdue ? 'bg-red-50 border-red-300' : isToday ? 'bg-yellow-50 border-yellow-300' : 'bg-white border-stone-200'}">
+                    <div class="mb-4 p-4 rounded-lg border-2 ${task.approved ? 'bg-stone-50 border-stone-200' : isOverdue ? 'bg-red-50 border-red-300' : isToday ? 'bg-yellow-50 border-yellow-300' : 'bg-white border-stone-200'}">
                         <div class="flex items-start justify-between">
                             <div class="flex-1">
-                                <div class="flex items-center gap-3">
-                                    ${canManage ? `
-                                    <input type="checkbox" 
-                                           ${task.status === 'completed' ? 'checked' : ''}
-                                           onchange="toggleTaskStatus('${task.id}')"
-                                           class="h-5 w-5 rounded border-gray-300 text-yellow-500 focus:ring-yellow-400">
-                                    ` : ''}
-                                    <h4 class="font-semibold text-stone-800 ${task.status === 'completed' ? 'line-through text-stone-500' : ''}">
-                                        ${task.title}
-                                    </h4>
+                                <div class="flex items-start gap-4">
+                                    <div class="flex flex-col gap-2 mt-1">
+                                        <label class="flex items-center gap-2 cursor-pointer" title="Marcar como feito (todos podem)">
+                                            <input type="checkbox" 
+                                                   ${task.completedByUser ? 'checked' : ''}
+                                                   onchange="toggleUserCompletion('${task.id}', this.checked)"
+                                                   class="h-4 w-4 rounded border-gray-300"
+                                                   style="accent-color: #10b981;">
+                                            <span class="text-xs font-medium text-green-700">Feito</span>
+                                        </label>
+                                        ${currentUserRole === 'admin' ? `
+                                        <label class="flex items-center gap-2 cursor-pointer" title="Aprovar (só admin)">
+                                            <input type="checkbox" 
+                                                   ${task.approved ? 'checked' : ''}
+                                                   onchange="toggleAdminApproval('${task.id}', this.checked)"
+                                                   class="h-4 w-4 rounded border-gray-300"
+                                                   style="accent-color: #F1D24B;">
+                                            <span class="text-xs font-medium" style="color: #F1D24B;">Aprovado</span>
+                                        </label>
+                                        ` : ''}
+                                    </div>
+                                    <div class="flex-1">
+                                        <div class="flex items-center gap-2">
+                                            <h4 class="font-semibold text-stone-800 ${task.approved ? 'line-through text-stone-500' : ''}">
+                                                ${task.title}
+                                            </h4>
+                                            ${task.urgency === 'urgent' ? '<span class="px-2 py-0.5 text-xs font-semibold rounded" style="background-color: #fecaca; color: #991b1b;">URGENTE</span>' : '<span class="px-2 py-0.5 text-xs font-semibold rounded" style="background-color: #d1fae5; color: #065f46;">SEM URGÊNCIA</span>'}
+                                        </div>
+                                        ${task.completedByUser && !task.approved ? '<span class="text-xs text-green-600 font-semibold mt-1 block">AGUARDANDO APROVAÇÃO</span>' : ''}
+                                    </div>
                                 </div>
                                 ${task.description ? `<p class="text-sm text-stone-600 mt-2 ml-8">${task.description}</p>` : ''}
                                 ${task.link ? `
@@ -13791,8 +13889,8 @@
                                         </svg>
                                         ${formatDateBR(task.dueDate)}
                                     </span>
-                                    ${isOverdue && task.status === 'pending' ? '<span class="text-red-600 font-semibold">ATRASADA</span>' : ''}
-                                    ${isToday && task.status === 'pending' ? '<span class="text-yellow-600 font-semibold">HOJE</span>' : ''}
+                                    ${isOverdue && !task.approved ? '<span class="text-red-600 font-semibold">ATRASADA</span>' : ''}
+                                    ${isToday && !task.approved ? '<span class="text-yellow-600 font-semibold">HOJE</span>' : ''}
                                 </div>
                             </div>
                             ${canManage ? `
@@ -13836,6 +13934,7 @@
             document.getElementById('task-description').value = task.description || '';
             document.getElementById('task-due-date').value = task.dueDate;
             document.getElementById('task-link').value = task.link || '';
+            document.getElementById('task-urgency').value = task.urgency || 'normal';
             
             document.getElementById('task-form-modal').classList.add('visible');
         }
@@ -13852,6 +13951,7 @@
             const description = document.getElementById('task-description').value;
             const dueDate = document.getElementById('task-due-date').value;
             const link = document.getElementById('task-link').value;
+            const urgency = document.getElementById('task-urgency').value;
 
             if (!title || !dueDate) {
                 showErrorMessage('Erro', 'Preencha todos os campos obrigatórios.');
@@ -13863,9 +13963,12 @@
                 description,
                 dueDate,
                 link: link || null,
+                urgency: urgency || 'normal',
                 personId: selectedPersonForTasks,
                 type: 'normal',
                 status: editingTaskId ? (tasks.find(t => t.id === editingTaskId)?.status || 'pending') : 'pending',
+                completedByUser: editingTaskId ? (tasks.find(t => t.id === editingTaskId)?.completedByUser || false) : false,
+                approved: editingTaskId ? (tasks.find(t => t.id === editingTaskId)?.approved || false) : false,
                 createdAt: editingTaskId ? (tasks.find(t => t.id === editingTaskId)?.createdAt || new Date().toISOString()) : new Date().toISOString()
             };
 
@@ -13993,6 +14096,7 @@
             const description = document.getElementById('checklist-description').value;
             const dueDate = document.getElementById('checklist-due-date').value;
             const link = document.getElementById('checklist-link').value;
+            const urgency = document.getElementById('checklist-urgency').value;
 
             // Collect all checklist items
             const itemElements = document.querySelectorAll('#checklist-items-container > div');
@@ -14006,7 +14110,8 @@
                     checklistItems.push({
                         title: itemTitle,
                         dueDate: itemDueDate,
-                        completed: false
+                        completedByUser: false,
+                        approved: false
                     });
                 }
             }
@@ -14026,6 +14131,7 @@
                 description,
                 dueDate,
                 link: link || null,
+                urgency: urgency || 'normal',
                 personId: selectedPersonForTasks,
                 type: 'checklist',
                 checklistItems: checklistItems,
@@ -14052,31 +14158,70 @@
             }
         }
 
-        async function toggleChecklistItemStatus(taskId, itemIndex) {
+        // Função para usuário marcar checklist item como feito
+        async function toggleChecklistUserCompletion(taskId, itemIndex) {
             const task = tasks.find(t => t.id === taskId);
             if (!task || task.type !== 'checklist') return;
 
             const items = [...task.checklistItems];
-            items[itemIndex].completed = !items[itemIndex].completed;
+            items[itemIndex].completedByUser = !items[itemIndex].completedByUser;
+
+            try {
+                await updateDoc(doc(db, `artifacts/${appId}/public/data/tasks`, taskId), {
+                    checklistItems: items
+                });
+                await logActivity(
+                    items[itemIndex].completedByUser ? 'Marcou item como feito' : 'Desmarcou item como feito', 
+                    'checklist-item', 
+                    `${task.title} - ${items[itemIndex].title}`
+                );
+            } catch (error) {
+                console.error('Error toggling checklist item user completion:', error);
+                showErrorMessage('Erro', 'Erro ao atualizar item da checklist.');
+            }
+        }
+
+        // Função para admin aprovar checklist item
+        async function toggleChecklistAdminApproval(taskId, itemIndex) {
+            if (currentUserRole !== 'admin') {
+                showErrorMessage('Erro', 'Apenas administradores podem aprovar checklist items.');
+                return;
+            }
+
+            const task = tasks.find(t => t.id === taskId);
+            if (!task || task.type !== 'checklist') return;
+
+            const items = [...task.checklistItems];
+            items[itemIndex].approved = !items[itemIndex].approved;
 
             try {
                 await updateDoc(doc(db, `artifacts/${appId}/public/data/tasks`, taskId), {
                     checklistItems: items
                 });
                 
-                // Check if all items are completed
-                const allCompleted = items.every(item => item.completed);
-                if (allCompleted && task.status !== 'completed') {
+                // Check if all items are approved
+                const allApproved = items.every(item => item.approved);
+                if (allApproved && task.status !== 'completed') {
                     await updateDoc(doc(db, `artifacts/${appId}/public/data/tasks`, taskId), {
-                        status: 'completed'
+                        status: 'completed',
+                        approved: true
                     });
-                    await logActivity('Concluiu checklist', 'task', task.title);
+                    await logActivity('Aprovou checklist completa', 'task', task.title);
+                } else if (!allApproved && task.status === 'completed') {
+                    await updateDoc(doc(db, `artifacts/${appId}/public/data/tasks`, taskId), {
+                        status: 'pending',
+                        approved: false
+                    });
                 }
                 
-                renderTasksList();
+                await logActivity(
+                    items[itemIndex].approved ? 'Aprovou item' : 'Removeu aprovação de item', 
+                    'checklist-item', 
+                    `${task.title} - ${items[itemIndex].title}`
+                );
             } catch (error) {
-                console.error('Error toggling checklist item:', error);
-                showErrorMessage('Erro', 'Erro ao atualizar item da checklist.');
+                console.error('Error toggling checklist item approval:', error);
+                showErrorMessage('Erro', 'Erro ao aprovar item da checklist.');
             }
         }
 
@@ -14264,6 +14409,8 @@
         window.editTask = editTask;
         window.deleteTask = deleteTask;
         window.toggleTaskStatus = toggleTaskStatus;
+        window.toggleUserCompletion = toggleUserCompletion;
+        window.toggleAdminApproval = toggleAdminApproval;
         window.openAddPersonModal = openAddPersonModal;
         window.editPerson = editPerson;
         window.closePersonModal = closePersonModal;
@@ -14274,7 +14421,8 @@
         window.addChecklistItem = addChecklistItem;
         window.removeChecklistItem = removeChecklistItem;
         window.saveChecklist = saveChecklist;
-        window.toggleChecklistItemStatus = toggleChecklistItemStatus;
+        window.toggleChecklistUserCompletion = toggleChecklistUserCompletion;
+        window.toggleChecklistAdminApproval = toggleChecklistAdminApproval;
 
         let currentCalendarDate = new Date();
         let calendarEvents = [];
@@ -16776,7 +16924,6 @@
 
         window.switchTaskTab = switchTaskTab;
         window.openTaskModal = openTaskModal;
-        window.toggleTaskCompletion = toggleTaskCompletion;
         window.showSection = function(sectionName) {
             const navItem = document.querySelector(`[data-target="${sectionName}"]`);
             if (navItem) navItem.click();
