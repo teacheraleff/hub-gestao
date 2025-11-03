@@ -11440,6 +11440,481 @@
             openHtmlInNewWindow(`PEF Individual - ${student.name}`, docHtml);
         }
 
+        function exportTasksPdf(personId) {
+            const person = taskPeople.find(p => p.id === personId);
+            if (!person) {
+                showErrorMessage("Erro", "Colaborador não encontrado.");
+                return;
+            }
+
+            const personTasks = tasks.filter(t => t.personId === personId);
+            
+            // Separate pending and completed tasks
+            const pendingTasks = personTasks.filter(t => t.status === 'pending');
+            const completedTasks = personTasks.filter(t => t.status === 'completed');
+            
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            // Function to render task card
+            const renderTaskCard = (task) => {
+                const dueDate = new Date(task.dueDate);
+                dueDate.setHours(0, 0, 0, 0);
+                const isOverdue = task.status === 'pending' && dueDate < today;
+                const isToday = dueDate.getTime() === today.getTime();
+
+                if (task.type === 'checklist' && task.checklistItems) {
+                    const completedCount = task.checklistItems.filter(item => item.completed).length;
+                    const totalCount = task.checklistItems.length;
+                    const allCompleted = completedCount === totalCount;
+
+                    const checklistItemsHtml = task.checklistItems.map(item => {
+                        const itemDate = new Date(item.dueDate);
+                        itemDate.setHours(0, 0, 0, 0);
+                        const itemOverdue = !item.completed && itemDate < today;
+                        const itemToday = itemDate.getTime() === today.getTime();
+
+                        return `
+                            <div class="checklist-item ${item.completed ? 'completed' : itemOverdue ? 'overdue' : itemToday ? 'today' : ''}">
+                                <div class="checklist-checkbox">${item.completed ? '✓' : '☐'}</div>
+                                <div class="checklist-item-content">
+                                    <div class="checklist-item-title ${item.completed ? 'line-through' : ''}">${item.title}</div>
+                                    <div class="checklist-item-date">
+                                        📅 ${formatDateBR(item.dueDate)}
+                                        ${itemOverdue && !item.completed ? '<span class="badge-overdue">ATRASADO</span>' : ''}
+                                        ${itemToday && !item.completed ? '<span class="badge-today">HOJE</span>' : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+
+                    return `
+                        <div class="task-card ${allCompleted ? 'completed-task' : isOverdue ? 'overdue-task' : isToday ? 'today-task' : ''}">
+                            <div class="task-header">
+                                <div>
+                                    <span class="task-type-badge checklist-badge">CHECKLIST</span>
+                                    <h3 class="task-title ${allCompleted ? 'line-through' : ''}">${task.title}</h3>
+                                </div>
+                                <div class="task-progress">${completedCount}/${totalCount}</div>
+                            </div>
+                            ${task.description ? `<p class="task-description">${task.description}</p>` : ''}
+                            ${task.link ? `<div class="task-link">🔗 <a href="${task.link}" target="_blank">${task.link}</a></div>` : ''}
+                            <div class="task-meta">
+                                <span>📅 Prazo Geral: ${formatDateBR(task.dueDate)}</span>
+                                ${isOverdue && !allCompleted ? '<span class="badge-overdue">ATRASADA</span>' : ''}
+                                ${isToday && !allCompleted ? '<span class="badge-today">HOJE</span>' : ''}
+                            </div>
+                            <div class="checklist-items">
+                                ${checklistItemsHtml}
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    // Normal task
+                    return `
+                        <div class="task-card ${task.status === 'completed' ? 'completed-task' : isOverdue ? 'overdue-task' : isToday ? 'today-task' : ''}">
+                            <div class="task-header">
+                                <div>
+                                    <span class="task-type-badge normal-badge">TASK</span>
+                                    <h3 class="task-title ${task.status === 'completed' ? 'line-through' : ''}">${task.title}</h3>
+                                </div>
+                                ${task.status === 'completed' ? '<span class="completion-mark">✓</span>' : ''}
+                            </div>
+                            ${task.description ? `<p class="task-description">${task.description}</p>` : ''}
+                            ${task.link ? `<div class="task-link">🔗 <a href="${task.link}" target="_blank">${task.link}</a></div>` : ''}
+                            <div class="task-meta">
+                                <span>📅 ${formatDateBR(task.dueDate)}</span>
+                                ${isOverdue && task.status === 'pending' ? '<span class="badge-overdue">ATRASADA</span>' : ''}
+                                ${isToday && task.status === 'pending' ? '<span class="badge-today">HOJE</span>' : ''}
+                            </div>
+                        </div>
+                    `;
+                }
+            };
+
+            const pendingTasksHtml = pendingTasks.length > 0 
+                ? pendingTasks.map(renderTaskCard).join('') 
+                : '<p class="no-tasks">Nenhuma task pendente.</p>';
+
+            const completedTasksHtml = completedTasks.length > 0 
+                ? completedTasks.map(renderTaskCard).join('') 
+                : '<p class="no-tasks">Nenhuma task concluída.</p>';
+
+            const docHtml = `
+                <!DOCTYPE html>
+                <html lang="pt-br">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>Tasks - ${person.name}</title>
+                    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+                    <style>
+                        * { margin: 0; padding: 0; box-sizing: border-box; }
+                        
+                        body { 
+                            font-family: 'DM Sans', Arial, sans-serif; 
+                            line-height: 1.6; 
+                            color: #2d3748; 
+                            background: #f7fafc;
+                            padding: 40px 20px;
+                        }
+                        
+                        .container {
+                            max-width: 1000px;
+                            margin: 0 auto;
+                            background: white;
+                            border-radius: 12px;
+                            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+                            overflow: hidden;
+                        }
+                        
+                        .header {
+                            background: #F1D24B;
+                            color: #1a202c;
+                            padding: 40px;
+                            text-align: center;
+                        }
+                        
+                        .school-name {
+                            font-size: 2.5em;
+                            font-weight: 700;
+                            margin-bottom: 10px;
+                        }
+                        
+                        .document-title {
+                            font-size: 1.5em;
+                            font-weight: 600;
+                            opacity: 0.9;
+                        }
+                        
+                        .person-name {
+                            font-size: 1.8em;
+                            font-weight: 700;
+                            margin-top: 15px;
+                        }
+                        
+                        .person-role {
+                            font-size: 1.1em;
+                            opacity: 0.8;
+                            text-transform: uppercase;
+                            letter-spacing: 0.05em;
+                        }
+                        
+                        .content {
+                            padding: 40px;
+                        }
+                        
+                        .stats-section {
+                            background: #f8f9fa;
+                            border-left: 4px solid #F1D24B;
+                            padding: 25px;
+                            margin-bottom: 30px;
+                            border-radius: 8px;
+                            display: grid;
+                            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                            gap: 20px;
+                        }
+                        
+                        .stat-item {
+                            text-align: center;
+                        }
+                        
+                        .stat-number {
+                            display: block;
+                            font-size: 2.5em;
+                            font-weight: 700;
+                            color: #F1D24B;
+                        }
+                        
+                        .stat-label {
+                            display: block;
+                            font-size: 0.9em;
+                            color: #6c757d;
+                            margin-top: 5px;
+                        }
+                        
+                        .section-title {
+                            font-size: 1.8em;
+                            font-weight: 700;
+                            margin: 30px 0 20px;
+                            color: #1a202c;
+                            border-bottom: 3px solid #F1D24B;
+                            padding-bottom: 10px;
+                        }
+                        
+                        .task-card {
+                            background: white;
+                            border: 2px solid #e9ecef;
+                            border-radius: 10px;
+                            padding: 20px;
+                            margin-bottom: 20px;
+                            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+                            break-inside: avoid;
+                        }
+                        
+                        .task-card.overdue-task {
+                            background: #fff5f5;
+                            border-color: #feb2b2;
+                        }
+                        
+                        .task-card.today-task {
+                            background: #fefce8;
+                            border-color: #fde047;
+                        }
+                        
+                        .task-card.completed-task {
+                            background: #f5f5f4;
+                            border-color: #e7e5e4;
+                            opacity: 0.8;
+                        }
+                        
+                        .task-header {
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: flex-start;
+                            margin-bottom: 15px;
+                        }
+                        
+                        .task-type-badge {
+                            display: inline-block;
+                            padding: 4px 10px;
+                            border-radius: 4px;
+                            font-size: 0.75em;
+                            font-weight: 700;
+                            margin-right: 10px;
+                            color: white;
+                        }
+                        
+                        .normal-badge {
+                            background: #F1D24B;
+                            color: #1a202c;
+                        }
+                        
+                        .checklist-badge {
+                            background: #8671D1;
+                        }
+                        
+                        .task-title {
+                            display: inline;
+                            font-size: 1.3em;
+                            font-weight: 600;
+                            color: #1a202c;
+                        }
+                        
+                        .line-through {
+                            text-decoration: line-through;
+                            opacity: 0.6;
+                        }
+                        
+                        .task-progress {
+                            font-size: 1.2em;
+                            font-weight: 700;
+                            color: #8671D1;
+                        }
+                        
+                        .completion-mark {
+                            font-size: 1.5em;
+                            color: #10b981;
+                        }
+                        
+                        .task-description {
+                            color: #6c757d;
+                            margin: 10px 0;
+                            line-height: 1.6;
+                        }
+                        
+                        .task-link {
+                            color: #2563eb;
+                            margin: 10px 0;
+                            font-size: 0.9em;
+                        }
+                        
+                        .task-link a {
+                            color: #2563eb;
+                            text-decoration: none;
+                            word-break: break-all;
+                        }
+                        
+                        .task-meta {
+                            display: flex;
+                            gap: 15px;
+                            align-items: center;
+                            margin-top: 15px;
+                            font-size: 0.9em;
+                            color: #6c757d;
+                        }
+                        
+                        .badge-overdue {
+                            background: #ef4444;
+                            color: white;
+                            padding: 2px 8px;
+                            border-radius: 4px;
+                            font-size: 0.85em;
+                            font-weight: 700;
+                        }
+                        
+                        .badge-today {
+                            background: #eab308;
+                            color: #1a202c;
+                            padding: 2px 8px;
+                            border-radius: 4px;
+                            font-size: 0.85em;
+                            font-weight: 700;
+                        }
+                        
+                        .checklist-items {
+                            margin-top: 20px;
+                            border-top: 2px solid #e9ecef;
+                            padding-top: 15px;
+                        }
+                        
+                        .checklist-item {
+                            display: flex;
+                            gap: 10px;
+                            padding: 10px;
+                            margin-bottom: 10px;
+                            border-radius: 6px;
+                            background: white;
+                        }
+                        
+                        .checklist-item.completed {
+                            background: #d1fae5;
+                        }
+                        
+                        .checklist-item.overdue {
+                            background: #fee2e2;
+                        }
+                        
+                        .checklist-item.today {
+                            background: #fef9c3;
+                        }
+                        
+                        .checklist-checkbox {
+                            font-size: 1.3em;
+                            color: #8671D1;
+                        }
+                        
+                        .checklist-item-content {
+                            flex: 1;
+                        }
+                        
+                        .checklist-item-title {
+                            font-weight: 500;
+                            margin-bottom: 5px;
+                        }
+                        
+                        .checklist-item-date {
+                            font-size: 0.85em;
+                            color: #6c757d;
+                        }
+                        
+                        .no-tasks {
+                            text-align: center;
+                            padding: 40px;
+                            color: #6c757d;
+                            font-style: italic;
+                        }
+                        
+                        .print-btn {
+                            background: #F1D24B;
+                            color: #1a202c;
+                            border: none;
+                            padding: 15px 40px;
+                            font-size: 1.1em;
+                            font-weight: 700;
+                            border-radius: 8px;
+                            cursor: pointer;
+                            display: block;
+                            margin: 40px auto 20px;
+                            box-shadow: 0 4px 12px rgba(241, 210, 75, 0.3);
+                        }
+                        
+                        .print-btn:hover {
+                            background: #E0C03D;
+                            transform: translateY(-2px);
+                            box-shadow: 0 6px 16px rgba(241, 210, 75, 0.4);
+                        }
+                        
+                        .footer {
+                            background: #f8f9fa;
+                            padding: 20px;
+                            text-align: center;
+                            border-top: 3px solid #F1D24B;
+                        }
+                        
+                        .footer-title {
+                            font-weight: 700;
+                            font-size: 1.2em;
+                            color: #1a202c;
+                        }
+                        
+                        .footer-date {
+                            color: #6c757d;
+                            margin-top: 5px;
+                            font-size: 0.9em;
+                        }
+                        
+                        @media print {
+                            body { 
+                                background: white; 
+                                padding: 0; 
+                            }
+                            .container {
+                                box-shadow: none;
+                            }
+                            .print-btn {
+                                display: none;
+                            }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="container">
+                        <div class="header">
+                            <div class="school-name">SLAP</div>
+                            <div class="document-title">RELATÓRIO DE TASKS</div>
+                            <div class="person-name">${person.name}</div>
+                            ${person.role ? `<div class="person-role">${person.role}</div>` : ''}
+                        </div>
+                        
+                        <div class="content">
+                            <div class="stats-section">
+                                <div class="stat-item">
+                                    <span class="stat-number">${personTasks.length}</span>
+                                    <span class="stat-label">Total de Tasks</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-number" style="color: #ef4444;">${pendingTasks.length}</span>
+                                    <span class="stat-label">Pendentes</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-number" style="color: #10b981;">${completedTasks.length}</span>
+                                    <span class="stat-label">Concluídas</span>
+                                </div>
+                            </div>
+                            
+                            <h2 class="section-title">📋 Tasks Pendentes</h2>
+                            ${pendingTasksHtml}
+                            
+                            <h2 class="section-title">✅ Tasks Concluídas</h2>
+                            ${completedTasksHtml}
+                            
+                            <button class="print-btn" onclick="window.print()">🖨️ Imprimir Relatório</button>
+                        </div>
+                        
+                        <div class="footer">
+                            <div class="footer-title">SLAP English School</div>
+                            <div class="footer-date">Relatório gerado em ${new Date().toLocaleString('pt-BR')}</div>
+                        </div>
+                    </div>
+                </body>
+                </html>
+            `;
+
+            openHtmlInNewWindow(`Tasks - ${person.name}`, docHtml);
+        }
+
 
         // --- Debug Functions ---
         function debugSyncStatus() {
@@ -12589,7 +13064,10 @@
                                 <h4 id="task-modal-collaborator-name">Tasks</h4>
                                 <p id="task-modal-collaborator-role" class="text-sm text-stone-600 mt-1"></p>
                             </div>
-                            <button onclick="closeTaskManagementModal()" class="modal-close-btn">&times;</button>
+                            <div class="flex items-center gap-3">
+                                <div id="task-modal-export-container"></div>
+                                <button onclick="closeTaskManagementModal()" class="modal-close-btn">&times;</button>
+                            </div>
                         </div>
                         <div class="p-6">
                             ${can('tasks-prazos.manage_own') || can('tasks-prazos.manage_all') ? `
@@ -12983,6 +13461,20 @@
 
             document.getElementById('task-modal-collaborator-name').textContent = `Tasks - ${person.name}`;
             document.getElementById('task-modal-collaborator-role').textContent = (person.role || 'Sem cargo').toUpperCase();
+
+            // Add export button
+            const exportContainer = document.getElementById('task-modal-export-container');
+            exportContainer.innerHTML = `
+                <button class="secondary-btn" 
+                        data-action="export-tasks-pdf" 
+                        data-id="${personId}"
+                        title="Exportar tasks para PDF">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    Exportar PDF
+                </button>
+            `;
 
             renderTasksList();
 
@@ -16903,6 +17395,8 @@
                             const turmaId = actionTarget.dataset.turmaId;
                             const studentId = actionTarget.dataset.studentId;
                             exportStudentPef(turmaId, studentId);
+                        },
+                        'export-tasks-pdf': () => exportTasksPdf(id)
                         },
                         'export-student-report-card': () => {
                             const turmaId = actionTarget.dataset.turmaId;
