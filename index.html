@@ -466,7 +466,7 @@
         
         // Filter state for turmas and VIPs
         let currentTurmasFilter = 'todos';
-        let currentVipsFilter = 'todos';
+        let currentVipsFilter = 'ativos';
         
         // --- PERMISSION REGISTRY SYSTEM ---
         const PermissionRegistry = {
@@ -532,6 +532,14 @@
                         'add_link': { label: 'Pode adicionar links', default: false },
                         'edit_link': { label: 'Pode editar links', default: false },
                         'delete_link': { label: 'Pode excluir links', default: false }
+                    }
+                },
+                'tasks-prazos': {
+                    label: 'Tasks & Prazos',
+                    actions: {
+                        'view_all': { label: 'Pode visualizar tasks de todos', default: true },
+                        'manage_own': { label: 'Pode gerenciar suas próprias tasks', default: true },
+                        'manage_all': { label: 'Pode gerenciar tasks de todos', default: false }
                     }
                 },
                 'gestao-tns': {
@@ -611,6 +619,9 @@
                         'calendario.edit_event': true,
                         'calendario.delete_event': true,
                         'links-uteis.full_access': true,
+                        'tasks-prazos.view_all': true,
+                        'tasks-prazos.manage_own': true,
+                        'tasks-prazos.manage_all': true,
                         'gestao-tns.full_access': true,
                         'rechamada.full_access': true,
                         'kpis-pedagogico.full_access': true,
@@ -639,6 +650,8 @@
                         'grade.full_access': true,
                         'calendario.add_event': true,
                         'calendario.edit_event': true,
+                        'tasks-prazos.view_all': true,
+                        'tasks-prazos.manage_own': true,
                         'rechamada.full_access': true,
                         'kpis-pedagogico.full_access': true
                     }
@@ -952,6 +965,18 @@
             // Links Úteis listener
             getCollectionListener('links-uteis', linksUteis, renderLinksUteisSection);
             
+            // Tasks & Prazos listener
+            getCollectionListener('tasks', tasks, () => {
+                const activePageId = contentArea.firstElementChild?.id;
+                if (activePageId === 'tasks-prazos-section') renderPeopleTasksCards();
+            });
+            
+            // Task People listener
+            getCollectionListener('task-people', taskPeople, () => {
+                const activePageId = contentArea.firstElementChild?.id;
+                if (activePageId === 'tasks-prazos-section') renderPeopleTasksCards();
+            });
+            
             // Testes de Nível listener
             getCollectionListener('testes-nivel', testesNivel, () => {
                 const activePageId = contentArea.firstElementChild?.id;
@@ -1023,6 +1048,7 @@
                             cpf: '',
                             birthdate: '',
                             address: '',
+                            photoUrl: '',
                             createdAt: new Date()
                         };
                         
@@ -3072,7 +3098,7 @@
                             </svg>
                         </div>
                         <p class="text-4xl font-bold text-stone-800 card-content">${vipSchoolProfit.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
-                        <p class="text-xs text-stone-600 mt-1">Valor que a escola recebe</p>
+                        <p class="text-xs text-stone-600 mt-1">Lucro líquido (VIP - Professor)</p>
                         <p class="text-xs text-stone-600 mt-2 italic">Clique para configurar</p>
                     </div>
                     
@@ -3085,7 +3111,7 @@
                             </svg>
                         </div>
                         <p class="text-4xl font-bold text-stone-800 card-content">${turmaSchoolProfit.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
-                        <p class="text-xs text-stone-600 mt-1">Valor que a escola recebe</p>
+                        <p class="text-xs text-stone-600 mt-1">Lucro líquido (Turma - Professor)</p>
                         <p class="text-xs text-stone-600 mt-2 italic">Clique para configurar</p>
                     </div>
                 </div>
@@ -8364,6 +8390,8 @@
                         <div><label class="font-medium text-sm">Data de Nascimento</label><input type="date" id="collaborator-birthdate" class="form-input" value="${collaborator?.birthdate || ''}"></div>
                     </div>
                     
+                    <div><label class="font-medium text-sm">URL da Foto (Cloudinary)</label><input type="url" id="collaborator-photo-url" class="form-input" placeholder="https://res.cloudinary.com/..." value="${collaborator?.photoUrl || ''}"></div>
+                    
                     <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
                         <label class="font-medium text-sm text-blue-900 mb-2 block">Role de Acesso <span class="text-red-500">*</span></label>
                         <select id="collaborator-role" class="form-input" required>
@@ -8880,6 +8908,7 @@
                 name: document.getElementById('collaborator-name').value,
                 cpf: document.getElementById('collaborator-cpf').value,
                 birthdate: document.getElementById('collaborator-birthdate').value,
+                photoUrl: document.getElementById('collaborator-photo-url').value,
                 role: role,
                 permissions: permissions, // NOVO: salvar permissões granulares
                 isEvaluator: isEvaluator
@@ -12262,6 +12291,525 @@
         window.deleteLinkUtil = deleteLinkUtil;
         window.selectIcon = selectIcon;
 
+        // --- TASKS & PRAZOS SECTION ---
+        let taskPeople = [];
+        
+        function renderTasksPrazosSection() {
+            document.getElementById('main-title').textContent = 'Tasks & Prazos';
+            document.getElementById('main-description').textContent = 'Gerencie tarefas e prazos da equipe de forma independente.';
+            const contentArea = document.getElementById('content-area');
+
+            contentArea.innerHTML = `
+                <div id="tasks-prazos-section" class="max-w-7xl mx-auto">
+                    ${can('tasks-prazos.manage_all') ? `
+                    <div class="mb-6 flex justify-end">
+                        <button class="primary-btn" onclick="openAddPersonModal()">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+                            </svg>
+                            Adicionar Pessoa
+                        </button>
+                    </div>
+                    ` : ''}
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" id="people-tasks-container">
+                        <!-- People cards will be rendered here -->
+                    </div>
+                </div>
+                
+                <!-- Add/Edit Person Modal -->
+                <div id="person-modal" class="modal-overlay">
+                    <div class="modal-content max-w-md">
+                        <div class="modal-header">
+                            <h4 id="person-modal-title">Adicionar Pessoa</h4>
+                            <button onclick="closePersonModal()" class="modal-close-btn">&times;</button>
+                        </div>
+                        <form id="person-form" onsubmit="savePerson(event)">
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="font-medium text-sm">Nome <span class="text-red-500">*</span></label>
+                                    <input type="text" id="person-name" class="form-input" required placeholder="Ex: João Silva">
+                                </div>
+                                <div>
+                                    <label class="font-medium text-sm">Cargo/Função</label>
+                                    <input type="text" id="person-role" class="form-input" placeholder="Ex: Professor, Pedagógico, etc.">
+                                </div>
+                                <div>
+                                    <label class="font-medium text-sm">URL da Foto (Cloudinary)</label>
+                                    <input type="url" id="person-photo-url" class="form-input" placeholder="https://res.cloudinary.com/...">
+                                    <p class="text-xs text-stone-500 mt-1">Opcional: Cole o link da foto hospedada no Cloudinary</p>
+                                </div>
+                            </div>
+                            <div class="mt-6 flex justify-end gap-3">
+                                <button type="button" class="secondary-btn" onclick="closePersonModal()">Cancelar</button>
+                                <button type="submit" class="primary-btn">Salvar</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Task Management Modal -->
+                <div id="task-management-modal" class="modal-overlay">
+                    <div class="modal-content max-w-4xl">
+                        <div class="modal-header">
+                            <div>
+                                <h4 id="task-modal-collaborator-name">Tasks</h4>
+                                <p id="task-modal-collaborator-role" class="text-sm text-stone-600 mt-1"></p>
+                            </div>
+                            <button onclick="closeTaskManagementModal()" class="modal-close-btn">&times;</button>
+                        </div>
+                        <div class="p-6">
+                            ${can('tasks-prazos.manage_own') || can('tasks-prazos.manage_all') ? `
+                            <div class="mb-6 flex justify-end">
+                                <button class="primary-btn" onclick="openAddTaskForm()">
+                                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                                    </svg>
+                                    Nova Task
+                                </button>
+                            </div>
+                            ` : ''}
+                            
+                            <div id="tasks-list-container">
+                                <!-- Tasks will be rendered here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Add/Edit Task Modal -->
+                <div id="task-form-modal" class="modal-overlay">
+                    <div class="modal-content max-w-md">
+                        <div class="modal-header">
+                            <h4 id="task-form-title">Nova Task</h4>
+                            <button onclick="closeTaskFormModal()" class="modal-close-btn">&times;</button>
+                        </div>
+                        <form id="task-form" onsubmit="saveTaskPrazo(event)">
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="font-medium text-sm">Título <span class="text-red-500">*</span></label>
+                                    <input type="text" id="task-title" class="form-input" required placeholder="Ex: Revisar documentação">
+                                </div>
+                                <div>
+                                    <label class="font-medium text-sm">Descrição</label>
+                                    <textarea id="task-description" rows="3" class="form-input" placeholder="Detalhes da task (opcional)"></textarea>
+                                </div>
+                                <div>
+                                    <label class="font-medium text-sm">Prazo <span class="text-red-500">*</span></label>
+                                    <input type="date" id="task-due-date" class="form-input" required>
+                                </div>
+                            </div>
+                            <div class="mt-6 flex justify-end gap-3">
+                                <button type="button" class="secondary-btn" onclick="closeTaskFormModal()">Cancelar</button>
+                                <button type="submit" class="primary-btn">Salvar</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `;
+
+            renderPeopleTasksCards();
+        }
+
+        let selectedPersonForTasks = null;
+        let editingTaskId = null;
+        let editingPersonId = null;
+
+        function renderPeopleTasksCards() {
+            const container = document.getElementById('people-tasks-container');
+            if (!container) return;
+
+            if (taskPeople.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full text-center py-12">
+                        <svg class="mx-auto h-12 w-12 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+                        </svg>
+                        <p class="mt-2 text-stone-600 font-semibold">Nenhuma pessoa cadastrada ainda.</p>
+                        ${can('tasks-prazos.manage_all') ? `<button class="mt-4 primary-btn" onclick="openAddPersonModal()">+ Adicionar Primeira Pessoa</button>` : ''}
+                    </div>
+                `;
+                return;
+            }
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            container.innerHTML = taskPeople.map(person => {
+                const personTasks = tasks.filter(t => t.personId === person.id);
+                const pendingTasks = personTasks.filter(t => t.status === 'pending');
+                const overdueTasks = pendingTasks.filter(t => {
+                    const dueDate = new Date(t.dueDate);
+                    dueDate.setHours(0, 0, 0, 0);
+                    return dueDate < today;
+                });
+
+                const photoUrl = person.photoUrl || 'https://res.cloudinary.com/dqfi22uz0/image/upload/v1749349751/DBB440C2-684E-4DCF-9CD3-B2DDC18F1E53_3_vgocga.jpg';
+
+                return `
+                    <div class="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow border border-stone-200 cursor-pointer relative"
+                         onclick="openTaskManagementModal('${person.id}')">
+                        ${can('tasks-prazos.manage_all') ? `
+                        <div class="absolute top-2 right-2 flex gap-1">
+                            <button onclick="event.stopPropagation(); editPerson('${person.id}')" class="p-1.5 text-stone-400 hover:text-blue-600 transition-colors" title="Editar pessoa">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                </svg>
+                            </button>
+                            <button onclick="event.stopPropagation(); deletePerson('${person.id}')" class="p-1.5 text-stone-400 hover:text-red-600 transition-colors" title="Excluir pessoa">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                </svg>
+                            </button>
+                        </div>
+                        ` : ''}
+                        <div class="flex flex-col items-center text-center">
+                            <img src="${photoUrl}" 
+                                 alt="${person.name}" 
+                                 class="w-24 h-24 rounded-full object-cover border-4 border-stone-200 mb-4"
+                                 onerror="this.src='https://res.cloudinary.com/dqfi22uz0/image/upload/v1749349751/DBB440C2-684E-4DCF-9CD3-B2DDC18F1E53_3_vgocga.jpg'">
+                            
+                            <h3 class="font-bold text-lg text-stone-800">${person.name}</h3>
+                            <p class="text-sm text-stone-600 capitalize">${person.role || 'Sem cargo'}</p>
+                            
+                            <div class="mt-4 w-full pt-4 border-t border-stone-200">
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <p class="text-2xl font-bold text-stone-800">${pendingTasks.length}</p>
+                                        <p class="text-xs text-stone-600">Tasks Ativas</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-2xl font-bold ${overdueTasks.length > 0 ? 'text-red-600' : 'text-green-600'}">
+                                            ${overdueTasks.length}
+                                        </p>
+                                        <p class="text-xs text-stone-600">Atrasadas</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function openAddPersonModal() {
+            editingPersonId = null;
+            document.getElementById('person-modal-title').textContent = 'Adicionar Pessoa';
+            document.getElementById('person-form').reset();
+            document.getElementById('person-modal').classList.add('visible');
+        }
+        
+        function editPerson(personId) {
+            const person = taskPeople.find(p => p.id === personId);
+            if (!person) return;
+            
+            editingPersonId = personId;
+            document.getElementById('person-modal-title').textContent = 'Editar Pessoa';
+            document.getElementById('person-name').value = person.name;
+            document.getElementById('person-role').value = person.role || '';
+            document.getElementById('person-photo-url').value = person.photoUrl || '';
+            document.getElementById('person-modal').classList.add('visible');
+        }
+        
+        function closePersonModal() {
+            document.getElementById('person-modal').classList.remove('visible');
+            editingPersonId = null;
+        }
+        
+        async function savePerson(event) {
+            event.preventDefault();
+            
+            const name = document.getElementById('person-name').value;
+            const role = document.getElementById('person-role').value;
+            const photoUrl = document.getElementById('person-photo-url').value;
+            
+            if (!name) {
+                showErrorMessage('Erro', 'O nome é obrigatório.');
+                return;
+            }
+            
+            const personData = {
+                name,
+                role,
+                photoUrl,
+                createdAt: editingPersonId ? (taskPeople.find(p => p.id === editingPersonId)?.createdAt || new Date().toISOString()) : new Date().toISOString()
+            };
+            
+            try {
+                if (editingPersonId) {
+                    await setDoc(doc(db, `artifacts/${appId}/public/data/task-people`, editingPersonId), personData);
+                    await logActivity('Editou pessoa em Tasks & Prazos', 'task-person', name);
+                    showSuccessMessage('Sucesso!', 'Pessoa atualizada com sucesso.');
+                } else {
+                    await addDoc(collection(db, `artifacts/${appId}/public/data/task-people`), personData);
+                    await logActivity('Adicionou pessoa em Tasks & Prazos', 'task-person', name);
+                    showSuccessMessage('Sucesso!', 'Pessoa adicionada com sucesso.');
+                }
+                closePersonModal();
+            } catch (error) {
+                console.error('Error saving person:', error);
+                showErrorMessage('Erro', 'Erro ao salvar pessoa: ' + error.message);
+            }
+        }
+        
+        async function deletePerson(personId) {
+            const person = taskPeople.find(p => p.id === personId);
+            if (!person) return;
+            
+            const personTasks = tasks.filter(t => t.personId === personId);
+            if (personTasks.length > 0) {
+                if (!confirm(`${person.name} tem ${personTasks.length} task(s). Excluir a pessoa irá excluir todas as suas tasks. Deseja continuar?`)) {
+                    return;
+                }
+            } else {
+                if (!confirm(`Tem certeza que deseja excluir ${person.name}?`)) {
+                    return;
+                }
+            }
+            
+            try {
+                // Delete all tasks first
+                for (const task of personTasks) {
+                    await deleteDoc(doc(db, `artifacts/${appId}/public/data/tasks`, task.id));
+                }
+                
+                // Then delete the person
+                await deleteDoc(doc(db, `artifacts/${appId}/public/data/task-people`, personId));
+                await logActivity('Excluiu pessoa de Tasks & Prazos', 'task-person', person.name);
+                showSuccessMessage('Sucesso!', 'Pessoa excluída com sucesso.');
+            } catch (error) {
+                console.error('Error deleting person:', error);
+                showErrorMessage('Erro', 'Erro ao excluir pessoa.');
+            }
+        }
+
+        function openTaskManagementModal(personId) {
+            const person = taskPeople.find(p => p.id === personId);
+            if (!person) return;
+
+            selectedPersonForTasks = personId;
+
+            document.getElementById('task-modal-collaborator-name').textContent = `Tasks - ${person.name}`;
+            document.getElementById('task-modal-collaborator-role').textContent = (person.role || 'Sem cargo').toUpperCase();
+
+            renderTasksList();
+
+            document.getElementById('task-management-modal').classList.add('visible');
+        }
+
+        function closeTaskManagementModal() {
+            document.getElementById('task-management-modal').classList.remove('visible');
+            selectedPersonForTasks = null;
+        }
+
+        function renderTasksList() {
+            const container = document.getElementById('tasks-list-container');
+            if (!container || !selectedPersonForTasks) return;
+
+            const collaboratorTasks = tasks.filter(t => t.personId === selectedPersonForTasks);
+
+            if (collaboratorTasks.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12">
+                        <svg class="mx-auto h-12 w-12 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                        </svg>
+                        <p class="mt-2 text-stone-600">Nenhuma task cadastrada ainda.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Sort: Pending first (overdue first), then completed
+            const sortedTasks = [...collaboratorTasks].sort((a, b) => {
+                if (a.status !== b.status) {
+                    return a.status === 'pending' ? -1 : 1;
+                }
+                if (a.status === 'pending') {
+                    return new Date(a.dueDate) - new Date(b.dueDate);
+                }
+                return new Date(b.dueDate) - new Date(a.dueDate);
+            });
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            const selectedPerson = taskPeople.find(p => p.id === selectedPersonForTasks);
+            const canManage = can('tasks-prazos.manage_all') || (can('tasks-prazos.manage_own') && selectedPerson && currentCollaborator?.name === selectedPerson.name);
+
+            container.innerHTML = sortedTasks.map(task => {
+                const dueDate = new Date(task.dueDate);
+                dueDate.setHours(0, 0, 0, 0);
+                const isOverdue = task.status === 'pending' && dueDate < today;
+                const isToday = dueDate.getTime() === today.getTime();
+
+                return `
+                    <div class="mb-4 p-4 rounded-lg border-2 ${task.status === 'completed' ? 'bg-stone-50 border-stone-200' : isOverdue ? 'bg-red-50 border-red-300' : isToday ? 'bg-yellow-50 border-yellow-300' : 'bg-white border-stone-200'}">
+                        <div class="flex items-start justify-between">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-3">
+                                    ${canManage ? `
+                                    <input type="checkbox" 
+                                           ${task.status === 'completed' ? 'checked' : ''}
+                                           onchange="toggleTaskStatus('${task.id}')"
+                                           class="h-5 w-5 rounded border-gray-300 text-yellow-500 focus:ring-yellow-400">
+                                    ` : ''}
+                                    <h4 class="font-semibold text-stone-800 ${task.status === 'completed' ? 'line-through text-stone-500' : ''}">
+                                        ${task.title}
+                                    </h4>
+                                </div>
+                                ${task.description ? `<p class="text-sm text-stone-600 mt-2 ml-8">${task.description}</p>` : ''}
+                                <div class="flex items-center gap-4 mt-2 ml-8 text-xs text-stone-500">
+                                    <span class="flex items-center gap-1">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                        </svg>
+                                        ${formatDateBR(task.dueDate)}
+                                    </span>
+                                    ${isOverdue && task.status === 'pending' ? '<span class="text-red-600 font-semibold">ATRASADA</span>' : ''}
+                                    ${isToday && task.status === 'pending' ? '<span class="text-yellow-600 font-semibold">HOJE</span>' : ''}
+                                </div>
+                            </div>
+                            ${canManage ? `
+                            <div class="flex gap-2 ml-4">
+                                <button onclick="event.stopPropagation(); editTask('${task.id}')" 
+                                        class="p-2 text-stone-400 hover:text-stone-600 transition-colors"
+                                        title="Editar">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                    </svg>
+                                </button>
+                                <button onclick="event.stopPropagation(); deleteTask('${task.id}')" 
+                                        class="p-2 text-stone-400 hover:text-red-600 transition-colors"
+                                        title="Excluir">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                    </svg>
+                                </button>
+                            </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function openAddTaskForm() {
+            editingTaskId = null;
+            document.getElementById('task-form-title').textContent = 'Nova Task';
+            document.getElementById('task-form').reset();
+            document.getElementById('task-form-modal').classList.add('visible');
+        }
+
+        function editTask(taskId) {
+            const task = tasks.find(t => t.id === taskId);
+            if (!task) return;
+
+            editingTaskId = taskId;
+            document.getElementById('task-form-title').textContent = 'Editar Task';
+            document.getElementById('task-title').value = task.title;
+            document.getElementById('task-description').value = task.description || '';
+            document.getElementById('task-due-date').value = task.dueDate;
+            
+            document.getElementById('task-form-modal').classList.add('visible');
+        }
+
+        function closeTaskFormModal() {
+            document.getElementById('task-form-modal').classList.remove('visible');
+            editingTaskId = null;
+        }
+
+        async function saveTaskPrazo(event) {
+            event.preventDefault();
+
+            const title = document.getElementById('task-title').value;
+            const description = document.getElementById('task-description').value;
+            const dueDate = document.getElementById('task-due-date').value;
+
+            if (!title || !dueDate) {
+                showErrorMessage('Erro', 'Preencha todos os campos obrigatórios.');
+                return;
+            }
+
+            const taskData = {
+                title,
+                description,
+                dueDate,
+                personId: selectedPersonForTasks,
+                status: editingTaskId ? (tasks.find(t => t.id === editingTaskId)?.status || 'pending') : 'pending',
+                createdAt: editingTaskId ? (tasks.find(t => t.id === editingTaskId)?.createdAt || new Date().toISOString()) : new Date().toISOString()
+            };
+
+            try {
+                if (editingTaskId) {
+                    await setDoc(doc(db, `artifacts/${appId}/public/data/tasks`, editingTaskId), taskData);
+                    await logActivity('Editou task', 'task', title);
+                    showSuccessMessage('Sucesso!', 'Task atualizada com sucesso.');
+                } else {
+                    await addDoc(collection(db, `artifacts/${appId}/public/data/tasks`), taskData);
+                    await logActivity('Adicionou task', 'task', title);
+                    showSuccessMessage('Sucesso!', 'Task criada com sucesso.');
+                }
+                
+                closeTaskFormModal();
+                renderTasksList();
+            } catch (error) {
+                console.error('Error saving task:', error);
+                showErrorMessage('Erro', 'Erro ao salvar task: ' + error.message);
+            }
+        }
+
+        async function toggleTaskStatus(taskId) {
+            const task = tasks.find(t => t.id === taskId);
+            if (!task) return;
+
+            const newStatus = task.status === 'completed' ? 'pending' : 'completed';
+
+            try {
+                await updateDoc(doc(db, `artifacts/${appId}/public/data/tasks`, taskId), {
+                    status: newStatus
+                });
+                await logActivity(newStatus === 'completed' ? 'Concluiu task' : 'Reativou task', 'task', task.title);
+                renderTasksList();
+            } catch (error) {
+                console.error('Error toggling task status:', error);
+                showErrorMessage('Erro', 'Erro ao atualizar status da task.');
+            }
+        }
+
+        async function deleteTask(taskId) {
+            const task = tasks.find(t => t.id === taskId);
+            if (!task) return;
+
+            if (!confirm(`Tem certeza que deseja excluir a task "${task.title}"?`)) {
+                return;
+            }
+
+            try {
+                await deleteDoc(doc(db, `artifacts/${appId}/public/data/tasks`, taskId));
+                await logActivity('Excluiu task', 'task', task.title);
+                showSuccessMessage('Sucesso!', 'Task excluída com sucesso.');
+                renderTasksList();
+            } catch (error) {
+                console.error('Error deleting task:', error);
+                showErrorMessage('Erro', 'Erro ao excluir task.');
+            }
+        }
+
+        window.openTaskManagementModal = openTaskManagementModal;
+        window.closeTaskManagementModal = closeTaskManagementModal;
+        window.openAddTaskForm = openAddTaskForm;
+        window.closeTaskFormModal = closeTaskFormModal;
+        window.saveTaskPrazo = saveTaskPrazo;
+        window.editTask = editTask;
+        window.deleteTask = deleteTask;
+        window.toggleTaskStatus = toggleTaskStatus;
+        window.openAddPersonModal = openAddPersonModal;
+        window.editPerson = editPerson;
+        window.closePersonModal = closePersonModal;
+        window.savePerson = savePerson;
+        window.deletePerson = deletePerson;
+
         let currentCalendarDate = new Date();
         let calendarEvents = [];
         let fixedDateCards = [];
@@ -12369,9 +12917,14 @@
         async function loadFixedDateCards() {
             if (!db) {
                 const localCards = JSON.parse(localStorage.getItem('fixedDateCards') || '[]');
-                if (localCards.length === 0) {
-                    // Initialize 8 empty cards
-                    fixedDateCards = Array.from({ length: 8 }, (_, i) => ({
+                
+                // Clean up: keep only first 4 cards
+                if (localCards.length > 4) {
+                    fixedDateCards = localCards.slice(0, 4);
+                    localStorage.setItem('fixedDateCards', JSON.stringify(fixedDateCards));
+                } else if (localCards.length === 0) {
+                    // Initialize 4 empty cards
+                    fixedDateCards = Array.from({ length: 4 }, (_, i) => ({
                         id: `fixed-${i + 1}`,
                         title: `Período ${i + 1}`,
                         startDate: '',
@@ -12389,9 +12942,23 @@
                 const cardsCollection = collection(db, `artifacts/${appId}/public/data/fixed-date-cards`);
                 const cardsSnapshot = await getDocs(cardsCollection);
                 
-                if (cardsSnapshot.empty) {
-                    // Initialize 8 empty cards in Firebase
-                    fixedDateCards = Array.from({ length: 8 }, (_, i) => ({
+                // Delete cards 5-8 if they exist
+                const cardsToDelete = ['fixed-5', 'fixed-6', 'fixed-7', 'fixed-8'];
+                for (const cardId of cardsToDelete) {
+                    const cardDoc = doc(db, `artifacts/${appId}/public/data/fixed-date-cards`, cardId);
+                    const cardSnapshot = await getDoc(cardDoc);
+                    if (cardSnapshot.exists()) {
+                        await deleteDoc(cardDoc);
+                        console.log(`Deleted old card: ${cardId}`);
+                    }
+                }
+                
+                // Reload after deletion
+                const updatedSnapshot = await getDocs(cardsCollection);
+                
+                if (updatedSnapshot.empty) {
+                    // Initialize 4 empty cards in Firebase
+                    fixedDateCards = Array.from({ length: 4 }, (_, i) => ({
                         id: `fixed-${i + 1}`,
                         title: `Período ${i + 1}`,
                         startDate: '',
@@ -12401,7 +12968,7 @@
                         await setDoc(doc(db, `artifacts/${appId}/public/data/fixed-date-cards`, card.id), card);
                     }
                 } else {
-                    fixedDateCards = cardsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    fixedDateCards = updatedSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 }
                 
                 // Set up real-time listener
@@ -15087,6 +15654,7 @@
                 { key: 'grade', label: 'Grade', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" x2="16" y1="2" y2="6"></line><line x1="8" x2="8" y1="2" y2="6"></line><line x1="3" x2="21" y1="10" y2="10"></line></svg>', roles: ['admin', 'pedagogico', 'ap', 'teacher', 'am', 'financeiro'] },
                 { key: 'calendario', label: 'Calendário', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>', roles: ['admin', 'pedagogico', 'ap', 'teacher', 'am', 'financeiro'] },
                 { key: 'links-uteis', label: 'Links Úteis', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>', roles: ['admin', 'pedagogico', 'ap', 'teacher', 'am', 'financeiro'] },
+                { key: 'tasks-prazos', label: 'Tasks & Prazos', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 2v4M8 2v4M3 10h18"/><path d="M20 6H4a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1z"/><path d="m9 16 2 2 4-4"/></svg>', roles: ['admin', 'pedagogico', 'ap', 'teacher', 'am', 'financeiro'] },
                 { key: 'gestao-tns', label: 'Gestão TNs', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>', roles: ['admin', 'pedagogico', 'ap', 'am'] },
                 { key: 'rechamada', label: 'Rechamada', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>', roles: ['admin', 'pedagogico', 'ap', 'am', 'teacher'] },
                 
@@ -15350,6 +15918,7 @@
                 'dojo': ['admin', 'pedagogico', 'ap', 'teacher', 'am'], // Dojo - everyone except financeiro
                 'calendario': ['admin', 'pedagogico', 'ap', 'teacher', 'am', 'financeiro'], // Shared calendar
                 'links-uteis': ['admin', 'pedagogico', 'ap', 'teacher', 'am', 'financeiro'], // Useful links - everyone
+                'tasks-prazos': ['admin', 'pedagogico', 'ap', 'teacher', 'am', 'financeiro'], // Tasks & Prazos - everyone
                 'gestao-tns': ['admin', 'pedagogico', 'ap', 'am'], // Gestão de Testes de Nível
                 'rechamada': ['admin', 'pedagogico', 'ap', 'am', 'teacher'], // Rechamada - teachers, admin, pedagogico, ap, am
                 'kpis-pedagogico': ['admin', 'pedagogico', 'ap'], // KPIs Pedagógico
@@ -15360,7 +15929,7 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            const pageRenderers = { 'inicio': renderInicioSection, 'alunos': renderAlunosSection, 'turmas': renderTurmasSection, 'vips': renderVipsSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection, 'colaboradores': renderColaboradoresSection, 'dojo': renderDojoSection, 'calendario': renderCalendarioSection, 'links-uteis': renderLinksUteisSection, 'gestao-tns': renderGestaoTNsSection, 'rechamada': renderRechamadaSection, 'kpis-pedagogico': renderKPIsPedagogicoSection, 'logs-atividades': renderLogsAtividadesSection  };
+            const pageRenderers = { 'inicio': renderInicioSection, 'alunos': renderAlunosSection, 'turmas': renderTurmasSection, 'vips': renderVipsSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection, 'colaboradores': renderColaboradoresSection, 'dojo': renderDojoSection, 'calendario': renderCalendarioSection, 'links-uteis': renderLinksUteisSection, 'tasks-prazos': renderTasksPrazosSection, 'gestao-tns': renderGestaoTNsSection, 'rechamada': renderRechamadaSection, 'kpis-pedagogico': renderKPIsPedagogicoSection, 'logs-atividades': renderLogsAtividadesSection  };
 
             document.body.addEventListener('click', (event) => {
                 // Close modals when clicking overlay or close button
