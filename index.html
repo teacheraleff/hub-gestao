@@ -687,14 +687,15 @@
                 },
                 'am': {
                     label: 'Assistente de Marketing',
-                    description: 'Acesso a eventos e informações públicas',
+                    description: 'Acesso a eventos, calendário e marketing',
                     permissions: {
-                        'alunos.access_no_financials': true,
+                        'dojo.view_only': true,
+                        'calendario.edit_fixed_periods': true,
                         'calendario.add_event': true,
                         'calendario.edit_event': true,
                         'calendario.delete_event': true,
+                        'links-uteis.view_only': true,
                         'tasks-prazos.view_all': true,
-                        'tasks-prazos.complete_own': true,
                         'tasks-prazos.add_task': true
                     }
                 }
@@ -9079,7 +9080,7 @@
                     'pedagogico': ['inicio', 'dojo', 'alunos', 'turmas', 'vips', 'grade', 'calendario', 'links-uteis', 'tasks-prazos', 'gestao-tns', 'rechamada', 'kpis-pedagogico', 'logs-atividades'],
                     'financeiro': ['alunos', 'turmas', 'vips', 'tasks-prazos', 'kpis-pedagogico', 'logs-atividades', 'folha-pagamento'],
                     'ap': ['alunos', 'turmas', 'vips', 'grade', 'calendario', 'tasks-prazos', 'rechamada', 'kpis-pedagogico'],
-                    'am': ['inicio', 'dojo', 'alunos', 'turmas', 'vips', 'grade', 'calendario', 'tasks-prazos', 'gestao-tns', 'rechamada']
+                    'am': ['inicio', 'dojo', 'calendario', 'links-uteis', 'tasks-prazos']
                 };
                 
                 const pagesToAllow = allowedPagesByRole[roleValue] || [];
