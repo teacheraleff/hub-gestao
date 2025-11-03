@@ -12530,7 +12530,7 @@
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
                             </svg>
-                            Adicionar Pessoa
+                            Adicionar Colaborador
                         </button>
                     </div>
                     ` : ''}
@@ -12544,7 +12544,7 @@
                 <div id="person-modal" class="modal-overlay">
                     <div class="modal-content max-w-md">
                         <div class="modal-header">
-                            <h4 id="person-modal-title">Adicionar Pessoa</h4>
+                            <h4 id="person-modal-title">Adicionar Colaborador</h4>
                             <button onclick="closePersonModal()" class="modal-close-btn">&times;</button>
                         </div>
                         <form id="person-form" onsubmit="savePerson(event)">
@@ -12584,13 +12584,13 @@
                         <div class="p-6">
                             ${can('tasks-prazos.manage_own') || can('tasks-prazos.manage_all') ? `
                             <div class="mb-6 flex justify-end gap-3">
-                                <button class="primary-btn" style="background-color: #FF5C3D;" onmouseover="this.style.backgroundColor='#E54A2E'" onmouseout="this.style.backgroundColor='#FF5C3D'" onclick="openAddTaskForm()">
+                                <button class="primary-btn" style="background-color: #F1D24B;" onmouseover="this.style.backgroundColor='#E0C03D'" onmouseout="this.style.backgroundColor='#F1D24B'" onclick="openAddTaskForm()">
                                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
                                     </svg>
                                     Task Normal
                                 </button>
-                                <button class="primary-btn" style="background-color: #8671D1;" onmouseover="this.style.backgroundColor='#7561BD'" onmouseout="this.style.backgroundColor='#8671D1'" onclick="openAddChecklistForm()">
+                                <button class="primary-btn" style="background-color: #F1D24B;" onmouseover="this.style.backgroundColor='#E0C03D'" onmouseout="this.style.backgroundColor='#F1D24B'" onclick="openAddChecklistForm()">
                                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
                                     </svg>
@@ -12766,7 +12766,7 @@
         
         function openAddPersonModal() {
             editingPersonId = null;
-            document.getElementById('person-modal-title').textContent = 'Adicionar Pessoa';
+            document.getElementById('person-modal-title').textContent = 'Adicionar Colaborador';
             document.getElementById('person-form').reset();
             document.getElementById('person-modal').classList.add('visible');
         }
@@ -12776,7 +12776,7 @@
             if (!person) return;
             
             editingPersonId = personId;
-            document.getElementById('person-modal-title').textContent = 'Editar Pessoa';
+            document.getElementById('person-modal-title').textContent = 'Editar Colaborador';
             document.getElementById('person-name').value = person.name;
             document.getElementById('person-role').value = person.role || '';
             document.getElementById('person-photo-url').value = person.photoUrl || '';
