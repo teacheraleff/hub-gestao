@@ -862,16 +862,17 @@
                 
                 if (!snapshot.empty) {
                     const collabDoc = snapshot.docs[0];
-                    currentCollaborator = { id: collabDoc.id, ...collabDoc.data() };
-                    console.log('✅ Colaborador carregado:', currentCollaborator.name);
-                    console.log('🔑 Permissões:', currentCollaborator.permissions ? 'Customizadas' : 'Usando preset da role');
+                    window.currentCollaborator = { id: collabDoc.id, ...collabDoc.data() };
+                    console.log('✅ Colaborador carregado:', window.currentCollaborator.name);
+                    console.log('🔑 Permissões:', window.currentCollaborator.permissions ? 'Customizadas' : 'Usando preset da role');
+                    console.log('📄 Páginas permitidas:', window.currentCollaborator.allowedPages || 'Nenhuma configurada');
                 } else {
                     console.log('⚠️ Colaborador não encontrado no banco. Usando preset da role:', currentUserRole);
-                    currentCollaborator = null;
+                    window.currentCollaborator = null;
                 }
             } catch (error) {
                 console.error('Erro ao carregar colaborador:', error);
-                currentCollaborator = null;
+                window.currentCollaborator = null;
             }
         }
 
@@ -17266,24 +17267,27 @@
             // Admin sempre tem acesso total
             if (userRole === 'admin') return true;
             
-            // Buscar colaborador pelo nome do usuário atual
-            const currentCollaborator = collaborators.find(c => c.name === currentUserName);
-            
             // Verificação especial para Logs de Atividades
             if (pageKey === 'logs-atividades') {
                 // Admin sempre tem acesso
                 if (userRole === 'admin') return true;
                 // Verificar se o colaborador tem permissão específica
-                return currentCollaborator && currentCollaborator.canViewLogs === true;
+                return window.currentCollaborator && window.currentCollaborator.canViewLogs === true;
             }
             
-            // Se encontrou o colaborador e ele tem permissões customizadas, usar essas permissões
-            if (currentCollaborator && currentCollaborator.allowedPages && Array.isArray(currentCollaborator.allowedPages)) {
+            // Usar window.currentCollaborator carregado no login (não buscar no array colaborators)
+            if (window.currentCollaborator && window.currentCollaborator.allowedPages && Array.isArray(window.currentCollaborator.allowedPages)) {
                 // Se o colaborador tem role admin configurado, acesso total
-                if (currentCollaborator.role === 'admin') return true;
+                if (window.currentCollaborator.role === 'admin') return true;
+                
+                console.log(`🔍 Verificando acesso para página "${pageKey}":`, {
+                    colaborador: window.currentCollaborator.name,
+                    paginasPermitidas: window.currentCollaborator.allowedPages,
+                    temAcesso: window.currentCollaborator.allowedPages.includes(pageKey)
+                });
                 
                 // Verificar se a página está na lista de permissões customizadas
-                return currentCollaborator.allowedPages.includes(pageKey);
+                return window.currentCollaborator.allowedPages.includes(pageKey);
             }
             
             // Fallback: usar sistema antigo baseado apenas em roles
