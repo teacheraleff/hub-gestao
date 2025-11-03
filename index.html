@@ -13308,10 +13308,29 @@
             container.innerHTML = taskPeople.map(person => {
                 const personTasks = tasks.filter(t => t.personId === person.id);
                 const pendingTasks = personTasks.filter(t => t.status === 'pending');
-                const overdueTasks = pendingTasks.filter(t => {
-                    const dueDate = new Date(t.dueDate);
-                    dueDate.setHours(0, 0, 0, 0);
-                    return dueDate < today;
+                
+                // Count overdue items (each checklist item counts as 1)
+                let overdueCount = 0;
+                pendingTasks.forEach(t => {
+                    if (t.type === 'checklist' && t.items) {
+                        // For checklists, count each overdue item individually
+                        t.items.forEach(item => {
+                            if (!item.completed) {
+                                const itemDueDate = new Date(item.dueDate);
+                                itemDueDate.setHours(0, 0, 0, 0);
+                                if (itemDueDate < today) {
+                                    overdueCount++;
+                                }
+                            }
+                        });
+                    } else {
+                        // For normal tasks, check if the entire task is overdue
+                        const dueDate = new Date(t.dueDate);
+                        dueDate.setHours(0, 0, 0, 0);
+                        if (dueDate < today) {
+                            overdueCount++;
+                        }
+                    }
                 });
 
                 const photoUrl = person.photoUrl || 'https://res.cloudinary.com/dqfi22uz0/image/upload/v1749349751/DBB440C2-684E-4DCF-9CD3-B2DDC18F1E53_3_vgocga.jpg';
@@ -13349,8 +13368,8 @@
                                         <p class="text-xs text-stone-600">Tasks Ativas</p>
                                     </div>
                                     <div>
-                                        <p class="text-2xl font-bold ${overdueTasks.length > 0 ? 'text-red-600' : 'text-green-600'}">
-                                            ${overdueTasks.length}
+                                        <p class="text-2xl font-bold ${overdueCount > 0 ? 'text-red-600' : 'text-green-600'}">
+                                            ${overdueCount}
                                         </p>
                                         <p class="text-xs text-stone-600">Atrasadas</p>
                                     </div>
