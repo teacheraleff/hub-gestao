@@ -599,6 +599,8 @@
                         'grade.teacher_own_only': true,
                         'links-uteis.view_only': true,
                         'tasks-prazos.view_all': true,
+                        'tasks-prazos.complete_own': true,
+                        'tasks-prazos.add_task': true,
                         'rechamada.teacher_own_students': true
                     }
                 },
@@ -621,6 +623,14 @@
                         'calendario.delete_event': true,
                         'links-uteis.full_access': true,
                         'tasks-prazos.view_all': true,
+                        'tasks-prazos.complete_own': true,
+                        'tasks-prazos.complete_all': true,
+                        'tasks-prazos.add_task': true,
+                        'tasks-prazos.edit_task': true,
+                        'tasks-prazos.delete_task': true,
+                        'tasks-prazos.add_person': true,
+                        'tasks-prazos.edit_person': true,
+                        'tasks-prazos.delete_person': true,
                         'gestao-tns.full_access': true,
                         'rechamada.full_access': true,
                         'kpis-pedagogico.full_access': true,
@@ -636,6 +646,14 @@
                         'vips.full_access': true,
                         'financeiro.full_access': true,
                         'tasks-prazos.view_all': true,
+                        'tasks-prazos.complete_own': true,
+                        'tasks-prazos.complete_all': true,
+                        'tasks-prazos.add_task': true,
+                        'tasks-prazos.edit_task': true,
+                        'tasks-prazos.delete_task': true,
+                        'tasks-prazos.add_person': true,
+                        'tasks-prazos.edit_person': true,
+                        'tasks-prazos.delete_person': true,
                         'kpis-pedagogico.full_access': true,
                         'logs-atividades.full_access': true
                     }
@@ -651,6 +669,14 @@
                         'calendario.add_event': true,
                         'calendario.edit_event': true,
                         'tasks-prazos.view_all': true,
+                        'tasks-prazos.complete_own': true,
+                        'tasks-prazos.complete_all': true,
+                        'tasks-prazos.add_task': true,
+                        'tasks-prazos.edit_task': true,
+                        'tasks-prazos.delete_task': true,
+                        'tasks-prazos.add_person': true,
+                        'tasks-prazos.edit_person': true,
+                        'tasks-prazos.delete_person': true,
                         'rechamada.full_access': true,
                         'kpis-pedagogico.full_access': true
                     }
@@ -663,7 +689,9 @@
                         'calendario.add_event': true,
                         'calendario.edit_event': true,
                         'calendario.delete_event': true,
-                        'tasks-prazos.view_all': true
+                        'tasks-prazos.view_all': true,
+                        'tasks-prazos.complete_own': true,
+                        'tasks-prazos.add_task': true
                     }
                 }
             }
@@ -8871,18 +8899,51 @@
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
                                         Tasks & Prazos
                                     </h4>
-                                    <label class="flex items-center text-sm">
-                                        <input type="checkbox" name="perm_tasks-prazos_view_all" class="h-4 w-4 rounded mr-2">
-                                        Ver todas as tasks
-                                    </label>
-                                    <label class="flex items-center text-sm">
-                                        <input type="checkbox" name="perm_tasks-prazos_manage_own" class="h-4 w-4 rounded mr-2">
-                                        Gerenciar próprias tasks
-                                    </label>
-                                    <label class="flex items-center text-sm">
-                                        <input type="checkbox" name="perm_tasks-prazos_manage_all" class="h-4 w-4 rounded mr-2">
-                                        Gerenciar todas as tasks
-                                    </label>
+                                    <div class="ml-3 space-y-1">
+                                        <p class="text-xs font-semibold text-stone-500 mb-1">Visualização</p>
+                                        <label class="flex items-center text-sm">
+                                            <input type="checkbox" name="perm_tasks-prazos_view_all" class="h-4 w-4 rounded mr-2">
+                                            Ver todas as tasks
+                                        </label>
+                                        
+                                        <p class="text-xs font-semibold text-stone-500 mb-1 mt-2">Completar Tasks</p>
+                                        <label class="flex items-center text-sm">
+                                            <input type="checkbox" name="perm_tasks-prazos_complete_own" class="h-4 w-4 rounded mr-2">
+                                            Marcar apenas suas tasks como concluídas
+                                        </label>
+                                        <label class="flex items-center text-sm">
+                                            <input type="checkbox" name="perm_tasks-prazos_complete_all" class="h-4 w-4 rounded mr-2">
+                                            Marcar todas as tasks como concluídas
+                                        </label>
+                                        
+                                        <p class="text-xs font-semibold text-stone-500 mb-1 mt-2">Gerenciar Tasks</p>
+                                        <label class="flex items-center text-sm">
+                                            <input type="checkbox" name="perm_tasks-prazos_add_task" class="h-4 w-4 rounded mr-2">
+                                            Adicionar tasks
+                                        </label>
+                                        <label class="flex items-center text-sm">
+                                            <input type="checkbox" name="perm_tasks-prazos_edit_task" class="h-4 w-4 rounded mr-2">
+                                            Editar tasks
+                                        </label>
+                                        <label class="flex items-center text-sm">
+                                            <input type="checkbox" name="perm_tasks-prazos_delete_task" class="h-4 w-4 rounded mr-2">
+                                            Excluir tasks
+                                        </label>
+                                        
+                                        <p class="text-xs font-semibold text-stone-500 mb-1 mt-2">Gerenciar Pessoas</p>
+                                        <label class="flex items-center text-sm">
+                                            <input type="checkbox" name="perm_tasks-prazos_add_person" class="h-4 w-4 rounded mr-2">
+                                            Adicionar pessoas/colaboradores
+                                        </label>
+                                        <label class="flex items-center text-sm">
+                                            <input type="checkbox" name="perm_tasks-prazos_edit_person" class="h-4 w-4 rounded mr-2">
+                                            Editar pessoas
+                                        </label>
+                                        <label class="flex items-center text-sm">
+                                            <input type="checkbox" name="perm_tasks-prazos_delete_person" class="h-4 w-4 rounded mr-2">
+                                            Excluir pessoas
+                                        </label>
+                                    </div>
                                 </div>
                                 
                                 <!-- Colaboradores -->
