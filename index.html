@@ -13312,9 +13312,9 @@
                 // Count overdue items (each checklist item counts as 1)
                 let overdueCount = 0;
                 pendingTasks.forEach(t => {
-                    if (t.type === 'checklist' && t.items) {
+                    if (t.type === 'checklist' && t.checklistItems) {
                         // For checklists, count each overdue item individually
-                        t.items.forEach(item => {
+                        t.checklistItems.forEach(item => {
                             if (!item.completed) {
                                 const itemDueDate = new Date(item.dueDate);
                                 itemDueDate.setHours(0, 0, 0, 0);
