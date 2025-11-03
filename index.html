@@ -435,7 +435,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, updateProfile, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
-        import { getFirestore, collection, onSnapshot, addDoc, doc, deleteDoc, serverTimestamp, query, setDoc, getDoc, updateDoc, orderBy, limit, where, arrayUnion, arrayRemove, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, addDoc, doc, deleteDoc, serverTimestamp, query, setDoc, getDoc, updateDoc, orderBy, limit, where, arrayUnion, arrayRemove, getDocs, writeBatch, deleteField } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-storage.js";
 
         // --- GLOBAL VARIABLES ---
@@ -598,6 +598,7 @@
                         'vips.teacher_view_only': true,
                         'grade.teacher_own_only': true,
                         'links-uteis.view_only': true,
+                        'tasks-prazos.view_all': true,
                         'rechamada.teacher_own_students': true
                     }
                 },
@@ -620,8 +621,6 @@
                         'calendario.delete_event': true,
                         'links-uteis.full_access': true,
                         'tasks-prazos.view_all': true,
-                        'tasks-prazos.manage_own': true,
-                        'tasks-prazos.manage_all': true,
                         'gestao-tns.full_access': true,
                         'rechamada.full_access': true,
                         'kpis-pedagogico.full_access': true,
@@ -636,6 +635,7 @@
                         'turmas.full_access': true,
                         'vips.full_access': true,
                         'financeiro.full_access': true,
+                        'tasks-prazos.view_all': true,
                         'kpis-pedagogico.full_access': true,
                         'logs-atividades.full_access': true
                     }
@@ -651,7 +651,6 @@
                         'calendario.add_event': true,
                         'calendario.edit_event': true,
                         'tasks-prazos.view_all': true,
-                        'tasks-prazos.manage_own': true,
                         'rechamada.full_access': true,
                         'kpis-pedagogico.full_access': true
                     }
@@ -663,7 +662,8 @@
                         'alunos.access_no_financials': true,
                         'calendario.add_event': true,
                         'calendario.edit_event': true,
-                        'calendario.delete_event': true
+                        'calendario.delete_event': true,
+                        'tasks-prazos.view_all': true
                     }
                 }
             }
@@ -934,6 +934,13 @@
                 if (activePageId === 'grade-section') renderGradeSection();
                 if (activePageId === 'colaboradores-section') renderColaboradoresSection();
                 if (activePageId === 'inicio-section') renderInicioSection();
+                
+                // Mark collaborators as ready for migration
+                if (!migrationDataReady.collaborators) {
+                    migrationDataReady.collaborators = true;
+                    console.log('✅ Collaborators data loaded for migration');
+                    migrateTasksToPersonSystem();
+                }
             });
             getCollectionListener('events', events, () => {
                 const activePageId = contentArea.firstElementChild?.id;
@@ -969,12 +976,24 @@
             getCollectionListener('tasks', tasks, () => {
                 const activePageId = contentArea.firstElementChild?.id;
                 if (activePageId === 'tasks-prazos-section') renderPeopleTasksCards();
+                
+                // Mark tasks as ready for migration
+                if (!migrationDataReady.tasks) {
+                    migrationDataReady.tasks = true;
+                    console.log('✅ Tasks data loaded for migration');
+                    migrateTasksToPersonSystem();
+                }
             });
             
             // Task People listener
             getCollectionListener('task-people', taskPeople, () => {
                 const activePageId = contentArea.firstElementChild?.id;
                 if (activePageId === 'tasks-prazos-section') renderPeopleTasksCards();
+                
+                // Check for orphaned tasks after data loads
+                if (tasks.length > 0 && taskPeople.length > 0) {
+                    checkAndFixOrphanedTasks();
+                }
             });
             
             // Testes de Nível listener
@@ -1013,6 +1032,170 @@
                 });
                 allUnsubscribers.push(unsubscribeHighlight);
             }
+        }
+
+        // --- TASKS MIGRATION TO PERSON-BASED SYSTEM ---
+        let isMigrating = false;
+        let migrationDataReady = { tasks: false, collaborators: false };
+        
+        async function migrateTasksToPersonSystem() {
+            if (isMigrating || !db) return;
+            
+            // Check if migration already ran (stored in localStorage)
+            const migrationKey = `tasks_migration_${appId}_completed`;
+            if (localStorage.getItem(migrationKey) === 'true') {
+                console.log('✅ Tasks migration already completed');
+                return;
+            }
+            
+            // Wait for both tasks and collaborators to be loaded
+            if (!migrationDataReady.tasks || !migrationDataReady.collaborators) {
+                console.log('⏳ Waiting for tasks and collaborators data to load before migration');
+                return;
+            }
+            
+            isMigrating = true;
+            console.log('🔄 Starting tasks migration to person-based system...');
+            
+            try {
+                // Find all tasks with collaboratorId but no personId
+                const legacyTasks = tasks.filter(t => t.collaboratorId && !t.personId);
+                
+                if (legacyTasks.length === 0) {
+                    console.log('✅ No legacy tasks to migrate');
+                    localStorage.setItem(migrationKey, 'true');
+                    isMigrating = false;
+                    return;
+                }
+                
+                console.log(`📋 Found ${legacyTasks.length} legacy tasks to migrate`);
+                
+                // Map to store collaboratorId -> personId mappings
+                const collabToPersonMap = new Map();
+                
+                for (const task of legacyTasks) {
+                    const collaboratorId = task.collaboratorId;
+                    
+                    // Check if we already created a person for this collaborator
+                    if (collabToPersonMap.has(collaboratorId)) {
+                        // Update task with existing person
+                        const personId = collabToPersonMap.get(collaboratorId);
+                        await updateDoc(doc(db, `artifacts/${appId}/public/data/tasks`, task.id), {
+                            personId: personId,
+                            collaboratorId: deleteField()
+                        });
+                        console.log(`✅ Migrated task "${task.title}" to person ${personId}`);
+                        continue;
+                    }
+                    
+                    // Find the collaborator
+                    const collaborator = collaborators.find(c => c.id === collaboratorId);
+                    
+                    if (collaborator) {
+                        // Create a person record for this collaborator
+                        const personData = {
+                            name: collaborator.name,
+                            role: collaborator.role || '',
+                            photoUrl: collaborator.photoUrl || '',
+                            createdAt: new Date().toISOString(),
+                            migratedFromCollaboratorId: collaboratorId, // For reference
+                            firebaseUid: collaborator.firebaseUid || null // For secure permission checks
+                        };
+                        
+                        const personRef = await addDoc(collection(db, `artifacts/${appId}/public/data/task-people`), personData);
+                        collabToPersonMap.set(collaboratorId, personRef.id);
+                        
+                        // Update task to use personId
+                        await updateDoc(doc(db, `artifacts/${appId}/public/data/tasks`, task.id), {
+                            personId: personRef.id,
+                            collaboratorId: deleteField()
+                        });
+                        
+                        console.log(`✅ Migrated collaborator "${collaborator.name}" to person and updated task "${task.title}"`);
+                    } else {
+                        // Collaborator not found - create "Unknown" person
+                        const unknownPersonData = {
+                            name: 'Colaborador Desconhecido',
+                            role: 'Migrado',
+                            photoUrl: '',
+                            createdAt: new Date().toISOString(),
+                            migratedFromCollaboratorId: collaboratorId,
+                            isOrphaned: true
+                        };
+                        
+                        const personRef = await addDoc(collection(db, `artifacts/${appId}/public/data/task-people`), unknownPersonData);
+                        collabToPersonMap.set(collaboratorId, personRef.id);
+                        
+                        await updateDoc(doc(db, `artifacts/${appId}/public/data/tasks`, task.id), {
+                            personId: personRef.id,
+                            collaboratorId: deleteField()
+                        });
+                        
+                        console.log(`⚠️ Migrated orphaned task "${task.title}" to "Unknown" person`);
+                    }
+                }
+                
+                console.log(`✅ Migration completed! Migrated ${legacyTasks.length} tasks to ${collabToPersonMap.size} people`);
+                localStorage.setItem(migrationKey, 'true');
+                await logActivity('Sistema migrou tasks antigas para o novo formato', 'system', `${legacyTasks.length} tasks migradas`);
+                
+            } catch (error) {
+                console.error('❌ Error during migration:', error);
+            } finally {
+                isMigrating = false;
+            }
+        }
+
+        // --- ORPHANED TASKS SAFEGUARD ---
+        async function checkAndFixOrphanedTasks() {
+            if (!db || tasks.length === 0 || taskPeople.length === 0) return;
+            
+            const orphanedTasks = tasks.filter(task => {
+                // Task has personId but person doesn't exist
+                return task.personId && !taskPeople.find(p => p.id === task.personId);
+            });
+            
+            if (orphanedTasks.length === 0) {
+                return;
+            }
+            
+            console.log(`⚠️ Found ${orphanedTasks.length} orphaned tasks (personId points to non-existent person)`);
+            
+            // Create a single "Unknown Person" record for all orphaned tasks
+            let unknownPersonId = taskPeople.find(p => p.isOrphaned === true)?.id;
+            
+            if (!unknownPersonId) {
+                const unknownPersonData = {
+                    name: 'Pessoa Desconhecida',
+                    role: 'Tasks Órfãs',
+                    photoUrl: '',
+                    createdAt: new Date().toISOString(),
+                    isOrphaned: true
+                };
+                
+                try {
+                    const personRef = await addDoc(collection(db, `artifacts/${appId}/public/data/task-people`), unknownPersonData);
+                    unknownPersonId = personRef.id;
+                    console.log('✅ Created "Unknown Person" record for orphaned tasks');
+                } catch (error) {
+                    console.error('Error creating unknown person:', error);
+                    return;
+                }
+            }
+            
+            // Reassign all orphaned tasks to the unknown person
+            for (const task of orphanedTasks) {
+                try {
+                    await updateDoc(doc(db, `artifacts/${appId}/public/data/tasks`, task.id), {
+                        personId: unknownPersonId
+                    });
+                    console.log(`✅ Reassigned orphaned task "${task.title}" to Unknown Person`);
+                } catch (error) {
+                    console.error(`Error reassigning task ${task.id}:`, error);
+                }
+            }
+            
+            await logActivity('Sistema corrigiu tasks órfãs', 'system', `${orphanedTasks.length} tasks atribuídas para Pessoa Desconhecida`);
         }
 
         // --- FIREBASE USERS SYNC ---
@@ -2986,18 +3169,13 @@
             }, 0);
             const ticketMedio = students.length > 0 ? totalAmountPaid / students.length : 0;
             
-            // Calculate VIP profit (includes DUPLA)
-            const activeVips = students.filter(s => (s.modalidade === 'VIP' || s.modalidade === 'DUPLA') && s.status && s.status.toLowerCase() === 'ativo');
-            const vipTotalRevenue = activeVips.length * profitSettings.vipMonthlyPayment;
-            const vipTotalTeacher = activeVips.length * profitSettings.vipTeacherPayment;
-            const vipSchoolProfit = vipTotalRevenue - vipTotalTeacher;
+            // Calculate VIP profit per VIP (not total, just per 1 VIP average)
+            const vipSchoolProfit = profitSettings.vipMonthlyPayment - profitSettings.vipTeacherPayment;
             
-            // Calculate Turma profit (only TURMA modality)
-            const turmaStudents = students.filter(s => s.modalidade === 'TURMA' && s.status && s.status.toLowerCase() === 'ativo');
-            const turmaCount = turmas.filter(t => !t.finalizada).length;
-            const turmaTotalRevenue = turmaStudents.length * profitSettings.turmaStudentPayment;
-            const turmaTotalTeacher = turmaCount * profitSettings.turmaTeacherPayment;
-            const turmaSchoolProfit = turmaTotalRevenue - turmaTotalTeacher;
+            // Calculate Turma profit per class (average of 5 students per class)
+            const exampleStudentsPerClass = 5;
+            const turmaRevenuePerClass = exampleStudentsPerClass * profitSettings.turmaStudentPayment;
+            const turmaSchoolProfit = turmaRevenuePerClass - profitSettings.turmaTeacherPayment;
 
             contentArea.innerHTML = `
                 <!-- Cards de Resumo Financeiro -->
@@ -3098,7 +3276,7 @@
                             </svg>
                         </div>
                         <p class="text-4xl font-bold text-stone-800 card-content">${vipSchoolProfit.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
-                        <p class="text-xs text-stone-600 mt-1">Lucro líquido (VIP - Professor)</p>
+                        <p class="text-xs text-stone-600 mt-1">Escola recebe por VIP (média)</p>
                         <p class="text-xs text-stone-600 mt-2 italic">Clique para configurar</p>
                     </div>
                     
@@ -3111,7 +3289,7 @@
                             </svg>
                         </div>
                         <p class="text-4xl font-bold text-stone-800 card-content">${turmaSchoolProfit.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
-                        <p class="text-xs text-stone-600 mt-1">Lucro líquido (Turma - Professor)</p>
+                        <p class="text-xs text-stone-600 mt-1">Escola recebe por Turma (média 5 alunos)</p>
                         <p class="text-xs text-stone-600 mt-2 italic">Clique para configurar</p>
                     </div>
                 </div>
@@ -3342,7 +3520,7 @@
                                 </svg>
                                 2º Lugar
                             </h4>
-                            <p class="text-stone-600 text-center">Alexa Echo Dot + R$500 </p>
+                            <p class="text-stone-600 text-center">Alexa Echo Dot</p>
                         </div>
                         <div class="p-4 rounded-lg border-2 border-yellow-400 bg-yellow-50 transform md:scale-110 order-1 md:order-2 flex flex-col items-center justify-center">
                             <h4 class="font-bold text-lg text-yellow-500 flex items-center justify-center gap-2 mb-2">
@@ -3353,7 +3531,7 @@
                                 </svg>
                                 1º Lugar
                             </h4>
-                            <p class="text-stone-700 font-semibold text-center">R$1000 + jantar + folga</p>
+                            <p class="text-stone-700 font-semibold text-center">R$1.000,00</p>
                         </div>
                         <div class="p-4 rounded-lg border-2 border-amber-600 bg-stone-50 order-3 md:order-3 flex flex-col items-center justify-center">
                             <h4 class="font-bold text-lg text-amber-700 flex items-center justify-center gap-2 mb-2">
@@ -3364,7 +3542,7 @@
                                 </svg>
                                 3º Lugar
                             </h4>
-                            <p class="text-stone-600 text-center">R$250 + mimo</p>
+                            <p class="text-stone-600 text-center">R$250,00</p>
                         </div>
                     </div>
 
@@ -5045,9 +5223,19 @@
                         
                         <div class="mt-6 p-4 bg-white rounded border border-amber-300">
                             <h4 class="font-semibold text-sm text-amber-900 mb-2">Resultado:</h4>
-                            <div class="space-y-1 text-sm">
-                                <p class="text-amber-800">💰 <strong>Professor recebe:</strong> <span id="vip-preview-teacher">R$ 0,00</span></p>
-                                <p class="text-amber-800">🏫 <strong>Escola recebe:</strong> <span id="vip-preview-school">R$ 0,00</span></p>
+                            <div class="space-y-2 text-sm">
+                                <p class="flex items-center gap-2 text-amber-800">
+                                    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                    </svg>
+                                    <strong>Professor recebe:</strong> <span id="vip-preview-teacher">R$ 0,00</span>
+                                </p>
+                                <p class="flex items-center gap-2 text-amber-800">
+                                    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                                    </svg>
+                                    <strong>Escola recebe:</strong> <span id="vip-preview-school">R$ 0,00</span>
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -5114,10 +5302,25 @@
                         
                         <div class="mt-6 p-4 bg-white rounded border border-emerald-300">
                             <h4 class="font-semibold text-sm text-emerald-900 mb-2">Resultado (por turma com exemplo de 5 alunos):</h4>
-                            <div class="space-y-1 text-sm">
-                                <p class="text-emerald-800">📚 <strong>Receita da turma:</strong> <span id="turma-preview-revenue">R$ 0,00</span></p>
-                                <p class="text-emerald-800">💰 <strong>Professor recebe:</strong> <span id="turma-preview-teacher">R$ 0,00</span></p>
-                                <p class="text-emerald-800">🏫 <strong>Escola recebe:</strong> <span id="turma-preview-school">R$ 0,00</span></p>
+                            <div class="space-y-2 text-sm">
+                                <p class="flex items-center gap-2 text-emerald-800">
+                                    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                                    </svg>
+                                    <strong>Receita da turma:</strong> <span id="turma-preview-revenue">R$ 0,00</span>
+                                </p>
+                                <p class="flex items-center gap-2 text-emerald-800">
+                                    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                    </svg>
+                                    <strong>Professor recebe:</strong> <span id="turma-preview-teacher">R$ 0,00</span>
+                                </p>
+                                <p class="flex items-center gap-2 text-emerald-800">
+                                    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                                    </svg>
+                                    <strong>Escola recebe:</strong> <span id="turma-preview-school">R$ 0,00</span>
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -12360,12 +12563,18 @@
                         </div>
                         <div class="p-6">
                             ${can('tasks-prazos.manage_own') || can('tasks-prazos.manage_all') ? `
-                            <div class="mb-6 flex justify-end">
-                                <button class="primary-btn" onclick="openAddTaskForm()">
+                            <div class="mb-6 flex justify-end gap-3">
+                                <button class="primary-btn bg-blue-500 hover:bg-blue-600" onclick="openAddTaskForm()">
                                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
                                     </svg>
-                                    Nova Task
+                                    Task Normal
+                                </button>
+                                <button class="primary-btn bg-purple-500 hover:bg-purple-600" onclick="openAddChecklistForm()">
+                                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                                    </svg>
+                                    Checklist
                                 </button>
                             </div>
                             ` : ''}
@@ -12402,6 +12611,49 @@
                             <div class="mt-6 flex justify-end gap-3">
                                 <button type="button" class="secondary-btn" onclick="closeTaskFormModal()">Cancelar</button>
                                 <button type="submit" class="primary-btn">Salvar</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Add/Edit Checklist Modal -->
+                <div id="checklist-form-modal" class="modal-overlay">
+                    <div class="modal-content max-w-2xl">
+                        <div class="modal-header">
+                            <h4 id="checklist-form-title">Nova Checklist</h4>
+                            <button onclick="closeChecklistFormModal()" class="modal-close-btn">&times;</button>
+                        </div>
+                        <form id="checklist-form" onsubmit="saveChecklist(event)">
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="font-medium text-sm">Título da Checklist <span class="text-red-500">*</span></label>
+                                    <input type="text" id="checklist-title" class="form-input" required placeholder="Ex: Criar slides do curso de viagem">
+                                </div>
+                                <div>
+                                    <label class="font-medium text-sm">Descrição</label>
+                                    <textarea id="checklist-description" rows="2" class="form-input" placeholder="Descrição geral (opcional)"></textarea>
+                                </div>
+                                <div>
+                                    <label class="font-medium text-sm">Prazo Geral <span class="text-red-500">*</span></label>
+                                    <input type="date" id="checklist-due-date" class="form-input" required>
+                                    <p class="text-xs text-stone-500 mt-1">Prazo final para toda a checklist</p>
+                                </div>
+
+                                <div class="border-t border-stone-200 pt-4">
+                                    <div class="flex justify-between items-center mb-3">
+                                        <label class="font-medium text-sm">Itens da Checklist</label>
+                                        <button type="button" class="text-sm text-purple-600 hover:text-purple-700 font-medium" onclick="addChecklistItem()">
+                                            + Adicionar Item
+                                        </button>
+                                    </div>
+                                    <div id="checklist-items-container" class="space-y-3">
+                                        <!-- Checklist items will be added here -->
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-6 flex justify-end gap-3">
+                                <button type="button" class="secondary-btn" onclick="closeChecklistFormModal()">Cancelar</button>
+                                <button type="submit" class="primary-btn bg-purple-500 hover:bg-purple-600">Salvar Checklist</button>
                             </div>
                         </form>
                     </div>
@@ -12635,7 +12887,21 @@
             today.setHours(0, 0, 0, 0);
 
             const selectedPerson = taskPeople.find(p => p.id === selectedPersonForTasks);
-            const canManage = can('tasks-prazos.manage_all') || (can('tasks-prazos.manage_own') && selectedPerson && currentCollaborator?.name === selectedPerson.name);
+            
+            // Secure permission check: use firebaseUid if available, fallback to name comparison
+            let canManage = can('tasks-prazos.manage_all');
+            if (!canManage && can('tasks-prazos.manage_own') && selectedPerson && currentCollaborator) {
+                if (selectedPerson.firebaseUid && currentCollaborator.firebaseUid) {
+                    // Secure comparison by Firebase UID
+                    canManage = selectedPerson.firebaseUid === currentCollaborator.firebaseUid;
+                } else {
+                    // Fallback to name comparison (less secure, but necessary for manually added people)
+                    canManage = currentCollaborator.name === selectedPerson.name;
+                    if (canManage) {
+                        console.warn('⚠️ Using name-based permission check for manage_own. Consider linking person to collaborator via firebaseUid for better security.');
+                    }
+                }
+            }
 
             container.innerHTML = sortedTasks.map(task => {
                 const dueDate = new Date(task.dueDate);
@@ -12643,6 +12909,82 @@
                 const isOverdue = task.status === 'pending' && dueDate < today;
                 const isToday = dueDate.getTime() === today.getTime();
 
+                // For checklists, render differently
+                if (task.type === 'checklist' && task.checklistItems && task.checklistItems.length > 0) {
+                    const completedCount = task.checklistItems.filter(item => item.completed).length;
+                    const totalCount = task.checklistItems.length;
+                    const allCompleted = completedCount === totalCount;
+                    
+                    return `
+                        <div class="mb-4 p-4 rounded-lg border-2 ${allCompleted ? 'bg-stone-50 border-stone-200' : isOverdue ? 'bg-red-50 border-red-300' : isToday ? 'bg-yellow-50 border-yellow-300' : 'bg-purple-50 border-purple-300'}">
+                            <div class="flex items-start justify-between mb-3">
+                                <div class="flex-1">
+                                    <div class="flex items-center gap-2">
+                                        <span class="bg-purple-500 text-white text-xs px-2 py-1 rounded font-semibold">CHECKLIST</span>
+                                        <h4 class="font-semibold text-stone-800 ${allCompleted ? 'line-through text-stone-500' : ''}">
+                                            ${task.title}
+                                        </h4>
+                                    </div>
+                                    ${task.description ? `<p class="text-sm text-stone-600 mt-2">${task.description}</p>` : ''}
+                                    <div class="flex items-center gap-4 mt-2 text-xs text-stone-500">
+                                        <span class="flex items-center gap-1">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                            </svg>
+                                            Prazo Geral: ${formatDateBR(task.dueDate)}
+                                        </span>
+                                        <span class="font-semibold text-purple-600">${completedCount}/${totalCount} concluídos</span>
+                                        ${isOverdue && !allCompleted ? '<span class="text-red-600 font-semibold">ATRASADA</span>' : ''}
+                                        ${isToday && !allCompleted ? '<span class="text-yellow-600 font-semibold">HOJE</span>' : ''}
+                                    </div>
+                                </div>
+                                ${canManage ? `
+                                <div class="flex gap-2 ml-4">
+                                    <button onclick="event.stopPropagation(); deleteTask('${task.id}')" 
+                                            class="p-2 text-stone-400 hover:text-red-600 transition-colors"
+                                            title="Excluir">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                                ` : ''}
+                            </div>
+                            <div class="mt-3 space-y-2 pl-4 border-l-2 border-purple-300">
+                                ${task.checklistItems.map((item, index) => {
+                                    const itemDate = new Date(item.dueDate);
+                                    itemDate.setHours(0, 0, 0, 0);
+                                    const itemOverdue = !item.completed && itemDate < today;
+                                    const itemToday = itemDate.getTime() === today.getTime();
+                                    
+                                    return `
+                                        <div class="flex items-center gap-3 p-2 rounded ${item.completed ? 'bg-green-50' : itemOverdue ? 'bg-red-100' : itemToday ? 'bg-yellow-100' : 'bg-white'}">
+                                            ${canManage ? `
+                                            <input type="checkbox" 
+                                                   ${item.completed ? 'checked' : ''}
+                                                   onchange="toggleChecklistItemStatus('${task.id}', ${index})"
+                                                   class="h-4 w-4 rounded border-gray-300 text-purple-500 focus:ring-purple-400">
+                                            ` : ''}
+                                            <div class="flex-1">
+                                                <span class="text-sm ${item.completed ? 'line-through text-stone-500' : 'text-stone-800'}">${item.title}</span>
+                                                <div class="flex items-center gap-2 mt-1 text-xs text-stone-500">
+                                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                                    </svg>
+                                                    ${formatDateBR(item.dueDate)}
+                                                    ${itemOverdue ? '<span class="text-red-600 font-semibold ml-2">ATRASADO</span>' : ''}
+                                                    ${itemToday ? '<span class="text-yellow-600 font-semibold ml-2">HOJE</span>' : ''}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                // Normal task rendering
                 return `
                     <div class="mb-4 p-4 rounded-lg border-2 ${task.status === 'completed' ? 'bg-stone-50 border-stone-200' : isOverdue ? 'bg-red-50 border-red-300' : isToday ? 'bg-yellow-50 border-yellow-300' : 'bg-white border-stone-200'}">
                         <div class="flex items-start justify-between">
@@ -12736,6 +13078,7 @@
                 description,
                 dueDate,
                 personId: selectedPersonForTasks,
+                type: 'normal',
                 status: editingTaskId ? (tasks.find(t => t.id === editingTaskId)?.status || 'pending') : 'pending',
                 createdAt: editingTaskId ? (tasks.find(t => t.id === editingTaskId)?.createdAt || new Date().toISOString()) : new Date().toISOString()
             };
@@ -12796,6 +13139,159 @@
             }
         }
 
+        // --- CHECKLIST FUNCTIONS ---
+        let checklistItemCounter = 0;
+
+        function openAddChecklistForm() {
+            editingTaskId = null;
+            document.getElementById('checklist-form-title').textContent = 'Nova Checklist';
+            document.getElementById('checklist-form').reset();
+            document.getElementById('checklist-items-container').innerHTML = '';
+            checklistItemCounter = 0;
+            
+            // Add one initial item
+            addChecklistItem();
+            
+            document.getElementById('checklist-form-modal').classList.add('visible');
+        }
+
+        function closeChecklistFormModal() {
+            document.getElementById('checklist-form-modal').classList.remove('visible');
+            editingTaskId = null;
+            checklistItemCounter = 0;
+        }
+
+        function addChecklistItem(title = '', dueDate = '', completed = false) {
+            const itemId = checklistItemCounter++;
+            const container = document.getElementById('checklist-items-container');
+            
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'flex gap-2 items-start p-3 bg-stone-50 rounded-lg';
+            itemDiv.id = `checklist-item-${itemId}`;
+            itemDiv.innerHTML = `
+                <div class="flex-1 grid grid-cols-2 gap-2">
+                    <input type="text" 
+                           class="form-input checklist-item-title" 
+                           placeholder="Nome do item (ex: Aula 1)" 
+                           value="${title}"
+                           required>
+                    <input type="date" 
+                           class="form-input checklist-item-due-date" 
+                           value="${dueDate}"
+                           required>
+                </div>
+                <button type="button" 
+                        class="p-2 text-red-500 hover:text-red-700" 
+                        onclick="removeChecklistItem(${itemId})"
+                        title="Remover item">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            `;
+            
+            container.appendChild(itemDiv);
+        }
+
+        function removeChecklistItem(itemId) {
+            const item = document.getElementById(`checklist-item-${itemId}`);
+            if (item) {
+                item.remove();
+            }
+        }
+
+        async function saveChecklist(event) {
+            event.preventDefault();
+
+            const title = document.getElementById('checklist-title').value;
+            const description = document.getElementById('checklist-description').value;
+            const dueDate = document.getElementById('checklist-due-date').value;
+
+            // Collect all checklist items
+            const itemElements = document.querySelectorAll('#checklist-items-container > div');
+            const checklistItems = [];
+            
+            for (let elem of itemElements) {
+                const itemTitle = elem.querySelector('.checklist-item-title').value;
+                const itemDueDate = elem.querySelector('.checklist-item-due-date').value;
+                
+                if (itemTitle && itemDueDate) {
+                    checklistItems.push({
+                        title: itemTitle,
+                        dueDate: itemDueDate,
+                        completed: false
+                    });
+                }
+            }
+
+            if (!title || !dueDate) {
+                showErrorMessage('Erro', 'Preencha título e prazo geral.');
+                return;
+            }
+
+            if (checklistItems.length === 0) {
+                showErrorMessage('Erro', 'Adicione pelo menos um item à checklist.');
+                return;
+            }
+
+            const checklistData = {
+                title,
+                description,
+                dueDate,
+                personId: selectedPersonForTasks,
+                type: 'checklist',
+                checklistItems: checklistItems,
+                status: 'pending',
+                createdAt: new Date().toISOString()
+            };
+
+            try {
+                if (editingTaskId) {
+                    await setDoc(doc(db, `artifacts/${appId}/public/data/tasks`, editingTaskId), checklistData);
+                    await logActivity('Editou checklist', 'task', title);
+                    showSuccessMessage('Sucesso!', 'Checklist atualizada com sucesso.');
+                } else {
+                    await addDoc(collection(db, `artifacts/${appId}/public/data/tasks`), checklistData);
+                    await logActivity('Adicionou checklist', 'task', title);
+                    showSuccessMessage('Sucesso!', 'Checklist criada com sucesso.');
+                }
+                
+                closeChecklistFormModal();
+                renderTasksList();
+            } catch (error) {
+                console.error('Error saving checklist:', error);
+                showErrorMessage('Erro', 'Erro ao salvar checklist: ' + error.message);
+            }
+        }
+
+        async function toggleChecklistItemStatus(taskId, itemIndex) {
+            const task = tasks.find(t => t.id === taskId);
+            if (!task || task.type !== 'checklist') return;
+
+            const items = [...task.checklistItems];
+            items[itemIndex].completed = !items[itemIndex].completed;
+
+            try {
+                await updateDoc(doc(db, `artifacts/${appId}/public/data/tasks`, taskId), {
+                    checklistItems: items
+                });
+                
+                // Check if all items are completed
+                const allCompleted = items.every(item => item.completed);
+                if (allCompleted && task.status !== 'completed') {
+                    await updateDoc(doc(db, `artifacts/${appId}/public/data/tasks`, taskId), {
+                        status: 'completed'
+                    });
+                    await logActivity('Concluiu checklist', 'task', task.title);
+                }
+                
+                renderTasksList();
+            } catch (error) {
+                console.error('Error toggling checklist item:', error);
+                showErrorMessage('Erro', 'Erro ao atualizar item da checklist.');
+            }
+        }
+
         window.openTaskManagementModal = openTaskManagementModal;
         window.closeTaskManagementModal = closeTaskManagementModal;
         window.openAddTaskForm = openAddTaskForm;
@@ -12809,6 +13305,12 @@
         window.closePersonModal = closePersonModal;
         window.savePerson = savePerson;
         window.deletePerson = deletePerson;
+        window.openAddChecklistForm = openAddChecklistForm;
+        window.closeChecklistFormModal = closeChecklistFormModal;
+        window.addChecklistItem = addChecklistItem;
+        window.removeChecklistItem = removeChecklistItem;
+        window.saveChecklist = saveChecklist;
+        window.toggleChecklistItemStatus = toggleChecklistItemStatus;
 
         let currentCalendarDate = new Date();
         let calendarEvents = [];
