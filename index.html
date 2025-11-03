@@ -6450,6 +6450,10 @@
             const isVipActive = currentVip && (!currentVip.endDate || new Date(currentVip.endDate) >= new Date());
             const enrollmentStatus = isVipExpired ? ' (contrato expirado)' : (isVipActive ? ' (ativo)' : '');
             
+            // Define variables for template
+            const hasActiveVip = isVipActive;
+            const hasActiveTurma = hasTurma;
+            
             const enrollmentInfo = hasVip 
                 ? `VIP - ${currentVip.level || 'Nível não especificado'}${enrollmentStatus}`
                 : `Turma - ${currentTurma.name || 'Nome não especificado'}`;
