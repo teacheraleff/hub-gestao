@@ -13495,6 +13495,22 @@
                     }
                 });
                 
+                // Count tasks awaiting approval (completed by user but not approved yet)
+                let awaitingApprovalCount = 0;
+                personTasks.forEach(t => {
+                    if (t.type === 'checklist' && t.checklistItems) {
+                        // For checklists, count items completed by user but not approved
+                        t.checklistItems.forEach(item => {
+                            if (item.completedByUser && !item.approved) {
+                                awaitingApprovalCount++;
+                            }
+                        });
+                    } else if (t.completedByUser && !t.approved) {
+                        // For normal tasks
+                        awaitingApprovalCount++;
+                    }
+                });
+                
                 // Count overdue items (each checklist item counts as 1)
                 let overdueCount = 0;
                 pendingTasks.forEach(t => {
@@ -13524,6 +13540,14 @@
                 return `
                     <div class="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow border border-stone-200 cursor-pointer relative"
                          onclick="openTaskManagementModal('${person.id}')">
+                        ${awaitingApprovalCount > 0 && currentUserRole === 'admin' ? `
+                        <div class="absolute top-2 left-2 flex items-center gap-1.5 px-2.5 py-1 rounded-full" style="background-color: #F1D24B;">
+                            <svg class="w-4 h-4" style="color: #8B6914;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <span class="text-xs font-bold" style="color: #8B6914;">${awaitingApprovalCount}</span>
+                        </div>
+                        ` : ''}
                         ${(can('tasks-prazos.edit_person') || can('tasks-prazos.delete_person')) ? `
                         <div class="absolute top-2 right-2 flex gap-1">
                             ${can('tasks-prazos.edit_person') ? `
