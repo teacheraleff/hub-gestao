@@ -13479,6 +13479,22 @@
                 const personTasks = tasks.filter(t => t.personId === person.id);
                 const pendingTasks = personTasks.filter(t => !t.approved); // Só aprovadas contam como concluídas
                 
+                // Count completed tasks and items
+                let completedCount = 0;
+                personTasks.forEach(t => {
+                    if (t.type === 'checklist' && t.checklistItems) {
+                        // For checklists, count each approved item
+                        t.checklistItems.forEach(item => {
+                            if (item.approved) {
+                                completedCount++;
+                            }
+                        });
+                    } else if (t.approved) {
+                        // For normal tasks, count if approved
+                        completedCount++;
+                    }
+                });
+                
                 // Count overdue items (each checklist item counts as 1)
                 let overdueCount = 0;
                 pendingTasks.forEach(t => {
@@ -13536,16 +13552,22 @@
                             <p class="text-sm text-stone-600 capitalize">${person.role || 'Sem cargo'}</p>
                             
                             <div class="mt-4 w-full pt-4 border-t border-stone-200">
-                                <div class="grid grid-cols-2 gap-4">
+                                <div class="grid grid-cols-3 gap-3">
                                     <div>
                                         <p class="text-2xl font-bold text-stone-800">${pendingTasks.length}</p>
-                                        <p class="text-xs text-stone-600">Tasks Ativas</p>
+                                        <p class="text-xs text-stone-600">Ativas</p>
                                     </div>
                                     <div>
                                         <p class="text-2xl font-bold ${overdueCount > 0 ? 'text-red-600' : 'text-green-600'}">
                                             ${overdueCount}
                                         </p>
                                         <p class="text-xs text-stone-600">Atrasadas</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-2xl font-bold" style="color: #8671D1;">
+                                            ${completedCount}
+                                        </p>
+                                        <p class="text-xs text-stone-600">Concluídas</p>
                                     </div>
                                 </div>
                             </div>
@@ -13932,14 +13954,37 @@
             if (!task) return;
 
             editingTaskId = taskId;
-            document.getElementById('task-form-title').textContent = 'Editar Task';
-            document.getElementById('task-title').value = task.title;
-            document.getElementById('task-description').value = task.description || '';
-            document.getElementById('task-due-date').value = task.dueDate;
-            document.getElementById('task-link').value = task.link || '';
-            document.getElementById('task-urgency').value = task.urgency || 'normal';
             
-            document.getElementById('task-form-modal').classList.add('visible');
+            // Se for checklist, abre o modal de checklist
+            if (task.type === 'checklist') {
+                document.getElementById('checklist-form-title').textContent = 'Editar Checklist';
+                document.getElementById('checklist-title').value = task.title;
+                document.getElementById('checklist-description').value = task.description || '';
+                document.getElementById('checklist-due-date').value = task.dueDate;
+                document.getElementById('checklist-link').value = task.link || '';
+                document.getElementById('checklist-urgency').value = task.urgency || 'normal';
+                
+                // Preenche os itens da checklist
+                const itemsContainer = document.getElementById('checklist-items-container');
+                itemsContainer.innerHTML = '';
+                checklistItemCounter = 0;
+                
+                task.checklistItems.forEach(item => {
+                    addChecklistItem(item.title, item.dueDate);
+                });
+                
+                document.getElementById('checklist-form-modal').classList.add('visible');
+            } else {
+                // Task normal
+                document.getElementById('task-form-title').textContent = 'Editar Task';
+                document.getElementById('task-title').value = task.title;
+                document.getElementById('task-description').value = task.description || '';
+                document.getElementById('task-due-date').value = task.dueDate;
+                document.getElementById('task-link').value = task.link || '';
+                document.getElementById('task-urgency').value = task.urgency || 'normal';
+                
+                document.getElementById('task-form-modal').classList.add('visible');
+            }
         }
 
         function closeTaskFormModal() {
@@ -14101,21 +14146,29 @@
             const link = document.getElementById('checklist-link').value;
             const urgency = document.getElementById('checklist-urgency').value;
 
+            // Get original task if editing (to preserve item statuses)
+            const originalTask = editingTaskId ? tasks.find(t => t.id === editingTaskId) : null;
+
             // Collect all checklist items
             const itemElements = document.querySelectorAll('#checklist-items-container > div');
             const checklistItems = [];
             
+            let itemIndex = 0;
             for (let elem of itemElements) {
                 const itemTitle = elem.querySelector('.checklist-item-title').value;
                 const itemDueDate = elem.querySelector('.checklist-item-due-date').value;
                 
                 if (itemTitle && itemDueDate) {
+                    // Se estamos editando, tenta preservar os status do item original na mesma posição
+                    const originalItem = originalTask?.checklistItems?.[itemIndex];
+                    
                     checklistItems.push({
                         title: itemTitle,
                         dueDate: itemDueDate,
-                        completedByUser: false,
-                        approved: false
+                        completedByUser: originalItem?.completedByUser || false,
+                        approved: originalItem?.approved || false
                     });
+                    itemIndex++;
                 }
             }
 
@@ -14138,8 +14191,8 @@
                 personId: selectedPersonForTasks,
                 type: 'checklist',
                 checklistItems: checklistItems,
-                status: 'pending',
-                createdAt: new Date().toISOString()
+                status: editingTaskId ? (originalTask?.status || 'pending') : 'pending',
+                createdAt: editingTaskId ? (originalTask?.createdAt || new Date().toISOString()) : new Date().toISOString()
             };
 
             try {
