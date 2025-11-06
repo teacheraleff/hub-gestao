@@ -15347,51 +15347,42 @@
 
         function exportAlunosDoc() {
             const canViewFinancialInfo = canViewStudentFinancials();
-            let studentsList = '';
-            // Export all students (not just active ones) to have complete data
             const allStudents = students.sort((a, b) => a.name.localeCompare(b.name));
             
+            const activeCount = allStudents.filter(s => s.status === 'Ativo').length;
+            const vipCount = allStudents.filter(s => s.modalidade === 'VIP').length;
+            const turmaCount = allStudents.filter(s => s.modalidade === 'TURMA').length;
+            
+            let studentsList = '';
             if (canViewFinancialInfo) {
                 studentsList = allStudents.map(s => `
                     <tr>
                         <td class="student-name">${s.name}</td>
-                        <td>${s.status || 'N/A'}</td>
-                        <td>${s.modalidade || 'TURMA'}</td>
+                        <td><span class="badge ${s.status === 'Ativo' ? 'badge-active' : 'badge-inactive'}">${s.status || 'N/A'}</span></td>
+                        <td><span class="badge badge-${s.modalidade === 'VIP' ? 'vip' : 'turma'}">${s.modalidade || 'TURMA'}</span></td>
+                        <td>${s.level || '-'}</td>
                         <td>R$ ${parseFloat(s.amountPaid || 0).toFixed(2)}</td>
-                        <td>${s.tipoAssinatura || 'N/A'}</td>
-                        <td>${s.quantidadeParcelas || 'N/A'}</td>
-                        <td>${s.responsibleName || 'N/A'}</td>
-                        <td>${s.responsibleEmail || 'N/A'}</td>
-                        <td>${s.responsiblePhone || 'N/A'}</td>
-                        <td>${s.emergencyContact || 'N/A'}</td>
-                        <td>${s.emergencyPhone || 'N/A'}</td>
-                        <td>${s.level || 'N/A'}</td>
-                        <td>${s.birthDate || 'N/A'}</td>
-                        <td>${s.address || 'N/A'}</td>
-                        <td>${s.indicacao || 'N/A'}</td>
-                        <td>${s.observations || 'N/A'}</td>
+                        <td>${s.responsibleName || '-'}</td>
+                        <td>${s.responsiblePhone || '-'}</td>
+                        <td>${s.responsibleEmail || '-'}</td>
                     </tr>
                 `).join('');
-                if (!studentsList) { studentsList = '<tr><td colspan="16">Nenhum aluno encontrado.</td></tr>'; }
             } else {
                 studentsList = allStudents.map(s => `
                     <tr>
                         <td class="student-name">${s.name}</td>
-                        <td>${s.status || 'N/A'}</td>
-                        <td>${s.modalidade || 'TURMA'}</td>
-                        <td>${s.responsibleName || 'N/A'}</td>
-                        <td>${s.responsibleEmail || 'N/A'}</td>
-                        <td>${s.responsiblePhone || 'N/A'}</td>
-                        <td>${s.emergencyContact || 'N/A'}</td>
-                        <td>${s.emergencyPhone || 'N/A'}</td>
-                        <td>${s.level || 'N/A'}</td>
-                        <td>${s.birthDate || 'N/A'}</td>
-                        <td>${s.address || 'N/A'}</td>
-                        <td>${s.indicacao || 'N/A'}</td>
-                        <td>${s.observations || 'N/A'}</td>
+                        <td><span class="badge ${s.status === 'Ativo' ? 'badge-active' : 'badge-inactive'}">${s.status || 'N/A'}</span></td>
+                        <td><span class="badge badge-${s.modalidade === 'VIP' ? 'vip' : 'turma'}">${s.modalidade || 'TURMA'}</span></td>
+                        <td>${s.level || '-'}</td>
+                        <td>${s.responsibleName || '-'}</td>
+                        <td>${s.responsiblePhone || '-'}</td>
+                        <td>${s.responsibleEmail || '-'}</td>
                     </tr>
                 `).join('');
-                if (!studentsList) { studentsList = '<tr><td colspan="13">Nenhum aluno encontrado.</td></tr>'; }
+            }
+            
+            if (!studentsList) { 
+                studentsList = `<tr><td colspan="${canViewFinancialInfo ? '8' : '7'}" style="text-align: center; color: #999;">Nenhum aluno encontrado.</td></tr>`; 
             }
 
             const docHtml = `
@@ -15400,62 +15391,197 @@
                 <head>
                     <meta charset="UTF-8">
                     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                    <title>Lista Completa de Alunos - SLAP</title>
+                    <title>Lista de Alunos - SLAP</title>
                     <style>
-                        body { font-family: 'Arial', sans-serif; margin: 20px; }
-                        h1 { color: #333; text-align: center; margin-bottom: 30px; }
-                        .header-info { text-align: center; margin-bottom: 20px; color: #666; }
-                        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 12px; }
-                        th, td { border: 1px solid #ccc; padding: 6px; text-align: left; vertical-align: top; }
-                        th { background-color: #f2f2f2; font-weight: bold; }
-                        .student-name { font-weight: bold; }
+                        * { margin: 0; padding: 0; box-sizing: border-box; }
+                        body { 
+                            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+                            background: linear-gradient(135deg, #84C7DF 0%, #8671D1 100%);
+                            padding: 40px 20px;
+                        }
+                        .container {
+                            max-width: 1200px;
+                            margin: 0 auto;
+                            background: white;
+                            border-radius: 20px;
+                            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+                            overflow: hidden;
+                        }
+                        .header {
+                            background: linear-gradient(135deg, #8671D1 0%, #F3B2C0 100%);
+                            padding: 40px 30px;
+                            text-align: center;
+                            color: white;
+                        }
+                        .header h1 {
+                            font-size: 32px;
+                            font-weight: 700;
+                            margin-bottom: 10px;
+                            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                        }
+                        .header p {
+                            font-size: 14px;
+                            opacity: 0.95;
+                        }
+                        .stats {
+                            display: grid;
+                            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                            gap: 20px;
+                            padding: 30px;
+                            background: #f8f9fa;
+                            border-bottom: 3px solid #F1D24B;
+                        }
+                        .stat-card {
+                            background: white;
+                            padding: 20px;
+                            border-radius: 12px;
+                            text-align: center;
+                            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+                        }
+                        .stat-card .number {
+                            font-size: 36px;
+                            font-weight: 700;
+                            color: #8671D1;
+                            margin-bottom: 5px;
+                        }
+                        .stat-card .label {
+                            font-size: 14px;
+                            color: #666;
+                            font-weight: 500;
+                        }
+                        .content {
+                            padding: 30px;
+                        }
+                        table { 
+                            width: 100%; 
+                            border-collapse: collapse; 
+                            font-size: 13px;
+                        }
+                        thead {
+                            background: linear-gradient(135deg, #8671D1 0%, #F3B2C0 100%);
+                        }
+                        th { 
+                            color: white;
+                            padding: 15px 12px;
+                            text-align: left;
+                            font-weight: 600;
+                            text-transform: uppercase;
+                            font-size: 11px;
+                            letter-spacing: 0.5px;
+                        }
+                        td { 
+                            padding: 14px 12px;
+                            text-align: left;
+                            border-bottom: 1px solid #e9ecef;
+                        }
+                        tbody tr:hover {
+                            background-color: #f8f9fa;
+                        }
+                        .student-name { 
+                            font-weight: 600;
+                            color: #2c3e50;
+                        }
+                        .badge {
+                            display: inline-block;
+                            padding: 4px 10px;
+                            border-radius: 12px;
+                            font-size: 11px;
+                            font-weight: 600;
+                            text-transform: uppercase;
+                            letter-spacing: 0.3px;
+                        }
+                        .badge-active {
+                            background: #B8E194;
+                            color: #2d5016;
+                        }
+                        .badge-inactive {
+                            background: #f1f3f5;
+                            color: #868e96;
+                        }
+                        .badge-vip {
+                            background: #F1D24B;
+                            color: #6B5A0F;
+                        }
+                        .badge-turma {
+                            background: #84C7DF;
+                            color: #1a5873;
+                        }
+                        .footer {
+                            text-align: center;
+                            padding: 25px;
+                            background: #f8f9fa;
+                            color: #868e96;
+                            font-size: 12px;
+                            border-top: 1px solid #e9ecef;
+                        }
                         @media print {
-                            body { margin: 10px; }
-                            table { font-size: 10px; }
-                            th, td { padding: 4px; }
+                            body { 
+                                background: white;
+                                padding: 0;
+                            }
+                            .container {
+                                box-shadow: none;
+                            }
+                            table { font-size: 11px; }
+                            th, td { padding: 8px; }
                         }
                     </style>
                 </head>
                 <body>
-                    <h1>Lista Completa de Alunos - SLAP</h1>
-                    <div class="header-info">
-                        <p>Data de Exportação: ${formatDateBR(new Date())}</p>
-                        <p>Total de Alunos: ${allStudents.length}</p>
-                        <p>Ativos: ${allStudents.filter(s => s.status === 'Ativo').length} | Outros: ${allStudents.filter(s => s.status !== 'Ativo').length}</p>
-                    </div>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Nome do Aluno</th>
-                                <th>Status</th>
-                                <th>Modalidade</th>
-                                ${canViewFinancialInfo ? '<th>Valor Pago</th>' : ''}
-                                ${canViewFinancialInfo ? '<th>Tipo Assinatura</th>' : ''}
-                                ${canViewFinancialInfo ? '<th>Qtd. Parcelas</th>' : ''}
-                                <th>Responsável</th>
-                                <th>Email Responsável</th>
-                                <th>Telefone Responsável</th>
-                                <th>Contato Emergência</th>
-                                <th>Tel. Emergência</th>
-                                <th>Nível</th>
-                                <th>Data Nascimento</th>
-                                <th>Endereço</th>
-                                <th>Indicação</th>
-                                <th>Observações</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${studentsList}
-                        </tbody>
-                    </table>
-                    <div style="margin-top: 30px; text-align: center; color: #666; font-size: 12px;">
-                        <p>Documento gerado pelo Hub SLAP - Speaking Like a Pro</p>
+                    <div class="container">
+                        <div class="header">
+                            <h1>SLAP - Speaking Like a Pro</h1>
+                            <p>Lista de Alunos • ${formatDateBR(new Date())}</p>
+                        </div>
+                        
+                        <div class="stats">
+                            <div class="stat-card">
+                                <div class="number">${allStudents.length}</div>
+                                <div class="label">Total de Alunos</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="number">${activeCount}</div>
+                                <div class="label">Alunos Ativos</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="number">${vipCount}</div>
+                                <div class="label">VIPs</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="number">${turmaCount}</div>
+                                <div class="label">Turmas</div>
+                            </div>
+                        </div>
+                        
+                        <div class="content">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Nome</th>
+                                        <th>Status</th>
+                                        <th>Modalidade</th>
+                                        <th>Nível</th>
+                                        ${canViewFinancialInfo ? '<th>Valor Pago</th>' : ''}
+                                        <th>Responsável</th>
+                                        <th>Telefone</th>
+                                        <th>Email</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${studentsList}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="footer">
+                            Documento gerado automaticamente pelo Hub SLAP
+                        </div>
                     </div>
                 </body>
                 </html>
             `;
 
-            openHtmlInNewWindow("Lista Completa de Alunos", docHtml);
+            openHtmlInNewWindow("Lista de Alunos - SLAP", docHtml);
         }
 
         function exportGuidelinesDoc() {
