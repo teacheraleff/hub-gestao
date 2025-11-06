@@ -15353,36 +15353,57 @@
             const vipCount = allStudents.filter(s => s.modalidade === 'VIP').length;
             const turmaCount = allStudents.filter(s => s.modalidade === 'TURMA').length;
             
+            // Calculate age from birthDate
+            function calculateAge(birthDate) {
+                if (!birthDate) return '-';
+                const birth = new Date(birthDate);
+                const today = new Date();
+                let age = today.getFullYear() - birth.getFullYear();
+                const monthDiff = today.getMonth() - birth.getMonth();
+                if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+                    age--;
+                }
+                return age;
+            }
+            
             let studentsList = '';
             if (canViewFinancialInfo) {
-                studentsList = allStudents.map(s => `
+                studentsList = allStudents.map((s, index) => `
                     <tr>
+                        <td class="number">${index + 1}</td>
                         <td class="student-name">${s.name}</td>
-                        <td><span class="badge ${s.status === 'Ativo' ? 'badge-active' : 'badge-inactive'}">${s.status || 'N/A'}</span></td>
-                        <td><span class="badge badge-${s.modalidade === 'VIP' ? 'vip' : 'turma'}">${s.modalidade || 'TURMA'}</span></td>
+                        <td>${s.status || '-'}</td>
+                        <td>${s.modalidade || 'TURMA'}</td>
                         <td>${s.level || '-'}</td>
                         <td>R$ ${parseFloat(s.amountPaid || 0).toFixed(2)}</td>
                         <td>${s.responsibleName || '-'}</td>
                         <td>${s.responsiblePhone || '-'}</td>
                         <td>${s.responsibleEmail || '-'}</td>
+                        <td>${calculateAge(s.birthDate)}</td>
+                        <td>${s.birthDate ? formatDateBR(s.birthDate) : '-'}</td>
+                        <td>${s.address || '-'}</td>
                     </tr>
                 `).join('');
             } else {
-                studentsList = allStudents.map(s => `
+                studentsList = allStudents.map((s, index) => `
                     <tr>
+                        <td class="number">${index + 1}</td>
                         <td class="student-name">${s.name}</td>
-                        <td><span class="badge ${s.status === 'Ativo' ? 'badge-active' : 'badge-inactive'}">${s.status || 'N/A'}</span></td>
-                        <td><span class="badge badge-${s.modalidade === 'VIP' ? 'vip' : 'turma'}">${s.modalidade || 'TURMA'}</span></td>
+                        <td>${s.status || '-'}</td>
+                        <td>${s.modalidade || 'TURMA'}</td>
                         <td>${s.level || '-'}</td>
                         <td>${s.responsibleName || '-'}</td>
                         <td>${s.responsiblePhone || '-'}</td>
                         <td>${s.responsibleEmail || '-'}</td>
+                        <td>${calculateAge(s.birthDate)}</td>
+                        <td>${s.birthDate ? formatDateBR(s.birthDate) : '-'}</td>
+                        <td>${s.address || '-'}</td>
                     </tr>
                 `).join('');
             }
             
             if (!studentsList) { 
-                studentsList = `<tr><td colspan="${canViewFinancialInfo ? '8' : '7'}" style="text-align: center; color: #999;">Nenhum aluno encontrado.</td></tr>`; 
+                studentsList = `<tr><td colspan="${canViewFinancialInfo ? '12' : '11'}" style="text-align: center; color: #999;">Nenhum aluno encontrado.</td></tr>`; 
             }
 
             const docHtml = `
@@ -15396,158 +15417,130 @@
                         * { margin: 0; padding: 0; box-sizing: border-box; }
                         body { 
                             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-                            background: linear-gradient(135deg, #84C7DF 0%, #8671D1 100%);
-                            padding: 40px 20px;
+                            line-height: 1.6; 
+                            color: #333; 
+                            background-color: #f8f9fa;
                         }
                         .container {
-                            max-width: 1200px;
+                            max-width: 1400px;
                             margin: 0 auto;
                             background: white;
-                            border-radius: 20px;
-                            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
-                            overflow: hidden;
+                            min-height: 100vh;
                         }
                         .header {
-                            background: linear-gradient(135deg, #8671D1 0%, #F3B2C0 100%);
-                            padding: 40px 30px;
+                            background: linear-gradient(135deg, #F1D24B 0%, #E8C547 100%);
+                            color: #333;
+                            padding: 2rem;
                             text-align: center;
-                            color: white;
+                            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
                         }
                         .header h1 {
-                            font-size: 32px;
+                            font-size: 2rem;
                             font-weight: 700;
-                            margin-bottom: 10px;
-                            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                            margin-bottom: 0.5rem;
                         }
                         .header p {
-                            font-size: 14px;
-                            opacity: 0.95;
+                            font-size: 1rem;
+                            color: #555;
                         }
-                        .stats {
-                            display: grid;
-                            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-                            gap: 20px;
-                            padding: 30px;
-                            background: #f8f9fa;
+                        .summary {
+                            padding: 1.5rem 2rem;
+                            background-color: #fff;
                             border-bottom: 3px solid #F1D24B;
+                            display: flex;
+                            justify-content: center;
+                            gap: 3rem;
+                            flex-wrap: wrap;
                         }
-                        .stat-card {
-                            background: white;
-                            padding: 20px;
-                            border-radius: 12px;
+                        .summary-item {
                             text-align: center;
-                            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
                         }
-                        .stat-card .number {
-                            font-size: 36px;
+                        .summary-item .number {
+                            font-size: 1.8rem;
                             font-weight: 700;
-                            color: #8671D1;
-                            margin-bottom: 5px;
+                            color: #F1D24B;
                         }
-                        .stat-card .label {
-                            font-size: 14px;
+                        .summary-item .label {
+                            font-size: 0.9rem;
                             color: #666;
-                            font-weight: 500;
                         }
                         .content {
-                            padding: 30px;
+                            padding: 2rem;
                         }
                         table { 
                             width: 100%; 
                             border-collapse: collapse; 
-                            font-size: 13px;
+                            font-size: 0.85rem;
                         }
                         thead {
-                            background: linear-gradient(135deg, #8671D1 0%, #F3B2C0 100%);
+                            background-color: #333;
+                            color: white;
                         }
                         th { 
-                            color: white;
-                            padding: 15px 12px;
+                            padding: 12px 8px;
                             text-align: left;
                             font-weight: 600;
-                            text-transform: uppercase;
-                            font-size: 11px;
-                            letter-spacing: 0.5px;
+                            border: 1px solid #ddd;
                         }
                         td { 
-                            padding: 14px 12px;
+                            padding: 10px 8px;
+                            border: 1px solid #ddd;
                             text-align: left;
-                            border-bottom: 1px solid #e9ecef;
+                        }
+                        tbody tr:nth-child(even) {
+                            background-color: #f8f9fa;
                         }
                         tbody tr:hover {
-                            background-color: #f8f9fa;
+                            background-color: #fff8e1;
+                        }
+                        .number {
+                            font-weight: 700;
+                            color: #666;
+                            text-align: center;
                         }
                         .student-name { 
                             font-weight: 600;
-                            color: #2c3e50;
-                        }
-                        .badge {
-                            display: inline-block;
-                            padding: 4px 10px;
-                            border-radius: 12px;
-                            font-size: 11px;
-                            font-weight: 600;
-                            text-transform: uppercase;
-                            letter-spacing: 0.3px;
-                        }
-                        .badge-active {
-                            background: #B8E194;
-                            color: #2d5016;
-                        }
-                        .badge-inactive {
-                            background: #f1f3f5;
-                            color: #868e96;
-                        }
-                        .badge-vip {
-                            background: #F1D24B;
-                            color: #6B5A0F;
-                        }
-                        .badge-turma {
-                            background: #84C7DF;
-                            color: #1a5873;
+                            color: #333;
                         }
                         .footer {
                             text-align: center;
-                            padding: 25px;
-                            background: #f8f9fa;
-                            color: #868e96;
-                            font-size: 12px;
-                            border-top: 1px solid #e9ecef;
+                            padding: 1.5rem;
+                            background-color: #f8f9fa;
+                            color: #666;
+                            font-size: 0.85rem;
+                            border-top: 2px solid #ddd;
                         }
                         @media print {
-                            body { 
-                                background: white;
-                                padding: 0;
-                            }
-                            .container {
-                                box-shadow: none;
-                            }
-                            table { font-size: 11px; }
-                            th, td { padding: 8px; }
+                            body { margin: 0; padding: 0; background: white; }
+                            .container { box-shadow: none; }
+                            table { font-size: 0.75rem; page-break-inside: auto; }
+                            tr { page-break-inside: avoid; page-break-after: auto; }
+                            thead { display: table-header-group; }
+                            th, td { padding: 6px 4px; }
                         }
                     </style>
                 </head>
                 <body>
                     <div class="container">
                         <div class="header">
-                            <h1>SLAP - Speaking Like a Pro</h1>
-                            <p>Lista de Alunos • ${formatDateBR(new Date())}</p>
+                            <h1>Lista de Alunos - SLAP</h1>
+                            <p>Speaking Like a Pro • Exportado em ${formatDateBR(new Date())}</p>
                         </div>
                         
-                        <div class="stats">
-                            <div class="stat-card">
+                        <div class="summary">
+                            <div class="summary-item">
                                 <div class="number">${allStudents.length}</div>
                                 <div class="label">Total de Alunos</div>
                             </div>
-                            <div class="stat-card">
+                            <div class="summary-item">
                                 <div class="number">${activeCount}</div>
                                 <div class="label">Alunos Ativos</div>
                             </div>
-                            <div class="stat-card">
+                            <div class="summary-item">
                                 <div class="number">${vipCount}</div>
                                 <div class="label">VIPs</div>
                             </div>
-                            <div class="stat-card">
+                            <div class="summary-item">
                                 <div class="number">${turmaCount}</div>
                                 <div class="label">Turmas</div>
                             </div>
@@ -15557,7 +15550,8 @@
                             <table>
                                 <thead>
                                     <tr>
-                                        <th>Nome</th>
+                                        <th style="width: 40px;">#</th>
+                                        <th>Nome Completo</th>
                                         <th>Status</th>
                                         <th>Modalidade</th>
                                         <th>Nível</th>
@@ -15565,6 +15559,9 @@
                                         <th>Responsável</th>
                                         <th>Telefone</th>
                                         <th>Email</th>
+                                        <th>Idade</th>
+                                        <th>Data Nasc.</th>
+                                        <th>Endereço</th>
                                     </tr>
                                 </thead>
                                 <tbody>
