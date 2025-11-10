@@ -1053,6 +1053,15 @@
                 if (activePageId === 'gestao-tns-section') renderTNsList();
             });
             
+            // Períodos Fixos listener - carregar na inicialização para evitar delay
+            getCollectionListener('fixed-date-cards', fixedDateCards, () => {
+                const activePageId = contentArea.firstElementChild?.id;
+                if (activePageId?.includes('calendario')) renderFixedDateCards();
+            });
+            
+            // Inicializar períodos fixos vazios se necessário
+            initializeFixedDateCards();
+            
             // Executar limpeza automática de logs antigos ao iniciar
             cleanOldActivityLogs();
             
@@ -3820,11 +3829,11 @@
                 }
             } else {
                 // Admin, pedagógico, ap, am podem filtrar
-                filteredStudents = currentRechamadaTeacherFilter === 'todos' 
+                filteredStudents = window.currentRechamadaTeacherFilter === 'todos' 
                     ? studentsWithConsecutiveAbsences 
                     : studentsWithConsecutiveAbsences.filter(s => {
                         const teacherName = (s.teacher || '').trim().toLowerCase();
-                        const filterName = (currentRechamadaTeacherFilter || '').trim().toLowerCase();
+                        const filterName = (window.currentRechamadaTeacherFilter || '').trim().toLowerCase();
                         return teacherName === filterName;
                     });
             }
@@ -3862,16 +3871,16 @@
                             <select 
                                 id="rechamada-teacher-filter" 
                                 class="form-input !w-auto min-w-[200px]"
-                                onchange="currentRechamadaTeacherFilter = this.value; renderRechamadaSection();"
+                                onchange="window.currentRechamadaTeacherFilter = this.value; setTimeout(() => renderRechamadaSection(), 0);"
                             >
-                                <option value="todos" ${currentRechamadaTeacherFilter === 'todos' ? 'selected' : ''}>Todos os professores</option>
+                                <option value="todos" ${window.currentRechamadaTeacherFilter === 'todos' ? 'selected' : ''}>Todos os professores</option>
                                 ${uniqueTeachers.map(teacher => 
-                                    `<option value="${teacher}" ${currentRechamadaTeacherFilter === teacher ? 'selected' : ''}>${teacher}</option>`
+                                    `<option value="${teacher}" ${window.currentRechamadaTeacherFilter === teacher ? 'selected' : ''}>${teacher}</option>`
                                 ).join('')}
                             </select>
-                            ${currentRechamadaTeacherFilter !== 'todos' ? `
+                            ${window.currentRechamadaTeacherFilter !== 'todos' ? `
                                 <button 
-                                    onclick="currentRechamadaTeacherFilter = 'todos'; renderRechamadaSection();"
+                                    onclick="window.currentRechamadaTeacherFilter = 'todos'; setTimeout(() => renderRechamadaSection(), 0);"
                                     class="text-sm text-blue-600 hover:text-blue-800 underline"
                                 >
                                     Limpar filtro
@@ -3894,7 +3903,7 @@
                     <div class="mb-4">
                         <h3 class="text-lg font-bold text-stone-800">
                             ${filteredStudents.length} rechamada${filteredStudents.length !== 1 ? 's' : ''} necessária${filteredStudents.length !== 1 ? 's' : ''}
-                            ${currentRechamadaTeacherFilter !== 'todos' ? `<span class="text-blue-600"> (filtrado por ${currentRechamadaTeacherFilter})</span>` : ''}
+                            ${window.currentRechamadaTeacherFilter !== 'todos' ? `<span class="text-blue-600"> (filtrado por ${window.currentRechamadaTeacherFilter})</span>` : ''}
                         </h3>
                         <p class="text-sm text-stone-500 mt-1">Cada linha representa uma dupla de faltas consecutivas que requer contato.</p>
                     </div>
@@ -3904,7 +3913,7 @@
                             <svg class="w-16 h-16 mx-auto mb-4 text-green-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                             </svg>
-                            <p class="text-stone-500 text-lg font-semibold">Nenhuma rechamada necessária${currentRechamadaTeacherFilter !== 'todos' ? ' para este professor' : ''}!</p>
+                            <p class="text-stone-500 text-lg font-semibold">Nenhuma rechamada necessária${window.currentRechamadaTeacherFilter !== 'todos' ? ' para este professor' : ''}!</p>
                             <p class="text-stone-400 text-sm mt-2">Todos os alunos estão com boa frequência.</p>
                         </div>
                     ` : `
@@ -10397,6 +10406,7 @@
                             if (collab) {
                                 itemName = collab.name;
                                 
+                                // Deletar usuário Firebase Auth se existir
                                 if (collab.firebaseUid) {
                                     try {
                                         const response = await fetch(`/api/firebase/delete-user/${collab.firebaseUid}`, {
@@ -10411,26 +10421,29 @@
                                     }
                                 }
                                 
+                                // Remover do array local para atualização imediata da UI
                                 const index = collaborators.findIndex(c => c.id === itemId);
                                 if (index !== -1) {
                                     collaborators.splice(index, 1);
                                     localStorage.setItem('collaborators', JSON.stringify(collaborators));
                                 }
-                                
-                                await logActivity(logAction, 'colaboradores', itemName);
-                                showSuccessMessage("Sucesso", `Colaborador ${itemName} excluído com sucesso!`);
-                                renderColaboradoresSection();
-                                return;
                             }
                         }
                         
+                        // Deletar documento do Firestore (para todas as coleções)
                         await deleteDoc(doc(db, `artifacts/${appId}/public/data/${collectionName}`, itemId));
                         
                         // Log activity
                         await logActivity(logAction, logType, itemName);
                         
-                        showSuccessMessage("Sucesso", "Item apagado com sucesso.");
-                        closeFormModal();
+                        // Mensagem de sucesso e atualização de UI específica por coleção
+                        if (collectionName === 'collaborators') {
+                            showSuccessMessage("Sucesso", `Colaborador ${itemName} excluído com sucesso!`);
+                            renderColaboradoresSection();
+                        } else {
+                            showSuccessMessage("Sucesso", "Item apagado com sucesso.");
+                            closeFormModal();
+                        }
                     } catch (error) { 
                         console.error(`Error deleting item from ${collectionName}:`, error); 
                         showErrorMessage("Erro", "Falha ao apagar o item.");
@@ -12519,12 +12532,20 @@
                                 ${evaluatorOptions}
                             </select>
                         </div>
-                        <button class="primary-btn w-auto" data-action="add-tn">
-                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-                            </svg>
-                            Adicionar TN
-                        </button>
+                        <div class="flex gap-2">
+                            <button class="secondary-btn w-auto" onclick="exportTNsList()">
+                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                </svg>
+                                Exportar Lista
+                            </button>
+                            <button class="primary-btn w-auto" data-action="add-tn">
+                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                                </svg>
+                                Adicionar TN
+                            </button>
+                        </div>
                     </div>
                     
                     <div id="tns-list-container">
@@ -12593,7 +12614,6 @@
                                 <th>Horário</th>
                                 <th>Avaliador</th>
                                 <th>Nível</th>
-                                <th>Observações</th>
                                 <th>Ações</th>
                             </tr>
                         </thead>
@@ -12611,7 +12631,6 @@
                                                 ${tn.level}
                                             </span>
                                         </td>
-                                        <td class="max-w-xs truncate">${tn.observations || '-'}</td>
                                         <td class="whitespace-nowrap">
                                             <button class="secondary-btn w-auto text-sm" onclick='viewTN("${tn.id}")'>Ver</button>
                                             <button class="secondary-btn w-auto text-sm ml-2" onclick='editTN("${tn.id}")'>Editar</button>
@@ -12638,6 +12657,11 @@
                     <div>
                         <label class="font-medium text-sm">Nome do Candidato *</label>
                         <input type="text" id="tn-name" class="form-input" value="${tn?.candidateName || ''}" required>
+                    </div>
+                    
+                    <div>
+                        <label class="font-medium text-sm">Celular *</label>
+                        <input type="tel" id="tn-phone" class="form-input" placeholder="(00) 00000-0000" value="${tn?.phone || ''}" required>
                     </div>
                     
                     <div class="grid grid-cols-2 gap-4">
@@ -12693,19 +12717,21 @@
 
         async function saveTN(tnId = null) {
             const candidateName = document.getElementById('tn-name').value;
+            const phone = document.getElementById('tn-phone').value;
             const date = document.getElementById('tn-date').value;
             const time = document.getElementById('tn-time').value;
             const evaluatorId = document.getElementById('tn-evaluator').value;
             const level = document.getElementById('tn-level').value;
             const observations = document.getElementById('tn-observations').value;
             
-            if (!candidateName || !date || !evaluatorId || !level) {
+            if (!candidateName || !phone || !date || !evaluatorId || !level) {
                 showErrorMessage("Erro", "Preencha todos os campos obrigatórios.");
                 return;
             }
             
             const tnData = {
                 candidateName,
+                phone,
                 date,
                 time,
                 evaluatorId,
@@ -12760,10 +12786,11 @@
                 <div class="space-y-4">
                     <div class="grid grid-cols-2 gap-4 text-sm">
                         <div><strong>Candidato:</strong> ${tn.candidateName}</div>
+                        <div><strong>Celular:</strong> ${tn.phone || 'Não especificado'}</div>
                         <div><strong>Data:</strong> ${formatDateBR(tn.date)}</div>
                         <div><strong>Horário:</strong> ${tn.time || 'Não especificado'}</div>
                         <div><strong>Avaliador:</strong> ${avaliador?.name || 'Não especificado'}</div>
-                        <div class="col-span-2">
+                        <div>
                             <strong>Nível Atribuído:</strong> 
                             <span class="inline-block px-3 py-1 text-sm rounded bg-blue-100 text-blue-700 font-semibold ml-2">
                                 ${tn.level}
@@ -12815,10 +12842,80 @@
             }
         }
 
+        function exportTNsList() {
+            if (testesNivel.length === 0) {
+                showErrorMessage("Erro", "Não há testes de nível para exportar.");
+                return;
+            }
+
+            // Aplicar filtros atuais
+            const searchTerm = document.getElementById('tn-search')?.value.toLowerCase() || '';
+            const evaluatorFilter = document.getElementById('tn-evaluator-filter')?.value || '';
+            
+            let filteredTNs = testesNivel;
+            
+            if (searchTerm) {
+                filteredTNs = filteredTNs.filter(tn => 
+                    tn.candidateName.toLowerCase().includes(searchTerm)
+                );
+            }
+            
+            if (evaluatorFilter) {
+                filteredTNs = filteredTNs.filter(tn => tn.evaluatorId === evaluatorFilter);
+            }
+
+            if (filteredTNs.length === 0) {
+                showErrorMessage("Erro", "Nenhum teste de nível encontrado com os filtros aplicados.");
+                return;
+            }
+
+            // Ordenar alfabeticamente
+            const sortedTNs = [...filteredTNs].sort((a, b) => 
+                a.candidateName.localeCompare(b.candidateName, 'pt-BR', { sensitivity: 'base' })
+            );
+
+            // Criar CSV
+            const headers = ['Nome do Candidato', 'Celular', 'Data', 'Horário', 'Avaliador', 'Nível Atribuído', 'Observações'];
+            const csvRows = [headers.join(',')];
+
+            sortedTNs.forEach(tn => {
+                const avaliador = collaborators.find(c => c.id === tn.evaluatorId);
+                const row = [
+                    `"${tn.candidateName || ''}"`,
+                    `"${tn.phone || ''}"`,
+                    `"${formatDateBR(tn.date)}"`,
+                    `"${tn.time || ''}"`,
+                    `"${avaliador?.name || 'Não especificado'}"`,
+                    `"${tn.level || ''}"`,
+                    `"${(tn.observations || '').replace(/"/g, '""')}"` // Escapar aspas duplas
+                ];
+                csvRows.push(row.join(','));
+            });
+
+            const csvContent = csvRows.join('\n');
+            
+            // Criar e baixar arquivo
+            const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            
+            const dateStr = new Date().toISOString().split('T')[0];
+            link.setAttribute('href', url);
+            link.setAttribute('download', `testes-nivel-${dateStr}.csv`);
+            link.style.visibility = 'hidden';
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            showSuccessMessage("Sucesso!", `${sortedTNs.length} teste(s) de nível exportado(s) com sucesso.`);
+        }
+
         window.openTNModal = openTNModal;
         window.viewTN = viewTN;
         window.editTN = editTN;
         window.deleteTN = deleteTN;
+        window.exportTNsList = exportTNsList;
 
         function renderCalendarioSection() {
             document.getElementById('main-title').textContent = 'Calendário';
@@ -13370,6 +13467,12 @@
                                     </svg>
                                     Checklist
                                 </button>
+                                <button class="primary-btn" style="background-color: #FFA500;" onmouseover="this.style.backgroundColor='#FF8C00'" onmouseout="this.style.backgroundColor='#FFA500'" onclick="openAddReminderForm()">
+                                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                                    </svg>
+                                    Lembrete
+                                </button>
                             </div>
                             ` : ''}
                             
@@ -13472,6 +13575,74 @@
                             <div class="mt-6 flex justify-end gap-3">
                                 <button type="button" class="secondary-btn" onclick="closeChecklistFormModal()">Cancelar</button>
                                 <button type="submit" class="primary-btn" style="background-color: #8671D1;" onmouseover="this.style.backgroundColor='#7561BD'" onmouseout="this.style.backgroundColor='#8671D1'">Salvar Checklist</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Add/Edit Reminder Modal -->
+                <div id="reminder-form-modal" class="modal-overlay">
+                    <div class="modal-content max-w-2xl">
+                        <div class="modal-header">
+                            <h4 id="reminder-form-title">Novo Lembrete</h4>
+                            <button onclick="closeReminderFormModal()" class="modal-close-btn">&times;</button>
+                        </div>
+                        <form id="reminder-form" onsubmit="saveReminder(event)">
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="font-medium text-sm">Título do Lembrete <span class="text-red-500">*</span></label>
+                                    <input type="text" id="reminder-title" class="form-input" required placeholder="Ex: Ligar para fornecedor">
+                                </div>
+                                <div>
+                                    <label class="font-medium text-sm">Descrição</label>
+                                    <textarea id="reminder-description" rows="2" class="form-input" placeholder="Descrição do lembrete (opcional)"></textarea>
+                                </div>
+                                <div>
+                                    <label class="font-medium text-sm">Tipo de Lembrete <span class="text-red-500">*</span></label>
+                                    <div class="flex gap-4 mt-2">
+                                        <label class="flex items-center cursor-pointer">
+                                            <input type="radio" name="reminder-mode" value="single" checked class="mr-2" onchange="toggleReminderMode()">
+                                            <span class="text-sm font-medium">Lembrete Único</span>
+                                        </label>
+                                        <label class="flex items-center cursor-pointer">
+                                            <input type="radio" name="reminder-mode" value="checklist" class="mr-2" onchange="toggleReminderMode()">
+                                            <span class="text-sm font-medium" style="color: #FFA500;">Checklist de Lembretes</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="font-medium text-sm">Prazo <span class="text-stone-400 text-xs">(opcional)</span></label>
+                                    <input type="date" id="reminder-due-date" class="form-input">
+                                    <p class="text-xs text-stone-500 mt-1">Lembretes não exigem prazo</p>
+                                </div>
+                                <div>
+                                    <label class="font-medium text-sm">Link do Documento <span class="text-stone-400 text-xs">(opcional)</span></label>
+                                    <input type="url" id="reminder-link" class="form-input" placeholder="https://drive.google.com/...">
+                                </div>
+                                <div>
+                                    <label class="font-medium text-sm">Urgência</label>
+                                    <select id="reminder-urgency" class="form-input">
+                                        <option value="normal">Sem Urgência</option>
+                                        <option value="urgent">Urgente</option>
+                                    </select>
+                                </div>
+
+                                <!-- Checklist Items Section (hidden by default) -->
+                                <div id="reminder-checklist-section" class="border-t border-stone-200 pt-4 hidden">
+                                    <div class="flex justify-between items-center mb-3">
+                                        <label class="font-medium text-sm">Itens do Lembrete</label>
+                                        <button type="button" class="text-sm font-medium" style="color: #FFA500;" onmouseover="this.style.color='#FF8C00'" onmouseout="this.style.color='#FFA500'" onclick="addReminderItem()">
+                                            + Adicionar Item
+                                        </button>
+                                    </div>
+                                    <div id="reminder-items-container" class="space-y-3">
+                                        <!-- Reminder items will be added here -->
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-6 flex justify-end gap-3">
+                                <button type="button" class="secondary-btn" onclick="closeReminderFormModal()">Cancelar</button>
+                                <button type="submit" class="primary-btn" style="background-color: #FFA500;" onmouseover="this.style.backgroundColor='#FF8C00'" onmouseout="this.style.backgroundColor='#FFA500'">Salvar Lembrete</button>
                             </div>
                         </form>
                     </div>
@@ -14019,6 +14190,196 @@
                     `;
                 }
 
+                // Reminder rendering
+                if (task.type === 'reminder') {
+                    // Reminder com checklist
+                    if (task.reminderMode === 'checklist' && task.checklistItems && task.checklistItems.length > 0) {
+                        const approvedCount = task.checklistItems.filter(item => item.approved).length;
+                        const completedByUserCount = task.checklistItems.filter(item => item.completedByUser).length;
+                        const totalCount = task.checklistItems.length;
+                        const allApproved = approvedCount === totalCount;
+                        const dueDate = task.dueDate ? new Date(task.dueDate + 'T00:00:00') : null;
+                        const isOverdueReminder = dueDate && !allApproved && dueDate < today;
+                        const isTodayReminder = dueDate && dueDate.getTime() === today.getTime();
+                        
+                        return `
+                            <div class="mb-4 p-4 rounded-lg border-2" style="${allApproved ? 'background-color: #d6d3d1; border-color: #a8a29e; opacity: 0.7;' : isOverdueReminder ? 'background-color: #fff7ed; border-color: #fed7aa;' : isTodayReminder ? 'background-color: #fefce8; border-color: #fde047;' : 'background-color: #fffbeb; border-color: #FFA500;'}">
+                                <div class="flex items-start justify-between mb-3">
+                                    <div class="flex-1">
+                                        <div class="flex items-center gap-2 flex-wrap">
+                                            <span class="text-white text-xs px-2 py-1 rounded font-semibold flex items-center gap-1" style="background-color: #FFA500;">
+                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                                                </svg>
+                                                LEMBRETE
+                                            </span>
+                                            ${task.urgency === 'urgent' ? '<span class="px-2 py-0.5 text-xs font-semibold rounded" style="background-color: #fecaca; color: #991b1b;">URGENTE</span>' : '<span class="px-2 py-0.5 text-xs font-semibold rounded" style="background-color: #d1fae5; color: #065f46;">SEM URGÊNCIA</span>'}
+                                            <h4 class="font-semibold text-stone-800 ${allApproved ? 'line-through text-stone-500' : ''}">
+                                                ${task.title}
+                                            </h4>
+                                        </div>
+                                        ${task.description ? `<p class="text-sm text-stone-600 mt-2">${task.description}</p>` : ''}
+                                        ${task.link ? `
+                                        <a href="${task.link}" target="_blank" rel="noopener noreferrer" 
+                                           class="inline-flex items-center gap-1 mt-2 text-xs font-medium text-blue-600 hover:text-blue-800 hover:underline">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                                            </svg>
+                                            Abrir documento
+                                        </a>
+                                        ` : ''}
+                                        <div class="flex items-center gap-4 mt-2 text-xs text-stone-500">
+                                            ${task.dueDate ? `
+                                            <span class="flex items-center gap-1">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                                </svg>
+                                                Prazo: ${formatDateBR(task.dueDate)}
+                                            </span>
+                                            ` : '<span class="text-stone-400">Sem prazo definido</span>'}
+                                            <span class="font-semibold text-green-600">${completedByUserCount}/${totalCount} feitos</span>
+                                            <span class="font-semibold" style="color: #FFA500;">${approvedCount}/${totalCount} aprovados</span>
+                                            ${isOverdueReminder && !allApproved ? '<span class="text-red-600 font-semibold">ATRASADO</span>' : ''}
+                                            ${isTodayReminder && !allApproved ? '<span class="text-yellow-600 font-semibold">HOJE</span>' : ''}
+                                        </div>
+                                    </div>
+                                    ${canManage ? `
+                                    <div class="flex gap-2 ml-4">
+                                        <button onclick="event.stopPropagation(); deleteTask('${task.id}')" 
+                                                class="p-2 text-stone-400 hover:text-red-600 transition-colors"
+                                                title="Excluir">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                    ` : ''}
+                                </div>
+                                <div class="mt-3 space-y-2 pl-4 border-l-2" style="border-color: #FFA500;">
+                                    ${task.checklistItems.map((item, index) => {
+                                        const itemDate = item.dueDate ? new Date(item.dueDate + 'T00:00:00') : null;
+                                        const itemOverdue = itemDate && !item.approved && itemDate < today;
+                                        const itemToday = itemDate && itemDate.getTime() === today.getTime();
+                                        
+                                        return `
+                                            <div class="flex items-start gap-3 p-3 rounded border" style="${item.approved ? 'background-color: #f5f5f4; border-color: #e7e5e4;' : itemOverdue ? 'background-color: #fff7ed; border-color: #fed7aa;' : itemToday ? 'background-color: #fefce8; border-color: #fde047;' : 'background-color: white; border-color: #e7e5e4;'}">
+                                                <div class="flex flex-col gap-2">
+                                                    <label class="flex items-center gap-2 cursor-pointer" title="Marcar como feito (todos podem)">
+                                                        <input type="checkbox" 
+                                                               ${item.completedByUser ? 'checked' : ''}
+                                                               onchange="toggleChecklistUserCompletion('${task.id}', ${index})"
+                                                               class="h-4 w-4 rounded border-gray-300"
+                                                               style="accent-color: #10b981;">
+                                                        <span class="text-xs font-medium text-green-700">Feito</span>
+                                                    </label>
+                                                    ${currentUserRole === 'admin' ? `
+                                                    <label class="flex items-center gap-2 cursor-pointer" title="Aprovar (só admin)">
+                                                        <input type="checkbox" 
+                                                               ${item.approved ? 'checked' : ''}
+                                                               onchange="toggleChecklistAdminApproval('${task.id}', ${index})"
+                                                               class="h-4 w-4 rounded border-gray-300"
+                                                               style="accent-color: #FFA500;">
+                                                        <span class="text-xs font-medium" style="color: #FFA500;">Aprovado</span>
+                                                    </label>
+                                                    ` : ''}
+                                                </div>
+                                                <div class="flex-1">
+                                                    <div class="flex items-start justify-between">
+                                                        <span class="text-sm font-medium ${item.approved ? 'line-through text-stone-500' : 'text-stone-700'}">${item.title}</span>
+                                                    </div>
+                                                    <div class="text-xs text-stone-500 mt-1">
+                                                        ${item.dueDate ? `📅 ${formatDateBR(item.dueDate)}` : '<span class="text-stone-400">Sem prazo</span>'}
+                                                        ${item.completedByUser && !item.approved ? '<span class="text-green-600 font-semibold ml-2">AGUARDANDO APROVAÇÃO</span>' : ''}
+                                                        ${itemOverdue ? '<span class="text-red-600 font-semibold ml-2">ATRASADO</span>' : ''}
+                                                        ${itemToday ? '<span class="text-yellow-600 font-semibold ml-2">HOJE</span>' : ''}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        `;
+                                    }).join('')}
+                                </div>
+                            </div>
+                        `;
+                    }
+                    
+                    // Lembrete único (single reminder)
+                    const dueDate = task.dueDate ? new Date(task.dueDate + 'T00:00:00') : null;
+                    const isOverdueReminder = dueDate && !task.approved && dueDate < today;
+                    const isTodayReminder = dueDate && dueDate.getTime() === today.getTime();
+                    
+                    return `
+                        <div class="mb-4 p-4 rounded-lg border-2 ${task.approved ? 'bg-stone-200 border-stone-300 opacity-70' : isOverdueReminder ? 'bg-orange-50 border-orange-300' : isTodayReminder ? 'bg-yellow-50 border-yellow-300' : 'bg-orange-50 border-orange-200'}">
+                            <div class="flex items-start justify-between">
+                                <div class="flex-1">
+                                    <div class="flex items-center gap-2">
+                                        <svg class="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                                        </svg>
+                                        <h4 class="font-semibold text-stone-800 ${task.approved ? 'line-through text-stone-500' : ''}">
+                                            ${task.title}
+                                        </h4>
+                                        ${task.urgency === 'urgent' ? '<span class="px-2 py-0.5 text-xs font-semibold rounded" style="background-color: #fecaca; color: #991b1b;">URGENTE</span>' : '<span class="px-2 py-0.5 text-xs font-semibold rounded" style="background-color: #d1fae5; color: #065f46;">SEM URGÊNCIA</span>'}
+                                    </div>
+                                    ${task.completedByUser && !task.approved ? '<span class="text-xs text-green-600 font-semibold mt-1 block">AGUARDANDO APROVAÇÃO</span>' : ''}
+                                    ${task.description ? `<p class="text-sm text-stone-600 mt-2">${task.description}</p>` : ''}
+                                    ${task.link ? `
+                                    <a href="${task.link}" target="_blank" rel="noopener noreferrer" 
+                                       class="inline-flex items-center gap-1 mt-2 text-xs font-medium text-blue-600 hover:text-blue-800 hover:underline">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                                        </svg>
+                                        Abrir documento
+                                    </a>
+                                    ` : ''}
+                                    <div class="flex items-center gap-4 mt-3 text-xs text-stone-500 border-t border-orange-200 pt-3">
+                                        ${task.dueDate ? `
+                                        <span class="flex items-center gap-1">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                            </svg>
+                                            ${formatDateBR(task.dueDate)}
+                                        </span>
+                                        ` : '<span class="text-stone-400">Sem prazo definido</span>'}
+                                        ${isOverdueReminder && !task.approved ? '<span class="text-red-600 font-semibold">ATRASADO</span>' : ''}
+                                        ${isTodayReminder && !task.approved ? '<span class="text-yellow-600 font-semibold">HOJE</span>' : ''}
+                                        <div class="flex items-center gap-3 ml-auto">
+                                            <label class="flex items-center gap-1.5 cursor-pointer" title="Marcar como feito (todos podem)">
+                                                <input type="checkbox" 
+                                                       ${task.completedByUser ? 'checked' : ''}
+                                                       onchange="toggleUserCompletion('${task.id}', this.checked)"
+                                                       class="h-4 w-4 rounded border-gray-300"
+                                                       style="accent-color: #10b981;">
+                                                <span class="text-xs font-medium text-green-700">Feito</span>
+                                            </label>
+                                            ${currentUserRole === 'admin' ? `
+                                            <label class="flex items-center gap-1.5 cursor-pointer" title="Aprovar (só admin)">
+                                                <input type="checkbox" 
+                                                       ${task.approved ? 'checked' : ''}
+                                                       onchange="toggleAdminApproval('${task.id}', this.checked)"
+                                                       class="h-4 w-4 rounded border-gray-300"
+                                                       style="accent-color: #FFA500;">
+                                                <span class="text-xs font-medium" style="color: #FFA500;">Aprovado</span>
+                                            </label>
+                                            ` : ''}
+                                        </div>
+                                    </div>
+                                </div>
+                                ${canManage ? `
+                                <div class="flex gap-2 ml-4">
+                                    <button onclick="event.stopPropagation(); deleteTask('${task.id}')" 
+                                            class="p-2 text-stone-400 hover:text-red-600 transition-colors"
+                                            title="Excluir">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `;
+                }
+
                 // Normal task rendering
                 return `
                     <div class="mb-4 p-4 rounded-lg border-2 ${task.approved ? 'bg-stone-200 border-stone-300 opacity-70' : isOverdue ? 'bg-red-50 border-red-300' : isToday ? 'bg-yellow-50 border-yellow-300' : 'bg-white border-stone-200'}">
@@ -14435,6 +14796,153 @@
             }
         }
 
+        // --- REMINDER FUNCTIONS ---
+        let reminderItemCounter = 0;
+
+        function openAddReminderForm() {
+            editingTaskId = null;
+            document.getElementById('reminder-form-title').textContent = 'Novo Lembrete';
+            document.getElementById('reminder-form').reset();
+            document.getElementById('reminder-items-container').innerHTML = '';
+            document.getElementById('reminder-checklist-section').classList.add('hidden');
+            reminderItemCounter = 0;
+            document.getElementById('reminder-form-modal').classList.add('visible');
+        }
+
+        function closeReminderFormModal() {
+            document.getElementById('reminder-form-modal').classList.remove('visible');
+            editingTaskId = null;
+            reminderItemCounter = 0;
+        }
+
+        function toggleReminderMode() {
+            const mode = document.querySelector('input[name="reminder-mode"]:checked').value;
+            const checklistSection = document.getElementById('reminder-checklist-section');
+            
+            if (mode === 'checklist') {
+                checklistSection.classList.remove('hidden');
+                // Add one initial item if empty
+                if (reminderItemCounter === 0) {
+                    addReminderItem();
+                }
+            } else {
+                checklistSection.classList.add('hidden');
+            }
+        }
+
+        function addReminderItem(title = '', dueDate = '', completed = false) {
+            const itemId = reminderItemCounter++;
+            const container = document.getElementById('reminder-items-container');
+            
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'flex gap-2 items-start p-3 bg-orange-50 rounded-lg border border-orange-200';
+            itemDiv.id = `reminder-item-${itemId}`;
+            itemDiv.innerHTML = `
+                <div class="flex-1 grid grid-cols-2 gap-2">
+                    <input type="text" 
+                           class="form-input reminder-item-title" 
+                           placeholder="Nome do lembrete (ex: Ligar para Ana)" 
+                           value="${title}"
+                           required>
+                    <input type="date" 
+                           class="form-input reminder-item-due-date" 
+                           value="${dueDate}"
+                           placeholder="Prazo (opcional)">
+                </div>
+                <button type="button" 
+                        class="p-2 text-red-500 hover:text-red-700" 
+                        onclick="removeReminderItem(${itemId})"
+                        title="Remover item">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            `;
+            
+            container.appendChild(itemDiv);
+        }
+
+        function removeReminderItem(itemId) {
+            const item = document.getElementById(`reminder-item-${itemId}`);
+            if (item) {
+                item.remove();
+            }
+        }
+
+        async function saveReminder(event) {
+            event.preventDefault();
+
+            const title = document.getElementById('reminder-title').value;
+            const description = document.getElementById('reminder-description').value;
+            const dueDate = document.getElementById('reminder-due-date').value || null;
+            const link = document.getElementById('reminder-link').value;
+            const urgency = document.getElementById('reminder-urgency').value;
+            const reminderMode = document.querySelector('input[name="reminder-mode"]:checked').value;
+
+            if (!title) {
+                showErrorMessage('Erro', 'Preencha o título do lembrete.');
+                return;
+            }
+
+            let reminderData = {
+                title,
+                description,
+                dueDate,
+                link: link || null,
+                urgency: urgency || 'normal',
+                personId: selectedPersonForTasks,
+                type: 'reminder',
+                reminderMode: reminderMode,
+                status: 'pending',
+                createdAt: new Date().toISOString()
+            };
+
+            // Se for checklist de lembretes, coletar os itens
+            if (reminderMode === 'checklist') {
+                const itemElements = document.querySelectorAll('#reminder-items-container > div');
+                const reminderItems = [];
+                
+                for (let elem of itemElements) {
+                    const itemTitle = elem.querySelector('.reminder-item-title').value;
+                    const itemDueDate = elem.querySelector('.reminder-item-due-date').value || null;
+                    
+                    if (itemTitle) {
+                        reminderItems.push({
+                            title: itemTitle,
+                            dueDate: itemDueDate,
+                            completedByUser: false,
+                            approved: false
+                        });
+                    }
+                }
+
+                if (reminderItems.length === 0) {
+                    showErrorMessage('Erro', 'Adicione pelo menos um item à checklist de lembretes.');
+                    return;
+                }
+
+                reminderData.checklistItems = reminderItems;
+            }
+
+            try {
+                if (editingTaskId) {
+                    await setDoc(doc(db, `artifacts/${appId}/public/data/tasks`, editingTaskId), reminderData);
+                    await logActivity('Editou lembrete', 'reminder', title);
+                    showSuccessMessage('Sucesso!', 'Lembrete atualizado com sucesso.');
+                } else {
+                    await addDoc(collection(db, `artifacts/${appId}/public/data/tasks`), reminderData);
+                    await logActivity('Adicionou lembrete', 'reminder', title);
+                    showSuccessMessage('Sucesso!', 'Lembrete criado com sucesso.');
+                }
+                
+                closeReminderFormModal();
+                renderTasksList();
+            } catch (error) {
+                console.error('Error saving reminder:', error);
+                showErrorMessage('Erro', 'Erro ao salvar lembrete: ' + error.message);
+            }
+        }
+
         // --- MULTIPLE TASK FUNCTIONS ---
         let multipleChecklistItemCounter = 0;
         
@@ -14738,77 +15246,60 @@
             return [...events, ...holidays];
         }
 
-        async function loadFixedDateCards() {
+        async function initializeFixedDateCards() {
             if (!db) {
+                // Modo localStorage
                 const localCards = JSON.parse(localStorage.getItem('fixedDateCards') || '[]');
-                
-                // Clean up: keep only first 4 cards
-                if (localCards.length > 4) {
-                    fixedDateCards = localCards.slice(0, 4);
-                    localStorage.setItem('fixedDateCards', JSON.stringify(fixedDateCards));
-                } else if (localCards.length === 0) {
-                    // Initialize 4 empty cards
+                if (localCards.length === 0) {
                     fixedDateCards = Array.from({ length: 4 }, (_, i) => ({
                         id: `fixed-${i + 1}`,
                         title: `Período ${i + 1}`,
                         startDate: '',
                         endDate: ''
                     }));
+                    localStorage.setItem('fixedDateCards', JSON.stringify(fixedDateCards));
+                } else if (localCards.length > 4) {
+                    fixedDateCards = localCards.slice(0, 4);
                     localStorage.setItem('fixedDateCards', JSON.stringify(fixedDateCards));
                 } else {
                     fixedDateCards = localCards;
                 }
-                renderFixedDateCards();
+                // Renderizar imediatamente para modo localStorage
+                const activePageId = contentArea.firstElementChild?.id;
+                if (activePageId?.includes('calendario')) {
+                    renderFixedDateCards();
+                }
                 return;
             }
 
+            // Modo Firebase - verificar se precisa criar cards padrão
             try {
                 const cardsCollection = collection(db, `artifacts/${appId}/public/data/fixed-date-cards`);
-                const cardsSnapshot = await getDocs(cardsCollection);
+                const snapshot = await getDocs(cardsCollection);
                 
-                // Delete cards 5-8 if they exist
-                const cardsToDelete = ['fixed-5', 'fixed-6', 'fixed-7', 'fixed-8'];
-                for (const cardId of cardsToDelete) {
-                    const cardDoc = doc(db, `artifacts/${appId}/public/data/fixed-date-cards`, cardId);
-                    const cardSnapshot = await getDoc(cardDoc);
-                    if (cardSnapshot.exists()) {
-                        await deleteDoc(cardDoc);
-                        console.log(`Deleted old card: ${cardId}`);
-                    }
-                }
-                
-                // Reload after deletion
-                const updatedSnapshot = await getDocs(cardsCollection);
-                
-                if (updatedSnapshot.empty) {
-                    // Initialize 4 empty cards in Firebase
-                    fixedDateCards = Array.from({ length: 4 }, (_, i) => ({
+                if (snapshot.empty) {
+                    // Criar 4 cards padrão
+                    const defaultCards = Array.from({ length: 4 }, (_, i) => ({
                         id: `fixed-${i + 1}`,
                         title: `Período ${i + 1}`,
                         startDate: '',
                         endDate: ''
                     }));
-                    for (const card of fixedDateCards) {
+                    
+                    for (const card of defaultCards) {
                         await setDoc(doc(db, `artifacts/${appId}/public/data/fixed-date-cards`, card.id), card);
                     }
-                } else {
-                    fixedDateCards = updatedSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 }
-                
-                // Set up real-time listener
-                onSnapshot(cardsCollection, (snapshot) => {
-                    fixedDateCards = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    renderFixedDateCards();
-                });
-                
-                renderFixedDateCards();
             } catch (error) {
-                console.error("Error loading fixed date cards:", error);
-                fixedDateCards = [];
-                renderFixedDateCards();
+                console.error("Error initializing fixed date cards:", error);
             }
         }
 
+        function loadFixedDateCards() {
+            // Os dados já foram carregados pelo listener na inicialização
+            // Apenas renderizar os cards
+            renderFixedDateCards();
+        }
         async function loadFinancialProfitSettings() {
             if (!db) {
                 const localSettings = JSON.parse(localStorage.getItem('financialProfitSettings') || '{"vipMonthlyPayment": 0, "vipTeacherPayment": 0, "turmaStudentPayment": 0, "turmaTeacherPayment": 0}');
