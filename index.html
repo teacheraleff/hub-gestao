@@ -103,6 +103,7 @@
         .user-tag { display: inline-flex; align-items: center; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; }
         .tag-admin { background-color: #E5E7EB; color: #374151; }
         .tag-break { background-color: #374151; color: #FFFFFF; }
+        .tag-vaga { background-color: #10b981; color: #FFFFFF; }
         .deadline-text { font-weight: 600; color: #57534e; }
         .deadline-overdue { color: #b91c1c; }
         .task-delete-btn { background: none; border: none; cursor: pointer; color: #9ca3af; transition: color 0.2s; }
@@ -1736,7 +1737,7 @@
             const normalizedTeacherName = normalizeTeacherName(actualTeacherName);
             // ROBUST FILTERING: Use normalized comparison
             return schedules.filter(s => {
-                if (s.day !== day || s.type === 'break') return false;
+                if (s.day !== day || s.type === 'break' || s.type === 'vaga') return false;
                 const normalizedScheduleTeacher = normalizeTeacherName(s.teacher || '');
                 return normalizedScheduleTeacher === normalizedTeacherName;
             }).sort((a, b) => a.startTime.localeCompare(b.startTime));
@@ -2862,11 +2863,19 @@
                             ${teacherOptions}
                         </select>
                     </div>
+                    <div class="flex items-center gap-2 ml-4">
+                        <input type="checkbox" id="show-vagas-only" class="rounded border-stone-300 text-emerald-600 focus:ring-emerald-500">
+                        <label for="show-vagas-only" class="text-sm font-medium text-stone-700">Mostrar apenas vagas</label>
+                    </div>
                 `;
             }
 
             const addAulaButton = ['admin', 'ap', 'pedagogico'].includes(currentUserRole)
                 ? `<button class="primary-btn w-auto" data-action="add-schedule">+ Adicionar Aula</button>`
+                : '';
+            
+            const addVagaButton = ['admin', 'ap', 'pedagogico'].includes(currentUserRole)
+                ? `<button class="primary-btn w-auto" style="background-color: #10b981; border-color: #10b981;" onmouseover="this.style.backgroundColor='#059669'" onmouseout="this.style.backgroundColor='#10b981'" data-action="add-vaga">+ Adicionar Vaga</button>`
                 : '';
 
             contentArea.innerHTML = `
@@ -2875,6 +2884,7 @@
                         ${filterHtml}
                         <div class="flex gap-2 ml-auto">
                            ${addAulaButton}
+                           ${addVagaButton}
                         </div>
                     </div>
                     <div id="weekly-hours-container" class="mb-6"></div>
@@ -2935,6 +2945,15 @@
                 if (teacherFilter) {
                     teacherFilter.addEventListener('change', () => renderScheduleGrid(teacherFilter.value));
                 }
+                
+                const showVagasOnly = document.getElementById('show-vagas-only');
+                if (showVagasOnly) {
+                    showVagasOnly.addEventListener('change', () => {
+                        const currentTeacherFilter = teacherFilter ? teacherFilter.value : 'all';
+                        renderScheduleGrid(currentTeacherFilter);
+                    });
+                }
+                
                 renderScheduleGrid('all');
             }
         }
@@ -2987,7 +3006,7 @@
             // ROBUST FILTERING: Use normalized comparison to catch ALL schedules for this teacher
             const normalizedTeacherName = normalizeTeacherName(actualTeacherName);
             const teacherSchedules = schedules.filter(s => {
-                if (s.type === 'break') return false;
+                if (s.type === 'break' || s.type === 'vaga') return false;
                 const normalizedScheduleTeacher = normalizeTeacherName(s.teacher || '');
                 return normalizedScheduleTeacher === normalizedTeacherName;
             });
@@ -3056,6 +3075,12 @@
                     const normalizedScheduleTeacher = normalizeTeacherName(s.teacher || '');
                     return normalizedScheduleTeacher === normalizedTeacherName;
                 });
+            }
+
+            // Filter by vacancy checkbox if checked
+            const showVagasOnly = document.getElementById('show-vagas-only');
+            if (showVagasOnly && showVagasOnly.checked) {
+                filteredSchedules = filteredSchedules.filter(s => s.type === 'vaga');
             }
 
             // Debug log for teachers to help identify mapping issues
@@ -3130,6 +3155,9 @@
                         if (c.type === 'break') {
                             tagClass = 'tag-break';
                             tagText = 'BREAK';
+                        } else if (c.type === 'vaga') {
+                            tagClass = 'tag-vaga';
+                            tagText = 'VAGA';
                         } else if (c.type === 'vip') {
                             tagClass = 'tag-vip';
                             tagText = 'VIP';
@@ -3139,8 +3167,8 @@
                         }
 
                         const teacherName = teacherFilter === 'all' ? `<p class="text-xs text-stone-500"><em>(${c.teacher})</em></p>` : '';
-                        const studentInfo = c.type === 'break' ? 
-                            `<p class="font-bold text-stone-600">Intervalo</p>` : 
+                        const studentInfo = (c.type === 'break' || c.type === 'vaga') ? 
+                            `<p class="font-bold text-stone-600">${c.type === 'break' ? 'Intervalo' : 'Vaga Disponível'}</p>` : 
                             `<p class="font-bold text-stone-800">${c.student}</p><p class="text-sm text-stone-700">${c.level}</p>`;
 
                         gridHtml += `
@@ -9458,7 +9486,12 @@
 
             const teacherOptions = collaborators.filter(c => c.role === 'teacher').map(c => `<option value="${c.name}" ${schedule?.teacher === c.name ? 'selected' : ''}>${c.name}</option>`).join('');
             const dayOptions = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"].map(d => `<option value="${d}" ${schedule?.day === d ? 'selected' : ''}>${d}</option>`).join('');
-            const typeOptions = ["vip", "turma", "break"].map(t => `<option value="${t}" ${schedule?.type === t ? 'selected' : ''}>${t === 'break' ? 'BREAK' : t.toUpperCase()}</option>`).join('');
+            const typeOptions = ["vip", "turma", "break", "vaga"].map(t => {
+                let displayName = t.toUpperCase();
+                if (t === 'break') displayName = 'BREAK';
+                if (t === 'vaga') displayName = 'VAGA';
+                return `<option value="${t}" ${schedule?.type === t ? 'selected' : ''}>${displayName}</option>`;
+            }).join('');
             const levelOptions = STANDARD_LEVELS.map(level => `<option value="${level}" ${schedule?.level === level ? 'selected' : ''}>${level}</option>`).join('') + `<option value="outro">Outro (especificar)</option>`;
 
             // Get VIP students (including DUPLA) and turmas for dropdowns
@@ -9570,7 +9603,7 @@
                 const levelSelect = document.getElementById('schedule-level');
                 const fieldLabel = document.getElementById('student-field-label');
 
-                if (type === 'break') {
+                if (type === 'break' || type === 'vaga') {
                     studentField.style.display = 'none';
                     levelField.style.display = 'none';
                 } else if (type === 'vip') {
@@ -9645,25 +9678,63 @@
                 const type = document.getElementById('schedule-type').value;
 
                 // Skip check for breaks or if no student/teacher selected
-                if (!student || !teacher || type === 'break') {
+                if (!student || !teacher || type === 'break' || type === 'vaga') {
                     warning.classList.add('hidden');
                     return;
                 }
 
-                // Check if this student already exists in ANY teacher's schedule (excluding current edit)
-                const existingSchedule = schedules.find(s => 
-                    s.student === student && 
-                    s.id !== scheduleId &&
-                    s.type !== 'break'
-                );
+                // Collect all days/times being edited
+                const editingSlots = [];
+                const day1 = document.getElementById('schedule-day1').value;
+                const start1 = document.getElementById('schedule-start1').value;
+                const end1 = document.getElementById('schedule-end1').value;
+                if (day1 && start1 && end1) {
+                    editingSlots.push({ day: day1, startTime: start1, endTime: end1 });
+                }
 
-                if (existingSchedule) {
-                    warning.textContent = `⚠️ Aluno/Turma já adicionado na grade do professor ${existingSchedule.teacher}`;
+                const day2 = document.getElementById('schedule-day2').value;
+                const start2 = document.getElementById('schedule-start2').value;
+                const end2 = document.getElementById('schedule-end2').value;
+                if (day2 && start2 && end2) {
+                    editingSlots.push({ day: day2, startTime: start2, endTime: end2 });
+                }
+
+                const day3 = document.getElementById('schedule-day3').value;
+                const start3 = document.getElementById('schedule-start3').value;
+                const end3 = document.getElementById('schedule-end3').value;
+                if (day3 && start3 && end3) {
+                    editingSlots.push({ day: day3, startTime: start3, endTime: end3 });
+                }
+
+                // Check for real conflicts: same student + same teacher + same day/time
+                const conflicts = schedules.filter(s => {
+                    if (s.type === 'break' || s.type === 'vaga' || s.id === scheduleId) return false;
+                    if (s.student !== student || s.teacher !== teacher) return false;
+
+                    // Check if any editing slot conflicts with this schedule
+                    return editingSlots.some(slot => {
+                        if (s.day !== slot.day) return false;
+
+                        // Check time overlap
+                        const sStart = s.startTime;
+                        const sEnd = s.endTime;
+                        const eStart = slot.startTime;
+                        const eEnd = slot.endTime;
+
+                        // Times overlap if: start1 < end2 AND start2 < end1
+                        return sStart < eEnd && eStart < sEnd;
+                    });
+                });
+
+                if (conflicts.length > 0) {
+                    const conflict = conflicts[0];
+                    warning.textContent = `⚠️ Conflito: aluno já tem aula com ${conflict.teacher} neste dia/horário`;
                     warning.classList.remove('hidden');
                 } else {
                     warning.classList.add('hidden');
                 }
             }
+
 
             // VIP search functionality
             const vipSearchInput = document.getElementById('schedule-vip-search');
@@ -9774,6 +9845,21 @@
             document.getElementById('form-modal').classList.add('visible');
         }
 
+        function openVagaForm() {
+            openScheduleForm(null);
+            // Pre-select 'vaga' type after form opens
+            setTimeout(() => {
+                const typeSelect = document.getElementById('schedule-type');
+                if (typeSelect) {
+                    typeSelect.value = 'vaga';
+                    // Trigger change event to update form fields
+                    const event = new Event('change', { bubbles: true });
+                    typeSelect.dispatchEvent(event);
+                }
+            }, 100);
+        }
+
+
         async function saveScheduleEntry(event) {
             event.preventDefault();
             
@@ -9782,16 +9868,54 @@
             const scheduleId = document.getElementById('schedule-id').value;
             const scheduleType = document.getElementById('schedule-type').value;
             
-            // Check for duplicate student in ANY teacher's schedule (only for non-break entries)
-            if (scheduleType !== 'break') {
-                const existingSchedule = schedules.find(s => 
-                    s.student === student && 
-                    s.id !== scheduleId &&
-                    s.type !== 'break'
-                );
+            // Check for real conflicts: same student + same teacher + same day/time (only for non-break entries)
+            if (scheduleType !== 'break' && scheduleType !== 'vaga') {
+                // Collect all days/times being saved
+                const savingSlots = [];
+                const day1 = document.getElementById('schedule-day1').value;
+                const start1 = document.getElementById('schedule-start1').value;
+                const end1 = document.getElementById('schedule-end1').value;
+                if (day1 && start1 && end1) {
+                    savingSlots.push({ day: day1, startTime: start1, endTime: end1 });
+                }
+
+                const day2 = document.getElementById('schedule-day2').value;
+                const start2 = document.getElementById('schedule-start2').value;
+                const end2 = document.getElementById('schedule-end2').value;
+                if (day2 && start2 && end2) {
+                    savingSlots.push({ day: day2, startTime: start2, endTime: end2 });
+                }
+
+                const day3 = document.getElementById('schedule-day3').value;
+                const start3 = document.getElementById('schedule-start3').value;
+                const end3 = document.getElementById('schedule-end3').value;
+                if (day3 && start3 && end3) {
+                    savingSlots.push({ day: day3, startTime: start3, endTime: end3 });
+                }
+
+                // Check for conflicts: same student + same teacher + overlapping day/time
+                const conflicts = schedules.filter(s => {
+                    if (s.type === 'break' || s.type === 'vaga' || s.id === scheduleId) return false;
+                    if (s.student !== student || s.teacher !== teacherName) return false;
+
+                    // Check if any saving slot conflicts with this schedule
+                    return savingSlots.some(slot => {
+                        if (s.day !== slot.day) return false;
+
+                        // Check time overlap
+                        const sStart = s.startTime;
+                        const sEnd = s.endTime;
+                        const eStart = slot.startTime;
+                        const eEnd = slot.endTime;
+
+                        // Times overlap if: start1 < end2 AND start2 < end1
+                        return sStart < eEnd && eStart < sEnd;
+                    });
+                });
                 
-                if (existingSchedule) {
-                    showErrorMessage("Erro", `Aluno já adicionado na grade do professor ${existingSchedule.teacher}.`);
+                if (conflicts.length > 0) {
+                    const conflict = conflicts[0];
+                    showErrorMessage("Erro", `Conflito: ${student} já tem aula com ${conflict.teacher} neste dia/horário (${conflict.day}, ${conflict.startTime}-${conflict.endTime}).`);
                     return;
                 }
             }
@@ -9832,13 +9956,13 @@
                 : levelSelect.value;
 
             const scheduleType = document.getElementById('schedule-type').value;
-            const studentValue = scheduleType === 'break' ? 'Break' : document.getElementById('schedule-student').value;
+            const studentValue = (scheduleType === 'break' || scheduleType === 'vaga') ? (scheduleType === 'break' ? 'Break' : 'Vaga Disponível') : document.getElementById('schedule-student').value;
             const teacherValue = document.getElementById('schedule-teacher').value;
             
             // Create data for Day 1 (obrigatório)
             const data1 = { 
                 student: studentValue, 
-                level: scheduleType === 'break' ? 'N/A' : levelValue, 
+                level: (scheduleType === 'break' || scheduleType === 'vaga') ? 'N/A' : levelValue, 
                 teacher: teacherValue, 
                 type: scheduleType, 
                 day: day1,
@@ -9849,7 +9973,7 @@
             // Create data for Day 2 (opcional)
             const data2 = day2 && startTime2 && endTime2 ? { 
                 student: studentValue, 
-                level: scheduleType === 'break' ? 'N/A' : levelValue, 
+                level: (scheduleType === 'break' || scheduleType === 'vaga') ? 'N/A' : levelValue, 
                 teacher: teacherValue, 
                 type: scheduleType, 
                 day: day2,
@@ -9860,7 +9984,7 @@
             // Create data for Day 3 (opcional)
             const data3 = day3 && startTime3 && endTime3 ? { 
                 student: studentValue, 
-                level: scheduleType === 'break' ? 'N/A' : levelValue, 
+                level: (scheduleType === 'break' || scheduleType === 'vaga') ? 'N/A' : levelValue, 
                 teacher: teacherValue, 
                 type: scheduleType, 
                 day: day3,
@@ -18488,6 +18612,7 @@
 
 
                         'add-schedule': openScheduleForm,
+                        'add-vaga': openVagaForm,
                         'view-schedule': () => openScheduleForm(id),
                         'add-expense': openExpenseForm,
                         'view-expense': () => openExpenseForm(id),
