@@ -409,6 +409,16 @@
             color: #5B4700;
         }
 
+        .setor-professor {
+            background-color: #22C55E;
+            color: #14532D;
+        }
+
+        .setor-supervisao {
+            background-color: #EC4899;
+            color: #831843;
+        }
+
         .setor-indefinido {
             background-color: #f3f4f6;
             color: #6b7280;
@@ -438,9 +448,8 @@
         }
 
         .setor-radio-input:checked + .setor-radio-label {
-            border-color: currentColor;
-            background-color: currentColor;
-            color: white;
+            font-weight: 700;
+            box-shadow: 0 0 0 2px currentColor;
         }
 
         .setor-radio-input {
@@ -13477,6 +13486,81 @@
             `).join('');
         }
 
+
+        function addStepToForm(stepData = null) {
+            const stepId = stepData?.id || `step-${Date.now()}`;
+            const stepsContainer = document.getElementById('steps-list-form');
+            
+            const stepHtml = `
+                <div class="step-block border border-stone-300 rounded-lg p-4 mb-3" data-step-id="${stepId}">
+                    <div class="flex justify-between items-center mb-3">
+                        <h5 class="font-semibold text-stone-700">Passo</h5>
+                        <button type="button" class="text-red-500 hover:text-red-700 text-sm font-medium" onclick="removeStepFromForm('${stepId}')">
+                            Remover
+                        </button>
+                    </div>
+                    
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-sm font-medium text-stone-700 mb-1">Título do Passo *</label>
+                            <input type="text" class="step-title w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent" 
+                                value="${stepData?.title || ''}" placeholder="Ex: Cadastrar aluno no sistema" required>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-stone-700 mb-1">Descrição (opcional)</label>
+                            <textarea class="step-description w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent" 
+                                rows="2" placeholder="Detalhes adicionais sobre este passo...">${stepData?.description || ''}</textarea>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-stone-700 mb-2">Setor Responsável *</label>
+                            <div class="setor-radio-group">
+                                <input type="radio" id="${stepId}-comercial" name="${stepId}-setor" value="comercial" class="setor-radio-input" ${stepData?.setor === 'comercial' ? 'checked' : ''}>
+                                <label for="${stepId}-comercial" class="setor-radio-label" style="border-color: #FF5C3D;">
+                                    Comercial
+                                </label>
+                                
+                                <input type="radio" id="${stepId}-pedagogico" name="${stepId}-setor" value="pedagogico" class="setor-radio-input" ${stepData?.setor === 'pedagogico' ? 'checked' : ''}>
+                                <label for="${stepId}-pedagogico" class="setor-radio-label" style="border-color: #84C7DF;">
+                                    Pedagógico
+                                </label>
+                                
+                                <input type="radio" id="${stepId}-administrativo" name="${stepId}-setor" value="administrativo" class="setor-radio-input" ${stepData?.setor === 'administrativo' ? 'checked' : ''}>
+                                <label for="${stepId}-administrativo" class="setor-radio-label" style="border-color: #8671D1;">
+                                    Administrativo
+                                </label>
+                                
+                                <input type="radio" id="${stepId}-direcao" name="${stepId}-setor" value="direcao" class="setor-radio-input" ${stepData?.setor === 'direcao' ? 'checked' : ''}>
+                                <label for="${stepId}-direcao" class="setor-radio-label" style="border-color: #F1D24B;">
+                                    Direção
+                                </label>
+                                
+                                <input type="radio" id="${stepId}-professor" name="${stepId}-setor" value="professor" class="setor-radio-input" ${stepData?.setor === 'professor' ? 'checked' : ''}>
+                                <label for="${stepId}-professor" class="setor-radio-label" style="border-color: #22C55E;">
+                                    Professor
+                                </label>
+                                
+                                <input type="radio" id="${stepId}-supervisao" name="${stepId}-setor" value="supervisao" class="setor-radio-input" ${stepData?.setor === 'supervisao' ? 'checked' : ''}>
+                                <label for="${stepId}-supervisao" class="setor-radio-label" style="border-color: #EC4899;">
+                                    Supervisão
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            stepsContainer.insertAdjacentHTML('beforeend', stepHtml);
+        }
+
+        function removeStepFromForm(stepId) {
+            const stepBlock = document.querySelector(`[data-step-id="${stepId}"]`);
+            if (stepBlock) {
+                stepBlock.remove();
+            }
+        }
+
         function openProcessoForm(processoId = null) {
             clearModalHeaderButtons();
             const processo = processoId ? processos.find(p => p.id === processoId) : null;
@@ -13494,10 +13578,16 @@
                     </div>
                     
                     <div>
-                        <label for="processo-description" class="block text-sm font-medium text-stone-700 mb-1">Descrição (opcional)</label>
-                        <textarea id="processo-description" rows="3"
-                            class="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-                            placeholder="Descreva brevemente este processo...">${processo?.description || ''}</textarea>
+                        <div class="flex justify-between items-center mb-2">
+                            <label class="block text-sm font-medium text-stone-700">Passos do Processo *</label>
+                            <button type="button" class="text-sm font-medium text-blue-600 hover:text-blue-800" onclick="addStepToForm()">
+                                + Adicionar Passo
+                            </button>
+                        </div>
+                        <div id="steps-list-form" class="space-y-2">
+                            <!-- Steps will be added here -->
+                        </div>
+                        <p class="text-xs text-stone-500 mt-1">Adicione pelo menos 1 passo para este processo</p>
                     </div>
                     
                     <div class="flex justify-end gap-2 pt-4">
@@ -13509,24 +13599,70 @@
             
             document.getElementById('processo-form').addEventListener('submit', saveProcesso);
             document.getElementById('form-modal').classList.add('visible');
+            
+            if (processo && processo.steps && processo.steps.length > 0) {
+                processo.steps.forEach(step => {
+                    addStepToForm({ ...step, id: `step-${Date.now()}-${Math.random()}` });
+                });
+            } else {
+                addStepToForm();
+            }
         }
+
 
         async function saveProcesso(event) {
             event.preventDefault();
             
             const processoId = document.getElementById('processo-id').value;
             const name = document.getElementById('processo-name').value.trim();
-            const description = document.getElementById('processo-description').value.trim();
             
             if (!name) {
                 showErrorMessage('Erro', 'Por favor, informe o nome do processo.');
                 return;
             }
             
+            const stepBlocks = document.querySelectorAll('.step-block');
+            
+            if (stepBlocks.length === 0) {
+                showErrorMessage('Erro', 'Por favor, adicione pelo menos 1 passo para este processo.');
+                return;
+            }
+            
+            const steps = [];
+            let hasError = false;
+            
+            stepBlocks.forEach((block, index) => {
+                const title = block.querySelector('.step-title').value.trim();
+                const description = block.querySelector('.step-description').value.trim();
+                const stepId = block.getAttribute('data-step-id');
+                const selectedSetor = block.querySelector(`input[name="${stepId}-setor"]:checked`);
+                
+                if (!title) {
+                    showErrorMessage('Erro', `Por favor, informe o título do passo ${index + 1}.`);
+                    hasError = true;
+                    return;
+                }
+                
+                if (!selectedSetor) {
+                    showErrorMessage('Erro', `Por favor, selecione o setor responsável para o passo ${index + 1}.`);
+                    hasError = true;
+                    return;
+                }
+                
+                steps.push({
+                    title,
+                    description,
+                    setor: selectedSetor.value,
+                    order: index,
+                    createdAt: new Date().toISOString()
+                });
+            });
+            
+            if (hasError) return;
+            
             const processoData = {
                 name,
-                description,
-                steps: processoId ? processos.find(p => p.id === processoId)?.steps || [] : [],
+                steps,
                 updatedAt: new Date().toISOString(),
                 updatedBy: currentUserName
             };
@@ -13562,13 +13698,14 @@
                     renderProcessosSection();
                 }
                 
-                closeModal('processo-form-modal');
+                document.getElementById('form-modal').classList.remove('visible');
                 showSuccessMessage(processoId ? 'Processo atualizado com sucesso!' : 'Processo criado com sucesso!');
             } catch (error) {
                 console.error('Erro ao salvar processo:', error);
                 showErrorMessage('Erro', 'Erro ao salvar processo. Tente novamente.');
             }
         }
+
 
         function openProcessoViewModal(processoId) {
             const processo = processos.find(p => p.id === processoId);
@@ -13591,13 +13728,17 @@
                     'comercial': 'setor-comercial',
                     'pedagogico': 'setor-pedagogico',
                     'administrativo': 'setor-administrativo',
-                    'direcao': 'setor-direcao'
+                    'direcao': 'setor-direcao',
+                    'professor': 'setor-professor',
+                    'supervisao': 'setor-supervisao'
                 };
                 const setorLabels = {
                     'comercial': 'Comercial',
                     'pedagogico': 'Pedagógico',
                     'administrativo': 'Administrativo',
-                    'direcao': 'Direção'
+                    'direcao': 'Direção',
+                    'professor': 'Professor',
+                    'supervisao': 'Supervisão'
                 };
                 return `<span class="setor-badge ${setorClasses[setor] || 'setor-indefinido'}">${setorLabels[setor] || 'Indefinido'}</span>`;
             };
@@ -14392,12 +14533,16 @@
                                     </label>
                                     <div class="flex gap-4">
                                         <label class="flex items-center cursor-pointer">
-                                            <input type="radio" name="multiple-task-type" value="normal" checked class="mr-2">
+                                            <input type="radio" name="multiple-task-type" value="normal" checked class="mr-2" onchange="toggleMultipleTaskType()">
                                             <span class="text-sm font-medium">Task Normal</span>
                                         </label>
                                         <label class="flex items-center cursor-pointer">
-                                            <input type="radio" name="multiple-task-type" value="checklist" class="mr-2">
+                                            <input type="radio" name="multiple-task-type" value="checklist" class="mr-2" onchange="toggleMultipleTaskType()">
                                             <span class="text-sm font-medium" style="color: #8671D1;">Checklist</span>
+                                        </label>
+                                        <label class="flex items-center cursor-pointer">
+                                            <input type="radio" name="multiple-task-type" value="lembrete" class="mr-2" onchange="toggleMultipleTaskType()">
+                                            <span class="text-sm font-medium" style="color: #F97316;">Lembrete</span>
                                         </label>
                                     </div>
                                 </div>
@@ -14412,14 +14557,38 @@
                                         <label class="font-medium text-sm">Descrição</label>
                                         <textarea id="multiple-task-description" rows="3" class="form-input" placeholder="Detalhes da task (opcional)"></textarea>
                                     </div>
-                                    <div>
-                                        <label class="font-medium text-sm">Prazo <span class="text-red-500">*</span></label>
+                                    <div id="multiple-task-due-date-field">
+                                        <label class="font-medium text-sm">Prazo <span class="text-red-500" id="multiple-due-date-required">*</span></label>
                                         <input type="date" id="multiple-task-due-date" class="form-input" required>
                                     </div>
                                     <div>
                                         <label class="font-medium text-sm">Link do Documento <span class="text-stone-400 text-xs">(opcional)</span></label>
                                         <input type="url" id="multiple-task-link" class="form-input" placeholder="https://drive.google.com/...">
                                         <p class="text-xs text-stone-500 mt-1">Adicione um link para Drive, Notion, etc.</p>
+                                    </div>
+                                    
+                                    <!-- Lembrete specific fields (hidden by default) -->
+                                    <div id="multiple-lembrete-fields" class="hidden space-y-4 bg-orange-50 p-4 rounded-lg border border-orange-200">
+                                        <div>
+                                            <label class="font-medium text-sm text-orange-900 mb-2 block">Modo do Lembrete <span class="text-red-500">*</span></label>
+                                            <div class="flex gap-4">
+                                                <label class="flex items-center cursor-pointer">
+                                                    <input type="radio" name="multiple-lembrete-mode" value="single" checked class="mr-2" onchange="toggleMultipleLembreteMode()">
+                                                    <span class="text-sm font-medium">Lembrete Único</span>
+                                                </label>
+                                                <label class="flex items-center cursor-pointer">
+                                                    <input type="radio" name="multiple-lembrete-mode" value="checklist" class="mr-2" onchange="toggleMultipleLembreteMode()">
+                                                    <span class="text-sm font-medium" style="color: #FFA500;">Checklist de Lembretes</span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label class="font-medium text-sm">Urgência</label>
+                                            <select id="multiple-lembrete-urgency" class="form-input">
+                                                <option value="normal">Sem Urgência</option>
+                                                <option value="urgent">Urgente</option>
+                                            </select>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -14433,6 +14602,19 @@
                                     </div>
                                     <div id="multiple-checklist-items-container" class="space-y-3">
                                         <!-- Checklist items will be added here -->
+                                    </div>
+                                </div>
+                                
+                                <!-- Lembrete Checklist Items (only for lembrete checklist mode) -->
+                                <div id="multiple-lembrete-checklist-section" class="hidden border-t border-orange-200 pt-4">
+                                    <div class="flex justify-between items-center mb-3">
+                                        <label class="font-medium text-sm">Itens do Lembrete</label>
+                                        <button type="button" class="text-sm font-medium" style="color: #F97316;" onclick="addMultipleLembreteItem()">
+                                            + Adicionar Item
+                                        </button>
+                                    </div>
+                                    <div id="multiple-lembrete-items-container" class="space-y-3">
+                                        <!-- Lembrete items will be added here -->
                                     </div>
                                 </div>
                             </div>
@@ -15684,7 +15866,29 @@
             document.getElementById('multiple-task-form').reset();
             document.getElementById('multiple-checklist-items-container').innerHTML = '';
             document.getElementById('multiple-checklist-section').classList.add('hidden');
+            document.getElementById('multiple-lembrete-items-container').innerHTML = '';
+            document.getElementById('multiple-lembrete-checklist-section').classList.add('hidden');
+            document.getElementById('multiple-lembrete-fields').classList.add('hidden');
             multipleChecklistItemCounter = 0;
+            multipleLembreteItemCounter = 0;
+            
+            // Reset task type to "normal"
+            const normalRadio = document.querySelector('input[name="multiple-task-type"][value="normal"]');
+            if (normalRadio) normalRadio.checked = true;
+            
+            // Reset lembrete mode to "single"
+            const singleModeRadio = document.querySelector('input[name="multiple-lembrete-mode"][value="single"]');
+            if (singleModeRadio) singleModeRadio.checked = true;
+            
+            // Reset urgency to "normal"
+            const urgencySelect = document.getElementById('multiple-lembrete-urgency');
+            if (urgencySelect) urgencySelect.value = 'normal';
+            
+            // Reset due date to required
+            const dueDateField = document.getElementById('multiple-task-due-date');
+            const dueDateRequired = document.getElementById('multiple-due-date-required');
+            if (dueDateField) dueDateField.required = true;
+            if (dueDateRequired) dueDateRequired.style.display = '';
             
             // Show modal
             document.getElementById('multiple-task-modal').classList.add('visible');
@@ -15693,6 +15897,11 @@
         window.closeMultipleTaskModal = function() {
             document.getElementById('multiple-task-modal').classList.remove('visible');
             multipleChecklistItemCounter = 0;
+            multipleLembreteItemCounter = 0;
+            
+            // Reset all sections and fields
+            document.getElementById('multiple-checklist-items-container').innerHTML = '';
+            document.getElementById('multiple-lembrete-items-container').innerHTML = '';
         };
         
         window.addMultipleChecklistItem = function(title = '', dueDate = '') {
@@ -15732,6 +15941,113 @@
             if (item) item.remove();
         };
         
+        // Toggle task type sections (normal, checklist, lembrete)
+        window.toggleMultipleTaskType = function() {
+            const taskType = document.querySelector('input[name="multiple-task-type"]:checked').value;
+            const checklistSection = document.getElementById('multiple-checklist-section');
+            const lembreteFields = document.getElementById('multiple-lembrete-fields');
+            const lembreteChecklistSection = document.getElementById('multiple-lembrete-checklist-section');
+            const dueDateField = document.getElementById('multiple-task-due-date');
+            const dueDateRequired = document.getElementById('multiple-due-date-required');
+            
+            // Reset all sections
+            if (checklistSection) checklistSection.classList.add('hidden');
+            if (lembreteFields) lembreteFields.classList.add('hidden');
+            if (lembreteChecklistSection) lembreteChecklistSection.classList.add('hidden');
+            
+            if (taskType === 'checklist') {
+                // Show checklist section
+                if (checklistSection) {
+                    checklistSection.classList.remove('hidden');
+                    const container = document.getElementById('multiple-checklist-items-container');
+                    if (container && container.children.length === 0) {
+                        addMultipleChecklistItem();
+                    }
+                }
+                // Prazo é obrigatório
+                if (dueDateField) dueDateField.required = true;
+                if (dueDateRequired) dueDateRequired.style.display = '';
+            } else if (taskType === 'lembrete') {
+                // Show lembrete fields
+                if (lembreteFields) lembreteFields.classList.remove('hidden');
+                // Prazo é opcional para lembretes
+                if (dueDateField) dueDateField.required = false;
+                if (dueDateRequired) dueDateRequired.style.display = 'none';
+            } else {
+                // Normal task - prazo é obrigatório
+                if (dueDateField) dueDateField.required = true;
+                if (dueDateRequired) dueDateRequired.style.display = '';
+            }
+        };
+        
+        // Toggle lembrete mode (single vs checklist)
+        window.toggleMultipleLembreteMode = function() {
+            const mode = document.querySelector('input[name="multiple-lembrete-mode"]:checked').value;
+            const lembreteChecklistSection = document.getElementById('multiple-lembrete-checklist-section');
+            const container = document.getElementById('multiple-lembrete-items-container');
+            
+            if (mode === 'checklist') {
+                if (lembreteChecklistSection) {
+                    lembreteChecklistSection.classList.remove('hidden');
+                    // Sempre limpa e adiciona um item inicial
+                    if (container) {
+                        container.innerHTML = '';
+                        addMultipleLembreteItem();
+                    }
+                }
+            } else {
+                if (lembreteChecklistSection) {
+                    lembreteChecklistSection.classList.add('hidden');
+                }
+                // Limpa os itens ao voltar para modo single
+                if (container) {
+                    container.innerHTML = '';
+                }
+            }
+        };
+        
+        // Counter for lembrete items
+        let multipleLembreteItemCounter = 0;
+        
+        // Add lembrete item to checklist
+        window.addMultipleLembreteItem = function(title = '', dueDate = '') {
+            const itemId = multipleLembreteItemCounter++;
+            const container = document.getElementById('multiple-lembrete-items-container');
+            
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'flex gap-2 items-start p-3 bg-orange-50 rounded-lg border border-orange-200';
+            itemDiv.id = `multiple-lembrete-item-${itemId}`;
+            itemDiv.innerHTML = `
+                <div class="flex-1 space-y-2">
+                    <input type="text" 
+                           placeholder="Título do lembrete (Ex: Confirmar reunião)" 
+                           value="${title}"
+                           class="form-input multiple-lembrete-item-title" 
+                           required>
+                    <input type="date" 
+                           value="${dueDate}"
+                           class="form-input multiple-lembrete-item-due-date" 
+                           placeholder="Prazo (opcional)">
+                </div>
+                <button type="button" 
+                        class="text-red-600 hover:text-red-800 mt-2" 
+                        onclick="removeMultipleLembreteItem(${itemId})"
+                        title="Remover item">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            `;
+            
+            container.appendChild(itemDiv);
+        };
+        
+        // Remove lembrete item
+        window.removeMultipleLembreteItem = function(itemId) {
+            const item = document.getElementById(`multiple-lembrete-item-${itemId}`);
+            if (item) item.remove();
+        };
+        
         window.saveMultipleTask = async function(event) {
             event.preventDefault();
             
@@ -15753,8 +16069,13 @@
             const dueDate = document.getElementById('multiple-task-due-date').value;
             const link = document.getElementById('multiple-task-link').value;
             
-            if (!title || !dueDate) {
-                showErrorMessage('Erro', 'Preencha todos os campos obrigatórios.');
+            // Validação: título é sempre obrigatório, prazo depende do tipo de task
+            if (!title) {
+                showErrorMessage('Erro', 'Preencha o título.');
+                return;
+            }
+            if (taskType !== 'lembrete' && !dueDate) {
+                showErrorMessage('Erro', 'Preencha o prazo.');
                 return;
             }
             
@@ -15825,6 +16146,81 @@
                     
                     await logActivity('Criou checklist para múltiplos colaboradores', 'task', `${title} (${tasksCreated} pessoas)`);
                     showSuccessMessage('Sucesso!', `Checklist criada para ${tasksCreated} colaborador(es).`);
+                    
+                } else if (taskType === 'lembrete') {
+                    // Get lembrete specific data
+                    const lembreteMode = document.querySelector('input[name="multiple-lembrete-mode"]:checked').value;
+                    const urgency = document.getElementById('multiple-lembrete-urgency').value;
+                    
+                    if (lembreteMode === 'single') {
+                        // Create single reminder for each selected person
+                        for (const personId of selectedPeopleIds) {
+                            const lembreteData = {
+                                title,
+                                description,
+                                dueDate: dueDate || null,
+                                link: link || null,
+                                personId: personId,
+                                type: 'lembrete',
+                                lembreteMode: 'single',
+                                urgency: urgency,
+                                status: 'pending',
+                                createdAt: new Date().toISOString()
+                            };
+                            
+                            await addDoc(collection(db, `artifacts/${appId}/public/data/tasks`), lembreteData);
+                            tasksCreated++;
+                        }
+                        
+                        await logActivity('Criou lembrete para múltiplos colaboradores', 'task', `${title} (${tasksCreated} pessoas)`);
+                        showSuccessMessage('Sucesso!', `Lembrete criado para ${tasksCreated} colaborador(es).`);
+                        
+                    } else if (lembreteMode === 'checklist') {
+                        // Collect lembrete items
+                        const itemElements = document.querySelectorAll('#multiple-lembrete-items-container > div');
+                        const lembreteItems = [];
+                        
+                        itemElements.forEach(elem => {
+                            const itemTitle = elem.querySelector('.multiple-lembrete-item-title').value;
+                            const itemDueDate = elem.querySelector('.multiple-lembrete-item-due-date').value;
+                            
+                            if (itemTitle) {
+                                lembreteItems.push({
+                                    title: itemTitle,
+                                    dueDate: itemDueDate || null,
+                                    completed: false
+                                });
+                            }
+                        });
+                        
+                        if (lembreteItems.length === 0) {
+                            showErrorMessage('Erro', 'Adicione pelo menos um item à checklist de lembretes.');
+                            return;
+                        }
+                        
+                        // Create lembrete checklist for each selected person
+                        for (const personId of selectedPeopleIds) {
+                            const lembreteData = {
+                                title,
+                                description,
+                                dueDate: dueDate || null,
+                                link: link || null,
+                                personId: personId,
+                                type: 'lembrete',
+                                lembreteMode: 'checklist',
+                                lembreteItems: lembreteItems,
+                                urgency: urgency,
+                                status: 'pending',
+                                createdAt: new Date().toISOString()
+                            };
+                            
+                            await addDoc(collection(db, `artifacts/${appId}/public/data/tasks`), lembreteData);
+                            tasksCreated++;
+                        }
+                        
+                        await logActivity('Criou checklist de lembretes para múltiplos colaboradores', 'task', `${title} (${tasksCreated} pessoas)`);
+                        showSuccessMessage('Sucesso!', `Checklist de lembretes criada para ${tasksCreated} colaborador(es).`);
+                    }
                 }
                 
                 closeMultipleTaskModal();
@@ -16242,6 +16638,8 @@
         window.openProcessoForm = openProcessoForm;
         window.openProcessoViewModal = openProcessoViewModal;
         window.deleteProcesso = deleteProcesso;
+        window.addStepToForm = addStepToForm;
+        window.removeStepFromForm = removeStepFromForm;
         // --- Guidelines Functions ---
         
         // Bulk import function for guidelines
