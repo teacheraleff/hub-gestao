@@ -15267,19 +15267,28 @@
                 return;
             }
 
-            // Sort: Não aprovadas primeiro (mais atrasadas primeiro), depois aprovadas
-            const sortedTasks = [...collaboratorTasks].sort((a, b) => {
-                if (a.approved !== b.approved) {
-                    return a.approved ? 1 : -1; // Não aprovadas primeiro
-                }
-                if (!a.approved) {
-                    return new Date(a.dueDate) - new Date(b.dueDate); // Mais antigas primeiro
-                }
-                return new Date(b.dueDate) - new Date(a.dueDate); // Aprovadas: mais recentes primeiro
-            });
-
             const today = new Date();
             today.setHours(0, 0, 0, 0);
+
+            // Helper function to check if task is fully completed
+            const isTaskCompleted = (task) => {
+                if (task.type === 'checklist' && task.checklistItems && task.checklistItems.length > 0) {
+                    // Checklist is completed only if ALL items are approved
+                    return task.checklistItems.every(item => item.approved);
+                }
+                // Normal tasks and lembretes: completed if approved
+                return task.approved === true;
+            };
+
+            // Separate tasks into pending and completed
+            const pendingTasks = collaboratorTasks.filter(t => !isTaskCompleted(t));
+            const completedTasks = collaboratorTasks.filter(t => isTaskCompleted(t));
+
+            // Sort pending tasks: overdue first, then by due date
+            pendingTasks.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+
+            // Sort completed tasks: most recent first
+            completedTasks.sort((a, b) => new Date(b.dueDate) - new Date(a.dueDate));
 
             const selectedPerson = taskPeople.find(p => p.id === selectedPersonForTasks);
             
@@ -15298,7 +15307,7 @@
                 }
             }
 
-            container.innerHTML = sortedTasks.map(task => {
+            const renderSingleTask = (task) => {
                 const dueDate = new Date(task.dueDate + 'T00:00:00');
                 dueDate.setHours(0, 0, 0, 0);
                 const isOverdue = !task.approved && dueDate < today;
@@ -15676,8 +15685,35 @@
                             ` : ''}
                         </div>
                     </div>
-                `;
-            }).join('');
+                `;            };
+
+            // Render pending tasks
+            const pendingHTML = pendingTasks.map(renderSingleTask).join('');
+
+            // Render completed tasks
+            const completedHTML = completedTasks.length > 0 ? `
+                <div class="mt-6 border-t border-stone-300 pt-4">
+                    <button 
+                        onclick="toggleCompletedTasks('${selectedPersonForTasks}')" 
+                        class="w-full flex items-center justify-between px-4 py-3 rounded-lg border border-stone-300 bg-stone-50 hover:bg-stone-100 transition-colors text-sm font-medium text-stone-700"
+                    >
+                        <span class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <span>Concluídas (${completedTasks.length})</span>
+                        </span>
+                        <svg id="toggle-icon-${selectedPersonForTasks}" class="w-5 h-5 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </button>
+                    <div id="completed-tasks-${selectedPersonForTasks}" class="hidden mt-3 space-y-3 opacity-75">
+                        ${completedTasks.map(renderSingleTask).join('')}
+                    </div>
+                </div>
+            ` : '';
+
+            container.innerHTML = pendingHTML + completedHTML;
         }
 
         function openAddTaskForm() {
@@ -16556,6 +16592,22 @@
             }
         };
 
+        function toggleCompletedTasks(personId) {
+            const completedSection = document.getElementById(`completed-tasks-${personId}`);
+            const toggleIcon = document.getElementById(`toggle-icon-${personId}`);
+            
+            if (completedSection && toggleIcon) {
+                if (completedSection.classList.contains('hidden')) {
+                    completedSection.classList.remove('hidden');
+                    toggleIcon.classList.add('rotate-180');
+                } else {
+                    completedSection.classList.add('hidden');
+                    toggleIcon.classList.remove('rotate-180');
+                }
+            }
+        }
+
+        window.toggleCompletedTasks = toggleCompletedTasks;
         window.openTaskManagementModal = openTaskManagementModal;
         window.closeTaskManagementModal = closeTaskManagementModal;
         window.openAddTaskForm = openAddTaskForm;
