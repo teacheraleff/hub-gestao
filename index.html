@@ -13393,6 +13393,172 @@
             };
         }
 
+        function filterProcessos(searchTerm) {
+
+
+            const searchLower = searchTerm.toLowerCase().trim();
+
+
+            const canManage = can('processos.manage');
+
+
+            
+
+
+            const filteredProcessos = searchLower === '' 
+
+
+                ? processos 
+
+
+                : processos.filter(processo => 
+
+
+                    processo.name.toLowerCase().includes(searchLower) ||
+
+
+                    (processo.description && processo.description.toLowerCase().includes(searchLower))
+
+
+                );
+
+
+            
+
+
+            let processosHtml = '';
+
+
+            if (filteredProcessos.length === 0) {
+
+
+                processosHtml = '<div class="col-span-full text-center py-12 text-stone-500"><p>Nenhum processo encontrado.</p></div>';
+
+
+            } else {
+
+
+                processosHtml = filteredProcessos.map(processo => {
+
+
+                    const editButtons = canManage ? `
+
+
+                        <div class="flex gap-1">
+
+
+                            <button class="icon-btn" data-action="edit-processo" data-id="${processo.id}" title="Editar">
+
+
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+
+
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+
+
+                                </svg>
+
+
+                            </button>
+
+
+                            <button class="icon-btn text-red-600 hover:text-red-700" data-action="delete-processo" data-id="${processo.id}" title="Excluir">
+
+
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+
+
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+
+
+                                </svg>
+
+
+                            </button>
+
+
+                        </div>
+
+
+                    ` : '';
+
+
+                    
+
+
+                    const descriptionHtml = processo.description ? `<p class="text-sm text-stone-600 mb-3">${processo.description}</p>` : '';
+
+
+                    const stepsCount = processo.steps?.length || 0;
+
+
+                    const stepsText = stepsCount !== 1 ? 's' : '';
+
+
+                    
+
+
+                    return `
+
+
+                        <div class="base-card hover:shadow-lg transition-shadow cursor-pointer" data-action="view-processo" data-id="${processo.id}">
+
+
+                            <div class="flex justify-between items-start mb-3">
+
+
+                                <h3 class="text-lg font-bold text-stone-800 flex-grow">${processo.name}</h3>
+
+
+                                ${editButtons}
+
+
+                            </div>
+
+
+                            ${descriptionHtml}
+
+
+                            <div class="flex items-center gap-2 text-sm text-stone-500">
+
+
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+
+
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
+
+
+                                </svg>
+
+
+                                <span>${stepsCount} passo${stepsText}</span>
+
+
+                            </div>
+
+
+                        </div>
+
+
+                    `;
+
+
+                }).join('');
+
+
+            }
+
+
+            
+
+
+            document.getElementById('processos-grid').innerHTML = processosHtml;
+
+
+        }
+
+
+
         function renderProcessosSection() {
             const canManage = can('processos.manage');
             
@@ -13402,7 +13568,7 @@
             } else {
                 processosHtml = processos.map(processo => {
                     const editButtons = canManage ? `
-                        <div class="flex gap-1" onclick="event.stopPropagation()">
+                        <div class="flex gap-1">
                             <button class="icon-btn" data-action="edit-processo" data-id="${processo.id}" title="Editar">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
@@ -13445,6 +13611,19 @@
                     <div class="flex justify-between items-center mb-6">
                         <h2 class="text-2xl font-bold text-stone-800">Processos</h2>
                         ${addButton}
+                    </div>
+                    
+                    <div class="mb-4">
+                        <div class="relative">
+                            <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                            </svg>
+                            <input type="text" 
+                                   id="processo-search" 
+                                   placeholder="Pesquisar processos..." 
+                                   class="form-input pl-10" 
+                                   oninput="filterProcessos(this.value)">
+                        </div>
                     </div>
                     
                     <div id="processos-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -16638,6 +16817,7 @@
         window.openProcessoForm = openProcessoForm;
         window.openProcessoViewModal = openProcessoViewModal;
         window.deleteProcesso = deleteProcesso;
+        window.filterProcessos = filterProcessos;
         window.addStepToForm = addStepToForm;
         window.removeStepFromForm = removeStepFromForm;
         // --- Guidelines Functions ---
