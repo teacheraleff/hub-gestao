@@ -13814,17 +13814,24 @@
                             placeholder="Breve descrição do processo (opcional)">${processo?.description || ''}</textarea>
                     </div>
                     
-                    <div>
+                    <div class="relative">
                         <div class="flex justify-between items-center mb-2">
                             <label class="block text-sm font-medium text-stone-700">Passos do Processo *</label>
-                            <button type="button" class="text-sm font-medium text-blue-600 hover:text-blue-800" onclick="addStepToForm()">
-                                + Adicionar Passo
-                            </button>
                         </div>
-                        <div id="steps-list-form" class="space-y-2">
+                        <div id="steps-list-form" class="space-y-2 pb-16">
                             <!-- Steps will be added here -->
                         </div>
                         <p class="text-xs text-stone-500 mt-1">Adicione pelo menos 1 passo para este processo</p>
+                        
+                        <!-- Sticky Add Step Button -->
+                        <div class="sticky bottom-4 mt-4 flex justify-center">
+                            <button type="button" class="primary-btn shadow-lg flex items-center gap-2" onclick="addStepToForm()">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                                </svg>
+                                Adicionar Passo
+                            </button>
+                        </div>
                     </div>
                     
                     <div class="flex justify-end gap-2 pt-4">
