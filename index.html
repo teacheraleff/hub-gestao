@@ -13591,6 +13591,44 @@
                     const stepsCount = processo.steps?.length || 0;
                     const stepsText = stepsCount !== 1 ? 's' : '';
                     
+                    // Collect unique setores from steps (only from passos, not instruções)
+                    const setores = new Set();
+                    if (processo.steps && Array.isArray(processo.steps)) {
+                        processo.steps.forEach(step => {
+                            if (step.type !== 'instrucao' && step.setor) {
+                                setores.add(step.setor);
+                            }
+                        });
+                    }
+                    
+                    const setorColors = {
+                        'comercial': '#FF5C3D',
+                        'pedagogico': '#84C7DF',
+                        'administrativo': '#8671D1',
+                        'direcao': '#F1D24B',
+                        'professor': '#22C55E',
+                        'supervisao': '#EC4899'
+                    };
+                    
+                    const setorNames = {
+                        'comercial': 'Comercial',
+                        'pedagogico': 'Pedagógico',
+                        'administrativo': 'Administrativo',
+                        'direcao': 'Direção',
+                        'professor': 'Professor',
+                        'supervisao': 'Supervisão'
+                    };
+                    
+                    const setorTagsHtml = setores.size > 0 ? `
+                        <div class="flex flex-wrap gap-1 mb-3">
+                            ${[...setores].map(setor => `
+                                <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium text-white" style="background-color: ${setorColors[setor] || '#6B7280'}">
+                                    ${setorNames[setor] || setor}
+                                </span>
+                            `).join('')}
+                        </div>
+                    ` : '';
+                    
                     return `
                         <div class="base-card hover:shadow-lg transition-shadow cursor-pointer" data-action="view-processo" data-id="${processo.id}">
                             <div class="flex justify-between items-start mb-3">
@@ -13598,6 +13636,7 @@
                                 ${editButtons}
                             </div>
                             ${descriptionHtml}
+                            ${setorTagsHtml}
                             <div class="flex items-center gap-2 text-sm text-stone-500">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
