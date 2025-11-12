@@ -14694,6 +14694,7 @@
                                 <div>
                                     <label class="font-medium text-sm">Urgência</label>
                                     <select id="task-urgency" class="form-input">
+                                        <option value="">Sem tag</option>
                                         <option value="normal">Sem Urgência</option>
                                         <option value="urgent">Urgente</option>
                                     </select>
@@ -14737,6 +14738,7 @@
                                 <div>
                                     <label class="font-medium text-sm">Urgência</label>
                                     <select id="checklist-urgency" class="form-input">
+                                        <option value="">Sem tag</option>
                                         <option value="normal">Sem Urgência</option>
                                         <option value="urgent">Urgente</option>
                                     </select>
@@ -14804,6 +14806,7 @@
                                 <div>
                                     <label class="font-medium text-sm">Urgência</label>
                                     <select id="reminder-urgency" class="form-input">
+                                        <option value="">Sem tag</option>
                                         <option value="normal">Sem Urgência</option>
                                         <option value="urgent">Urgente</option>
                                     </select>
@@ -14909,6 +14912,7 @@
                                         <div>
                                             <label class="font-medium text-sm">Urgência</label>
                                             <select id="multiple-lembrete-urgency" class="form-input">
+                                                <option value="">Sem tag</option>
                                                 <option value="normal">Sem Urgência</option>
                                                 <option value="urgent">Urgente</option>
                                             </select>
@@ -15284,11 +15288,19 @@
             const pendingTasks = collaboratorTasks.filter(t => !isTaskCompleted(t));
             const completedTasks = collaboratorTasks.filter(t => isTaskCompleted(t));
 
-            // Sort pending tasks: overdue first, then by due date
-            pendingTasks.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+            // Sort pending tasks: overdue first, then by due date (tasks without date go to end)
+            pendingTasks.sort((a, b) => {
+                const dateA = a.dueDate ? new Date(a.dueDate) : new Date(8640000000000000); // Max date for tasks without dueDate
+                const dateB = b.dueDate ? new Date(b.dueDate) : new Date(8640000000000000);
+                return dateA - dateB;
+            });
 
-            // Sort completed tasks: most recent first
-            completedTasks.sort((a, b) => new Date(b.dueDate) - new Date(a.dueDate));
+            // Sort completed tasks: most recent first (tasks without date go to end)
+            completedTasks.sort((a, b) => {
+                const dateA = a.dueDate ? new Date(a.dueDate) : new Date(-8640000000000000); // Min date for tasks without dueDate
+                const dateB = b.dueDate ? new Date(b.dueDate) : new Date(-8640000000000000);
+                return dateB - dateA;
+            });
 
             const selectedPerson = taskPeople.find(p => p.id === selectedPersonForTasks);
             
@@ -15326,7 +15338,7 @@
                                 <div class="flex-1">
                                     <div class="flex items-center gap-2 flex-wrap">
                                         <span class="text-white text-xs px-2 py-1 rounded font-semibold" style="background-color: #8671D1;">CHECKLIST</span>
-                                        ${task.urgency === 'urgent' ? '<span class="px-2 py-0.5 text-xs font-semibold rounded" style="background-color: #fecaca; color: #991b1b;">URGENTE</span>' : '<span class="px-2 py-0.5 text-xs font-semibold rounded" style="background-color: #d1fae5; color: #065f46;">SEM URGÊNCIA</span>'}
+                                        ${task.urgency ? (task.urgency === 'urgent' ? '<span class="px-2 py-0.5 text-xs font-semibold rounded" style="background-color: #fecaca; color: #991b1b;">URGENTE</span>' : '<span class="px-2 py-0.5 text-xs font-semibold rounded" style="background-color: #d1fae5; color: #065f46;">SEM URGÊNCIA</span>') : ''}
                                         <h4 class="font-semibold text-stone-800 ${allApproved ? 'line-through text-stone-500' : ''}">
                                             ${task.title}
                                         </h4>
@@ -15445,7 +15457,7 @@
                                                 </svg>
                                                 LEMBRETE
                                             </span>
-                                            ${task.urgency === 'urgent' ? '<span class="px-2 py-0.5 text-xs font-semibold rounded" style="background-color: #fecaca; color: #991b1b;">URGENTE</span>' : '<span class="px-2 py-0.5 text-xs font-semibold rounded" style="background-color: #d1fae5; color: #065f46;">SEM URGÊNCIA</span>'}
+                                            ${task.urgency ? (task.urgency === 'urgent' ? '<span class="px-2 py-0.5 text-xs font-semibold rounded" style="background-color: #fecaca; color: #991b1b;">URGENTE</span>' : '<span class="px-2 py-0.5 text-xs font-semibold rounded" style="background-color: #d1fae5; color: #065f46;">SEM URGÊNCIA</span>') : ''}
                                             <h4 class="font-semibold text-stone-800 ${allApproved ? 'line-through text-stone-500' : ''}">
                                                 ${task.title}
                                             </h4>
@@ -15550,7 +15562,7 @@
                                         <h4 class="font-semibold text-stone-800 ${task.approved ? 'line-through text-stone-500' : ''}">
                                             ${task.title}
                                         </h4>
-                                        ${task.urgency === 'urgent' ? '<span class="px-2 py-0.5 text-xs font-semibold rounded" style="background-color: #fecaca; color: #991b1b;">URGENTE</span>' : '<span class="px-2 py-0.5 text-xs font-semibold rounded" style="background-color: #d1fae5; color: #065f46;">SEM URGÊNCIA</span>'}
+                                        ${task.urgency ? (task.urgency === 'urgent' ? '<span class="px-2 py-0.5 text-xs font-semibold rounded" style="background-color: #fecaca; color: #991b1b;">URGENTE</span>' : '<span class="px-2 py-0.5 text-xs font-semibold rounded" style="background-color: #d1fae5; color: #065f46;">SEM URGÊNCIA</span>') : ''}
                                     </div>
                                     ${task.completedByUser && !task.approved ? '<span class="text-xs text-green-600 font-semibold mt-1 block">AGUARDANDO APROVAÇÃO</span>' : ''}
                                     ${task.description ? `<p class="text-sm text-stone-600 mt-2">${task.description}</p>` : ''}
@@ -15621,7 +15633,7 @@
                                     <h4 class="font-semibold text-stone-800 ${task.approved ? 'line-through text-stone-500' : ''}">
                                         ${task.title}
                                     </h4>
-                                    ${task.urgency === 'urgent' ? '<span class="px-2 py-0.5 text-xs font-semibold rounded" style="background-color: #fecaca; color: #991b1b;">URGENTE</span>' : '<span class="px-2 py-0.5 text-xs font-semibold rounded" style="background-color: #d1fae5; color: #065f46;">SEM URGÊNCIA</span>'}
+                                    ${task.urgency ? (task.urgency === 'urgent' ? '<span class="px-2 py-0.5 text-xs font-semibold rounded" style="background-color: #fecaca; color: #991b1b;">URGENTE</span>' : '<span class="px-2 py-0.5 text-xs font-semibold rounded" style="background-color: #d1fae5; color: #065f46;">SEM URGÊNCIA</span>') : ''}
                                 </div>
                                 ${task.completedByUser && !task.approved ? '<span class="text-xs text-green-600 font-semibold mt-1 block">AGUARDANDO APROVAÇÃO</span>' : ''}
                                 ${task.description ? `<p class="text-sm text-stone-600 mt-2">${task.description}</p>` : ''}
