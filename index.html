@@ -13378,6 +13378,7 @@
                 return {
                     title: step.title || '',
                     description: step.description || '',
+                    type: step.type || 'passo',
                     link: step.link || '',
                     linkTitle: step.linkTitle || '',
                     link2: step.link2 || '',
@@ -13708,31 +13709,31 @@
                                 rows="2" placeholder="Detalhes adicionais sobre este passo...">${stepData?.description || ''}</textarea>
                         </div>
                         
-                        <div>
+                        <div class="link-field">
                             <label class="block text-sm font-medium text-stone-700 mb-1">Link (opcional)</label>
                             <input type="url" class="step-link w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent" 
                                 value="${stepData?.link || ''}" placeholder="Ex: https://docs.google.com/...">
                         </div>
                         
-                        <div>
+                        <div class="link-field">
                             <label class="block text-sm font-medium text-stone-700 mb-1">Título do Link (opcional)</label>
                             <input type="text" class="step-link-title w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent" 
                                 value="${stepData?.linkTitle || ''}" placeholder="Ex: Formulário de Inscrição">
                         </div>
                         
-                        <div>
+                        <div class="link-field">
                             <label class="block text-sm font-medium text-stone-700 mb-1">Link 2 (opcional)</label>
                             <input type="url" class="step-link2 w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent" 
                                 value="${stepData?.link2 || ''}" placeholder="Ex: https://docs.google.com/...">
                         </div>
                         
-                        <div>
+                        <div class="link-field">
                             <label class="block text-sm font-medium text-stone-700 mb-1">Título do Link 2 (opcional)</label>
                             <input type="text" class="step-link2-title w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent" 
                                 value="${stepData?.link2Title || ''}" placeholder="Ex: Planilha de Controle">
                         </div>
                         
-                        <div>
+                        <div class="setor-section">
                             <label class="block text-sm font-medium text-stone-700 mb-2">Setor Responsável *</label>
                             <div class="setor-radio-group">
                                 <input type="radio" id="${stepId}-comercial" name="${stepId}-setor" value="comercial" class="setor-radio-input" ${stepData?.setor === 'comercial' ? 'checked' : ''}>
@@ -13883,14 +13884,14 @@
             const description = document.getElementById('processo-description').value.trim();
             
             if (!name) {
-                showErrorMessage('Erro', 'Por favor, informe o nome do processo.');
+                alert('Por favor, informe o nome do processo.');
                 return;
             }
             
             const stepBlocks = document.querySelectorAll('.step-block');
             
             if (stepBlocks.length === 0) {
-                showErrorMessage('Erro', 'Por favor, adicione pelo menos 1 passo para este processo.');
+                alert('Por favor, adicione pelo menos 1 passo para este processo.');
                 return;
             }
             
@@ -13905,16 +13906,18 @@
                 const link2 = block.querySelector('.step-link2').value.trim();
                 const link2Title = block.querySelector('.step-link2-title').value.trim();
                 const stepId = block.getAttribute('data-step-id');
+                const selectedType = block.querySelector(`input[name="${stepId}-type"]:checked`);
+                const type = selectedType ? selectedType.value : 'passo';
                 const selectedSetor = block.querySelector(`input[name="${stepId}-setor"]:checked`);
                 
                 if (!title) {
-                    showErrorMessage('Erro', `Por favor, informe o título do passo ${index + 1}.`);
+                    alert(`Por favor, informe o título do passo ${index + 1}.`);
                     hasError = true;
                     return;
                 }
                 
-                if (!selectedSetor) {
-                    showErrorMessage('Erro', `Por favor, selecione o setor responsável para o passo ${index + 1}.`);
+                if (type === 'passo' && !selectedSetor) {
+                    alert(`Por favor, selecione o setor responsável para o passo ${index + 1}.`);
                     hasError = true;
                     return;
                 }
@@ -13922,11 +13925,12 @@
                 steps.push({
                     title,
                     description,
-                    link,
-                    linkTitle,
-                    link2,
-                    link2Title,
-                    setor: selectedSetor.value,
+                    type,
+                    link: type === 'passo' ? link : '',
+                    linkTitle: type === 'passo' ? linkTitle : '',
+                    link2: type === 'passo' ? link2 : '',
+                    link2Title: type === 'passo' ? link2Title : '',
+                    setor: type === 'passo' && selectedSetor ? selectedSetor.value : null,
                     order: index,
                     createdAt: new Date().toISOString()
                 });
@@ -13974,7 +13978,7 @@
                 }
                 
                 document.getElementById('form-modal').classList.remove('visible');
-                showSuccessMessage(processoId ? 'Processo atualizado com sucesso!' : 'Processo criado com sucesso!');
+                showSuccessMessage('Sucesso', processoId ? 'Processo atualizado com sucesso!' : 'Processo criado com sucesso!');
             } catch (error) {
                 console.error('Erro ao salvar processo:', error);
                 showErrorMessage('Erro', 'Erro ao salvar processo. Tente novamente.');
@@ -14032,39 +14036,62 @@
                         <div id="steps-list" class="space-y-3">
                             ${!processo.steps || processo.steps.length === 0
                                 ? '<p class="text-center text-stone-500 py-8">Nenhum passo cadastrado ainda.</p>'
-                                : processo.steps.map((step, index) => {
-                                    const normalizedStep = normalizeStep(step);
-                                    return `
-                                        <div class="flex gap-3 p-3 bg-stone-50 rounded-lg hover:bg-stone-100 transition-colors">
-                                            <div class="flex-shrink-0 w-8 h-8 rounded-full bg-yellow-500 text-white flex items-center justify-center font-bold">
-                                                ${index + 1}
-                                            </div>
-                                            <div class="flex-grow">
-                                                <div class="flex items-center gap-2 mb-1">
-                                                    <h4 class="font-semibold text-stone-800">${normalizedStep.title}</h4>
-                                                    ${getSetorBadge(normalizedStep.setor)}
+                                : (() => {
+                                    let passoCounter = 0;
+                                    return processo.steps.map((step, index) => {
+                                        const normalizedStep = normalizeStep(step);
+                                        const isInstrucao = normalizedStep.type === 'instrucao';
+                                        
+                                        if (!isInstrucao) {
+                                            passoCounter++;
+                                        }
+                                        
+                                        return isInstrucao
+                                            ? `
+                                                <div class="flex gap-3 p-3 bg-blue-50 border-l-4 border-blue-400 rounded-lg">
+                                                    <div class="flex-shrink-0 w-8 h-8 flex items-center justify-center text-blue-500">
+                                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                                        </svg>
+                                                    </div>
+                                                    <div class="flex-grow">
+                                                        <h4 class="font-semibold text-blue-800 italic">${normalizedStep.title}</h4>
+                                                        ${normalizedStep.description ? `<p class="text-sm text-blue-700 mt-1 italic">${normalizedStep.description}</p>` : ''}
+                                                    </div>
                                                 </div>
-                                                ${normalizedStep.description ? `<p class="text-sm text-stone-600 mt-1">${normalizedStep.description}</p>` : ''}
-                                                ${normalizedStep.link ? `
-                                                    <a href="${normalizedStep.link}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-sm text-yellow-600 hover:text-yellow-700 mt-2">
-                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
-                                                        </svg>
-                                                        ${normalizedStep.linkTitle || 'Abrir link'}
-                                                    </a>
-                                                ` : ''}
-                                                ${normalizedStep.link2 ? `
-                                                    <a href="${normalizedStep.link2}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-sm text-yellow-600 hover:text-yellow-700 mt-2">
-                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
-                                                        </svg>
-                                                        ${normalizedStep.link2Title || 'Abrir link 2'}
-                                                    </a>
-                                                ` : ''}
-                                            </div>
-                                        </div>
-                                    `;
-                                }).join('')
+                                            `
+                                            : `
+                                                <div class="flex gap-3 p-3 bg-stone-50 rounded-lg hover:bg-stone-100 transition-colors">
+                                                    <div class="flex-shrink-0 w-8 h-8 rounded-full bg-yellow-500 text-white flex items-center justify-center font-bold">
+                                                        ${passoCounter}
+                                                    </div>
+                                                    <div class="flex-grow">
+                                                        <div class="flex items-center gap-2 mb-1">
+                                                            <h4 class="font-semibold text-stone-800">${normalizedStep.title}</h4>
+                                                            ${getSetorBadge(normalizedStep.setor)}
+                                                        </div>
+                                                        ${normalizedStep.description ? `<p class="text-sm text-stone-600 mt-1">${normalizedStep.description}</p>` : ''}
+                                                        ${normalizedStep.link ? `
+                                                            <a href="${normalizedStep.link}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-sm text-yellow-600 hover:text-yellow-700 mt-2">
+                                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                                                                </svg>
+                                                                ${normalizedStep.linkTitle || 'Abrir link'}
+                                                            </a>
+                                                        ` : ''}
+                                                        ${normalizedStep.link2 ? `
+                                                            <a href="${normalizedStep.link2}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-sm text-yellow-600 hover:text-yellow-700 mt-2">
+                                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                                                                </svg>
+                                                                ${normalizedStep.link2Title || 'Abrir link 2'}
+                                                            </a>
+                                                        ` : ''}
+                                                    </div>
+                                                </div>
+                                            `;
+                                    }).join('');
+                                })()
                             }
                         </div>
                     </div>
@@ -16876,6 +16903,24 @@
         window.removeStepFromForm = removeStepFromForm;
         window.moveStepUp = moveStepUp;
         window.moveStepDown = moveStepDown;
+        
+        function toggleStepFields(radio) {
+            const stepBlock = radio.closest('.step-block');
+            const isInstrucao = radio.value === 'instrucao';
+            
+            // Find all fields that should be hidden for instructions
+            const setorSection = stepBlock.querySelector('.setor-section');
+            const linkFields = stepBlock.querySelectorAll('.link-field');
+            
+            if (setorSection) {
+                setorSection.style.display = isInstrucao ? 'none' : 'block';
+            }
+            
+            linkFields.forEach(field => {
+                field.style.display = isInstrucao ? 'none' : 'block';
+            });
+        }
+        window.toggleStepFields = toggleStepFields;
         window.updateStepNumbers = updateStepNumbers;
         // --- Guidelines Functions ---
         
