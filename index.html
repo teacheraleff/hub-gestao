@@ -13379,6 +13379,9 @@
                     title: step.title || '',
                     description: step.description || '',
                     link: step.link || '',
+                    linkTitle: step.linkTitle || '',
+                    link2: step.link2 || '',
+                    link2Title: step.link2Title || '',
                     setor: step.setor || null,
                     order: step.order || 0,
                     createdAt: step.createdAt || new Date().toISOString()
@@ -13712,6 +13715,24 @@
                         </div>
                         
                         <div>
+                            <label class="block text-sm font-medium text-stone-700 mb-1">Título do Link (opcional)</label>
+                            <input type="text" class="step-link-title w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent" 
+                                value="${stepData?.linkTitle || ''}" placeholder="Ex: Formulário de Inscrição">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-stone-700 mb-1">Link 2 (opcional)</label>
+                            <input type="url" class="step-link2 w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent" 
+                                value="${stepData?.link2 || ''}" placeholder="Ex: https://docs.google.com/...">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-stone-700 mb-1">Título do Link 2 (opcional)</label>
+                            <input type="text" class="step-link2-title w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent" 
+                                value="${stepData?.link2Title || ''}" placeholder="Ex: Planilha de Controle">
+                        </div>
+                        
+                        <div>
                             <label class="block text-sm font-medium text-stone-700 mb-2">Setor Responsável *</label>
                             <div class="setor-radio-group">
                                 <input type="radio" id="${stepId}-comercial" name="${stepId}-setor" value="comercial" class="setor-radio-input" ${stepData?.setor === 'comercial' ? 'checked' : ''}>
@@ -13880,6 +13901,9 @@
                 const title = block.querySelector('.step-title').value.trim();
                 const description = block.querySelector('.step-description').value.trim();
                 const link = block.querySelector('.step-link').value.trim();
+                const linkTitle = block.querySelector('.step-link-title').value.trim();
+                const link2 = block.querySelector('.step-link2').value.trim();
+                const link2Title = block.querySelector('.step-link2-title').value.trim();
                 const stepId = block.getAttribute('data-step-id');
                 const selectedSetor = block.querySelector(`input[name="${stepId}-setor"]:checked`);
                 
@@ -13899,6 +13923,9 @@
                     title,
                     description,
                     link,
+                    linkTitle,
+                    link2,
+                    link2Title,
                     setor: selectedSetor.value,
                     order: index,
                     createdAt: new Date().toISOString()
@@ -14023,24 +14050,18 @@
                                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
                                                         </svg>
-                                                        Abrir link
+                                                        ${normalizedStep.linkTitle || 'Abrir link'}
+                                                    </a>
+                                                ` : ''}
+                                                ${normalizedStep.link2 ? `
+                                                    <a href="${normalizedStep.link2}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-sm text-yellow-600 hover:text-yellow-700 mt-2">
+                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                                                        </svg>
+                                                        ${normalizedStep.link2Title || 'Abrir link 2'}
                                                     </a>
                                                 ` : ''}
                                             </div>
-                                            ${canEditSteps ? `
-                                                <div class="flex gap-1">
-                                                    <button class="icon-btn" onclick="editStep('${processoId}', ${index})" title="Editar">
-                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                                                        </svg>
-                                                    </button>
-                                                    <button class="icon-btn text-red-600" onclick="deleteStep('${processoId}', ${index})" title="Excluir">
-                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                                                        </svg>
-                                                    </button>
-                                                </div>
-                                            ` : ''}
                                         </div>
                                     `;
                                 }).join('')
@@ -14149,10 +14170,6 @@
             document.getElementById('form-modal').classList.add('visible');
         }
 
-        function editStep(processoId, stepIndex) {
-            openStepForm(processoId, stepIndex);
-        }
-
         async function saveStep(event) {
             event.preventDefault();
             
@@ -14223,46 +14240,6 @@
             } catch (error) {
                 console.error('Erro ao salvar passo:', error);
                 showErrorMessage('Erro', 'Erro ao salvar passo. Tente novamente.');
-            }
-        }
-
-        async function deleteStep(processoId, stepIndex) {
-            const processo = processos.find(p => p.id === processoId);
-            if (!processo || !processo.steps || !processo.steps[stepIndex]) return;
-            
-            if (!confirm('Tem certeza que deseja excluir este passo?')) return;
-            
-            processo.steps.splice(stepIndex, 1);
-            
-            const processoData = {
-                ...processo,
-                updatedAt: new Date().toISOString(),
-                updatedBy: currentUserName
-            };
-            
-            delete processoData.id;
-            
-            try {
-                if (db) {
-                    const collectionPath = `artifacts/${appId}/public/data/processos`;
-                    await updateDoc(doc(db, collectionPath, processoId), processoData);
-                    await logActivity('processos', 'edit', `Passo excluído do processo: ${processo.name}`);
-                } else {
-                    const localProcessos = JSON.parse(localStorage.getItem('processos') || '[]');
-                    const index = localProcessos.findIndex(p => p.id === processoId);
-                    if (index !== -1) {
-                        localProcessos[index] = { id: processoId, ...processoData };
-                    }
-                    localStorage.setItem('processos', JSON.stringify(localProcessos));
-                    processos.length = 0;
-                    processos.push(...localProcessos);
-                }
-                
-                openProcessoViewModal(processoId);
-                showSuccessMessage('Passo excluído!');
-            } catch (error) {
-                console.error('Erro ao excluir passo:', error);
-                showErrorMessage('Erro', 'Erro ao excluir passo. Tente novamente.');
             }
         }
 
