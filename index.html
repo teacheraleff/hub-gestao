@@ -391,32 +391,32 @@
 
         .setor-comercial {
             background-color: #FF5C3D;
-            color: #7F2E1F;
+            color: #ffffff;
         }
 
         .setor-pedagogico {
             background-color: #84C7DF;
-            color: #12496B;
+            color: #ffffff;
         }
 
         .setor-administrativo {
             background-color: #8671D1;
-            color: #3F2C87;
+            color: #ffffff;
         }
 
         .setor-direcao {
             background-color: #F1D24B;
-            color: #5B4700;
+            color: #ffffff;
         }
 
         .setor-professor {
             background-color: #22C55E;
-            color: #14532D;
+            color: #ffffff;
         }
 
         .setor-supervisao {
             background-color: #EC4899;
-            color: #831843;
+            color: #ffffff;
         }
 
         .setor-indefinido {
@@ -14261,22 +14261,22 @@
                         <label class="block text-sm font-medium text-stone-700 mb-2">Setor *</label>
                         <div class="setor-radio-group">
                             <input type="radio" id="setor-comercial" name="setor" value="comercial" class="setor-radio-input" ${step?.setor === 'comercial' ? 'checked' : ''} required>
-                            <label for="setor-comercial" class="setor-radio-label" style="color: #7F2E1F; border-color: #FF5C3D;">
+                            <label for="setor-comercial" class="setor-radio-label" style="color: #ffffff; border-color: #FF5C3D;">
                                 Comercial
                             </label>
                             
                             <input type="radio" id="setor-pedagogico" name="setor" value="pedagogico" class="setor-radio-input" ${step?.setor === 'pedagogico' ? 'checked' : ''} required>
-                            <label for="setor-pedagogico" class="setor-radio-label" style="color: #12496B; border-color: #84C7DF;">
+                            <label for="setor-pedagogico" class="setor-radio-label" style="color: #ffffff; border-color: #84C7DF;">
                                 Pedagógico
                             </label>
                             
                             <input type="radio" id="setor-administrativo" name="setor" value="administrativo" class="setor-radio-input" ${step?.setor === 'administrativo' ? 'checked' : ''} required>
-                            <label for="setor-administrativo" class="setor-radio-label" style="color: #3F2C87; border-color: #8671D1;">
+                            <label for="setor-administrativo" class="setor-radio-label" style="color: #ffffff; border-color: #8671D1;">
                                 Administrativo
                             </label>
                             
                             <input type="radio" id="setor-direcao" name="setor" value="direcao" class="setor-radio-input" ${step?.setor === 'direcao' ? 'checked' : ''} required>
-                            <label for="setor-direcao" class="setor-radio-label" style="color: #5B4700; border-color: #F1D24B;">
+                            <label for="setor-direcao" class="setor-radio-label" style="color: #ffffff; border-color: #F1D24B;">
                                 Direção
                             </label>
                         </div>
@@ -14600,6 +14600,50 @@
 
             contentArea.innerHTML = `
                 <div id="tasks-prazos-section" class="max-w-7xl mx-auto">
+
+                    <!-- Legend for task icons -->
+                    <div class="mb-6 p-4 bg-white rounded-lg shadow-sm border border-stone-200">
+                        <h5 class="font-semibold text-sm text-stone-700 mb-3">Legenda dos Contadores</h5>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-sm">
+                            <div class="flex items-center gap-2">
+                                <svg class="w-5 h-5 text-stone-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                <div>
+                                    <span class="font-medium text-stone-700">Ativas:</span>
+                                    <span class="text-stone-600"> Tasks em andamento</span>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <svg class="w-5 h-5 text-red-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                </svg>
+                                <div>
+                                    <span class="font-medium text-stone-700">Atrasadas:</span>
+                                    <span class="text-stone-600"> Prazo vencido</span>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <svg class="w-5 h-5 flex-shrink-0" style="color: #8671D1;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                <div>
+                                    <span class="font-medium text-stone-700">Concluídas:</span>
+                                    <span class="text-stone-600"> Aprovadas</span>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <svg class="w-5 h-5 text-red-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                <div>
+                                    <span class="font-medium text-stone-700">Falhadas:</span>
+                                    <span class="text-stone-600"> Canceladas/obsoletas</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
                     ${can('tasks-prazos.add_person') ? `
                     <div class="mb-6 flex justify-between">
                         <button class="primary-btn" style="background-color: #84C7DF;" onmouseover="this.style.backgroundColor='#6DB5CD'" onmouseout="this.style.backgroundColor='#84C7DF'" onclick="openMultipleTaskModal()">
@@ -15467,7 +15511,7 @@
                                                            style="accent-color: #10b981;">
                                                     <span class="text-xs font-medium text-green-700">Feito</span>
                                                 </label>
-                                                ${currentUserRole === 'admin' ? `
+                                                ${canManage ? `
                                                 <label class="flex items-center gap-2 cursor-pointer" title="Aprovar (só admin)">
                                                     <input type="checkbox" 
                                                            ${item.approved ? 'checked' : ''}
@@ -15588,7 +15632,7 @@
                                                                style="accent-color: #10b981;">
                                                         <span class="text-xs font-medium text-green-700">Feito</span>
                                                     </label>
-                                                    ${currentUserRole === 'admin' ? `
+                                                    ${canManage ? `
                                                     <label class="flex items-center gap-2 cursor-pointer" title="Aprovar (só admin)">
                                                         <input type="checkbox" 
                                                                ${item.approved ? 'checked' : ''}
@@ -15675,7 +15719,7 @@
                                                        style="accent-color: #10b981;">
                                                 <span class="text-xs font-medium text-green-700">Feito</span>
                                             </label>
-                                            ${currentUserRole === 'admin' ? `
+                                            ${canManage ? `
                                             <label class="flex items-center gap-1.5 cursor-pointer" title="Aprovar (só admin)">
                                                 <input type="checkbox" 
                                                        ${task.approved ? 'checked' : ''}
@@ -15752,7 +15796,7 @@
                                                    style="accent-color: #10b981;">
                                             <span class="text-xs font-medium text-green-700">Feito</span>
                                         </label>
-                                        ${currentUserRole === 'admin' ? `
+                                        ${canManage ? `
                                         <label class="flex items-center gap-1.5 cursor-pointer" title="Aprovar (só admin)">
                                             <input type="checkbox" 
                                                    ${task.approved ? 'checked' : ''}
