@@ -15805,6 +15805,14 @@
                                                    style="accent-color: #F1D24B;">
                                             <span class="text-xs font-medium" style="color: #F1D24B;">Aprovado</span>
                                         </label>
+                                        <label class="flex items-center gap-1.5 cursor-pointer" title="Marcar como falhada (só admin)">
+                                            <input type="checkbox" 
+                                                   ${task.failed ? 'checked' : ''}
+                                                   onchange="toggleTaskFailed('${task.id}', this.checked)"
+                                                   class="h-4 w-4 rounded border-gray-300"
+                                                   style="accent-color: #ef4444;">
+                                            <span class="text-xs font-medium text-red-600">Falhada</span>
+                                        </label>
                                         ` : ''}
                                     </div>
                                 </div>
