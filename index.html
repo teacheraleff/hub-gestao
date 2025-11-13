@@ -566,7 +566,7 @@
         const pendingView = document.getElementById('pending-view');
 
         let db, auth, storage, userId, currentUserName, currentUserRole;
-        let usersData = [], students = [], turmas = [], vips = [], attendance = [], tasks = [], events = [], collaborators = [], schedules = [], expenses = [], dojoRanking = [], dojoMissions = [], activityLogs = [], rechamadas = [], linksUteis = [], processos = [];
+        let usersData = [], students = [], turmas = [], vips = [], attendance = [], tasks = [], events = [], collaborators = [], schedules = [], expenses = [], dojoRanking = [], dojoMissions = [], activityLogs = [], rechamadas = [], linksUteis = [], processos = [], metas = [];
         let userProfiles = {};
         let monthlyHighlight = {
             name: 'João Silva',
@@ -1142,6 +1142,7 @@
             getCollectionListener('processos', processos, renderProcessosSection);
             
             // Tasks & Prazos listener
+            getCollectionListener('metas', metas, renderMetasSection);
             getCollectionListener('tasks', tasks, () => {
                 const activePageId = contentArea.firstElementChild?.id;
                 if (activePageId === 'tasks-prazos-section') renderPeopleTasksCards();
@@ -4145,6 +4146,96 @@
                         </div>
                     `}
                 </section>
+
+                <!-- Metas Section -->
+                <section id="metas-section" style="display: none;">
+                    <div class="mb-6">
+                        <div class="flex justify-between items-center mb-6">
+                            <div>
+                                <h2 class="text-2xl font-bold text-stone-800">Metas e Bonificações</h2>
+                                <p class="text-sm text-stone-600 mt-1">Acompanhe e gerencie as metas da equipe</p>
+                            </div>
+                            <button 
+                                onclick="openCreateMetaModal()" 
+                                class="primary-btn"
+                                style="background-color: #F1D24B; color: #1c1917;"
+                                onmouseover="this.style.backgroundColor='#e6c740'"
+                                onmouseout="this.style.backgroundColor='#F1D24B'">
+                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                                </svg>
+                                Criar Meta
+                            </button>
+                        </div>
+
+                        <!-- Metas Grid -->
+                        <div id="metas-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <!-- Metas will be rendered here -->
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Meta Form Modal -->
+                <div id="meta-form-modal" class="modal" style="display: none;">
+                    <div class="modal-content" style="max-width: 600px;">
+                        <div class="modal-header">
+                            <h3 id="meta-form-title">Nova Meta</h3>
+                            <button onclick="closeMetaFormModal()" class="modal-close-btn">&times;</button>
+                        </div>
+                        <form id="meta-form" onsubmit="handleSubmitMeta(event)">
+                            <div class="modal-body">
+                                <div class="form-group">
+                                    <label>Nome da Meta *</label>
+                                    <input type="text" id="meta-name" required class="w-full p-2 border rounded" placeholder="Ex: Aulas Individuais do Mês">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label>Descrição</label>
+                                    <textarea id="meta-description" rows="3" class="w-full p-2 border rounded" placeholder="Descrição da meta (opcional)"></textarea>
+                                </div>
+                                
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div class="form-group">
+                                        <label>Valor Atual *</label>
+                                        <input type="number" id="meta-current-value" required class="w-full p-2 border rounded" placeholder="0" min="0">
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label>Valor Alvo *</label>
+                                        <input type="number" id="meta-target-value" required class="w-full p-2 border rounded" placeholder="100" min="1">
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label>Bonificação</label>
+                                    <input type="text" id="meta-bonus" class="w-full p-2 border rounded" placeholder="Ex: R$ 500 ou 1 dia de folga">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label>Prazo</label>
+                                    <input type="date" id="meta-deadline" class="w-full p-2 border rounded">
+                                </div>
+
+                                <div class="form-group">
+                                    <label>Cor do Card</label>
+                                    <select id="meta-color" class="w-full p-2 border rounded">
+                                        <option value="yellow">Amarelo</option>
+                                        <option value="blue">Azul</option>
+                                        <option value="green">Verde</option>
+                                        <option value="purple">Roxo</option>
+                                        <option value="red">Vermelho</option>
+                                        <option value="orange">Laranja</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="secondary-btn" onclick="closeMetaFormModal()">Cancelar</button>
+                                <button type="submit" class="primary-btn" style="background-color: #F1D24B; color: #1c1917;" onmouseover="this.style.backgroundColor='#e6c740'" onmouseout="this.style.backgroundColor='#F1D24B'">Salvar Meta</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
             `;
         }
 
@@ -8839,6 +8930,7 @@
                 { key: 'processos', label: 'Processos' },
                 { key: 'gestao-tns', label: 'Gestão TNs' },
                 { key: 'rechamada', label: 'Rechamada' },
+                { key: 'metas', label: 'Metas' },
                 { key: 'kpis-pedagogico', label: 'KPIs Pedagógico' },
                 { key: 'logs-atividades', label: 'Logs de Atividades' },
                 { key: 'tasks-prazos', label: 'Tasks & Prazos' },
@@ -14731,6 +14823,12 @@
                                     </svg>
                                     Lembrete
                                 </button>
+                                <button class="primary-btn" style="background-color: #3B82F6;" onmouseover="this.style.backgroundColor='#2563EB'" onmouseout="this.style.backgroundColor='#3B82F6'" onclick="openAddAvisoForm()">
+                                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"/>
+                                    </svg>
+                                    Aviso
+                                </button>
                             </div>
                             ` : ''}
                             
@@ -14947,6 +15045,15 @@
                                     <label class="font-medium text-sm text-blue-900 mb-3 block">
                                         Selecione os Colaboradores <span class="text-red-500">*</span>
                                     </label>
+                                    <div class="mb-3 pb-3 border-b border-blue-300">
+                                        <label class="flex items-center cursor-pointer hover:bg-blue-100 p-2 rounded transition-colors">
+                                            <input type="checkbox" 
+                                                   id="select-all-people" 
+                                                   onchange="toggleSelectAllPeople()"
+                                                   class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500 mr-3">
+                                            <span class="text-sm font-bold text-blue-900">Selecionar Todos</span>
+                                        </label>
+                                    </div>
                                     <div id="multiple-people-checkboxes" class="grid grid-cols-2 md:grid-cols-3 gap-3 max-h-60 overflow-y-auto">
                                         <!-- Checkboxes will be populated here -->
                                     </div>
@@ -15799,6 +15906,63 @@
                             </div>
                         </div>
                     `;
+
+                // Aviso rendering
+                if (task.type === 'aviso') {
+                    const isRead = task.read || false;
+                    const isUrgent = task.urgency === 'urgente';
+                    
+                    return `
+                        <div class="mb-4 p-4 rounded-lg border-2" style="${isRead ? 'background-color: #f5f5f4; border-color: #d6d3d1; opacity: 0.7;' : isUrgent ? 'background-color: #fef2f2; border-color: #fecaca;' : 'background-color: #eff6ff; border-color: #93c5fd;'}">
+                            <div class="flex items-start justify-between mb-2">
+                                <div class="flex-1">
+                                    <div class="flex items-center gap-2 flex-wrap mb-2">
+                                        <span class="text-white text-xs px-2 py-1 rounded font-semibold flex items-center gap-1" style="background-color: #3B82F6;">
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"/>
+                                            </svg>
+                                            AVISO
+                                        </span>
+                                        ${isUrgent ? '<span class="px-2 py-0.5 text-xs font-semibold rounded" style="background-color: #fecaca; color: #991b1b;">URGENTE</span>' : ''}
+                                        ${isRead ? '<span class="px-2 py-0.5 text-xs font-semibold rounded" style="background-color: #d1fae5; color: #065f46;">LIDO</span>' : ''}
+                                    </div>
+                                    <h4 class="font-semibold text-stone-800 ${isRead ? 'line-through text-stone-500' : ''} mb-2">
+                                        ${task.title}
+                                    </h4>
+                                    ${task.description ? `<p class="text-sm text-stone-600 ${isRead ? 'text-stone-400' : ''}">${task.description}</p>` : ''}
+                                    <div class="flex items-center gap-2 mt-3">
+                                        <label class="flex items-center gap-2 cursor-pointer">
+                                            <input type="checkbox" 
+                                                   ${isRead ? 'checked' : ''} 
+                                                   onchange="toggleAvisoRead('${task.id}')"
+                                                   class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+                                            <span class="text-sm font-medium text-stone-700">Marcar como lido</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                ${canManage ? `
+                                <div class="flex gap-2 ml-4">
+                                    <button onclick="event.stopPropagation(); editAviso('${task.id}')" 
+                                            class="p-2 text-stone-400 hover:text-blue-600 transition-colors"
+                                            title="Editar">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                        </svg>
+                                    </button>
+                                    <button onclick="event.stopPropagation(); deleteTask('${task.id}')" 
+                                            class="p-2 text-stone-400 hover:text-red-600 transition-colors"
+                                            title="Excluir">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `;
+                }
+
                 }
 
                 // Normal task rendering
@@ -16424,6 +16588,128 @@
             reminderItemCounter = 0;
         }
 
+        // Aviso Functions
+        function openAddAvisoForm() {
+            editingTaskId = null;
+            document.getElementById('aviso-form-title').textContent = 'Novo Aviso';
+            document.getElementById('aviso-form').reset();
+            document.getElementById('aviso-form-modal').style.display = 'flex';
+        }
+        
+        function closeAvisoFormModal() {
+            document.getElementById('aviso-form-modal').style.display = 'none';
+            editingTaskId = null;
+        }
+        
+        async function handleSubmitAviso(e) {
+            e.preventDefault();
+            
+            const title = document.getElementById('aviso-title').value.trim();
+            const description = document.getElementById('aviso-description').value.trim();
+            const urgency = document.getElementById('aviso-urgency').value;
+            
+            if (!title) {
+                alert('Por favor, insira um título para o aviso.');
+                return;
+            }
+            
+            const avisoData = {
+                title: title,
+                description: description,
+                urgency: urgency,
+                type: 'aviso',
+                personId: currentPersonId,
+                read: false,
+                createdAt: new Date().toISOString(),
+                createdBy: window.currentUserEmail || 'local-user'
+            };
+            
+            if (editingTaskId) {
+                // Edit existing aviso
+                avisoData.id = editingTaskId;
+                const existingAviso = localTasksData.find(t => t.id === editingTaskId);
+                if (existingAviso) {
+                    avisoData.createdAt = existingAviso.createdAt;
+                    avisoData.createdBy = existingAviso.createdBy;
+                    avisoData.read = existingAviso.read;
+                }
+                
+                const index = localTasksData.findIndex(t => t.id === editingTaskId);
+                if (index !== -1) {
+                    localTasksData[index] = avisoData;
+                }
+                
+                if (window.firebaseConnected && window.db) {
+                    try {
+                        await window.db.collection('tasks').doc(editingTaskId).update(avisoData);
+                        console.log('Aviso updated in Firebase');
+                    } catch (error) {
+                        console.error('Error updating aviso in Firebase:', error);
+                    }
+                }
+                
+                logActivity('Editou um aviso', `Aviso: ${title}`);
+                showNotification('Aviso editado com sucesso!', 'success');
+            } else {
+                // Create new aviso
+                avisoData.id = 'aviso_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                localTasksData.push(avisoData);
+                
+                if (window.firebaseConnected && window.db) {
+                    try {
+                        await window.db.collection('tasks').doc(avisoData.id).set(avisoData);
+                        console.log('Aviso saved to Firebase');
+                    } catch (error) {
+                        console.error('Error saving aviso to Firebase:', error);
+                    }
+                }
+                
+                logActivity('Criou um novo aviso', `Aviso: ${title}`);
+                showNotification('Aviso criado com sucesso!', 'success');
+            }
+            
+            closeAvisoFormModal();
+            renderPersonTasks(currentPersonId);
+        }
+        
+        async function toggleAvisoRead(taskId) {
+            const task = localTasksData.find(t => t.id === taskId);
+            if (!task) return;
+            
+            task.read = !task.read;
+            
+            if (window.firebaseConnected && window.db) {
+                try {
+                    await window.db.collection('tasks').doc(taskId).update({
+                        read: task.read
+                    });
+                    console.log('Aviso read status updated in Firebase');
+                } catch (error) {
+                    console.error('Error updating aviso read status in Firebase:', error);
+                }
+            }
+            
+            const action = task.read ? 'marcou como lido' : 'marcou como não lido';
+            logActivity(`${action} um aviso`, `Aviso: ${task.title}`);
+            
+            renderPersonTasks(currentPersonId);
+        }
+
+        function editAviso(taskId) {
+            const task = localTasksData.find(t => t.id === taskId);
+            if (!task) return;
+            
+            editingTaskId = taskId;
+            document.getElementById('aviso-form-title').textContent = 'Editar Aviso';
+            document.getElementById('aviso-title').value = task.title || '';
+            document.getElementById('aviso-description').value = task.description || '';
+            document.getElementById('aviso-urgency').value = task.urgency || 'normal';
+            
+            document.getElementById('aviso-form-modal').style.display = 'flex';
+        }
+
+
+
         function toggleReminderMode() {
             const mode = document.querySelector('input[name="reminder-mode"]:checked').value;
             const checklistSection = document.getElementById('reminder-checklist-section');
@@ -16604,6 +16890,15 @@
             document.getElementById('multiple-task-modal').classList.add('visible');
         };
         
+        window.toggleSelectAllPeople = function() {
+            const selectAllCheckbox = document.getElementById('select-all-people');
+            const peopleCheckboxes = document.querySelectorAll('#multiple-people-checkboxes input[type="checkbox"]');
+            
+            peopleCheckboxes.forEach(checkbox => {
+                checkbox.checked = selectAllCheckbox.checked;
+            });
+        };
+        
         window.closeMultipleTaskModal = function() {
             document.getElementById('multiple-task-modal').classList.remove('visible');
             multipleChecklistItemCounter = 0;
@@ -16612,6 +16907,7 @@
             // Reset all sections and fields
             document.getElementById('multiple-checklist-items-container').innerHTML = '';
             document.getElementById('multiple-lembrete-items-container').innerHTML = '';
+            document.getElementById('select-all-people').checked = false;
         };
         
         window.addMultipleChecklistItem = function(title = '', dueDate = '') {
@@ -16984,6 +17280,323 @@
         window.toggleChecklistAdminApproval = toggleChecklistAdminApproval;
         window.openAddReminderForm = openAddReminderForm;
         window.closeReminderFormModal = closeReminderFormModal;
+        window.openAddAvisoForm = openAddAvisoForm;
+        window.closeAvisoFormModal = closeAvisoFormModal;
+        window.toggleAvisoRead = toggleAvisoRead;
+        window.editAviso = editAviso;
+
+
+        // ===== METAS FUNCTIONS =====
+        let localMetasData = [];
+        let editingMetaId = null;
+
+        function openCreateMetaModal() {
+            editingMetaId = null;
+            document.getElementById('meta-form-title').textContent = 'Nova Meta';
+            document.getElementById('meta-form').reset();
+            document.getElementById('meta-current-value').value = '0';
+            document.getElementById('meta-form-modal').style.display = 'flex';
+        }
+
+        function closeMetaFormModal() {
+            document.getElementById('meta-form-modal').style.display = 'none';
+            editingMetaId = null;
+        }
+
+        async function handleSubmitMeta(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('meta-name').value.trim();
+            const description = document.getElementById('meta-description').value.trim();
+            const currentValue = parseFloat(document.getElementById('meta-current-value').value) || 0;
+            const targetValue = parseFloat(document.getElementById('meta-target-value').value) || 100;
+            const bonus = document.getElementById('meta-bonus').value.trim();
+            const deadline = document.getElementById('meta-deadline').value;
+            const color = document.getElementById('meta-color').value;
+            
+            if (!name || targetValue <= 0) {
+                alert('Por favor, preencha todos os campos obrigatórios.');
+                return;
+            }
+            
+            const metaData = {
+                name: name,
+                description: description,
+                currentValue: currentValue,
+                targetValue: targetValue,
+                bonus: bonus,
+                deadline: deadline,
+                color: color,
+                createdAt: new Date().toISOString(),
+                createdBy: window.currentUserEmail || 'local-user'
+            };
+            
+            if (editingMetaId) {
+                // Edit existing meta
+                metaData.id = editingMetaId;
+                const existingMeta = localMetasData.find(m => m.id === editingMetaId);
+                if (existingMeta) {
+                    metaData.createdAt = existingMeta.createdAt;
+                    metaData.createdBy = existingMeta.createdBy;
+                }
+                
+                const index = localMetasData.findIndex(m => m.id === editingMetaId);
+                if (index !== -1) {
+                    localMetasData[index] = metaData;
+                }
+                
+                if (window.firebaseConnected && window.db) {
+                    try {
+                        await window.db.collection('metas').doc(editingMetaId).update(metaData);
+                        console.log('Meta updated in Firebase');
+                    } catch (error) {
+                        console.error('Error updating meta in Firebase:', error);
+                    }
+                }
+                
+                logActivity('Editou uma meta', `Meta: ${name}`);
+                showNotification('Meta editada com sucesso!', 'success');
+            } else {
+                // Create new meta
+                metaData.id = 'meta_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                localMetasData.push(metaData);
+                
+                if (window.firebaseConnected && window.db) {
+                    try {
+                        await window.db.collection('metas').doc(metaData.id).set(metaData);
+                        console.log('Meta saved to Firebase');
+                    } catch (error) {
+                        console.error('Error saving meta to Firebase:', error);
+                    }
+                }
+                
+                logActivity('Criou uma nova meta', `Meta: ${name}`);
+                showNotification('Meta criada com sucesso!', 'success');
+            }
+            
+            closeMetaFormModal();
+            renderMetas();
+        }
+
+        function editMeta(metaId) {
+            const meta = localMetasData.find(m => m.id === metaId);
+            if (!meta) return;
+            
+            editingMetaId = metaId;
+            document.getElementById('meta-form-title').textContent = 'Editar Meta';
+            document.getElementById('meta-name').value = meta.name || '';
+            document.getElementById('meta-description').value = meta.description || '';
+            document.getElementById('meta-current-value').value = meta.currentValue || 0;
+            document.getElementById('meta-target-value').value = meta.targetValue || 100;
+            document.getElementById('meta-bonus').value = meta.bonus || '';
+            document.getElementById('meta-deadline').value = meta.deadline || '';
+            document.getElementById('meta-color').value = meta.color || 'yellow';
+            
+            document.getElementById('meta-form-modal').style.display = 'flex';
+        }
+
+        async function deleteMeta(metaId) {
+            const meta = localMetasData.find(m => m.id === metaId);
+            if (!meta) return;
+            
+            if (!confirm(`Tem certeza que deseja excluir a meta "${meta.name}"?`)) {
+                return;
+            }
+            
+            localMetasData = localMetasData.filter(m => m.id !== metaId);
+            
+            if (window.firebaseConnected && window.db) {
+                try {
+                    await window.db.collection('metas').doc(metaId).delete();
+                    console.log('Meta deleted from Firebase');
+                } catch (error) {
+                    console.error('Error deleting meta from Firebase:', error);
+                }
+            }
+            
+            logActivity('Excluiu uma meta', `Meta: ${meta.name}`);
+            showNotification('Meta excluída com sucesso!', 'success');
+            renderMetas();
+        }
+
+        async function updateMetaProgress(metaId, newValue) {
+            const meta = localMetasData.find(m => m.id === metaId);
+            if (!meta) return;
+            
+            meta.currentValue = parseFloat(newValue) || 0;
+            
+            if (window.firebaseConnected && window.db) {
+                try {
+                    await window.db.collection('metas').doc(metaId).update({
+                        currentValue: meta.currentValue
+                    });
+                    console.log('Meta progress updated in Firebase');
+                } catch (error) {
+                    console.error('Error updating meta progress in Firebase:', error);
+                }
+            }
+            
+            logActivity('Atualizou progresso de meta', `Meta: ${meta.name} - Novo valor: ${newValue}`);
+            renderMetas();
+        }
+
+        function getMetaColorScheme(color) {
+            const schemes = {
+                'yellow': { bg: '#FEF9C3', border: '#F1D24B', bar: '#F1D24B' },
+                'blue': { bg: '#DBEAFE', border: '#3B82F6', bar: '#3B82F6' },
+                'green': { bg: '#D1FAE5', border: '#10B981', bar: '#10B981' },
+                'purple': { bg: '#E9D5FF', border: '#8B5CF6', bar: '#8B5CF6' },
+                'red': { bg: '#FEE2E2', border: '#EF4444', bar: '#EF4444' },
+                'orange': { bg: '#FFEDD5', border: '#F97316', bar: '#F97316' }
+            };
+            return schemes[color] || schemes['yellow'];
+        }
+
+        function renderMetas() {
+            const container = document.getElementById('metas-container');
+            if (!container) return;
+            
+            if (localMetasData.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full text-center py-12">
+                        <svg class="w-16 h-16 mx-auto text-stone-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                        </svg>
+                        <p class="text-stone-500 text-lg">Nenhuma meta criada ainda</p>
+                        <p class="text-stone-400 text-sm mt-1">Clique em "Criar Meta" para começar</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const canEdit = hasPermission('metas', 'edit');
+            const canDelete = hasPermission('metas', 'delete');
+            const canUpdateProgress = hasPermission('metas', 'update_progress');
+            
+            container.innerHTML = localMetasData.map(meta => {
+                const percentage = Math.min(100, (meta.currentValue / meta.targetValue) * 100);
+                const colors = getMetaColorScheme(meta.color);
+                const isCompleted = meta.currentValue >= meta.targetValue;
+                
+                return `
+                    <div class="rounded-lg border-2 p-6 transition-all hover:shadow-lg" style="background-color: ${colors.bg}; border-color: ${colors.border};">
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="flex-1">
+                                <h3 class="font-bold text-lg text-stone-800 mb-1">${meta.name}</h3>
+                                ${meta.description ? `<p class="text-sm text-stone-600">${meta.description}</p>` : ''}
+                            </div>
+                            ${canEdit || canDelete ? `
+                            <div class="flex gap-2">
+                                ${canEdit ? `
+                                <button onclick="editMeta('${meta.id}')" class="p-2 text-stone-400 hover:text-blue-600 transition-colors" title="Editar">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                    </svg>
+                                </button>
+                                ` : ''}
+                                ${canDelete ? `
+                                <button onclick="deleteMeta('${meta.id}')" class="p-2 text-stone-400 hover:text-red-600 transition-colors" title="Excluir">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                    </svg>
+                                </button>
+                                ` : ''}
+                            </div>
+                            ` : ''}
+                        </div>
+                        
+                        <!-- Barra de Progresso -->
+                        <div class="mb-4">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-sm font-semibold text-stone-700">Progresso</span>
+                                <span class="text-sm font-bold" style="color: ${colors.bar};">${percentage.toFixed(1)}%</span>
+                            </div>
+                            <div class="w-full bg-white rounded-full h-3 border border-stone-200 overflow-hidden">
+                                <div class="h-full transition-all duration-300 rounded-full" style="width: ${percentage}%; background-color: ${colors.bar};"></div>
+                            </div>
+                            <div class="flex justify-between items-center mt-2">
+                                <span class="text-xs text-stone-600">${meta.currentValue} de ${meta.targetValue}</span>
+                                ${isCompleted ? `
+                                <span class="text-xs font-bold text-green-600 flex items-center gap-1">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                    </svg>
+                                    META ATINGIDA!
+                                </span>
+                                ` : ''}
+                            </div>
+                        </div>
+                        
+                        ${canUpdateProgress ? `
+                        <!-- Update Progress -->
+                        <div class="mb-4">
+                            <label class="text-xs font-semibold text-stone-700 mb-1 block">Atualizar progresso:</label>
+                            <div class="flex gap-2">
+                                <input type="number" id="progress-${meta.id}" class="flex-1 p-2 border rounded text-sm" value="${meta.currentValue}" min="0">
+                                <button onclick="updateMetaProgress('${meta.id}', document.getElementById('progress-${meta.id}').value)" class="px-3 py-2 rounded font-semibold text-sm" style="background-color: ${colors.bar}; color: white;">
+                                    Atualizar
+                                </button>
+                            </div>
+                        </div>
+                        ` : ''}
+                        
+                        <!-- Bonificação -->
+                        ${meta.bonus ? `
+                        <div class="bg-white bg-opacity-60 rounded-lg p-3 border border-stone-200">
+                            <div class="flex items-center gap-2 mb-1">
+                                <svg class="w-4 h-4" style="color: ${colors.bar};" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                <span class="text-xs font-bold text-stone-700">BONIFICAÇÃO:</span>
+                            </div>
+                            <p class="text-sm font-semibold" style="color: ${colors.bar};">${meta.bonus}</p>
+                        </div>
+                        ` : ''}
+                        
+                        <!-- Deadline -->
+                        ${meta.deadline ? `
+                        <div class="mt-3 flex items-center gap-2 text-xs text-stone-600">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            </svg>
+                            Prazo: ${formatDateBR(meta.deadline)}
+                        </div>
+                        ` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderMetasSection() {
+            // Sync with Firebase data
+            if (metas && metas.length > 0) {
+                localMetasData = metas;
+            }
+            
+            const metasSection = document.getElementById('metas-section');
+            if (metasSection) {
+                metasSection.style.display = 'block';
+            }
+            
+            // Hide all other sections
+            const allSections = document.querySelectorAll('section');
+            allSections.forEach(section => {
+                if (section.id !== 'metas-section') {
+                    section.style.display = 'none';
+                }
+            });
+            
+            renderMetas();
+        }
+
+        // Window exports
+        window.openCreateMetaModal = openCreateMetaModal;
+        window.closeMetaFormModal = closeMetaFormModal;
+        window.handleSubmitMeta = handleSubmitMeta;
+        window.editMeta = editMeta;
+        window.deleteMeta = deleteMeta;
+        window.updateMetaProgress = updateMetaProgress;
+        window.renderMetasSection = renderMetasSection;
         window.toggleReminderMode = toggleReminderMode;
         window.addReminderItem = addReminderItem;
         window.removeReminderItem = removeReminderItem;
@@ -19969,6 +20582,7 @@
                 { key: 'tasks-prazos', label: 'Tasks & Prazos', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 2v4M8 2v4M3 10h18"/><path d="M20 6H4a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1z"/><path d="m9 16 2 2 4-4"/></svg>', roles: ['admin', 'pedagogico', 'ap', 'teacher', 'am', 'financeiro'] },
                 { key: 'gestao-tns', label: 'Gestão TNs', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>', roles: ['admin', 'pedagogico', 'ap', 'am'] },
                 { key: 'rechamada', label: 'Rechamada', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>', roles: ['admin', 'pedagogico', 'ap', 'am', 'teacher'] },
+                { key: 'metas', label: 'Metas', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>', roles: ['admin', 'pedagogico', 'ap', 'am'] },
                 
                 { key: 'kpis-pedagogico', label: 'KPIs Pedagógico', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/></svg>', roles: ['admin', 'pedagogico', 'ap'] },
                 
@@ -20245,7 +20859,7 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            const pageRenderers = { 'inicio': renderInicioSection, 'alunos': renderAlunosSection, 'turmas': renderTurmasSection, 'vips': renderVipsSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection, 'colaboradores': renderColaboradoresSection, 'dojo': renderDojoSection, 'calendario': renderCalendarioSection, 'links-uteis': renderLinksUteisSection, 'processos': renderProcessosSection, 'tasks-prazos': renderTasksPrazosSection, 'gestao-tns': renderGestaoTNsSection, 'rechamada': renderRechamadaSection, 'kpis-pedagogico': renderKPIsPedagogicoSection, 'logs-atividades': renderLogsAtividadesSection  };
+            const pageRenderers = { 'inicio': renderInicioSection, 'alunos': renderAlunosSection, 'turmas': renderTurmasSection, 'vips': renderVipsSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection, 'colaboradores': renderColaboradoresSection, 'dojo': renderDojoSection, 'calendario': renderCalendarioSection, 'links-uteis': renderLinksUteisSection, 'processos': renderProcessosSection, 'tasks-prazos': renderTasksPrazosSection, 'gestao-tns': renderGestaoTNsSection, 'rechamada': renderRechamadaSection, 'metas': renderMetasSection, 'kpis-pedagogico': renderKPIsPedagogicoSection, 'logs-atividades': renderLogsAtividadesSection  };
 
             document.body.addEventListener('click', (event) => {
                 // Close modals when clicking overlay or close button
