@@ -4176,7 +4176,7 @@
                 </section>
 
                 <!-- Meta Form Modal -->
-                <div id="meta-form-modal" class="modal" style="display: none;">
+                <div id="meta-form-modal" class="modal-overlay" style="display: none;">
                     <div class="modal-content" style="max-width: 600px;">
                         <div class="modal-header">
                             <h3 id="meta-form-title">Nova Meta</h3>
@@ -17295,11 +17295,15 @@
             document.getElementById('meta-form-title').textContent = 'Nova Meta';
             document.getElementById('meta-form').reset();
             document.getElementById('meta-current-value').value = '0';
-            document.getElementById('meta-form-modal').style.display = 'flex';
+            const modal = document.getElementById('meta-form-modal');
+            modal.style.display = 'flex';
+            setTimeout(() => modal.classList.add('visible'), 10);
         }
 
         function closeMetaFormModal() {
-            document.getElementById('meta-form-modal').style.display = 'none';
+            const modal = document.getElementById('meta-form-modal');
+            modal.classList.remove('visible');
+            setTimeout(() => modal.style.display = 'none', 300);
             editingMetaId = null;
         }
 
@@ -17392,7 +17396,9 @@
             document.getElementById('meta-deadline').value = meta.deadline || '';
             document.getElementById('meta-color').value = meta.color || 'yellow';
             
-            document.getElementById('meta-form-modal').style.display = 'flex';
+            const modal = document.getElementById('meta-form-modal');
+            modal.style.display = 'flex';
+            setTimeout(() => modal.classList.add('visible'), 10);
         }
 
         async function deleteMeta(metaId) {
