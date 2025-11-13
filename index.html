@@ -14638,7 +14638,7 @@
                                 </svg>
                                 <div>
                                     <span class="font-medium text-stone-700">Falhadas:</span>
-                                    <span class="text-stone-600"> Canceladas/obsoletas</span>
+                                    <span class="text-stone-600"> Não cumpridas</span>
                                 </div>
                             </div>
                         </div>
@@ -14906,6 +14906,30 @@
                                 <button type="submit" class="primary-btn" style="background-color: #FFA500;" onmouseover="this.style.backgroundColor='#FF8C00'" onmouseout="this.style.backgroundColor='#FFA500'">Salvar Lembrete</button>
                             </div>
                         </form>
+                    </div>
+                </div>
+
+
+                <!-- Move Task Modal -->
+                <div id="move-task-modal" class="modal-overlay">
+                    <div class="modal-content max-w-md">
+                        <div class="modal-header">
+                            <h4>Mover Task para Outro Colaborador</h4>
+                            <button onclick="closeMoveTaskModal()" class="modal-close-btn">&times;</button>
+                        </div>
+                        <div class="p-6">
+                            <div class="mb-4">
+                                <p class="text-sm text-stone-600 mb-4" id="move-task-description">Selecione o colaborador de destino:</p>
+                                <label class="font-medium text-sm">Colaborador <span class="text-red-500">*</span></label>
+                                <select id="move-task-target-person" class="form-input mt-2">
+                                    <option value="">Selecione...</option>
+                                </select>
+                            </div>
+                            <div class="flex justify-end gap-3 mt-6">
+                                <button type="button" class="secondary-btn" onclick="closeMoveTaskModal()">Cancelar</button>
+                                <button type="button" class="primary-btn" onclick="confirmMoveTask()">Mover Task</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -15483,6 +15507,13 @@
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                                         </svg>
                                     </button>
+                                    <button onclick="event.stopPropagation(); openMoveTaskModal('${task.id}')" 
+                                            class="p-2 text-stone-400 hover:text-blue-600 transition-colors"
+                                            title="Mover para outro colaborador">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+                                        </svg>
+                                    </button>
                                     <button onclick="event.stopPropagation(); deleteTask('${task.id}')" 
                                             class="p-2 text-stone-400 hover:text-red-600 transition-colors"
                                             title="Excluir">
@@ -15742,6 +15773,20 @@
                                 </div>
                                 ${canManage ? `
                                 <div class="flex gap-2 ml-4">
+                                    <button onclick="event.stopPropagation(); editTask('${task.id}')" 
+                                            class="p-2 text-stone-400 hover:text-stone-600 transition-colors"
+                                            title="Editar">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                        </svg>
+                                    </button>
+                                    <button onclick="event.stopPropagation(); openMoveTaskModal('${task.id}')" 
+                                            class="p-2 text-stone-400 hover:text-blue-600 transition-colors"
+                                            title="Mover para outro colaborador">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+                                        </svg>
+                                    </button>
                                     <button onclick="event.stopPropagation(); deleteTask('${task.id}')" 
                                             class="p-2 text-stone-400 hover:text-red-600 transition-colors"
                                             title="Excluir">
@@ -15824,6 +15869,13 @@
                                         title="Editar">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                    </svg>
+                                </button>
+                                <button onclick="event.stopPropagation(); openMoveTaskModal('${task.id}')" 
+                                        class="p-2 text-stone-400 hover:text-blue-600 transition-colors"
+                                        title="Mover para outro colaborador">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
                                     </svg>
                                 </button>
                                 <button onclick="event.stopPropagation(); deleteTask('${task.id}')" 
@@ -16004,6 +16056,93 @@
 
         // --- CHECKLIST FUNCTIONS ---
         let checklistItemCounter = 0;
+
+
+        // Move Task Functions
+        let taskIdToMove = null;
+
+        function openMoveTaskModal(taskId) {
+            taskIdToMove = taskId;
+            const task = tasks.find(t => t.id === taskId);
+            if (!task) {
+                showErrorMessage('Erro', 'Task não encontrada.');
+                return;
+            }
+
+            const currentPerson = taskPeople.find(p => p.id === task.personId);
+            const targetSelect = document.getElementById('move-task-target-person');
+            
+            // Populate select with all people except current person
+            targetSelect.innerHTML = '<option value="">Selecione...</option>';
+            taskPeople
+                .filter(p => p.id !== task.personId)
+                .forEach(person => {
+                    const option = document.createElement('option');
+                    option.value = person.id;
+                    option.textContent = person.name + (person.role ? ` (${person.role})` : '');
+                    targetSelect.appendChild(option);
+                });
+
+            // Update description
+            const desc = `Movendo "${task.title}" de ${currentPerson ? currentPerson.name : 'colaborador desconhecido'}`;
+            document.getElementById('move-task-description').textContent = desc;
+
+            // Show modal
+            document.getElementById('move-task-modal').style.display = 'flex';
+        }
+
+        function closeMoveTaskModal() {
+            document.getElementById('move-task-modal').style.display = 'none';
+            taskIdToMove = null;
+        }
+
+        async function confirmMoveTask() {
+            const targetPersonId = document.getElementById('move-task-target-person').value;
+            
+            if (!targetPersonId) {
+                showErrorMessage('Erro', 'Por favor, selecione um colaborador.');
+                return;
+            }
+
+            if (!taskIdToMove) {
+                showErrorMessage('Erro', 'Task não identificada.');
+                return;
+            }
+
+            const task = tasks.find(t => t.id === taskIdToMove);
+            const oldPerson = taskPeople.find(p => p.id === task.personId);
+            const newPerson = taskPeople.find(p => p.id === targetPersonId);
+
+            if (!task || !oldPerson || !newPerson) {
+                showErrorMessage('Erro', 'Erro ao identificar colaboradores.');
+                return;
+            }
+
+            // Update task personId
+            task.personId = targetPersonId;
+
+            // Log activity
+            const activityDescription = `Moveu task "${task.title}" de ${oldPerson.name} para ${newPerson.name}`;
+            await logActivity(activityDescription, 'task-move', task.title);
+
+            // Update Firebase if connected
+            if (db) {
+                try {
+                    const taskRef = doc(db, 'tasksPrazos', task.id);
+                    await updateDoc(taskRef, {
+                        personId: targetPersonId,
+                        movedAt: serverTimestamp(),
+                        movedBy: currentUserName || 'Admin'
+                    });
+                } catch (error) {
+                    console.error('Erro ao atualizar task no Firebase:', error);
+                }
+            }
+
+            showSuccessMessage('Sucesso!', `Task movida para ${newPerson.name}`);
+            closeMoveTaskModal();
+            renderTasksList();
+        }
 
         function openAddChecklistForm() {
             editingTaskId = null;
