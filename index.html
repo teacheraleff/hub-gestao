@@ -66,6 +66,77 @@
             color: #57534e; 
         }
 
+        /* Loading Spinner Global */
+        #global-loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 99999;
+            transition: opacity 0.5s ease-out;
+        }
+        
+        #global-loader.fade-out {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 5px solid #f5f5f4;
+            border-top: 5px solid #F1D24B;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .loader-text {
+            margin-top: 1.5rem;
+            color: #57534e;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        /* Mini loader para transições entre páginas */
+        #page-transition-loader {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(255, 255, 255, 0.95);
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9998;
+        }
+        
+        #page-transition-loader.active {
+            display: flex;
+        }
+        
+        .mini-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f5f5f4;
+            border-top: 4px solid #F1D24B;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
         .base-card { background-color: #ffffff; border-radius: 0.75rem; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid #e7e5e4; transition: all 0.2s; }
         .base-card:hover { border-color: #F1D24B; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
 
@@ -482,6 +553,20 @@
 
 </head>
 <body class="bg-stone-100 text-stone-800">
+    
+    <!-- Global Loading Spinner -->
+    <div id="global-loader">
+        <img src="https://res.cloudinary.com/dqfi22uz0/image/upload/v1749543469/SLAP_FAVICON_AMARELO_coilvj.png" alt="SLAP Logo" style="width: 80px; height: 80px; margin-bottom: 1rem;">
+        <div class="spinner"></div>
+        <p class="loader-text">Carregando Hub SLAP...</p>
+    </div>
+    
+    <!-- Page Transition Loader -->
+    <div id="page-transition-loader">
+        <div class="mini-spinner"></div>
+    </div>
+    
+    
 
     <!-- Login, Pending, and Hub Views -->
     <div id="login-view" class="flex items-center justify-center min-h-screen">
@@ -4147,7 +4232,34 @@
                     `}
                 </section>
 
-                <!-- Metas Section -->
+
+                // Modal para Adicionar Strike
+                <div id="add-strike-modal" class="modal-overlay" style="display: none;">
+                    <div class="modal-content" style="max-width: 500px;">
+                        <div class="modal-header">
+                            <h3>Adicionar Strike</h3>
+                            <button onclick="closeAddStrikeModal()" class="modal-close-btn">&times;</button>
+                        </div>
+                        <form id="add-strike-form" onsubmit="handleAddStrike(event)">
+                            <input type="hidden" id="strike-meta-id">
+                            <div class="modal-body">
+                                <div class="form-group">
+                                    <label>Nome do Strike *</label>
+                                    <input type="text" id="strike-name" required class="w-full p-2 border rounded" placeholder="Ex: João Silva, Venda #123, etc.">
+                                    <p class="text-xs text-stone-500 mt-1">Exemplo: nome do aluno rematriculado, cliente fechado, etc.</p>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="secondary-btn" onclick="closeAddStrikeModal()">Cancelar</button>
+                                <button type="submit" class="primary-btn" style="background-color: #F1D24B; color: #1c1917;" onmouseover="this.style.backgroundColor='#e6c740'" onmouseout="this.style.backgroundColor='#F1D24B'">Adicionar Strike</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+            `;
+
+                // Metas Section
                 <section id="metas-section" style="display: none;">
                     <div class="mb-6">
                         <div class="flex justify-between items-center mb-6">
@@ -4194,16 +4306,10 @@
                                     <textarea id="meta-description" rows="3" class="w-full p-2 border rounded" placeholder="Descrição da meta (opcional)"></textarea>
                                 </div>
                                 
-                                <div class="grid grid-cols-2 gap-4">
-                                    <div class="form-group">
-                                        <label>Valor Atual *</label>
-                                        <input type="number" id="meta-current-value" required class="w-full p-2 border rounded" placeholder="0" min="0">
-                                    </div>
-                                    
-                                    <div class="form-group">
-                                        <label>Valor Alvo *</label>
-                                        <input type="number" id="meta-target-value" required class="w-full p-2 border rounded" placeholder="100" min="1">
-                                    </div>
+                                <div class="form-group">
+                                    <label>Total de Strikes (Meta) *</label>
+                                    <input type="number" id="meta-target-strikes" required class="w-full p-2 border rounded" placeholder="50" min="1">
+                                    <p class="text-xs text-stone-500 mt-1">Exemplo: 50 rematrículas, 100 vendas, etc.</p>
                                 </div>
                                 
                                 <div class="form-group">
@@ -17312,13 +17418,12 @@
             
             const name = document.getElementById('meta-name').value.trim();
             const description = document.getElementById('meta-description').value.trim();
-            const currentValue = parseFloat(document.getElementById('meta-current-value').value) || 0;
-            const targetValue = parseFloat(document.getElementById('meta-target-value').value) || 100;
+            const targetStrikes = parseFloat(document.getElementById('meta-target-strikes').value) || 50;
             const bonus = document.getElementById('meta-bonus').value.trim();
             const deadline = document.getElementById('meta-deadline').value;
             const color = document.getElementById('meta-color').value;
             
-            if (!name || targetValue <= 0) {
+            if (!name || targetStrikes <= 0) {
                 alert('Por favor, preencha todos os campos obrigatórios.');
                 return;
             }
@@ -17326,8 +17431,8 @@
             const metaData = {
                 name: name,
                 description: description,
-                currentValue: currentValue,
-                targetValue: targetValue,
+                strikes: editingMetaId ? (localMetasData.find(m => m.id === editingMetaId)?.strikes || []) : [],
+                targetStrikes: targetStrikes,
                 bonus: bonus,
                 deadline: deadline,
                 color: color,
@@ -17390,8 +17495,7 @@
             document.getElementById('meta-form-title').textContent = 'Editar Meta';
             document.getElementById('meta-name').value = meta.name || '';
             document.getElementById('meta-description').value = meta.description || '';
-            document.getElementById('meta-current-value').value = meta.currentValue || 0;
-            document.getElementById('meta-target-value').value = meta.targetValue || 100;
+            document.getElementById('meta-target-strikes').value = meta.targetStrikes || 50;
             document.getElementById('meta-bonus').value = meta.bonus || '';
             document.getElementById('meta-deadline').value = meta.deadline || '';
             document.getElementById('meta-color').value = meta.color || 'yellow';
@@ -17399,6 +17503,121 @@
             const modal = document.getElementById('meta-form-modal');
             modal.style.display = 'flex';
             setTimeout(() => modal.classList.add('visible'), 10);
+        }
+
+
+        // --- Funções de Strike ---
+        let currentStrikeMetaId = null;
+        
+        function openAddStrikeModal(metaId) {
+            currentStrikeMetaId = metaId;
+            document.getElementById('strike-meta-id').value = metaId;
+            document.getElementById('add-strike-form').reset();
+            document.getElementById('strike-meta-id').value = metaId; // Reset limpa, então recolocar
+            const modal = document.getElementById('add-strike-modal');
+            modal.style.display = 'flex';
+            setTimeout(() => modal.classList.add('visible'), 10);
+        }
+        
+        function closeAddStrikeModal() {
+            const modal = document.getElementById('add-strike-modal');
+            modal.classList.remove('visible');
+            setTimeout(() => modal.style.display = 'none', 300);
+            currentStrikeMetaId = null;
+        }
+        
+        async function handleAddStrike(e) {
+            e.preventDefault();
+            
+            const metaId = document.getElementById('strike-meta-id').value;
+            const strikeName = document.getElementById('strike-name').value.trim();
+            
+            if (!metaId || !strikeName) {
+                alert('Por favor, preencha o nome do strike.');
+                return;
+            }
+            
+            const meta = localMetasData.find(m => m.id === metaId);
+            if (!meta) {
+                alert('Meta não encontrada.');
+                return;
+            }
+            
+            // Adicionar novo strike
+            if (!meta.strikes) meta.strikes = [];
+            const newStrike = {
+                name: strikeName,
+                timestamp: new Date().toISOString(),
+                addedBy: window.currentUserEmail || 'local-user'
+            };
+            meta.strikes.push(newStrike);
+            
+            // Atualizar no Firebase
+            if (window.firebaseConnected && window.db) {
+                try {
+                    await window.db.collection('metas').doc(metaId).update({
+                        strikes: meta.strikes
+                    });
+                    
+                    await logActivity({
+                        action: 'strike_adicionado',
+                        section: 'metas',
+                        details: `Strike "${strikeName}" adicionado à meta "${meta.name}"`,
+                        metaId: metaId
+                    });
+                } catch (error) {
+                    console.error('Erro ao adicionar strike:', error);
+                    alert('Erro ao salvar strike. Tente novamente.');
+                    return;
+                }
+            }
+            
+            // Atualizar localmente
+            const index = localMetasData.findIndex(m => m.id === metaId);
+            if (index !== -1) {
+                localMetasData[index] = meta;
+            }
+            
+            closeAddStrikeModal();
+            renderMetas();
+        }
+        
+        async function removeStrike(metaId, strikeIndex) {
+            if (!confirm('Tem certeza que deseja remover este strike?')) return;
+            
+            const meta = localMetasData.find(m => m.id === metaId);
+            if (!meta || !meta.strikes) return;
+            
+            const removedStrike = meta.strikes[strikeIndex];
+            meta.strikes.splice(strikeIndex, 1);
+            
+            // Atualizar no Firebase
+            if (window.firebaseConnected && window.db) {
+                try {
+                    await window.db.collection('metas').doc(metaId).update({
+                        strikes: meta.strikes
+                    });
+                    
+                    await logActivity({
+                        action: 'strike_removido',
+                        section: 'metas',
+                        details: `Strike "${removedStrike.name}" removido da meta "${meta.name}"`,
+                        metaId: metaId
+                    });
+                } catch (error) {
+                    console.error('Erro ao remover strike:', error);
+                    alert('Erro ao remover strike. Tente novamente.');
+                    return;
+                }
+            }
+            
+            // Atualizar localmente
+            const index = localMetasData.findIndex(m => m.id === metaId);
+            if (index !== -1) {
+                localMetasData[index] = meta;
+            }
+            
+            renderMetas();
         }
 
         async function deleteMeta(metaId) {
@@ -17425,26 +17644,7 @@
             renderMetas();
         }
 
-        async function updateMetaProgress(metaId, newValue) {
-            const meta = localMetasData.find(m => m.id === metaId);
-            if (!meta) return;
-            
-            meta.currentValue = parseFloat(newValue) || 0;
-            
-            if (window.firebaseConnected && window.db) {
-                try {
-                    await window.db.collection('metas').doc(metaId).update({
-                        currentValue: meta.currentValue
-                    });
-                    console.log('Meta progress updated in Firebase');
-                } catch (error) {
-                    console.error('Error updating meta progress in Firebase:', error);
-                }
-            }
-            
-            logActivity('Atualizou progresso de meta', `Meta: ${meta.name} - Novo valor: ${newValue}`);
-            renderMetas();
-        }
+        
 
         function getMetaColorScheme(color) {
             const schemes = {
@@ -17480,9 +17680,12 @@
             const canUpdateProgress = hasPermission('metas', 'update_progress');
             
             container.innerHTML = localMetasData.map(meta => {
-                const percentage = Math.min(100, (meta.currentValue / meta.targetValue) * 100);
+                const strikes = meta.strikes || [];
+                const currentStrikes = strikes.length;
+                const targetStrikes = meta.targetStrikes || 50;
+                const percentage = Math.min(100, (currentStrikes / targetStrikes) * 100);
                 const colors = getMetaColorScheme(meta.color);
-                const isCompleted = meta.currentValue >= meta.targetValue;
+                const isCompleted = currentStrikes >= targetStrikes;
                 
                 return `
                     <div class="rounded-lg border-2 p-6 transition-all hover:shadow-lg" style="background-color: ${colors.bg}; border-color: ${colors.border};">
@@ -17521,7 +17724,7 @@
                                 <div class="h-full transition-all duration-300 rounded-full" style="width: ${percentage}%; background-color: ${colors.bar};"></div>
                             </div>
                             <div class="flex justify-between items-center mt-2">
-                                <span class="text-xs text-stone-600">${meta.currentValue} de ${meta.targetValue}</span>
+                                <span class="text-xs text-stone-600"><strong>${currentStrikes}</strong> de <strong>${targetStrikes}</strong> strikes</span>
                                 ${isCompleted ? `
                                 <span class="text-xs font-bold text-green-600 flex items-center gap-1">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -17533,18 +17736,49 @@
                             </div>
                         </div>
                         
-                        ${canUpdateProgress ? `
-                        <!-- Update Progress -->
+                        ${canUpdateProgress && !isCompleted ? `
+                        <!-- Adicionar Strike -->
                         <div class="mb-4">
-                            <label class="text-xs font-semibold text-stone-700 mb-1 block">Atualizar progresso:</label>
-                            <div class="flex gap-2">
-                                <input type="number" id="progress-${meta.id}" class="flex-1 p-2 border rounded text-sm" value="${meta.currentValue}" min="0">
-                                <button onclick="updateMetaProgress('${meta.id}', document.getElementById('progress-${meta.id}').value)" class="px-3 py-2 rounded font-semibold text-sm" style="background-color: ${colors.bar}; color: white;">
-                                    Atualizar
-                                </button>
-                            </div>
+                            <button onclick="openAddStrikeModal('${meta.id}')" class="w-full px-4 py-3 rounded-lg font-semibold text-sm flex items-center justify-center gap-2 transition-all hover:opacity-90" style="background-color: ${colors.bar}; color: white;">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                                </svg>
+                                Adicionar Strike
+                            </button>
                         </div>
                         ` : ''}
+                        
+                        <!-- Lista de Strikes -->
+                        ${strikes.length > 0 ? `
+                        <div class="bg-white bg-opacity-60 rounded-lg p-3 border border-stone-200 mb-3">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-xs font-bold text-stone-700">STRIKES REGISTRADOS:</span>
+                                <span class="text-xs text-stone-500">${strikes.length} total</span>
+                            </div>
+                            <div class="max-h-32 overflow-y-auto space-y-1">
+                                ${strikes.slice().reverse().map((strike, idx) => `
+                                    <div class="flex items-start gap-2 text-xs p-2 bg-white rounded border border-stone-100">
+                                        <span class="font-bold text-stone-400">#${strikes.length - idx}</span>
+                                        <div class="flex-1">
+                                            <p class="font-semibold text-stone-800">${strike.name}</p>
+                                            <p class="text-stone-500 text-xs">${new Date(strike.timestamp).toLocaleDateString('pt-BR')} às ${new Date(strike.timestamp).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}</p>
+                                        </div>
+                                        ${canDelete ? `
+                                        <button onclick="removeStrike('${meta.id}', ${strikes.length - idx - 1})" class="text-red-400 hover:text-red-600" title="Remover strike">
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                            </svg>
+                                        </button>
+                                        ` : ''}
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                        ` : `
+                        <div class="bg-white bg-opacity-40 rounded-lg p-3 border border-dashed border-stone-300 mb-3 text-center">
+                            <p class="text-xs text-stone-500">Nenhum strike registrado ainda</p>
+                        </div>
+                        `}
                         
                         <!-- Bonificação -->
                         ${meta.bonus ? `
@@ -17574,6 +17808,8 @@
         }
 
         function renderMetasSection() {
+            document.getElementById('main-title').textContent = 'Metas';
+            
             // Sync with Firebase data
             if (metas && metas.length > 0) {
                 localMetasData = metas;
@@ -17601,7 +17837,10 @@
         window.handleSubmitMeta = handleSubmitMeta;
         window.editMeta = editMeta;
         window.deleteMeta = deleteMeta;
-        window.updateMetaProgress = updateMetaProgress;
+        window.openAddStrikeModal = openAddStrikeModal;
+        window.closeAddStrikeModal = closeAddStrikeModal;
+        window.handleAddStrike = handleAddStrike;
+        window.removeStrike = removeStrike;
         window.renderMetasSection = renderMetasSection;
         window.toggleReminderMode = toggleReminderMode;
         window.addReminderItem = addReminderItem;
@@ -20865,6 +21104,17 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
+            // Esconder o loader global quando tudo estiver carregado
+            setTimeout(() => {
+                const globalLoader = document.getElementById('global-loader');
+                if (globalLoader) {
+                    globalLoader.classList.add('fade-out');
+                    setTimeout(() => {
+                        globalLoader.style.display = 'none';
+                    }, 500);
+                }
+            }, 500); // Pequeno delay para garantir que tudo foi inicializado
+            
             const pageRenderers = { 'inicio': renderInicioSection, 'alunos': renderAlunosSection, 'turmas': renderTurmasSection, 'vips': renderVipsSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection, 'colaboradores': renderColaboradoresSection, 'dojo': renderDojoSection, 'calendario': renderCalendarioSection, 'links-uteis': renderLinksUteisSection, 'processos': renderProcessosSection, 'tasks-prazos': renderTasksPrazosSection, 'gestao-tns': renderGestaoTNsSection, 'rechamada': renderRechamadaSection, 'metas': renderMetasSection, 'kpis-pedagogico': renderKPIsPedagogicoSection, 'logs-atividades': renderLogsAtividadesSection  };
 
             document.body.addEventListener('click', (event) => {
@@ -20894,6 +21144,10 @@
                             showErrorMessage("Acesso Negado", `Você não tem permissão para acessar esta seção.`);
                             return;
                         }
+                        
+                        // Mostrar mini-loader durante a transição
+                        const transitionLoader = document.getElementById('page-transition-loader');
+                        if (transitionLoader) transitionLoader.classList.add('active');
                         
                         // Clear any existing timeouts or intervals that might interfere
                         clearTimeout(window.navigationTimeout);
