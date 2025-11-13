@@ -15157,25 +15157,33 @@
                                 <div class="grid grid-cols-4 gap-2">
                                     <div>
                                         <p class="text-xl font-bold text-stone-800">${pendingTasks.length}</p>
-                                        <p class="text-xs text-stone-600">Ativas</p>
+                                        <svg class="w-4 h-4 text-stone-600 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24" title="Ativas">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
                                     </div>
                                     <div>
                                         <p class="text-xl font-bold ${overdueCount > 0 ? 'text-red-600' : 'text-green-600'}">
                                             ${overdueCount}
                                         </p>
-                                        <p class="text-xs text-stone-600">Atrasadas</p>
+                                        <svg class="w-4 h-4 ${overdueCount > 0 ? 'text-red-600' : 'text-green-600'} mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24" title="Atrasadas">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                        </svg>
                                     </div>
                                     <div>
                                         <p class="text-xl font-bold" style="color: #8671D1;">
                                             ${completedCount}
                                         </p>
-                                        <p class="text-xs text-stone-600">Concluídas</p>
+                                        <svg class="w-4 h-4 mx-auto" style="color: #8671D1;" fill="none" stroke="currentColor" viewBox="0 0 24 24" title="Concluídas">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
                                     </div>
                                     <div>
                                         <p class="text-xl font-bold text-red-600">
                                             ${failedCount}
                                         </p>
-                                        <p class="text-xs text-stone-600">Falhadas</p>
+                                        <svg class="w-4 h-4 text-red-600 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24" title="Falhadas">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
                                     </div>
                                 </div>
                             </div>
@@ -15588,6 +15596,14 @@
                                                                class="h-4 w-4 rounded border-gray-300"
                                                                style="accent-color: #FFA500;">
                                                         <span class="text-xs font-medium" style="color: #FFA500;">Aprovado</span>
+                                                    </label>
+                                                    <label class="flex items-center gap-2 cursor-pointer" title="Marcar como falhada (só admin)">
+                                                        <input type="checkbox" 
+                                                               ${item.failed ? 'checked' : ''}
+                                                               onchange="toggleChecklistItemFailed('${task.id}', ${index})"
+                                                               class="h-4 w-4 rounded border-gray-300"
+                                                               style="accent-color: #ef4444;">
+                                                        <span class="text-xs font-medium text-red-600">Falhada</span>
                                                     </label>
                                                     ` : ''}
                                                 </div>
