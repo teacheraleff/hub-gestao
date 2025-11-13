@@ -10592,6 +10592,38 @@
         }
 
         // Função para admin aprovar task (só admin)
+        async function toggleTaskFailed(taskId, isFailed) {
+            if (!db) return;
+            if (currentUserRole !== 'admin') {
+                showErrorMessage('Erro', 'Apenas administradores podem marcar tasks como falhadas.');
+                return;
+            }
+            const taskRef = doc(db, `artifacts/${appId}/public/data/tasks`, taskId);
+            const task = tasks.find(t => t.id === taskId);
+            
+            try {
+                const updateData = { failed: isFailed };
+                
+                // Only set status to 'failed' when marking as failed
+                // When unmarking, preserve existing status (could be 'completed' if was approved before)
+                if (isFailed) {
+                    updateData.status = 'failed';
+                } else if (task && task.status === 'failed') {
+                    // If current status is 'failed', reset to pending when unmarking
+                    // (unless it was approved, in which case it should stay completed)
+                    updateData.status = task.approved ? 'completed' : 'pending';
+                }
+                
+                await updateDoc(taskRef, updateData);
+                
+                if (task) {
+                    await logActivity(isFailed ? 'Marcou task como falhada' : 'Removeu marcação de falhada da task', 'task', task.title);
+                }
+            } catch (error) {
+                console.error('Error toggling task failed:', error);
+            }
+        }
+
         async function toggleAdminApproval(taskId, isApproved) {
             if (!db) return;
             if (currentUserRole !== 'admin') {
@@ -15045,7 +15077,7 @@
                     if (t.type === 'checklist' && t.checklistItems) {
                         // For checklists, count each overdue item individually
                         t.checklistItems.forEach(item => {
-                            if (!item.approved) { // Mudar de completed para approved
+                            if (!item.approved && !item.failed) { // Mudar de completed para approved
                                 const itemDueDate = new Date(item.dueDate + 'T00:00:00');
                                 itemDueDate.setHours(0, 0, 0, 0);
                                 if (itemDueDate < today) {
@@ -15055,11 +15087,29 @@
                         });
                     } else {
                         // For normal tasks, check if the entire task is overdue
-                        const dueDate = new Date(t.dueDate + 'T00:00:00');
-                        dueDate.setHours(0, 0, 0, 0);
-                        if (dueDate < today) {
-                            overdueCount++;
+                        if (!t.failed) {
+                            const dueDate = new Date(t.dueDate + 'T00:00:00');
+                            dueDate.setHours(0, 0, 0, 0);
+                            if (dueDate < today) {
+                                overdueCount++;
+                            }
                         }
+                    }
+                });
+                
+                // Count failed tasks and items
+                let failedCount = 0;
+                personTasks.forEach(t => {
+                    if (t.type === 'checklist' && t.checklistItems) {
+                        // For checklists, count each failed item
+                        t.checklistItems.forEach(item => {
+                            if (item.failed) {
+                                failedCount++;
+                            }
+                        });
+                    } else if (t.failed) {
+                        // For normal tasks, count if failed
+                        failedCount++;
                     }
                 });
 
@@ -15104,22 +15154,28 @@
                             <p class="text-sm text-stone-600 capitalize">${person.role || 'Sem cargo'}</p>
                             
                             <div class="mt-4 w-full pt-4 border-t border-stone-200">
-                                <div class="grid grid-cols-3 gap-3">
+                                <div class="grid grid-cols-4 gap-2">
                                     <div>
-                                        <p class="text-2xl font-bold text-stone-800">${pendingTasks.length}</p>
+                                        <p class="text-xl font-bold text-stone-800">${pendingTasks.length}</p>
                                         <p class="text-xs text-stone-600">Ativas</p>
                                     </div>
                                     <div>
-                                        <p class="text-2xl font-bold ${overdueCount > 0 ? 'text-red-600' : 'text-green-600'}">
+                                        <p class="text-xl font-bold ${overdueCount > 0 ? 'text-red-600' : 'text-green-600'}">
                                             ${overdueCount}
                                         </p>
                                         <p class="text-xs text-stone-600">Atrasadas</p>
                                     </div>
                                     <div>
-                                        <p class="text-2xl font-bold" style="color: #8671D1;">
+                                        <p class="text-xl font-bold" style="color: #8671D1;">
                                             ${completedCount}
                                         </p>
                                         <p class="text-xs text-stone-600">Concluídas</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-xl font-bold text-red-600">
+                                            ${failedCount}
+                                        </p>
+                                        <p class="text-xs text-stone-600">Falhadas</p>
                                     </div>
                                 </div>
                             </div>
@@ -15277,11 +15333,11 @@
             // Helper function to check if task is fully completed
             const isTaskCompleted = (task) => {
                 if (task.type === 'checklist' && task.checklistItems && task.checklistItems.length > 0) {
-                    // Checklist is completed only if ALL items are approved
-                    return task.checklistItems.every(item => item.approved);
+                    // Checklist is completed if ALL items are approved OR failed
+                    return task.checklistItems.every(item => item.approved || item.failed);
                 }
-                // Normal tasks and lembretes: completed if approved
-                return task.approved === true;
+                // Normal tasks and lembretes: completed if approved or failed
+                return task.approved === true || task.failed === true;
             };
 
             // Separate tasks into pending and completed
@@ -15411,6 +15467,14 @@
                                                            class="h-4 w-4 rounded border-gray-300"
                                                            style="accent-color: #F1D24B;">
                                                     <span class="text-xs font-medium" style="color: #F1D24B;">Aprovado</span>
+                                                </label>
+                                                <label class="flex items-center gap-2 cursor-pointer" title="Marcar como falhada (só admin)">
+                                                    <input type="checkbox" 
+                                                           ${item.failed ? 'checked' : ''}
+                                                           onchange="toggleChecklistItemFailed('${task.id}', ${index})"
+                                                           class="h-4 w-4 rounded border-gray-300"
+                                                           style="accent-color: #ef4444;">
+                                                    <span class="text-xs font-medium text-red-600">Falhada</span>
                                                 </label>
                                                 ` : ''}
                                             </div>
@@ -15603,6 +15667,14 @@
                                                        class="h-4 w-4 rounded border-gray-300"
                                                        style="accent-color: #FFA500;">
                                                 <span class="text-xs font-medium" style="color: #FFA500;">Aprovado</span>
+                                            </label>
+                                            <label class="flex items-center gap-1.5 cursor-pointer" title="Marcar como falhada (só admin)">
+                                                <input type="checkbox" 
+                                                       ${task.failed ? 'checked' : ''}
+                                                       onchange="toggleTaskFailed('${task.id}', this.checked)"
+                                                       class="h-4 w-4 rounded border-gray-300"
+                                                       style="accent-color: #ef4444;">
+                                                <span class="text-xs font-medium text-red-600">Falhada</span>
                                             </label>
                                             ` : ''}
                                         </div>
@@ -16040,6 +16112,65 @@
                 await updateDoc(doc(db, `artifacts/${appId}/public/data/tasks`, taskId), {
                     checklistItems: items
                 });
+                await logActivity(
+                    items[itemIndex].approved ? 'Aprovou item da checklist' : 'Removeu aprovação de item', 
+                    'checklist-item', 
+                    `${task.title} - ${items[itemIndex].title}`
+                );
+            } catch (error) {
+                console.error('Error toggling checklist admin approval:', error);
+                showErrorMessage('Erro', 'Erro ao atualizar aprovação do item.');
+            }
+        }
+
+        async function toggleChecklistItemFailed(taskId, itemIndex) {
+            if (currentUserRole !== 'admin') {
+                showErrorMessage('Erro', 'Apenas administradores podem marcar items como falhados.');
+                return;
+            }
+
+            const task = tasks.find(t => t.id === taskId);
+            if (!task || task.type !== 'checklist') return;
+
+            const items = [...task.checklistItems];
+            items[itemIndex].failed = !items[itemIndex].failed;
+
+            try {
+                await updateDoc(doc(db, `artifacts/${appId}/public/data/tasks`, taskId), {
+                    checklistItems: items
+                });
+                await logActivity(
+                    items[itemIndex].failed ? 'Marcou item como falhado' : 'Removeu marcação de falhado do item', 
+                    'checklist-item', 
+                    `${task.title} - ${items[itemIndex].title}`
+                );
+            } catch (error) {
+                console.error('Error toggling checklist item failed:', error);
+                showErrorMessage('Erro', 'Erro ao atualizar item da checklist.');
+            }
+        }
+
+        async function toggleChecklistItemApproval(taskId, itemIndex) {
+            if (currentUserRole !== 'admin') {
+                showErrorMessage('Erro', 'Apenas administradores podem aprovar items.');
+                return;
+            }
+
+            const task = tasks.find(t => t.id === taskId);
+            if (!task || task.type !== 'checklist') return;
+
+            const items = [...task.checklistItems];
+            items[itemIndex].approved = !items[itemIndex].approved;
+
+            try {
+                await updateDoc(doc(db, `artifacts/${appId}/public/data/tasks`, taskId), {
+                    checklistItems: items
+                });
+                await logActivity(
+                    items[itemIndex].approved ? 'Aprovou item da checklist' : 'Removeu aprovação de item', 
+                    'checklist-item', 
+                    `${task.title} - ${items[itemIndex].title}`
+                );
                 
                 // Check if all items are approved
                 const allApproved = items.every(item => item.approved);
@@ -16630,6 +16761,8 @@
         window.toggleTaskStatus = toggleTaskStatus;
         window.toggleUserCompletion = toggleUserCompletion;
         window.toggleAdminApproval = toggleAdminApproval;
+        window.toggleTaskFailed = toggleTaskFailed;
+        window.toggleChecklistItemFailed = toggleChecklistItemFailed;
         window.openAddPersonModal = openAddPersonModal;
         window.editPerson = editPerson;
         window.closePersonModal = closePersonModal;
