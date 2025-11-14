@@ -1143,7 +1143,7 @@
                 currentUserName = userData.name || user.displayName;
                 currentUserRole = userData.role;
 
-                if (['admin', 'am', 'ap', 'pedagogico', 'financeiro', 'teacher'].includes(currentUserRole)) {
+                if (['admin', 'teacher', 'teachertn', 'coord', 'superv', 'estagiario', 'comercial'].includes(currentUserRole)) {
                     setupFirestoreListeners();
                     // Carregar colaborador e suas permissões
                     await loadCurrentCollaborator();
@@ -1704,7 +1704,7 @@
             document.getElementById('main-description').textContent = 'Visão geral das suas atividades e da equipe.';
 
             // Calculate statistics based on user role
-            const isTeacher = currentUserRole === 'teacher';
+            const isTeacher = currentUserRole === 'teacher' || currentUserRole === 'teachertn';
             const totalStudents = students.length;
             const activeStudents = students.filter(s => s.status === 'Ativo').length;
             const totalTurmas = turmas.length;
@@ -2092,7 +2092,7 @@
         function renderAlunosSection() {
             document.getElementById('main-title').textContent = 'Gestão de Alunos';
             document.getElementById('main-description').textContent = 'Cadastre e gerencie todos os alunos da escola.';
-            const canAdd = ['admin', 'financeiro', 'pedagogico', 'ap'].includes(currentUserRole);
+            const canAdd = ['admin', 'coord', 'superv', 'estagiario', 'comercial'].includes(currentUserRole);
             const canViewFinancialInfo = canViewStudentFinancials();
 
             const totalCount = students.length;
@@ -2381,7 +2381,7 @@
             const statusFilter = currentTurmasFilter;
             let filteredTurmas = turmas;
 
-            if (currentUserRole === 'teacher') {
+            if (currentUserRole === 'teacher' || currentUserRole === 'teachertn') {
                 // Find the teacher's name in collaborators to ensure correct mapping
                 const teacherCollaborator = collaborators.find(c => 
                     c.sectors && c.sectors.includes('professor') && 
@@ -2443,7 +2443,7 @@
             let filteredVips = vipStudents;
 
             // Apply role-based filtering first
-            if (currentUserRole === 'teacher') {
+            if (currentUserRole === 'teacher' || currentUserRole === 'teachertn') {
                 // Find the teacher's name in collaborators to ensure correct mapping
                 const teacherCollaborator = collaborators.find(c => 
                     c.sectors && c.sectors.includes('professor') && 
@@ -2543,7 +2543,7 @@
 
             if (!turmasGrid) return;
 
-            const canManage = ['admin', 'pedagogico', 'ap'].includes(currentUserRole);
+            const canManage = ['admin', 'coord', 'superv', 'estagiario', 'comercial'].includes(currentUserRole);
 
             turmasGrid.innerHTML = filteredTurmas.map(t => {
                 // Count only TURMA modality students in the class
@@ -2640,11 +2640,11 @@
             vipsGrid.innerHTML = paginatedVips.map(student => {
                 const vipRecord = vips.find(v => v.studentId === student.id);
                 const teacher = vipRecord ? collaborators.find(c => c.id === vipRecord.teacherId) : null;
-                const canManage = ['admin', 'pedagogico', 'ap', 'financeiro', 'teacher'].includes(currentUserRole);
+                const canManage = ['admin', 'coord', 'superv', 'estagiario', 'comercial', 'teacher', 'teachertn'].includes(currentUserRole);
 
                 // Can show PEF if user is admin/pedagogico/ap/financeiro OR if user is the assigned teacher
-                const canShowPef = ['admin', 'pedagogico', 'ap', 'financeiro'].includes(currentUserRole) || 
-                    (currentUserRole === 'teacher' && vipRecord && vipRecord.teacherName === currentUserName);
+                const canShowPef = ['admin', 'coord', 'superv', 'estagiario', 'comercial'].includes(currentUserRole) || 
+                    (( currentUserRole === 'teacher' || currentUserRole === 'teachertn') && vipRecord && vipRecord.teacherName === currentUserName);
 
                 // Get status tag for contract expiration/ending
                 const statusTag = getVipStatusTag(vipRecord);
@@ -2690,8 +2690,8 @@
                         ${vipRecord ? `
                             <button class="primary-btn !text-sm flex-1 flex items-center justify-center ${isFinalizado ? 'opacity-50' : ''}" data-action="${isFinalizado ? 'vip-finalizado' : 'open-vip-pef'}" data-id="${vipRecord.id}">PEF</button>
                             <button class="secondary-btn !text-sm flex-1 flex items-center justify-center ${isFinalizado ? 'opacity-50' : ''}" data-action="${isFinalizado ? 'vip-finalizado' : 'open-vip-notas'}" data-id="${vipRecord.id}">Notas</button>
-                            ${currentUserRole !== 'teacher' ? `<button class="secondary-btn !text-sm flex-1 ${isFinalizado ? 'opacity-50 cursor-not-allowed' : ''}" data-action="${isFinalizado ? 'vip-finalizado' : 'edit-vip'}" data-id="${vipRecord.id}" ${isFinalizado ? 'disabled' : ''}>Configurar</button>` : ''}
-                            ${isFinalizado && currentUserRole !== 'teacher' ? `<button class="secondary-btn !text-sm flex-1 min-w-[120px]" style="background-color: #10B981; color: white;" data-action="reativar-vip" data-id="${vipRecord.id}">Reativar</button>` : ''}
+                            ${(currentUserRole !== 'teacher' && currentUserRole !== 'teachertn') ? `<button class="secondary-btn !text-sm flex-1 ${isFinalizado ? 'opacity-50 cursor-not-allowed' : ''}" data-action="${isFinalizado ? 'vip-finalizado' : 'edit-vip'}" data-id="${vipRecord.id}" ${isFinalizado ? 'disabled' : ''}>Configurar</button>` : ''}
+                            ${isFinalizado && (currentUserRole !== 'teacher' && currentUserRole !== 'teachertn') ? `<button class="secondary-btn !text-sm flex-1 min-w-[120px]" style="background-color: #10B981; color: white;" data-action="reativar-vip" data-id="${vipRecord.id}">Reativar</button>` : ''}
                         ` : ''}
                     </div>
                 </div>`}).join('') || '<p class="col-span-full text-center py-10 text-stone-500">Nenhum aluno VIP encontrado.</p>';
@@ -2703,7 +2703,7 @@
         function updateAlunosList(filter) {
             const listBody = document.getElementById('alunos-list');
             if (!listBody) return;
-            const canEdit = ['admin', 'financeiro', 'pedagogico', 'ap'].includes(currentUserRole);
+            const canEdit = ['admin', 'coord', 'superv', 'estagiario', 'comercial'].includes(currentUserRole);
             const canViewFinancialInfo = canViewStudentFinancials();
 
             const filteredStudents = getFilteredStudents();
@@ -2824,7 +2824,7 @@
             document.getElementById('main-title').textContent = 'Gestão de Turmas';
             document.getElementById('main-description').textContent = 'Crie turmas, adicione alunos e registre as presenças.';
 
-            const canManage = ['admin', 'pedagogico', 'ap'].includes(currentUserRole);
+            const canManage = ['admin', 'coord', 'superv', 'estagiario', 'comercial'].includes(currentUserRole);
             let itemsToDisplay = getFilteredTurmas();
 
 
@@ -2838,7 +2838,7 @@
                                 </svg>
                                 <input type="text" id="turma-search" placeholder="Pesquisar turmas..." class="form-input pl-10" oninput="updateTurmasList()">
                             </div>
-                            ${currentUserRole !== 'teacher' ? `
+                            ${(currentUserRole !== 'teacher' && currentUserRole !== 'teachertn') ? `
                             <div class="min-w-48">
                                 <select id="turma-teacher-filter" class="form-input" onchange="updateTurmasList()">
                                     <option value="">Todos os professores</option>
@@ -2926,7 +2926,7 @@
             document.getElementById('main-title').textContent = 'Alunos VIP';
             document.getElementById('main-description').textContent = 'Gerencie alunos VIP e registre suas presenças.';
 
-            const canManage = ['admin', 'pedagogico', 'ap', 'financeiro'].includes(currentUserRole);
+            const canManage = ['admin', 'coord', 'superv', 'estagiario', 'comercial'].includes(currentUserRole);
 
             let itemsToDisplay = getFilteredVips();
 
@@ -2942,7 +2942,7 @@
                                 </svg>
                                 <input type="text" id="vip-search" placeholder="Pesquisar VIPs..." class="form-input pl-10" oninput="updateVipsList()">
                             </div>
-                            ${currentUserRole !== 'teacher' ? `
+                            ${(currentUserRole !== 'teacher' && currentUserRole !== 'teachertn') ? `
                             <div class="min-w-48">
                                 <select id="vip-teacher-filter" class="form-input" onchange="updateVipsList()">
                                     <option value="">Todos os professores</option>
@@ -2994,7 +2994,7 @@
                 </div>`;
 
             // Add event listeners for filter buttons
-            if (canManage || currentUserRole === 'teacher') {
+            if (canManage || (currentUserRole === 'teacher' || currentUserRole === 'teachertn')) {
                 const filterButtons = document.querySelectorAll('#vips-filter-buttons .filter-btn');
                 filterButtons.forEach(btn => {
                     btn.addEventListener('click', () => {
@@ -3110,7 +3110,7 @@
             document.getElementById('main-title').textContent = 'Grade de Horários';
             document.getElementById('main-description').textContent = 'Visualize e gerencie a grade de aulas da equipe.';
 
-            const isTeacher = currentUserRole === 'teacher';
+            const isTeacher = currentUserRole === 'teacher' || currentUserRole === 'teachertn';
             let filterHtml = '';
 
             if (!isTeacher) {
@@ -3130,11 +3130,11 @@
                 `;
             }
 
-            const addAulaButton = ['admin', 'ap', 'pedagogico'].includes(currentUserRole)
+            const addAulaButton = ['admin', 'coord', 'superv', 'estagiario', 'comercial'].includes(currentUserRole)
                 ? `<button class="primary-btn w-auto" data-action="add-schedule">+ Adicionar Aula</button>`
                 : '';
 
-            const addVagaButton = ['admin', 'ap', 'pedagogico'].includes(currentUserRole)
+            const addVagaButton = ['admin', 'coord', 'superv', 'estagiario', 'comercial'].includes(currentUserRole)
                 ? `<button class="primary-btn w-auto" style="background-color: #10b981; border-color: #10b981;" onmouseover="this.style.backgroundColor='#059669'" onmouseout="this.style.backgroundColor='#10b981'" data-action="add-vaga">+ Adicionar Vaga</button>`
                 : '';
 
@@ -3344,7 +3344,7 @@
             }
 
             // Debug log for teachers to help identify mapping issues
-            if (currentUserRole === 'teacher' && teacherFilter !== 'all') {
+            if (( currentUserRole === 'teacher' || currentUserRole === 'teachertn') && teacherFilter !== 'all') {
                 console.log('DEBUG: Grade filtering for teacher', {
                     teacherFilter,
                     currentUserName,
@@ -3356,7 +3356,7 @@
             }
 
             // Show weekly hours for specific teacher or all teachers summary
-            const canViewAllHours = ['admin', 'pedagogico', 'ap'].includes(currentUserRole);
+            const canViewAllHours = ['admin', 'coord', 'superv'].includes(currentUserRole);
 
             if (teacherFilter !== 'all' && hoursContainer) {
                 const weeklyHours = calculateWeeklyHours(teacherFilter);
@@ -3401,7 +3401,7 @@
             }
 
             // Show message if no schedules found for teacher role
-            if (currentUserRole === 'teacher' && filteredSchedules.length === 0) {
+            if (( currentUserRole === 'teacher' || currentUserRole === 'teachertn') && filteredSchedules.length === 0) {
                 return; // Already handled above
             }
 
@@ -3737,10 +3737,11 @@
             const roleLabels = {
                 'admin': { label: 'Admin', color: 'bg-purple-100 text-purple-800' },
                 'teacher': { label: 'Professor', color: 'bg-blue-100 text-blue-800' },
-                'pedagogico': { label: 'Pedagógico', color: 'bg-green-100 text-green-800' },
-                'ap': { label: 'AP', color: 'bg-yellow-100 text-yellow-800' },
-                'financeiro': { label: 'Financeiro', color: 'bg-indigo-100 text-indigo-800' },
-                'am': { label: 'AM', color: 'bg-pink-100 text-pink-800' }
+                'teachertn': { label: 'Professor TN', color: 'bg-teal-100 text-teal-800' },
+                'coord': { label: 'Coordenador', color: 'bg-green-100 text-green-800' },
+                'superv': { label: 'Supervisor', color: 'bg-yellow-100 text-yellow-800' },
+                'estagiario': { label: 'Estagiário', color: 'bg-orange-100 text-orange-800' },
+                'comercial': { label: 'Comercial', color: 'bg-pink-100 text-pink-800' }
             };
 
             // Ordenar colaboradores alfabeticamente por nome
@@ -4076,7 +4077,7 @@
             // Filtrar por professor se selecionado OU se usuário for professor (ver apenas seus alunos)
             let filteredStudents;
 
-            if (currentUserRole === 'teacher') {
+            if (currentUserRole === 'teacher' || currentUserRole === 'teachertn') {
                 // Professores veem apenas seus próprios alunos
                 // Comparação case-insensitive e trim para evitar problemas com espaços
                 filteredStudents = studentsWithConsecutiveAbsences.filter(s => {
@@ -4128,7 +4129,7 @@
                         </div>
                     </div>
 
-                    ${uniqueTeachers.length > 0 && currentUserRole !== 'teacher' ? `
+                    ${uniqueTeachers.length > 0 && (currentUserRole !== 'teacher' && currentUserRole !== 'teachertn') ? `
                         <div class="mb-6 flex items-center gap-4">
                             <label class="text-sm font-semibold text-stone-700">Filtrar por professor:</label>
                             <select 
@@ -4274,7 +4275,7 @@
             clearModalHeaderButtons();
 
             // Buscar lista de professores
-            const teachers = collaborators.filter(c => c.role === 'teacher' || c.role === 'pedagogico' || c.role === 'ap' || c.role === 'am');
+            const teachers = collaborators.filter(c => c.role === 'teacher' || c.role === 'teachertn' || c.role === 'coord' || c.role === 'superv' || c.role === 'estagiario');
             const teacherOptions = teachers.map(t => 
                 `<option value="${t.name}" ${t.name === currentUserName ? 'selected' : ''}>${t.name}</option>`
             ).join('');
@@ -4447,7 +4448,7 @@
             }
 
             // Buscar lista de professores
-            const teachers = collaborators.filter(c => c.role === 'teacher' || c.role === 'pedagogico' || c.role === 'ap' || c.role === 'am');
+            const teachers = collaborators.filter(c => c.role === 'teacher' || c.role === 'teachertn' || c.role === 'coord' || c.role === 'superv' || c.role === 'estagiario');
             const teacherOptions = teachers.map(t => 
                 `<option value="${t.name}" ${t.name === rechamada.responsibleTeacher ? 'selected' : ''}>${t.name}</option>`
             ).join('');
@@ -6499,8 +6500,8 @@
             const aluno = students.find(s => s.id === alunoId);
             if (!aluno) return;
             document.getElementById('form-modal-title').textContent = `Perfil de ${aluno.name}`;
-            const canEdit = ['admin', 'financeiro', 'pedagogico', 'ap'].includes(currentUserRole);
-            const canEditPedagogical = currentUserRole === 'teacher';
+            const canEdit = ['admin', 'coord', 'superv', 'estagiario', 'comercial'].includes(currentUserRole);
+            const canEditPedagogical = currentUserRole === 'teacher' || currentUserRole === 'teachertn';
             const canViewFinancialInfo = canViewStudentFinancials();
 
             let responsibleHtml = '';
@@ -8698,7 +8699,7 @@
                     ${campanha.estrategia ? `<div><h4 class="font-semibold text-stone-700">Estratégia</h4><p class="mt-1 p-3 bg-stone-50 rounded-md text-sm">${campanha.estrategia}</p></div>` : ''}
 
                     <div class="border-t pt-4 flex justify-end gap-2">
-                        ${['admin', 'am', 'marketing'].includes(currentUserRole) ? `
+                        ${['admin'].includes(currentUserRole) ? `
                         <button class="secondary-btn" data-action="edit-campanha" data-id="${campanha.id}">Editar</button>
                         <button class="danger-btn" data-action="delete-item" data-collection="events" data-id="${campanha.id}">Apagar</button>
                         ` : ''}
@@ -8937,10 +8938,11 @@
             const roles = [
                 { value: 'admin', label: 'Admin (Acesso Total)' },
                 { value: 'teacher', label: 'Professor' },
-                { value: 'pedagogico', label: 'Pedagógico' },
-                { value: 'ap', label: 'AP (Assistente Pedagógico)' },
-                { value: 'financeiro', label: 'Financeiro' },
-                { value: 'am', label: 'AM (Assistente de Marketing)' }
+                { value: 'teachertn', label: 'Professor TN' },
+                { value: 'coord', label: 'Coordenador' },
+                { value: 'superv', label: 'Supervisor' },
+                { value: 'estagiario', label: 'Estagiário' },
+                { value: 'comercial', label: 'Comercial' }
             ];
 
             const roleOptions = roles.map(role => 
@@ -9433,10 +9435,10 @@
                 // Aplicar allowedPages baseado no role
                 const allowedPagesByRole = {
                     'professor': ['inicio', 'dojo', 'alunos', 'turmas', 'vips', 'grade', 'calendario', 'links-uteis', 'tasks-prazos', 'rechamada'],
-                    'pedagogico': ['inicio', 'dojo', 'alunos', 'turmas', 'vips', 'grade', 'calendario', 'links-uteis', 'tasks-prazos', 'gestao-tns', 'rechamada', 'kpis-pedagogico', 'logs-atividades'],
-                    'financeiro': ['alunos', 'turmas', 'vips', 'tasks-prazos', 'kpis-pedagogico', 'logs-atividades', 'folha-pagamento'],
-                    'ap': ['alunos', 'turmas', 'vips', 'grade', 'calendario', 'tasks-prazos', 'rechamada', 'kpis-pedagogico'],
-                    'am': ['inicio', 'dojo', 'calendario', 'links-uteis', 'tasks-prazos']
+                    'coord': ['inicio', 'tasks-prazos', 'processos', 'links-uteis', 'alunos', 'dojo', 'turmas', 'vips', 'grade', 'calendario', 'rechamada', 'metas', 'kpis-pedagogico', 'gestao-tns'],
+                    'superv': ['inicio', 'tasks-prazos', 'processos', 'links-uteis', 'alunos', 'dojo', 'turmas', 'vips', 'grade', 'calendario', 'rechamada', 'metas', 'kpis-pedagogico', 'gestao-tns'],
+                    'estagiario': ['inicio', 'tasks-prazos', 'processos', 'links-uteis', 'alunos', 'dojo', 'turmas', 'vips', 'grade', 'calendario', 'gestao-tns'],
+                    'comercial': ['inicio', 'tasks-prazos', 'processos', 'links-uteis', 'alunos', 'turmas', 'vips', 'grade', 'calendario', 'rechamada', 'metas', 'kpis-pedagogico', 'gestao-tns']
                 };
 
                 const pagesToAllow = allowedPagesByRole[roleValue] || [];
@@ -9722,7 +9724,7 @@
             }
 
             document.getElementById('form-modal-title').textContent = schedule ? "Detalhes da Aula" : "Adicionar Nova Aula";
-            const isTeacher = currentUserRole === 'teacher';
+            const isTeacher = currentUserRole === 'teacher' || currentUserRole === 'teachertn';
 
             const teacherOptions = collaborators.filter(c => c.role === 'teacher').map(c => `<option value="${c.name}" ${schedule?.teacher === c.name ? 'selected' : ''}>${c.name}</option>`).join('');
             const dayOptions = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"].map(d => `<option value="${d}" ${schedule?.day === d ? 'selected' : ''}>${d}</option>`).join('');
@@ -10576,7 +10578,7 @@
             clearModalHeaderButtons();
             const cancelamento = cancellations.find(c => c.id === cancelamentoId);
             if (!cancelamento) return;
-            const canEdit = ['admin', 'financeiro'].includes(currentUserRole);
+            const canEdit = ['admin'].includes(currentUserRole);
             document.getElementById('form-modal-title').textContent = `Cancelamento de ${cancelamento.studentName}`;
             document.getElementById('form-modal-content-area').innerHTML = `
                 <div class="space-y-4">
@@ -12641,7 +12643,7 @@
         // --- Calendar Functions ---
         async function deleteCalendarEvent(eventId) {
             // Check if user has permission to delete events
-            if (currentUserRole === 'teacher') {
+            if (currentUserRole === 'teacher' || currentUserRole === 'teachertn') {
                 showErrorMessage("Acesso Negado", "Usuários com role 'teacher' não podem apagar esta item.");
                 return;
             }
@@ -18000,7 +18002,7 @@
             const container = document.getElementById('fixed-date-cards-container');
             if (!container) return;
 
-            const canEdit = currentUserRole !== 'teacher';
+            const canEdit = currentUserRole !== 'teacher' && currentUserRole !== 'teachertn';
 
             container.innerHTML = fixedDateCards.map(card => {
                 const hasData = card.startDate && card.endDate;
@@ -18032,7 +18034,7 @@
         }
 
         function openFixedDateCardModal(cardId) {
-            if (currentUserRole === 'teacher') {
+            if (currentUserRole === 'teacher' || currentUserRole === 'teachertn') {
                 return; // Teachers cannot edit
             }
 
@@ -18336,7 +18338,7 @@
                             <div class="flex-1">
                                 <h3 class="guideline-title">${item.title}</h3>
                             </div>
-                            ${['admin', 'pedagogico', 'ap'].includes(currentUserRole) ? `
+                            ${['admin', 'superv'].includes(currentUserRole) ? `
                             <button class="secondary-btn !text-xs !py-1 !px-2 ml-2" onclick="editGuidelineItem('${type}', ${realIndex})">
                                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
@@ -20734,15 +20736,15 @@
                     key: 'inicio',
                     label: 'Início',
                     icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>',
-                    roles: ['admin', 'pedagogico', 'ap', 'financeiro', 'teacher', 'am']
+                    roles: ['admin', 'teacher', 'teachertn', 'coord', 'superv', 'estagiario', 'comercial']
                 },
                 geral: {
                     label: 'GERAL',
                     icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M12 1v6m0 6v6m5.2-14.2l-4.2 4.2m0 6l4.2 4.2M23 12h-6m-6 0H1m14.2 5.2l-4.2-4.2m0-6l-4.2-4.2"></path></svg>',
                     items: [
-                        { key: 'tasks-prazos', label: 'Tasks', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/></svg>', roles: ['admin', 'pedagogico', 'ap', 'teacher', 'am', 'financeiro'] },
-                        { key: 'processos', label: 'Processos', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>', roles: ['admin', 'pedagogico', 'ap', 'teacher', 'am', 'financeiro'] },
-                        { key: 'links-uteis', label: 'Links Úteis', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>', roles: ['admin', 'pedagogico', 'ap', 'teacher', 'am', 'financeiro'] }
+                        { key: 'tasks-prazos', label: 'Tasks', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/></svg>', roles: ['admin', 'teacher', 'teachertn', 'coord', 'superv', 'estagiario', 'comercial'] },
+                        { key: 'processos', label: 'Processos', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>', roles: ['admin', 'teacher', 'teachertn', 'coord', 'superv', 'estagiario', 'comercial'] },
+                        { key: 'links-uteis', label: 'Links Úteis', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>', roles: ['admin', 'teacher', 'teachertn', 'coord', 'superv', 'estagiario', 'comercial'] }
                     ]
                 },
                 administrativo: {
@@ -20759,21 +20761,21 @@
                     icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c3 3 9 3 12 0v-5"></path></svg>',
                     items: [
                         { key: 'dojo', label: 'Dojo', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>', roles: ['admin', 'pedagogico', 'ap', 'teacher', 'am'] },
-                        { key: 'turmas', label: 'Turmas', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>', roles: ['admin', 'pedagogico', 'ap', 'teacher', 'am', 'financeiro'] },
-                        { key: 'vips', label: 'VIPs', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20a6 6 0 0 0-12 0"/><circle cx="12" cy="10" r="4"/><circle cx="12" cy="12" r="10"/></svg>', roles: ['admin', 'pedagogico', 'ap', 'teacher', 'am', 'financeiro'] },
-                        { key: 'grade', label: 'Grade', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" x2="16" y1="2" y2="6"></line><line x1="8" x2="8" y1="2" y2="6"></line><line x1="3" x2="21" y1="10" y2="10"></line></svg>', roles: ['admin', 'pedagogico', 'ap', 'teacher', 'am', 'financeiro'] },
-                        { key: 'calendario', label: 'Calendário', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>', roles: ['admin', 'pedagogico', 'ap', 'teacher', 'am', 'financeiro'] },
-                        { key: 'rechamada', label: 'Rechamada', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>', roles: ['admin', 'pedagogico', 'ap'] }
+                        { key: 'turmas', label: 'Turmas', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>', roles: ['admin', 'teacher', 'teachertn', 'coord', 'superv', 'estagiario', 'comercial'] },
+                        { key: 'vips', label: 'VIPs', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20a6 6 0 0 0-12 0"/><circle cx="12" cy="10" r="4"/><circle cx="12" cy="12" r="10"/></svg>', roles: ['admin', 'teacher', 'teachertn', 'coord', 'superv', 'estagiario', 'comercial'] },
+                        { key: 'grade', label: 'Grade', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" x2="16" y1="2" y2="6"></line><line x1="8" x2="8" y1="2" y2="6"></line><line x1="3" x2="21" y1="10" y2="10"></line></svg>', roles: ['admin', 'teacher', 'teachertn', 'coord', 'superv', 'estagiario', 'comercial'] },
+                        { key: 'calendario', label: 'Calendário', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>', roles: ['admin', 'teacher', 'teachertn', 'coord', 'superv', 'estagiario', 'comercial'] },
+                        { key: 'rechamada', label: 'Rechamada', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>', roles: ['admin', 'coord', 'superv', 'comercial'] }
                     ]
                 },
                 comercial: {
                     label: 'COMERCIAL',
                     icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>',
                     items: [
-                        { key: 'metas', label: 'Metas', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>', roles: ['admin', 'pedagogico', 'ap', 'am', 'financeiro'] },
+                        { key: 'metas', label: 'Metas', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>', roles: ['admin', 'coord', 'superv', 'comercial'] },
                         
-                        { key: 'kpis-pedagogico', label: 'KPIs', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>', roles: ['admin', 'pedagogico', 'ap'] },
-                        { key: 'gestao-tns', label: 'Gestão TNs', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>', roles: ['admin', 'pedagogico', 'ap'] }
+                        { key: 'kpis-pedagogico', label: 'KPIs', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>', roles: ['admin', 'coord', 'superv', 'comercial'] },
+                        { key: 'gestao-tns', label: 'Gestão TNs', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>', roles: ['admin', 'coord', 'superv', 'comercial'] }
                     ]
                 },
                 direcao: {
@@ -20781,7 +20783,7 @@
                     icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>',
                     items: [
                         { key: 'usuarios', label: 'Colaboradores', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="5"/><path d="M3 21v-2a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4v2"/></svg>', roles: ['admin'] },
-                        { key: 'financeiro', label: 'Financeiro', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>', roles: ['admin', 'financeiro'] }
+                        { key: 'financeiro', label: 'Financeiro', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>', roles: ['admin'] }
                     ]
                 }
             };
@@ -21103,6 +21105,108 @@
             }
         }
 
+
+        // Schema de permissões granulares por ação e seção
+        const granularPermissions = {
+            tasks: {
+                view: ['admin', 'coord', 'superv', 'estagiario', 'comercial'],
+                create: ['admin', 'coord', 'superv'],
+                edit: ['admin', 'coord', 'superv'],
+                delete: ['admin', 'coord', 'superv'],
+                markDone: ['admin', 'teacher', 'teachertn', 'coord', 'superv', 'estagiario', 'comercial'],
+                approve: ['admin', 'coord', 'superv'],
+            },
+            processos: {
+                view: ['admin', 'coord', 'superv', 'estagiario', 'comercial'],
+                create: ['admin', 'superv'],
+                edit: ['admin', 'superv'],
+                delete: ['admin', 'superv'],
+            },
+            linksUteis: {
+                view: ['admin', 'coord', 'superv', 'estagiario', 'comercial'],
+                create: ['admin', 'superv'],
+                edit: ['admin', 'superv'],
+                delete: ['admin', 'superv'],
+            },
+            alunos: {
+                view: ['admin', 'coord', 'superv', 'estagiario', 'comercial'],
+                viewFinancial: ['admin'],
+                editPedagogical: ['admin', 'coord', 'superv', 'estagiario'],
+                editFull: ['admin', 'coord', 'superv', 'comercial'],
+            },
+            dojo: {
+                view: ['admin', 'teacher', 'teachertn', 'coord', 'superv', 'estagiario'],
+                manage: ['admin', 'estagiario'],
+            },
+            turmas: {
+                view: ['admin', 'coord', 'superv', 'estagiario', 'comercial'],
+                create: ['admin', 'coord', 'superv', 'estagiario', 'comercial'],
+                edit: ['admin', 'coord', 'superv', 'estagiario', 'comercial'],
+                delete: ['admin', 'coord', 'superv', 'estagiario', 'comercial'],
+                editOwn: ['teacher', 'teachertn'],
+            },
+            vips: {
+                view: ['admin', 'coord', 'superv', 'estagiario', 'comercial'],
+                create: ['admin', 'coord', 'superv', 'estagiario', 'comercial'],
+                edit: ['admin', 'coord', 'superv', 'estagiario', 'comercial'],
+                delete: ['admin', 'coord', 'superv', 'estagiario', 'comercial'],
+                editOwn: ['teacher', 'teachertn'],
+            },
+            grade: {
+                view: ['admin', 'coord', 'superv', 'estagiario', 'comercial'],
+                create: ['admin', 'coord', 'superv', 'estagiario', 'comercial'],
+                edit: ['admin', 'coord', 'superv', 'estagiario', 'comercial'],
+                delete: ['admin', 'coord', 'superv', 'estagiario', 'comercial'],
+                editOwn: ['teacher', 'teachertn'],
+            },
+            calendario: {
+                view: ['admin', 'coord', 'superv', 'estagiario', 'comercial'],
+                create: ['admin', 'coord', 'superv', 'estagiario', 'comercial'],
+                edit: ['admin', 'coord', 'superv', 'estagiario', 'comercial'],
+                delete: ['admin', 'coord', 'superv', 'estagiario', 'comercial'],
+            },
+            rechamada: {
+                view: ['admin', 'coord', 'superv', 'comercial'],
+                create: ['admin', 'coord', 'superv', 'comercial'],
+                edit: ['admin', 'coord', 'superv', 'comercial'],
+                delete: ['admin', 'coord', 'superv', 'comercial'],
+            },
+            metas: {
+                view: ['admin', 'coord', 'superv', 'comercial'],
+                create: ['admin'],
+                edit: ['admin'],
+                delete: ['admin'],
+            },
+            kpis: {
+                view: ['admin', 'coord', 'superv', 'comercial'],
+            },
+            gestaoTNs: {
+                view: ['admin', 'teachertn', 'coord', 'superv', 'estagiario', 'comercial'],
+                create: ['admin', 'teachertn', 'coord', 'superv', 'estagiario', 'comercial'],
+                edit: ['admin', 'teachertn', 'coord', 'superv', 'estagiario', 'comercial'],
+                delete: ['admin', 'teachertn', 'coord', 'superv', 'estagiario', 'comercial'],
+            },
+            colaboradores: {
+                view: ['admin'],
+                create: ['admin'],
+                edit: ['admin'],
+                delete: ['admin'],
+            },
+            financeiro: {
+                view: ['admin'],
+            },
+        };
+
+        // Helper function para verificar permissão granular
+        function hasPermission(section, action, userRole) {
+            if (userRole === 'admin') return true;
+            const sectionPerms = granularPermissions[section];
+            if (!sectionPerms) return false;
+            const actionPerms = sectionPerms[action];
+            if (!actionPerms) return false;
+            return actionPerms.includes(userRole);
+        }
+
         // Role-based access control with custom permissions
         function hasAccessToPage(pageKey, userRole) {
             // Admin sempre tem acesso total
@@ -21131,25 +21235,26 @@
                 return window.currentCollaborator.allowedPages.includes(pageKey);
             }
 
-            // Fallback: usar sistema antigo baseado apenas em roles
+            // Fallback: sistema de 7 roles com permissões detalhadas
             const pagePermissions = {
-                'inicio': ['admin', 'pedagogico', 'ap', 'financeiro', 'teacher', 'am'], // Dashboard - everyone
-                'alunos': ['admin', 'pedagogico', 'ap', 'financeiro', 'am'], // Students - no teacher access
-                'turmas': ['admin', 'pedagogico', 'ap', 'teacher', 'am', 'financeiro'], // Classes - no financeiro
-                'vips': ['admin', 'pedagogico', 'ap', 'teacher', 'am', 'financeiro'], // VIPs - accessible to teachers
-                'grade': ['admin', 'pedagogico', 'ap', 'teacher', 'am', 'financeiro'], // Schedule - no financeiro
-                'folha-pagamento': ['admin', 'financeiro'], // Payroll/Expenses - FINANCIAL ONLY
-                'colaboradores': ['admin'], // Collaborators - admin only
-                'dojo': ['admin', 'pedagogico', 'ap', 'teacher', 'am'], // Dojo - everyone except financeiro
-                'calendario': ['admin', 'pedagogico', 'ap', 'teacher', 'am', 'financeiro'], // Shared calendar
-                'links-uteis': ['admin', 'pedagogico', 'ap', 'teacher', 'am', 'financeiro'], // Useful links - everyone
-                'processos': ['admin', 'pedagogico', 'ap', 'teacher', 'am', 'financeiro'], // Processos - everyone
-                'tasks-prazos': ['admin', 'pedagogico', 'ap', 'teacher', 'am', 'financeiro'], // Tasks - everyone
-                'gestao-tns': ['admin', 'pedagogico', 'ap', 'am'], // Gestão de Testes de Nível
-                'rechamada': ['admin', 'pedagogico', 'ap', 'am', 'teacher'], // Rechamada - teachers, admin, pedagogico, ap, am
-                'metas': ['admin', 'pedagogico', 'ap', 'am', 'financeiro'], // Metas e Bonificações
-                'kpis-pedagogico': ['admin', 'pedagogico', 'ap'], // KPIs
-                'logs-atividades': ['admin'], // Activity logs - admin only
+                'inicio': ['admin', 'teacher', 'teachertn', 'coord', 'superv', 'estagiario', 'comercial'],
+                'tasks-prazos': ['admin', 'teacher', 'teachertn', 'coord', 'superv', 'estagiario', 'comercial'],
+                'processos': ['admin', 'teacher', 'teachertn', 'coord', 'superv', 'estagiario', 'comercial'],
+                'links-uteis': ['admin', 'teacher', 'teachertn', 'coord', 'superv', 'estagiario', 'comercial'],
+                'alunos': ['admin', 'coord', 'superv', 'estagiario', 'comercial'],
+                'logs-atividades': ['admin'],
+                'dojo': ['admin', 'teacher', 'teachertn', 'coord', 'superv', 'estagiario'],
+                'turmas': ['admin', 'teacher', 'teachertn', 'coord', 'superv', 'estagiario', 'comercial'],
+                'vips': ['admin', 'teacher', 'teachertn', 'coord', 'superv', 'estagiario', 'comercial'],
+                'grade': ['admin', 'teacher', 'teachertn', 'coord', 'superv', 'estagiario', 'comercial'],
+                'calendario': ['admin', 'teacher', 'teachertn', 'coord', 'superv', 'estagiario', 'comercial'],
+                'rechamada': ['admin', 'coord', 'superv', 'comercial'],
+                'metas': ['admin', 'coord', 'superv', 'comercial'],
+                'kpis-pedagogico': ['admin', 'coord', 'superv', 'comercial'],
+                'gestao-tns': ['admin', 'teachertn', 'coord', 'superv', 'estagiario', 'comercial'],
+                'colaboradores': ['admin'],
+                'folha-pagamento': ['admin'],
+                'financeiro': ['admin'],
             };
 
             return pagePermissions[pageKey]?.includes(userRole) || false;
