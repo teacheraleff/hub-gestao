@@ -804,7 +804,7 @@
                     }
                 },
                 'tasks-prazos': {
-                    label: 'Tasks & Prazos',
+                    label: 'Tasks',
                     actions: {
                         'view_all': { label: 'Ver todas as tasks', default: true },
                         'complete_own': { label: 'Marcar apenas suas tasks como concluídas', default: true },
@@ -1282,7 +1282,7 @@
             // Processos listener
             getCollectionListener('processos', processos, renderProcessosSection);
 
-            // Tasks & Prazos listener
+            // Tasks listener
             getCollectionListener('metas', metas, renderMetasSection);
             getCollectionListener('tasks', tasks, () => {
                 const activePageId = contentArea.firstElementChild?.id;
@@ -4537,7 +4537,7 @@
         }
 
         function renderKPIsPedagogicoSection() {
-            document.getElementById('main-title').textContent = 'KPIs Pedagógico';
+            document.getElementById('main-title').textContent = 'KPIs';
             document.getElementById('main-description').textContent = 'Métricas e indicadores pedagógicos para acompanhamento.';
 
             // Cálculos dos KPIs
@@ -8961,9 +8961,9 @@
                 { key: 'gestao-tns', label: 'Gestão TNs' },
                 { key: 'rechamada', label: 'Rechamada' },
                 { key: 'metas', label: 'Metas' },
-                { key: 'kpis-pedagogico', label: 'KPIs Pedagógico' },
+                { key: 'kpis-pedagogico', label: 'KPIs' },
                 { key: 'logs-atividades', label: 'Logs de Atividades' },
-                { key: 'tasks-prazos', label: 'Tasks & Prazos' },
+                { key: 'tasks-prazos', label: 'Tasks' },
                 { key: 'colaboradores', label: 'Colaboradores' },
                 { key: 'folha-pagamento', label: 'Financeiro' }
             ];
@@ -9254,11 +9254,11 @@
                                     </label>
                                 </div>
 
-                                <!-- Tasks & Prazos -->
+                                <!-- Tasks -->
                                 <div class="border-b pb-3">
                                     <h4 class="font-semibold text-sm mb-2 flex items-center gap-2">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
-                                        Tasks & Prazos
+                                        Tasks
                                     </h4>
                                     <div class="ml-3 space-y-1">
                                         <p class="text-xs font-semibold text-stone-500 mb-1">Visualização</p>
@@ -14716,7 +14716,7 @@
         let taskPeople = [];
 
         function renderTasksPrazosSection() {
-            document.getElementById('main-title').textContent = 'Tasks & Prazos';
+            document.getElementById('main-title').textContent = 'Tasks';
             document.getElementById('main-description').textContent = 'Gerencie tarefas e prazos da equipe de forma independente.';
             const contentArea = document.getElementById('content-area');
 
@@ -14853,7 +14853,7 @@
                                     </svg>
                                     Lembrete
                                 </button>
-                                <button class="primary-btn" style="background-color: #3B82F6;" onmouseover="this.style.backgroundColor='#2563EB'" onmouseout="this.style.backgroundColor='#3B82F6'" onclick="openAddAvisoForm()">
+                                <button class="primary-btn" style="background-color: #F1D24B; color: #1c1917;" onmouseover="this.style.backgroundColor='#e6c740'" onmouseout="this.style.backgroundColor='#F1D24B'" onclick="openAddAvisoForm()">
                                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"/>
                                     </svg>
@@ -15036,6 +15036,43 @@
                         </form>
                     </div>
                 </div>
+
+                <!-- Aviso Form Modal -->
+                <div id="aviso-form-modal" class="modal-overlay">
+                    <div class="modal-content max-w-2xl">
+                        <div class="modal-header">
+                            <h4 id="aviso-form-title">Novo Aviso</h4>
+                            <button onclick="closeAvisoFormModal()" class="modal-close-btn">&times;</button>
+                        </div>
+                        <form id="aviso-form" onsubmit="handleSubmitAviso(event)">
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="font-medium text-sm">Título do Aviso <span class="text-red-500">*</span></label>
+                                    <input type="text" id="aviso-title" class="form-input" required placeholder="Ex: Reunião amanhã às 14h">
+                                </div>
+                                <div>
+                                    <label class="font-medium text-sm">Descrição</label>
+                                    <textarea id="aviso-description" rows="3" class="form-input" placeholder="Detalhes do aviso (opcional)"></textarea>
+                                </div>
+                                <div>
+                                    <label class="font-medium text-sm">Urgência</label>
+                                    <select id="aviso-urgency" class="form-input">
+                                        <option value="">Sem tag</option>
+                                        <option value="normal">Sem Urgência</option>
+                                        <option value="urgent">Urgente</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="mt-6 flex justify-end gap-3">
+                                <button type="button" class="secondary-btn" onclick="closeAvisoFormModal()">Cancelar</button>
+                                <button type="submit" class="primary-btn" style="background-color: #F1D24B; color: #1c1917;" onmouseover="this.style.backgroundColor='#e6c740'" onmouseout="this.style.backgroundColor='#F1D24B'">
+                                    Salvar Aviso
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
 
 
                 <!-- Move Task Modal -->
@@ -15444,11 +15481,11 @@
             try {
                 if (editingPersonId) {
                     await setDoc(doc(db, `artifacts/${appId}/public/data/task-people`, editingPersonId), personData);
-                    await logActivity('Editou pessoa em Tasks & Prazos', 'task-person', name);
+                    await logActivity('Editou pessoa em Tasks', 'task-person', name);
                     showSuccessMessage('Sucesso!', 'Pessoa atualizada com sucesso.');
                 } else {
                     await addDoc(collection(db, `artifacts/${appId}/public/data/task-people`), personData);
-                    await logActivity('Adicionou pessoa em Tasks & Prazos', 'task-person', name);
+                    await logActivity('Adicionou pessoa em Tasks', 'task-person', name);
                     showSuccessMessage('Sucesso!', 'Pessoa adicionada com sucesso.');
                 }
                 closePersonModal();
@@ -15481,7 +15518,7 @@
 
                 // Then delete the person
                 await deleteDoc(doc(db, `artifacts/${appId}/public/data/task-people`, personId));
-                await logActivity('Excluiu pessoa de Tasks & Prazos', 'task-person', person.name);
+                await logActivity('Excluiu pessoa de Tasks', 'task-person', person.name);
                 showSuccessMessage('Sucesso!', 'Pessoa excluída com sucesso.');
             } catch (error) {
                 console.error('Error deleting person:', error);
@@ -17317,7 +17354,6 @@
 
 
         // ===== METAS FUNCTIONS =====
-        let localMetasData = [];
         let editingMetaId = null;
         let currentStrikeMetaId = null;
 
@@ -17355,7 +17391,7 @@
             const description = document.getElementById('strike-description').value.trim();
             if (!description || !currentStrikeMetaId) return;
 
-            const meta = localMetasData.find(m => m.id === currentStrikeMetaId);
+            const meta = metas.find(m => m.id === currentStrikeMetaId);
             if (!meta) return;
 
             const newStrike = {
@@ -17387,7 +17423,7 @@
         }
 
         async function removeStrike(metaId, strikeId) {
-            const meta = localMetasData.find(m => m.id === metaId);
+            const meta = metas.find(m => m.id === metaId);
             if (!meta) return;
 
             const strike = meta.strikes.find(s => s.id === strikeId);
@@ -17420,16 +17456,16 @@
                 name: document.getElementById('meta-name').value.trim(),
                 description: document.getElementById('meta-description').value.trim(),
                 targetStrikes: parseInt(document.getElementById('meta-target-strikes').value),
-                strikes: editingMetaId ? (localMetasData.find(m => m.id === editingMetaId)?.strikes || []) : [],
+                strikes: editingMetaId ? (metas.find(m => m.id === editingMetaId)?.strikes || []) : [],
                 bonus: document.getElementById('meta-bonus').value.trim(),
                 deadline: document.getElementById('meta-deadline').value,
                 color: document.getElementById('meta-color').value
             };
 
             if (editingMetaId) {
-                const index = localMetasData.findIndex(m => m.id === editingMetaId);
+                const index = metas.findIndex(m => m.id === editingMetaId);
                 if (index !== -1) {
-                    localMetasData[index] = { ...localMetasData[index], ...metaData };
+                    metas[index] = { ...metas[index], ...metaData };
                     
                     if (window.firebaseConnected && window.db) {
                         try {
@@ -17450,7 +17486,7 @@
                     createdAt: new Date().toISOString()
                 };
 
-                localMetasData.push(newMeta);
+                metas.push(newMeta);
 
                 if (window.firebaseConnected && window.db) {
                     try {
@@ -17470,7 +17506,7 @@
         }
 
         function editMeta(metaId) {
-            const meta = localMetasData.find(m => m.id === metaId);
+            const meta = metas.find(m => m.id === metaId);
             if (!meta) return;
 
             editingMetaId = metaId;
@@ -17488,14 +17524,14 @@
         }
 
         async function deleteMeta(metaId) {
-            const meta = localMetasData.find(m => m.id === metaId);
+            const meta = metas.find(m => m.id === metaId);
             if (!meta) return;
 
             if (!confirm(`Tem certeza que deseja excluir a meta "${meta.name}"?`)) {
                 return;
             }
 
-            localMetasData = localMetasData.filter(m => m.id !== metaId);
+            metas = metas.filter(m => m.id !== metaId);
 
             if (window.firebaseConnected && window.db) {
                 try {
@@ -17512,7 +17548,7 @@
         }
 
         async function updateMetaProgress(metaId, newValue) {
-            const meta = localMetasData.find(m => m.id === metaId);
+            const meta = metas.find(m => m.id === metaId);
             if (!meta) return;
 
             meta.currentValue = parseFloat(newValue) || 0;
@@ -17548,7 +17584,7 @@
             const container = contentArea.querySelector('#metas-container');
             if (!container) return;
 
-            if (localMetasData.length === 0) {
+            if (metas.length === 0) {
                 container.innerHTML = `
                     <div class="col-span-full text-center py-12">
                         <svg class="w-16 h-16 mx-auto text-stone-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -17565,7 +17601,7 @@
             const canDelete = hasPermission('metas', 'delete');
             const canUpdateProgress = hasPermission('metas', 'update_progress');
 
-            container.innerHTML = localMetasData.map(meta => {
+            container.innerHTML = metas.map(meta => {
                 const currentStrikes = (meta.strikes || []).length;
                 const targetStrikes = meta.targetStrikes || meta.targetValue || 1;
                 const percentage = Math.min(100, (currentStrikes / targetStrikes) * 100);
@@ -17662,22 +17698,11 @@
         }
 
         function syncMetasFromFirebase() {
+            // Firebase listener is already configured via getCollectionListener
+            // This function only needs to render when not connected to Firebase
             if (!window.firebaseConnected || !window.db) {
                 renderMetas();
-                return;
             }
-
-            window.db.collection('metas').onSnapshot(snapshot => {
-                const metasFromDb = [];
-                snapshot.forEach(doc => {
-                    metasFromDb.push({ id: doc.id, ...doc.data() });
-                });
-                localMetasData = metasFromDb;
-                renderMetas();
-            }, error => {
-                console.error('Error syncing metas from Firebase:', error);
-                renderMetas();
-            });
         }
 
         function renderMetasSection() {
@@ -20715,8 +20740,9 @@
                     label: 'GERAL',
                     icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M12 1v6m0 6v6m5.2-14.2l-4.2 4.2m0 6l4.2 4.2M23 12h-6m-6 0H1m14.2 5.2l-4.2-4.2m0-6l-4.2-4.2"></path></svg>',
                     items: [
-                        { key: 'tasks-prazos', label: 'Tasks & Prazos', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/></svg>', roles: ['admin', 'pedagogico', 'ap', 'teacher', 'am', 'financeiro'] },
-                        { key: 'processos', label: 'Processos', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>', roles: ['admin', 'pedagogico', 'ap', 'teacher', 'am', 'financeiro'] }
+                        { key: 'tasks-prazos', label: 'Tasks', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/></svg>', roles: ['admin', 'pedagogico', 'ap', 'teacher', 'am', 'financeiro'] },
+                        { key: 'processos', label: 'Processos', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>', roles: ['admin', 'pedagogico', 'ap', 'teacher', 'am', 'financeiro'] },
+                        { key: 'links-uteis', label: 'Links Úteis', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>', roles: ['admin', 'pedagogico', 'ap', 'teacher', 'am', 'financeiro'] }
                     ]
                 },
                 administrativo: {
@@ -20724,7 +20750,7 @@
                     icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>',
                     items: [
                         { key: 'alunos', label: 'Alunos', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>', roles: ['admin', 'pedagogico', 'ap', 'financeiro', 'am', 'teacher'] },
-                        { key: 'links-uteis', label: 'Links Úteis', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>', roles: ['admin', 'pedagogico', 'ap', 'teacher', 'am', 'financeiro'] },
+                        
                         { key: 'logs-atividades', label: 'Logs de Atividades', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg>', roles: ['admin'] }
                     ]
                 },
@@ -20745,8 +20771,8 @@
                     icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>',
                     items: [
                         { key: 'metas', label: 'Metas', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>', roles: ['admin', 'pedagogico', 'ap', 'am', 'financeiro'] },
-                        { key: 'financeiro', label: 'Financeiro', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>', roles: ['admin', 'financeiro'] },
-                        { key: 'kpis-pedagogico', label: 'KPIs Pedagógico', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>', roles: ['admin', 'pedagogico', 'ap'] },
+                        
+                        { key: 'kpis-pedagogico', label: 'KPIs', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>', roles: ['admin', 'pedagogico', 'ap'] },
                         { key: 'gestao-tns', label: 'Gestão TNs', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>', roles: ['admin', 'pedagogico', 'ap'] }
                     ]
                 },
@@ -20754,7 +20780,8 @@
                     label: 'DIREÇÃO',
                     icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>',
                     items: [
-                        { key: 'usuarios', label: 'Colaboradores', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="5"/><path d="M3 21v-2a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4v2"/></svg>', roles: ['admin'] }
+                        { key: 'usuarios', label: 'Colaboradores', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="5"/><path d="M3 21v-2a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4v2"/></svg>', roles: ['admin'] },
+                        { key: 'financeiro', label: 'Financeiro', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>', roles: ['admin', 'financeiro'] }
                     ]
                 }
             };
@@ -21117,11 +21144,11 @@
                 'calendario': ['admin', 'pedagogico', 'ap', 'teacher', 'am', 'financeiro'], // Shared calendar
                 'links-uteis': ['admin', 'pedagogico', 'ap', 'teacher', 'am', 'financeiro'], // Useful links - everyone
                 'processos': ['admin', 'pedagogico', 'ap', 'teacher', 'am', 'financeiro'], // Processos - everyone
-                'tasks-prazos': ['admin', 'pedagogico', 'ap', 'teacher', 'am', 'financeiro'], // Tasks & Prazos - everyone
+                'tasks-prazos': ['admin', 'pedagogico', 'ap', 'teacher', 'am', 'financeiro'], // Tasks - everyone
                 'gestao-tns': ['admin', 'pedagogico', 'ap', 'am'], // Gestão de Testes de Nível
                 'rechamada': ['admin', 'pedagogico', 'ap', 'am', 'teacher'], // Rechamada - teachers, admin, pedagogico, ap, am
                 'metas': ['admin', 'pedagogico', 'ap', 'am', 'financeiro'], // Metas e Bonificações
-                'kpis-pedagogico': ['admin', 'pedagogico', 'ap'], // KPIs Pedagógico
+                'kpis-pedagogico': ['admin', 'pedagogico', 'ap'], // KPIs
                 'logs-atividades': ['admin'], // Activity logs - admin only
             };
 
