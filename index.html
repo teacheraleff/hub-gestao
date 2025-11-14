@@ -43,6 +43,9 @@
             overflow: hidden;
             transition: max-height 0.3s ease, opacity 0.3s ease;
             opacity: 0;
+            margin-left: 1.5rem;
+            padding-left: 0.5rem;
+            border-left: 2px solid rgb(229 231 235);
         }
         
         .nav-submenu.expanded {
@@ -51,7 +54,7 @@
         }
         
         .nav-category.expanded {
-            background-color: rgb(41 37 36);
+            background-color: rgb(245 245 244);
         }
         
         .nav-submenu .nav-item {
@@ -555,10 +558,10 @@
 
     <div id="hub-view" class="hidden">
         <div id="app-container" class="min-h-screen md:flex bg-stone-50">
-            <aside class="md:w-64 bg-stone-900 md:border-r border-b border-stone-700 p-4 md:p-6 flex flex-col h-screen md:fixed md:top-0 md:left-0 md:overflow-y-auto">
+            <aside class="md:w-64 bg-white md:border-r border-b border-stone-200 p-4 md:p-6 flex flex-col h-screen md:fixed md:top-0 md:left-0 md:overflow-y-auto">
                 <div class="mb-4 text-center">
                     <div>
-                        <img id="profile-picture" src="https://res.cloudinary.com/dqfi22uz0/image/upload/v1749349751/DBB440C2-684E-4DCF-9CD3-B2DDC18F1E53_3_vgocga.jpg" alt="Foto de Perfil" class="w-24 h-24 mx-auto rounded-full object-cover border-4 border-stone-700">
+                        <img id="profile-picture" src="https://res.cloudinary.com/dqfi22uz0/image/upload/v1749349751/DBB440C2-684E-4DCF-9CD3-B2DDC18F1E53_3_vgocga.jpg" alt="Foto de Perfil" class="w-24 h-24 mx-auto rounded-full object-cover border-4 border-stone-200">
                     </div>
                 </div>
                 <h1 class="text-xl font-bold text-stone-800 text-center">Hub SLAP</h1>
@@ -1639,7 +1642,8 @@
             pendingView.classList.add('flex');
         }
         function setActiveNavItem(element) {
-            document.querySelectorAll('#main-navigation .nav-item').forEach(item => {
+            // Remove active state from ALL nav items (including INÍCIO)
+            document.querySelectorAll('#main-navigation .nav-item, #main-navigation button[data-target="inicio"]').forEach(item => {
                 item.classList.remove('active');
                 item.style.backgroundColor = '';
                 item.style.color = '';
@@ -6505,7 +6509,7 @@
                     <div class="mt-4 pt-4 border-t">
                         <h4 class="font-semibold text-stone-700">Dados do Responsável</h4>
                         <p class="text-sm text-stone-600 mt-1"><strong>Nome:</strong> ${aluno.responsibleName || 'N/A'}</p>
-                        <p class="text-sm text-stone-300"><strong>Telefone:</strong> ${aluno.responsiblePhone || 'N/A'}</p>
+                        <p class="text-sm text-stone-600"><strong>Telefone:</strong> ${aluno.responsiblePhone || 'N/A'}</p>
                     </div>
                 `;
             }
@@ -13193,7 +13197,7 @@
                     ${tn.observations ? `
                         <div class="pt-4 border-t">
                             <h5 class="font-semibold mb-2">Observações</h5>
-                            <p class="text-sm text-stone-300">${tn.observations}</p>
+                            <p class="text-sm text-stone-600">${tn.observations}</p>
                         </div>
                     ` : ''}
 
@@ -17573,7 +17577,7 @@
                         <div class="flex justify-between items-start mb-4">
                             <div class="flex-1">
                                 <h3 class="font-bold text-lg text-stone-800 mb-1">${meta.name}</h3>
-                                ${meta.description ? `<p class="text-sm text-stone-300">${meta.description}</p>` : ''}
+                                ${meta.description ? `<p class="text-sm text-stone-600">${meta.description}</p>` : ''}
                             </div>
                             ${canEdit || canDelete ? `
                             <div class="flex gap-2">
@@ -20762,7 +20766,7 @@
                 const lockIconHtml = !hasAccess ? lockIcon : '';
                 const indent = isSubItem ? 'pl-4' : 'px-4';
                 
-                return `<button data-target="${item.key}" class="nav-item w-full text-left ${indent} py-2 rounded-lg flex items-center font-medium text-[0.7rem] text-stone-300 tracking-wider hover:bg-stone-800 transition-colors ${lockedClass}" ${!hasAccess ? 'disabled' : ''}>${item.icon}${item.label}${lockIconHtml}</button>`;
+                return `<button data-target="${item.key}" class="nav-item w-full text-left ${indent} py-2 rounded-lg flex items-center font-medium text-[0.7rem] tracking-wider hover:bg-stone-100 transition-colors ${lockedClass}" ${!hasAccess ? 'disabled' : ''}>${item.icon}${item.label}${lockIconHtml}</button>`;
             }
             
             // Construir HTML do menu
@@ -20771,16 +20775,16 @@
             // Linha divisória
             menuHTML += `
                 <div class="px-4 pt-2 pb-3">
-                    <div class="border-b border-stone-700"></div>
+                    <div class="border-b border-stone-200"></div>
                 </div>
             `;
             
             // Início (sempre acessível)
-            menuHTML += `<button data-target="inicio" class="nav-item w-full text-left px-4 py-1.5 rounded-lg flex items-center font-medium text-sm text-white uppercase tracking-wider hover:bg-stone-800 transition-colors"><span class="nav-category-icon mr-3">›</span>${menuStructure.inicio.label}</button>`;
+            menuHTML += `<button data-target="inicio" class="nav-item w-full text-left px-4 py-1.5 rounded-lg flex items-center font-medium text-sm uppercase tracking-wider hover:bg-stone-100 transition-colors"><span class="nav-category-icon mr-3">›</span>${menuStructure.inicio.label}</button>`;
             
             // Geral
             menuHTML += `
-                <div class="nav-category px-4 py-1.5 rounded-lg flex items-center font-medium text-sm text-white uppercase tracking-wider hover:bg-stone-800 transition-colors" data-category="geral">
+                <div class="nav-category px-4 py-1.5 rounded-lg flex items-center font-medium text-sm uppercase tracking-wider hover:bg-stone-100 transition-colors" data-category="geral">
                     <span class="nav-category-icon mr-3">›</span>
                     ${menuStructure.geral.label}
                 </div>
@@ -20791,7 +20795,7 @@
             
             // Administrativo
             menuHTML += `
-                <div class="nav-category px-4 py-1.5 rounded-lg flex items-center font-medium text-sm text-white uppercase tracking-wider hover:bg-stone-800 transition-colors" data-category="administrativo">
+                <div class="nav-category px-4 py-1.5 rounded-lg flex items-center font-medium text-sm uppercase tracking-wider hover:bg-stone-100 transition-colors" data-category="administrativo">
                     <span class="nav-category-icon mr-3">›</span>
                     ${menuStructure.administrativo.label}
                 </div>
@@ -20802,7 +20806,7 @@
             
             // Pedagógico
             menuHTML += `
-                <div class="nav-category px-4 py-1.5 rounded-lg flex items-center font-medium text-sm text-white uppercase tracking-wider hover:bg-stone-800 transition-colors" data-category="pedagogico">
+                <div class="nav-category px-4 py-1.5 rounded-lg flex items-center font-medium text-sm uppercase tracking-wider hover:bg-stone-100 transition-colors" data-category="pedagogico">
                     <span class="nav-category-icon mr-3">›</span>
                     ${menuStructure.pedagogico.label}
                 </div>
@@ -20813,7 +20817,7 @@
             
             // Comercial
             menuHTML += `
-                <div class="nav-category px-4 py-1.5 rounded-lg flex items-center font-medium text-sm text-white uppercase tracking-wider hover:bg-stone-800 transition-colors" data-category="comercial">
+                <div class="nav-category px-4 py-1.5 rounded-lg flex items-center font-medium text-sm uppercase tracking-wider hover:bg-stone-100 transition-colors" data-category="comercial">
                     <span class="nav-category-icon mr-3">›</span>
                     ${menuStructure.comercial.label}
                 </div>
@@ -20824,7 +20828,7 @@
             
             // Direção
             menuHTML += `
-                <div class="nav-category px-4 py-1.5 rounded-lg flex items-center font-medium text-sm text-white uppercase tracking-wider hover:bg-stone-800 transition-colors" data-category="direcao">
+                <div class="nav-category px-4 py-1.5 rounded-lg flex items-center font-medium text-sm uppercase tracking-wider hover:bg-stone-100 transition-colors" data-category="direcao">
                     <span class="nav-category-icon mr-3">›</span>
                     ${menuStructure.direcao.label}
                 </div>
@@ -21161,6 +21165,15 @@
                         // Reset pagination and render the new section
                         resetPagination();
                         pageRenderers[pageKey]();
+                        
+                        // Explicitly clear INÍCIO button before setting new active
+                        const inicioBtn = document.querySelector('[data-target="inicio"]');
+                        if (inicioBtn) {
+                            inicioBtn.classList.remove('active');
+                            inicioBtn.style.backgroundColor = '';
+                            inicioBtn.style.color = '';
+                        }
+                        
                         setActiveNavItem(navTarget);
 
                         // Prevent any further event bubbling
