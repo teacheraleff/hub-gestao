@@ -603,6 +603,87 @@
         </div>
     </div>
 
+    <!-- Metas Modals -->
+                <!-- Meta Form Modal -->
+                <div id="meta-form-modal" class="modal-overlay">
+                    <div class="modal-content" style="max-width: 600px;">
+                        <div class="modal-header">
+                            <h3 id="meta-form-title">Nova Meta</h3>
+                            <button onclick="closeMetaFormModal()" class="modal-close-btn">&times;</button>
+                        </div>
+                        <form id="meta-form" onsubmit="handleSubmitMeta(event)">
+                            <div class="modal-body">
+                                <div class="form-group">
+                                    <label>Nome da Meta *</label>
+                                    <input type="text" id="meta-name" required class="w-full p-2 border rounded" placeholder="Ex: Aulas Individuais do Mês">
+                                </div>
+
+                                <div class="form-group">
+                                    <label>Descrição</label>
+                                    <textarea id="meta-description" rows="3" class="w-full p-2 border rounded" placeholder="Descrição da meta (opcional)"></textarea>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>Número de Strikes Alvo *</label>
+                                    <input type="number" id="meta-target-strikes" required class="w-full p-2 border rounded" placeholder="Ex: 50" min="1">
+                                    <p class="text-xs text-stone-500 mt-1">Cada strike representa uma ação completa (ex: matrícula de aluno)</p>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>Bonificação</label>
+                                    <input type="text" id="meta-bonus" class="w-full p-2 border rounded" placeholder="Ex: R$ 500 ou 1 dia de folga">
+                                </div>
+
+                                <div class="form-group">
+                                    <label>Prazo</label>
+                                    <input type="date" id="meta-deadline" class="w-full p-2 border rounded">
+                                </div>
+
+                                <div class="form-group">
+                                    <label>Cor do Card</label>
+                                    <select id="meta-color" class="w-full p-2 border rounded">
+                                        <option value="yellow">Amarelo</option>
+                                        <option value="blue">Azul</option>
+                                        <option value="green">Verde</option>
+                                        <option value="purple">Roxo</option>
+                                        <option value="red">Vermelho</option>
+                                        <option value="orange">Laranja</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="secondary-btn" onclick="closeMetaFormModal()">Cancelar</button>
+                                <button type="submit" class="primary-btn" style="background-color: #F1D24B; color: #1c1917;" onmouseover="this.style.backgroundColor='#e6c740'" onmouseout="this.style.backgroundColor='#F1D24B'">Salvar Meta</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+
+
+                <!-- Add Strike Modal -->
+                <div id="add-strike-modal" class="modal-overlay">
+                    <div class="modal-content" style="max-width: 500px;">
+                        <div class="modal-header">
+                            <h3>Adicionar Strike</h3>
+                            <button onclick="closeAddStrikeModal()" class="modal-close-btn">&times;</button>
+                        </div>
+                        <form onsubmit="handleAddStrike(event)">
+                            <div class="modal-body">
+                                <div class="form-group">
+                                    <label>Descrição do Strike *</label>
+                                    <input type="text" id="strike-description" required class="w-full p-2 border rounded" placeholder="Ex: Nome do aluno matriculado">
+                                    <p class="text-xs text-stone-500 mt-1">Descreva o que foi alcançado (ex: nome do aluno, venda realizada, etc.)</p>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="secondary-btn" onclick="closeAddStrikeModal()">Cancelar</button>
+                                <button type="submit" class="primary-btn" style="background-color: #F1D24B; color: #1c1917;" onmouseover="this.style.backgroundColor='#e6c740'" onmouseout="this.style.backgroundColor='#F1D24B'">Adicionar Strike</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
     <!-- Fortune Cookie section - no modal needed -->
 
     <script type="module">
@@ -4175,88 +4256,7 @@
                     `}
                 </section>
 
-                <!-- Metas Section -->
-                <section id="metas-section" style="display: none;">
-                    <div class="mb-6">
-                        <div class="flex justify-between items-center mb-6">
-                            <div>
-                                <h2 class="text-2xl font-bold text-stone-800">Metas e Bonificações</h2>
-                                <p class="text-sm text-stone-600 mt-1">Acompanhe e gerencie as metas da equipe</p>
-                            </div>
-                            <button 
-                                onclick="openCreateMetaModal()" 
-                                class="primary-btn"
-                                style="background-color: #F1D24B; color: #1c1917;"
-                                onmouseover="this.style.backgroundColor='#e6c740'"
-                                onmouseout="this.style.backgroundColor='#F1D24B'">
-                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                                </svg>
-                                Criar Meta
-                            </button>
-                        </div>
 
-                        <!-- Metas Grid -->
-                        <div id="metas-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            <!-- Metas will be rendered here -->
-                        </div>
-                    </div>
-                </section>
-
-                <!-- Meta Form Modal -->
-                <div id="meta-form-modal" class="modal-overlay">
-                    <div class="modal-content" style="max-width: 600px;">
-                        <div class="modal-header">
-                            <h3 id="meta-form-title">Nova Meta</h3>
-                            <button onclick="closeMetaFormModal()" class="modal-close-btn">&times;</button>
-                        </div>
-                        <form id="meta-form" onsubmit="handleSubmitMeta(event)">
-                            <div class="modal-body">
-                                <div class="form-group">
-                                    <label>Nome da Meta *</label>
-                                    <input type="text" id="meta-name" required class="w-full p-2 border rounded" placeholder="Ex: Aulas Individuais do Mês">
-                                </div>
-
-                                <div class="form-group">
-                                    <label>Descrição</label>
-                                    <textarea id="meta-description" rows="3" class="w-full p-2 border rounded" placeholder="Descrição da meta (opcional)"></textarea>
-                                </div>
-
-                                <div class="form-group">
-                                    <label>Número de Strikes Alvo *</label>
-                                    <input type="number" id="meta-target-strikes" required class="w-full p-2 border rounded" placeholder="Ex: 50" min="1">
-                                    <p class="text-xs text-stone-500 mt-1">Cada strike representa uma ação completa (ex: matrícula de aluno)</p>
-                                </div>
-
-                                <div class="form-group">
-                                    <label>Bonificação</label>
-                                    <input type="text" id="meta-bonus" class="w-full p-2 border rounded" placeholder="Ex: R$ 500 ou 1 dia de folga">
-                                </div>
-
-                                <div class="form-group">
-                                    <label>Prazo</label>
-                                    <input type="date" id="meta-deadline" class="w-full p-2 border rounded">
-                                </div>
-
-                                <div class="form-group">
-                                    <label>Cor do Card</label>
-                                    <select id="meta-color" class="w-full p-2 border rounded">
-                                        <option value="yellow">Amarelo</option>
-                                        <option value="blue">Azul</option>
-                                        <option value="green">Verde</option>
-                                        <option value="purple">Roxo</option>
-                                        <option value="red">Vermelho</option>
-                                        <option value="orange">Laranja</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="secondary-btn" onclick="closeMetaFormModal()">Cancelar</button>
-                                <button type="submit" class="primary-btn" style="background-color: #F1D24B; color: #1c1917;" onmouseover="this.style.backgroundColor='#e6c740'" onmouseout="this.style.backgroundColor='#F1D24B'">Salvar Meta</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
 
             `;
         }
@@ -17314,25 +17314,15 @@
         let currentStrikeMetaId = null;
 
         function openCreateMetaModal() {
-            console.log('openCreateMetaModal chamado!');
             editingMetaId = null;
             
             const title = document.getElementById('meta-form-title');
-            const submitText = document.getElementById('meta-form-submit-text');
             const form = document.getElementById('meta-form');
             const modal = document.getElementById('meta-form-modal');
             
-            console.log('Elementos encontrados:', { title, submitText, form, modal });
-            
             if (title) title.textContent = 'Nova Meta';
-            if (submitText) submitText.textContent = 'Criar Meta';
             if (form) form.reset();
-            if (modal) {
-                modal.classList.add('visible');
-                console.log('Classe visible adicionada ao modal');
-            } else {
-                console.error('Modal meta-form-modal não encontrado!');
-            }
+            if (modal) modal.classList.add('visible');
         }
 
         function closeMetaFormModal() {
@@ -17547,7 +17537,7 @@
         }
 
         function renderMetas() {
-            const container = document.getElementById('metas-container');
+            const container = contentArea.querySelector('#metas-container');
             if (!container) return;
 
             if (localMetasData.length === 0) {
@@ -17683,23 +17673,38 @@
         }
 
         function renderMetasSection() {
-            const metasSection = document.getElementById('metas-section');
-            if (metasSection) {
-                metasSection.style.display = 'block';
-            }
+            // Update header
+            document.getElementById('main-title').textContent = 'Metas e Bonificações';
+            document.getElementById('main-description').textContent = 'Acompanhe e gerencie as metas da equipe';
 
-            // Hide all other sections
-            const allSections = document.querySelectorAll('section');
-            allSections.forEach(section => {
-                if (section.id !== 'metas-section') {
-                    section.style.display = 'none';
-                }
-            });
+            // Render dynamic HTML into content area
+            contentArea.innerHTML = `
+                <div id="metas-section">
+                    <div class="mb-6">
+                        <div class="flex justify-between items-center mb-6">
+                            <button 
+                                onclick="openCreateMetaModal()" 
+                                class="primary-btn"
+                                style="background-color: #F1D24B; color: #1c1917;"
+                                onmouseover="this.style.backgroundColor='#e6c740'"
+                                onmouseout="this.style.backgroundColor='#F1D24B'">
+                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                                </svg>
+                                Criar Meta
+                            </button>
+                        </div>
 
-            // Render immediately with current data (even if empty)
+                        <!-- Metas Grid -->
+                        <div id="metas-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <!-- Metas will be rendered here -->
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Render metas data and sync with Firebase
             renderMetas();
-            
-            // Sync with Firebase and update
             syncMetasFromFirebase();
         }
 
