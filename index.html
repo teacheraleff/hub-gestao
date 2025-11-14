@@ -50,6 +50,10 @@
             opacity: 1;
         }
         
+        .nav-category.expanded {
+            background-color: rgb(245 245 244);
+        }
+        
         .nav-submenu .nav-item {
             font-size: 0.85rem;
         }
@@ -726,7 +730,7 @@
         const PermissionRegistry = {
             sections: {
                 'inicio': {
-                    label: 'Início',
+                    label: 'INÍCIO',
                     actions: {
                         'edit_employee_month': { label: 'Pode editar funcionário do mês', default: false }
                     }
@@ -872,7 +876,7 @@
                     }
                 },
                 'pedagogico': {
-                    label: 'Pedagógico',
+                    label: 'PEDAGÓGICO',
                     description: 'Acesso total pedagógico sem informações financeiras',
                     permissions: {
                         'inicio.edit_employee_month': true,
@@ -17433,7 +17437,7 @@
                     }
                     
                     logActivity('Editou uma meta', `Meta: ${metaData.name}`);
-                    showNotification('Meta atualizada com sucesso!', 'success');
+                    showSuccessMessage('Sucesso!', 'Meta atualizada com sucesso!');
                 }
             } else {
                 const newMeta = {
@@ -17454,7 +17458,7 @@
                 }
 
                 logActivity('Criou uma nova meta', `Meta: ${metaData.name} - Strikes alvo: ${metaData.targetStrikes}`);
-                showNotification('Meta criada com sucesso!', 'success');
+                showSuccessMessage('Sucesso!', 'Meta criada com sucesso!');
             }
 
             closeMetaFormModal();
@@ -20704,7 +20708,7 @@
                     roles: ['admin', 'pedagogico', 'ap', 'financeiro', 'teacher', 'am']
                 },
                 geral: {
-                    label: 'Geral',
+                    label: 'GERAL',
                     icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M12 1v6m0 6v6m5.2-14.2l-4.2 4.2m0 6l4.2 4.2M23 12h-6m-6 0H1m14.2 5.2l-4.2-4.2m0-6l-4.2-4.2"></path></svg>',
                     items: [
                         { key: 'tasks-prazos', label: 'Tasks & Prazos', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/></svg>', roles: ['admin', 'pedagogico', 'ap', 'teacher', 'am', 'financeiro'] },
@@ -20712,7 +20716,7 @@
                     ]
                 },
                 administrativo: {
-                    label: 'Administrativo',
+                    label: 'ADMINISTRATIVO',
                     icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>',
                     items: [
                         { key: 'alunos', label: 'Alunos', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>', roles: ['admin', 'pedagogico', 'ap', 'financeiro', 'am', 'teacher'] },
@@ -20733,7 +20737,7 @@
                     ]
                 },
                 comercial: {
-                    label: 'Comercial',
+                    label: 'COMERCIAL',
                     icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>',
                     items: [
                         { key: 'metas', label: 'Metas', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>', roles: ['admin', 'pedagogico', 'ap', 'am', 'financeiro'] },
@@ -20743,7 +20747,7 @@
                     ]
                 },
                 direcao: {
-                    label: 'Direção',
+                    label: 'DIREÇÃO',
                     icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>',
                     items: [
                         { key: 'usuarios', label: 'Colaboradores', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="5"/><path d="M3 21v-2a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4v2"/></svg>', roles: ['admin'] }
@@ -20758,21 +20762,25 @@
                 const lockIconHtml = !hasAccess ? lockIcon : '';
                 const indent = isSubItem ? 'pl-4' : 'px-4';
                 
-                return `<button data-target="${item.key}" class="nav-item w-full text-left ${indent} py-2.5 rounded-lg flex items-center font-semibold ${lockedClass}" ${!hasAccess ? 'disabled' : ''}>${item.icon}${item.label}${lockIconHtml}</button>`;
+                return `<button data-target="${item.key}" class="nav-item w-full text-left ${indent} py-2 rounded-lg flex items-center font-medium text-[0.7rem] tracking-wider hover:bg-stone-100 transition-colors ${lockedClass}" ${!hasAccess ? 'disabled' : ''}>${item.icon}${item.label}${lockIconHtml}</button>`;
             }
             
             // Construir HTML do menu
             let menuHTML = '';
             
-            // Início (sempre acessível)
-            menuHTML += renderMenuItem(menuStructure.inicio);
-            
             // Linha divisória
-            menuHTML += '<div class="menu-divider"></div>';
+            menuHTML += `
+                <div class="px-4 pt-2 pb-3">
+                    <div class="border-b border-stone-200"></div>
+                </div>
+            `;
+            
+            // Início (sempre acessível)
+            menuHTML += `<button data-target="inicio" class="nav-item w-full text-left px-4 py-1.5 rounded-lg flex items-center font-medium text-sm uppercase tracking-wider hover:bg-stone-100 transition-colors"><span class="nav-category-icon mr-3">›</span>${menuStructure.inicio.label}</button>`;
             
             // Geral
             menuHTML += `
-                <div class="nav-category px-4 py-1.5 rounded-lg flex items-center font-semibold text-stone-700 hover:bg-stone-100 transition-colors" data-category="geral">
+                <div class="nav-category px-4 py-1.5 rounded-lg flex items-center font-medium text-sm uppercase tracking-wider hover:bg-stone-100 transition-colors" data-category="geral">
                     <span class="nav-category-icon mr-3">›</span>
                     ${menuStructure.geral.label}
                 </div>
@@ -20783,7 +20791,7 @@
             
             // Administrativo
             menuHTML += `
-                <div class="nav-category px-4 py-1.5 rounded-lg flex items-center font-semibold text-stone-700 hover:bg-stone-100 transition-colors" data-category="administrativo">
+                <div class="nav-category px-4 py-1.5 rounded-lg flex items-center font-medium text-sm uppercase tracking-wider hover:bg-stone-100 transition-colors" data-category="administrativo">
                     <span class="nav-category-icon mr-3">›</span>
                     ${menuStructure.administrativo.label}
                 </div>
@@ -20794,7 +20802,7 @@
             
             // Pedagógico
             menuHTML += `
-                <div class="nav-category px-4 py-1.5 rounded-lg flex items-center font-semibold text-stone-700 hover:bg-stone-100 transition-colors" data-category="pedagogico">
+                <div class="nav-category px-4 py-1.5 rounded-lg flex items-center font-medium text-sm uppercase tracking-wider hover:bg-stone-100 transition-colors" data-category="pedagogico">
                     <span class="nav-category-icon mr-3">›</span>
                     ${menuStructure.pedagogico.label}
                 </div>
@@ -20805,7 +20813,7 @@
             
             // Comercial
             menuHTML += `
-                <div class="nav-category px-4 py-1.5 rounded-lg flex items-center font-semibold text-stone-700 hover:bg-stone-100 transition-colors" data-category="comercial">
+                <div class="nav-category px-4 py-1.5 rounded-lg flex items-center font-medium text-sm uppercase tracking-wider hover:bg-stone-100 transition-colors" data-category="comercial">
                     <span class="nav-category-icon mr-3">›</span>
                     ${menuStructure.comercial.label}
                 </div>
@@ -20816,7 +20824,7 @@
             
             // Direção
             menuHTML += `
-                <div class="nav-category px-4 py-1.5 rounded-lg flex items-center font-semibold text-stone-700 hover:bg-stone-100 transition-colors" data-category="direcao">
+                <div class="nav-category px-4 py-1.5 rounded-lg flex items-center font-medium text-sm uppercase tracking-wider hover:bg-stone-100 transition-colors" data-category="direcao">
                     <span class="nav-category-icon mr-3">›</span>
                     ${menuStructure.direcao.label}
                 </div>
