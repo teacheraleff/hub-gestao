@@ -691,9 +691,18 @@
                                     <p class="text-xs text-stone-500 mt-1">Descreva o que foi alcançado (ex: nome do aluno, venda realizada, etc.)</p>
                                 </div>
                             </div>
+                            <div id="strike-success-message" class="hidden bg-green-100 border border-green-400 text-green-700 px-4 py-2 rounded mb-3 text-sm">
+                                    ✓ Strike adicionado com sucesso!
+                                </div>
+                            </div>
                             <div class="modal-footer">
-                                <button type="button" class="secondary-btn" onclick="closeAddStrikeModal()">Cancelar</button>
-                                <button type="submit" class="primary-btn" style="background-color: #F1D24B; color: #1c1917;" onmouseover="this.style.backgroundColor='#e6c740'" onmouseout="this.style.backgroundColor='#F1D24B'">Adicionar Strike</button>
+                                <button type="button" class="secondary-btn" onclick="closeAddStrikeModal()">Fechar</button>
+                                <button type="button" onclick="handleAddStrike(event, true)" class="primary-btn" style="background-color: #22C55E; color: white;" onmouseover="this.style.backgroundColor='#16A34A'" onmouseout="this.style.backgroundColor='#22C55E'">
+                                    <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                                    </svg>
+                                    Adicionar Mais um +
+                                </button>
                             </div>
                         </form>
                     </div>
@@ -17407,7 +17416,7 @@
             currentStrikeMetaId = null;
         }
 
-        async function handleAddStrike(e) {
+        async function handleAddStrike(e, keepOpen = false) {
             e.preventDefault();
 
             const description = document.getElementById('strike-description').value.trim();
@@ -17438,9 +17447,22 @@
             }
 
             logActivity('Adicionou strike em meta', `Meta: ${meta.name} - Strike: ${description}`);
-            showNotification('Strike adicionado com sucesso!', 'success');
+            
+            if (keepOpen) {
+                // Mostrar mensagem de sucesso
+                const successMsg = document.getElementById('strike-success-message');
+                if (successMsg) {
+                    successMsg.classList.remove('hidden');
+                    setTimeout(() => successMsg.classList.add('hidden'), 2000);
+                }
+                // Limpar campo para próximo strike
+                document.getElementById('strike-description').value = '';
+                document.getElementById('strike-description').focus();
+            } else {
+                showNotification('Strike adicionado com sucesso!', 'success');
+                closeAddStrikeModal();
+            }
 
-            closeAddStrikeModal();
             renderMetas();
         }
 
@@ -21275,12 +21297,14 @@
 
         // Helper function para verificar permissão granular
         function hasPermission(section, action, userRole) {
-            if (userRole === 'admin') return true;
+            // Se userRole não for passado, usa o currentUserRole global
+            const roleToCheck = userRole || currentUserRole;
+            if (roleToCheck === 'admin') return true;
             const sectionPerms = granularPermissions[section];
             if (!sectionPerms) return false;
             const actionPerms = sectionPerms[action];
             if (!actionPerms) return false;
-            return actionPerms.includes(userRole);
+            return actionPerms.includes(roleToCheck);
         }
 
         // Role-based access control with custom permissions
