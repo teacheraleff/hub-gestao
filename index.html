@@ -691,8 +691,7 @@
                                     <input type="text" id="strike-description" required class="w-full p-2 border rounded" placeholder="Ex: Nome do aluno matriculado">
                                     <p class="text-xs text-stone-500 mt-1">Descreva o que foi alcançado (ex: nome do aluno, venda realizada, etc.)</p>
                                 </div>
-                            </div>
-                            <div id="strike-success-message" class="hidden bg-green-100 border border-green-400 text-green-700 px-4 py-2 rounded mb-3 text-sm">
+                                <div id="strike-success-message" class="hidden bg-green-100 border border-green-400 text-green-700 px-4 py-2 rounded mt-3 text-sm">
                                     ✓ Strike adicionado com sucesso!
                                 </div>
                             </div>
@@ -20864,7 +20863,7 @@
                     label: 'DIREÇÃO',
                     icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>',
                     items: [
-                        { key: 'usuarios', label: 'Colaboradores', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="5"/><path d="M3 21v-2a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4v2"/></svg>', roles: ['admin'] },
+                        { key: 'colaboradores', label: 'Colaboradores', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="5"/><path d="M3 21v-2a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4v2"/></svg>', roles: ['admin'] },
                         { key: 'financeiro', label: 'Financeiro', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>', roles: ['admin'] }
                     ]
                 }
@@ -20874,10 +20873,10 @@
             function renderMenuItem(item, isSubItem = false) {
                 const hasAccess = item.roles.includes(currentUserRole);
                 const lockedClass = !hasAccess ? 'nav-item-locked' : '';
-                const lockIconHtml = !hasAccess ? lockIcon : '';
+                const displayIcon = !hasAccess ? lockIcon : item.icon;
                 const indent = isSubItem ? 'pl-4' : 'px-4';
 
-                return `<button data-target="${item.key}" class="nav-item w-full text-left ${indent} py-2 rounded-lg flex items-center font-medium text-[0.7rem] tracking-wider hover:bg-stone-100 transition-colors ${lockedClass}" ${!hasAccess ? 'disabled' : ''}>${item.icon}${item.label}${lockIconHtml}</button>`;
+                return `<button data-target="${item.key}" class="nav-item w-full text-left ${indent} py-2 rounded-lg flex items-center font-medium text-[0.7rem] tracking-wider hover:bg-stone-100 transition-colors ${lockedClass}" ${!hasAccess ? 'disabled' : ''}>${displayIcon}${item.label}</button>`;
             }
 
             // Construir HTML do menu
