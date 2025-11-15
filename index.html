@@ -7,6 +7,7 @@
     <link rel="icon" type="image/png" href="https://res.cloudinary.com/dqfi22uz0/image/upload/v1749543469/SLAP_FAVICON_AMARELO_coilvj.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="/firebase-config.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -21,23 +22,23 @@
             color: #F1D24B;
             font-weight: 600;
         }
-        
+
         /* Submenu styles */
         .nav-category {
             cursor: pointer;
             user-select: none;
         }
-        
+
         .nav-category-icon {
             transition: transform 0.3s ease;
             display: inline-block;
             font-size: 1.3rem;
         }
-        
+
         .nav-category.expanded .nav-category-icon {
             transform: rotate(90deg);
         }
-        
+
         .nav-submenu {
             max-height: 0;
             overflow: hidden;
@@ -47,35 +48,35 @@
             padding-left: 0.5rem;
             border-left: 2px solid rgb(229 231 235);
         }
-        
+
         .nav-submenu.expanded {
             max-height: 1000px;
             opacity: 1;
         }
-        
+
         .nav-category.expanded {
             background-color: rgb(245 245 244);
         }
-        
+
         .nav-submenu .nav-item {
             font-size: 0.85rem;
         }
-        
+
         .nav-submenu .nav-item svg {
             width: 16px;
             height: 16px;
         }
-        
+
         .nav-item-locked {
             opacity: 0.5;
             cursor: not-allowed;
         }
-        
+
         .lock-icon {
             margin-left: auto;
             opacity: 0.6;
         }
-        
+
         .menu-divider {
             height: 1px;
             background: linear-gradient(to right, transparent, rgba(120, 113, 108, 0.2), transparent);
@@ -1122,9 +1123,7 @@
         // --- FIREBASE INITIALIZATION ---
         async function initializeFirebase() {
             try {
-                const firebaseConfig = (typeof __firebase_config !== 'undefined' && __firebase_config)
-                    ? JSON.parse(__firebase_config)
-                    : (typeof window.firebaseConfig !== 'undefined' ? window.firebaseConfig : {});
+                const firebaseConfig = window.firebaseConfig || {};
 
                 if (!firebaseConfig.apiKey) {
                     console.warn("Configuração do Firebase não encontrada. Executando em modo de desenvolvimento local.");
@@ -17384,14 +17383,14 @@
 
         function openCreateMetaModal() {
             editingMetaId = null;
-            
+
             const title = document.getElementById('meta-form-title');
             const form = document.getElementById('meta-form');
             const modal = document.getElementById('meta-form-modal');
-            
+
             title.textContent = 'Nova Meta';
             form.reset();
-            
+
             // Popular dropdown de colaboradores
             const responsavelSelect = document.getElementById('meta-responsavel');
             responsavelSelect.innerHTML = '<option value="">Selecione o responsável</option>';
@@ -17451,7 +17450,7 @@
             }
 
             logActivity('Adicionou strike em meta', `Meta: ${meta.name} - Strike: ${description}`);
-            
+
             if (keepOpen) {
                 // Mostrar mensagem de sucesso
                 const successMsg = document.getElementById('strike-success-message');
@@ -17520,7 +17519,7 @@
                 const index = metas.findIndex(m => m.id === editingMetaId);
                 if (index !== -1) {
                     metas[index] = { ...metas[index], ...metaData };
-                    
+
                     if (window.firebaseConnected && window.db) {
                         try {
                             await window.db.collection('metas').doc(editingMetaId).update(metaData);
@@ -17529,7 +17528,7 @@
                             console.error('Error updating meta in Firebase:', error);
                         }
                     }
-                    
+
                     logActivity('Editou uma meta', `Meta: ${metaData.name}`);
                     showSuccessMessage('Sucesso!', 'Meta atualizada com sucesso!');
                 }
@@ -17572,7 +17571,7 @@
             document.getElementById('meta-bonus').value = meta.bonus || '';
             document.getElementById('meta-deadline').value = meta.deadline || '';
             document.getElementById('meta-color').value = meta.color || 'yellow';
-            
+
             // Popular dropdown de colaboradores
             const responsavelSelect = document.getElementById('meta-responsavel');
             responsavelSelect.innerHTML = '<option value="">Selecione o responsável</option>';
@@ -20809,10 +20808,10 @@
 
         function renderMenu() {
             const mainNav = document.getElementById('main-navigation');
-            
+
             // Ícone de cadeado para itens sem permissão
             const lockIcon = '<svg class="lock-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>';
-            
+
             // Definição completa do menu com categorias
             const menuStructure = {
                 inicio: {
@@ -20835,7 +20834,7 @@
                     icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>',
                     items: [
                         { key: 'alunos', label: 'Alunos', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>', roles: ['admin', 'coord', 'superv', 'estagiario', 'comercial'] },
-                        
+
                         { key: 'logs-atividades', label: 'Logs de Atividades', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg>', roles: ['admin', 'superv'] }
                     ]
                 },
@@ -20856,7 +20855,7 @@
                     icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>',
                     items: [
                         { key: 'metas', label: 'Metas', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>', roles: ['admin', 'coord', 'superv', 'comercial'] },
-                        
+
                         { key: 'kpis-pedagogico', label: 'KPIs', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>', roles: ['admin', 'coord', 'superv', 'comercial'] },
                         { key: 'gestao-tns', label: 'Gestão TNs', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>', roles: ['admin', 'coord', 'superv', 'comercial'] }
                     ]
@@ -20870,30 +20869,30 @@
                     ]
                 }
             };
-            
+
             // Função para renderizar item de menu com ou sem cadeado
             function renderMenuItem(item, isSubItem = false) {
                 const hasAccess = item.roles.includes(currentUserRole);
                 const lockedClass = !hasAccess ? 'nav-item-locked' : '';
                 const lockIconHtml = !hasAccess ? lockIcon : '';
                 const indent = isSubItem ? 'pl-4' : 'px-4';
-                
+
                 return `<button data-target="${item.key}" class="nav-item w-full text-left ${indent} py-2 rounded-lg flex items-center font-medium text-[0.7rem] tracking-wider hover:bg-stone-100 transition-colors ${lockedClass}" ${!hasAccess ? 'disabled' : ''}>${item.icon}${item.label}${lockIconHtml}</button>`;
             }
-            
+
             // Construir HTML do menu
             let menuHTML = '';
-            
+
             // Linha divisória
             menuHTML += `
                 <div class="px-4 pt-2 pb-3">
                     <div class="border-b border-stone-200"></div>
                 </div>
             `;
-            
+
             // Início (sempre acessível)
             menuHTML += `<button data-target="inicio" class="nav-item w-full text-left px-4 py-1.5 rounded-lg flex items-center font-medium text-sm uppercase tracking-wider hover:bg-stone-100 transition-colors"><span class="nav-category-icon mr-3">›</span>${menuStructure.inicio.label}</button>`;
-            
+
             // Geral
             menuHTML += `
                 <div class="nav-category px-4 py-1.5 rounded-lg flex items-center font-medium text-sm uppercase tracking-wider hover:bg-stone-100 transition-colors" data-category="geral">
@@ -20904,7 +20903,7 @@
                     ${menuStructure.geral.items.map(item => renderMenuItem(item, true)).join('')}
                 </div>
             `;
-            
+
             // Administrativo
             menuHTML += `
                 <div class="nav-category px-4 py-1.5 rounded-lg flex items-center font-medium text-sm uppercase tracking-wider hover:bg-stone-100 transition-colors" data-category="administrativo">
@@ -20915,7 +20914,7 @@
                     ${menuStructure.administrativo.items.map(item => renderMenuItem(item, true)).join('')}
                 </div>
             `;
-            
+
             // Pedagógico
             menuHTML += `
                 <div class="nav-category px-4 py-1.5 rounded-lg flex items-center font-medium text-sm uppercase tracking-wider hover:bg-stone-100 transition-colors" data-category="pedagogico">
@@ -20926,7 +20925,7 @@
                     ${menuStructure.pedagogico.items.map(item => renderMenuItem(item, true)).join('')}
                 </div>
             `;
-            
+
             // Comercial
             menuHTML += `
                 <div class="nav-category px-4 py-1.5 rounded-lg flex items-center font-medium text-sm uppercase tracking-wider hover:bg-stone-100 transition-colors" data-category="comercial">
@@ -20937,7 +20936,7 @@
                     ${menuStructure.comercial.items.map(item => renderMenuItem(item, true)).join('')}
                 </div>
             `;
-            
+
             // Direção
             menuHTML += `
                 <div class="nav-category px-4 py-1.5 rounded-lg flex items-center font-medium text-sm uppercase tracking-wider hover:bg-stone-100 transition-colors" data-category="direcao">
@@ -20948,16 +20947,16 @@
                     ${menuStructure.direcao.items.map(item => renderMenuItem(item, true)).join('')}
                 </div>
             `;
-            
+
             mainNav.innerHTML = menuHTML;
-            
+
             // Event listeners para expandir/retrair categorias
             document.querySelectorAll('.nav-category').forEach(category => {
                 category.addEventListener('click', function() {
                     const categoryName = this.dataset.category;
                     const submenu = document.querySelector(`[data-submenu="${categoryName}"]`);
                     const isExpanded = this.classList.contains('expanded');
-                    
+
                     // Fechar todos os outros menus primeiro (accordion behavior)
                     document.querySelectorAll('.nav-category').forEach(cat => {
                         if (cat !== this) {
@@ -20969,7 +20968,7 @@
                             sub.classList.remove('expanded');
                         }
                     });
-                    
+
                     // Toggle expansão do menu clicado
                     if (!isExpanded) {
                         this.classList.add('expanded');
@@ -21386,7 +21385,7 @@
                         // Reset pagination and render the new section
                         resetPagination();
                         pageRenderers[pageKey]();
-                        
+
                         // Explicitly clear INÍCIO button before setting new active
                         const inicioBtn = document.querySelector('[data-target="inicio"]');
                         if (inicioBtn) {
@@ -21394,7 +21393,7 @@
                             inicioBtn.style.backgroundColor = '';
                             inicioBtn.style.color = '';
                         }
-                        
+
                         setActiveNavItem(navTarget);
 
                         // Prevent any further event bubbling
