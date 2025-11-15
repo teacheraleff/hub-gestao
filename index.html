@@ -9421,45 +9421,181 @@
                 // Limpar allowedPages
                 document.querySelectorAll('input[name="allowedPages"]').forEach(cb => cb.checked = false);
 
-                // Aplicar preset do role selecionado
-                const preset = PermissionRegistry.presets[roleValue];
-                if (!preset || !preset.permissions) {
-                    console.log('Nenhum preset encontrado para role:', roleValue);
-                    return;
+                console.log(`🔧 Aplicando preset de permissões para role: ${roleValue}`);
+
+                // Mapear permissões do granularPermissions para os inputs do formulário
+                
+                // DOJO
+                if (granularPermissions.dojo.view.includes(roleValue)) {
+                    const cb = document.querySelector('input[name="perm_dojo_view_only"]');
+                    if (cb) cb.checked = true;
+                }
+                if (granularPermissions.dojo.manage.includes(roleValue)) {
+                    ['add_competitor', 'edit_points', 'delete_competitor', 'add_active_mission'].forEach(action => {
+                        const cb = document.querySelector(`input[name="perm_dojo_${action}"]`);
+                        if (cb) cb.checked = true;
+                    });
                 }
 
-                Object.keys(preset.permissions).forEach(permKey => {
-                    if (preset.permissions[permKey] === true) {
-                        // Converter permKey para nome do input
-                        const inputName = 'perm_' + permKey.replace(/\./g, '_');
-
-                        // Tentar marcar checkbox
-                        const checkbox = document.querySelector(`input[type="checkbox"][name="${inputName}"]`);
-                        if (checkbox) {
-                            checkbox.checked = true;
-                        }
-
-                        // Tentar marcar radio button
-                        const parts = permKey.split('.');
-                        if (parts.length === 2) {
-                            const section = parts[0];
-                            const action = parts[1];
-                            const radioName = `perm_${section}_access`;
-                            const radio = document.querySelector(`input[type="radio"][name="${radioName}"][value="${action}"]`);
-                            if (radio) {
-                                radio.checked = true;
-                            }
-                        }
+                // ALUNOS
+                if (granularPermissions.alunos.view.includes(roleValue)) {
+                    if (granularPermissions.alunos.viewFinancial.includes(roleValue)) {
+                        const radio = document.querySelector('input[name="perm_alunos_access"][value="full_access"]');
+                        if (radio) radio.checked = true;
+                    } else {
+                        const radio = document.querySelector('input[name="perm_alunos_access"][value="access_no_financials"]');
+                        if (radio) radio.checked = true;
                     }
-                });
+                }
+
+                // TURMAS
+                if (granularPermissions.turmas.view.includes(roleValue) && 
+                    (granularPermissions.turmas.create.includes(roleValue) || 
+                     granularPermissions.turmas.edit.includes(roleValue))) {
+                    const radio = document.querySelector('input[name="perm_turmas_access"][value="full_access"]');
+                    if (radio) radio.checked = true;
+                } else if (granularPermissions.turmas.editOwn && granularPermissions.turmas.editOwn.includes(roleValue)) {
+                    const radio = document.querySelector('input[name="perm_turmas_access"][value="teacher_view_only"]');
+                    if (radio) radio.checked = true;
+                }
+
+                // VIPS
+                if (granularPermissions.vips.view.includes(roleValue) && 
+                    (granularPermissions.vips.create.includes(roleValue) || 
+                     granularPermissions.vips.edit.includes(roleValue))) {
+                    const radio = document.querySelector('input[name="perm_vips_access"][value="full_access"]');
+                    if (radio) radio.checked = true;
+                } else if (granularPermissions.vips.editOwn && granularPermissions.vips.editOwn.includes(roleValue)) {
+                    const radio = document.querySelector('input[name="perm_vips_access"][value="teacher_view_only"]');
+                    if (radio) radio.checked = true;
+                }
+
+                // GRADE
+                if (granularPermissions.grade.view.includes(roleValue) && 
+                    (granularPermissions.grade.create.includes(roleValue) || 
+                     granularPermissions.grade.edit.includes(roleValue))) {
+                    const radio = document.querySelector('input[name="perm_grade_access"][value="full_access"]');
+                    if (radio) radio.checked = true;
+                } else if (granularPermissions.grade.editOwn && granularPermissions.grade.editOwn.includes(roleValue)) {
+                    const radio = document.querySelector('input[name="perm_grade_access"][value="teacher_own_only"]');
+                    if (radio) radio.checked = true;
+                }
+
+                // CALENDÁRIO
+                if (granularPermissions.calendario.create.includes(roleValue)) {
+                    const cb = document.querySelector('input[name="perm_calendario_add_event"]');
+                    if (cb) cb.checked = true;
+                }
+                if (granularPermissions.calendario.edit.includes(roleValue)) {
+                    const cb = document.querySelector('input[name="perm_calendario_edit_event"]');
+                    if (cb) cb.checked = true;
+                }
+                if (granularPermissions.calendario.delete.includes(roleValue)) {
+                    const cb = document.querySelector('input[name="perm_calendario_delete_event"]');
+                    if (cb) cb.checked = true;
+                }
+
+                // LINKS ÚTEIS
+                if (granularPermissions.linksUteis.view.includes(roleValue)) {
+                    if (granularPermissions.linksUteis.create.includes(roleValue)) {
+                        const cb = document.querySelector('input[name="perm_links-uteis_full_access"]');
+                        if (cb) cb.checked = true;
+                    } else {
+                        const cb = document.querySelector('input[name="perm_links-uteis_view_only"]');
+                        if (cb) cb.checked = true;
+                    }
+                }
+
+                // PROCESSOS
+                if (granularPermissions.processos.view.includes(roleValue)) {
+                    const cb = document.querySelector('input[name="perm_processos_view"]');
+                    if (cb) cb.checked = true;
+                }
+                if (granularPermissions.processos.create.includes(roleValue) || 
+                    granularPermissions.processos.edit.includes(roleValue) || 
+                    granularPermissions.processos.delete.includes(roleValue)) {
+                    const cb = document.querySelector('input[name="perm_processos_manage"]');
+                    if (cb) cb.checked = true;
+                }
+
+                // GESTÃO TNs
+                if (granularPermissions.gestaoTNs.view.includes(roleValue)) {
+                    const radio = document.querySelector('input[name="perm_gestao-tns_access"][value="full_access"]');
+                    if (radio) radio.checked = true;
+                }
+
+                // RECHAMADA
+                if (granularPermissions.rechamada.view.includes(roleValue)) {
+                    const radio = document.querySelector('input[name="perm_rechamada_access"][value="full_access"]');
+                    if (radio) radio.checked = true;
+                }
+
+                // METAS
+                if (granularPermissions.metas.view.includes(roleValue)) {
+                    const radio = document.querySelector('input[name="perm_metas_access"][value="view_only"]');
+                    if (radio) radio.checked = true;
+                }
+
+                // KPIs
+                if (granularPermissions.kpis.view.includes(roleValue)) {
+                    const radio = document.querySelector('input[name="perm_kpis-pedagogico_access"][value="full_access"]');
+                    if (radio) radio.checked = true;
+                }
+
+                // LOGS DE ATIVIDADES
+                if (roleValue === 'admin') {
+                    const radio = document.querySelector('input[name="perm_logs-atividades_access"][value="full_access"]');
+                    if (radio) radio.checked = true;
+                }
+
+                // TASKS
+                if (granularPermissions.tasks.view.includes(roleValue)) {
+                    const cb = document.querySelector('input[name="perm_tasks-prazos_view_all"]');
+                    if (cb) cb.checked = true;
+                }
+                if (granularPermissions.tasks.markDone.includes(roleValue)) {
+                    const cb = document.querySelector('input[name="perm_tasks-prazos_complete_own"]');
+                    if (cb) cb.checked = true;
+                }
+                if (granularPermissions.tasks.approve && granularPermissions.tasks.approve.includes(roleValue)) {
+                    const cb = document.querySelector('input[name="perm_tasks-prazos_complete_all"]');
+                    if (cb) cb.checked = true;
+                }
+                if (granularPermissions.tasks.create.includes(roleValue)) {
+                    const cb = document.querySelector('input[name="perm_tasks-prazos_add_task"]');
+                    if (cb) cb.checked = true;
+                }
+                if (granularPermissions.tasks.edit.includes(roleValue)) {
+                    const cb = document.querySelector('input[name="perm_tasks-prazos_edit_task"]');
+                    if (cb) cb.checked = true;
+                }
+                if (granularPermissions.tasks.delete.includes(roleValue)) {
+                    const cb = document.querySelector('input[name="perm_tasks-prazos_delete_task"]');
+                    if (cb) cb.checked = true;
+                }
+
+                // COLABORADORES
+                if (roleValue === 'admin') {
+                    const cb = document.querySelector('input[name="perm_colaboradores_full_access"]');
+                    if (cb) cb.checked = true;
+                }
+
+                // FINANCEIRO
+                if (roleValue === 'admin') {
+                    const radio = document.querySelector('input[name="perm_folha-pagamento_access"][value="full_access"]');
+                    if (radio) radio.checked = true;
+                }
 
                 // Aplicar allowedPages baseado no role
                 const allowedPagesByRole = {
-                    'professor': ['inicio', 'dojo', 'alunos', 'turmas', 'vips', 'grade', 'calendario', 'links-uteis', 'tasks-prazos', 'rechamada'],
+                    'admin': ['inicio', 'tasks-prazos', 'processos', 'links-uteis', 'alunos', 'dojo', 'turmas', 'vips', 'grade', 'calendario', 'rechamada', 'metas', 'kpis-pedagogico', 'gestao-tns', 'logs-atividades', 'colaboradores', 'folha-pagamento'],
+                    'teacher': ['inicio', 'tasks-prazos', 'dojo', 'turmas', 'vips', 'grade'],
+                    'teachertn': ['inicio', 'tasks-prazos', 'dojo', 'turmas', 'vips', 'grade', 'gestao-tns'],
                     'coord': ['inicio', 'tasks-prazos', 'processos', 'links-uteis', 'alunos', 'dojo', 'turmas', 'vips', 'grade', 'calendario', 'rechamada', 'metas', 'kpis-pedagogico', 'gestao-tns'],
                     'superv': ['inicio', 'tasks-prazos', 'processos', 'links-uteis', 'alunos', 'dojo', 'turmas', 'vips', 'grade', 'calendario', 'rechamada', 'metas', 'kpis-pedagogico', 'gestao-tns'],
                     'estagiario': ['inicio', 'tasks-prazos', 'processos', 'links-uteis', 'alunos', 'dojo', 'turmas', 'vips', 'grade', 'calendario', 'gestao-tns'],
-                    'comercial': ['inicio', 'tasks-prazos', 'processos', 'links-uteis', 'alunos', 'turmas', 'vips', 'grade', 'calendario', 'rechamada', 'metas', 'kpis-pedagogico', 'gestao-tns']
+                    'comercial': ['inicio', 'tasks-prazos', 'processos', 'links-uteis', 'alunos', 'turmas', 'vips', 'grade', 'calendario', 'rechamada', 'metas', 'kpis-pedagogico', 'gestao-tns'],
+                    'designer': ['inicio', 'tasks-prazos', 'processos', 'links-uteis']
                 };
 
                 const pagesToAllow = allowedPagesByRole[roleValue] || [];
