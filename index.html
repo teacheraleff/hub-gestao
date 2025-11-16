@@ -73,8 +73,8 @@
         }
 
         .lock-icon {
-            margin-left: auto;
             opacity: 0.6;
+            margin-right: 0.5rem;
         }
 
         .menu-divider {
@@ -15545,14 +15545,24 @@
 
         // Handle person card click with permission check
         function handlePersonCardClick(personId) {
+            console.log('🎯 Card clicado! personId:', personId);
             const person = taskPeople.find(p => p.id === personId);
-            if (!person) return;
+            if (!person) {
+                console.log('❌ Pessoa não encontrada!');
+                return;
+            }
+            
+            console.log('👤 Pessoa encontrada:', person.name);
+            console.log('👤 Usuário logado:', currentUserName);
+            console.log('🔐 Role:', currentUserRole);
             
             if (!canOpenPersonCard(person)) {
+                console.log('🚫 Acesso negado!');
                 showErrorMessage('Acesso Restrito', 'Você só pode ver as suas próprias tasks.');
                 return;
             }
             
+            console.log('✅ Abrindo modal...');
             openTaskManagementModal(personId);
         }
 
@@ -15563,6 +15573,11 @@
                 return true;
             }
             // Other users can only open their own card (match by name)
+            console.log('🔍 Comparando:', { 
+                personName: person.name, 
+                currentUserName: currentUserName, 
+                match: person.name === currentUserName 
+            });
             return person.name === currentUserName;
         }
 
@@ -15677,8 +15692,8 @@
 
                 const canOpen = canOpenPersonCard(person);
                 return `
-                    <div class="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow border border-stone-200 ${canOpen ? 'cursor-pointer' : 'cursor-not-allowed opacity-75'} relative"
-                         onclick="handlePersonCardClick('${person.id}')">
+                    <div class="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow border border-stone-200 ${canOpen ? 'cursor-pointer' : 'cursor-not-allowed opacity-75'} relative person-card"
+                         data-person-id="${person.id}">
                         ${awaitingApprovalCount > 0 && currentUserRole === 'admin' ? `
                         <div class="absolute top-2 left-2 flex items-center gap-1.5 px-2.5 py-1 rounded-full" style="background-color: #F1D24B;">
                             <svg class="w-4 h-4" style="color: #8B6914;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -15752,6 +15767,19 @@
                     </div>
                 `;
             }).join('');
+            
+            // Add click event listener to person cards
+            setTimeout(() => {
+                document.querySelectorAll('.person-card').forEach(card => {
+                    card.addEventListener('click', function(e) {
+                        // Ignore clicks on edit/delete buttons
+                        if (e.target.closest('button')) return;
+                        
+                        const personId = this.dataset.personId;
+                        handlePersonCardClick(personId);
+                    });
+                });
+            }, 100);
         }
 
         function openAddPersonModal() {
