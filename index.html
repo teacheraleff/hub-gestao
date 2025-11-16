@@ -1303,28 +1303,10 @@
 
             // Tasks listener
             getCollectionListener('metas', metas, renderMetasSection);
-            getCollectionListener('tasks', tasks, () => {
-                const activePageId = contentArea.firstElementChild?.id;
-                if (activePageId === 'tasks-prazos-section') renderPeopleTasksCards();
-
-                // Mark tasks as ready for migration
-                if (!migrationDataReady.tasks) {
-                    migrationDataReady.tasks = true;
-                    console.log('✅ Tasks data loaded for migration');
-                    migrateTasksToPersonSystem();
-                }
-            });
-
-            // Task People listener
-            getCollectionListener('task-people', taskPeople, () => {
-                const activePageId = contentArea.firstElementChild?.id;
-                if (activePageId === 'tasks-prazos-section') renderPeopleTasksCards();
-
-                // Check for orphaned tasks after data loads
-                if (tasks.length > 0 && taskPeople.length > 0) {
-                    checkAndFixOrphanedTasks();
-                }
-            });
+            
+            // ⚡ TASKS: Real-time disabled to save Firebase reads (90% reduction)
+            // Tasks and task-people now load manually only when section is opened
+            // This prevents constant real-time sync that was consuming 30k+ reads/day
 
             // Testes de Nível listener
             getCollectionListener('testes-nivel', testesNivel, () => {
@@ -10889,10 +10871,14 @@
                 // When unmarking, preserve existing status (could be 'completed' if was approved before)
                 if (isFailed) {
                     updateData.status = 'failed';
-                } else if (task && task.status === 'failed') {
-                    // If current status is 'failed', reset to pending when unmarking
-                    // (unless it was approved, in which case it should stay completed)
-                    updateData.status = task.approved ? 'completed' : 'pending';
+                    updateData.failedAt = new Date().toISOString();
+                } else {
+                    if (task && task.status === 'failed') {
+                        // If current status is 'failed', reset to pending when unmarking
+                        // (unless it was approved, in which case it should stay completed)
+                        updateData.status = task.approved ? 'completed' : 'pending';
+                    }
+                    updateData.failedAt = deleteField();
                 }
 
                 await updateDoc(taskRef, updateData);
@@ -10900,6 +10886,9 @@
                 if (task) {
                     await logActivity(isFailed ? 'Marcou task como falhada' : 'Removeu marcação de falhada da task', 'task', task.title);
                 }
+                // Reload tasks manually to reflect changes
+                await loadTasksManually();
+                renderTasksList();
             } catch (error) {
                 console.error('Error toggling task failed:', error);
             }
@@ -10913,14 +10902,23 @@
             }
             const taskRef = doc(db, `artifacts/${appId}/public/data/tasks`, taskId);
             try {
-                await updateDoc(taskRef, { 
+                const updateData = { 
                     approved: isApproved,
                     status: isApproved ? 'completed' : 'pending'
-                });
+                };
+                if (isApproved) {
+                    updateData.approvedAt = new Date().toISOString();
+                } else {
+                    updateData.approvedAt = deleteField();
+                }
+                await updateDoc(taskRef, updateData);
                 const task = tasks.find(t => t.id === taskId);
                 if (task) {
                     await logActivity(isApproved ? 'Aprovou task' : 'Removeu aprovação de task', 'task', task.title);
                 }
+                // Reload tasks manually to reflect changes
+                await loadTasksManually();
+                renderTasksList();
             } catch (error) {
                 console.error("Error updating admin approval:", error);
             }
@@ -14874,6 +14872,127 @@
         // --- TASKS & PRAZOS SECTION ---
         let taskPeople = [];
 
+        // ⚡ Manual loading functions for Tasks (no real-time sync to save Firebase reads)
+        async function loadTasksManually() {
+            if (!db) {
+                console.log('⚠️ Firebase not connected - using local tasks');
+                return;
+            }
+            
+            try {
+                const tasksRef = collection(db, `artifacts/${appId}/public/data/tasks`);
+                const snapshot = await getDocs(tasksRef);
+                tasks.length = 0;
+                snapshot.docs.forEach(doc => tasks.push({ id: doc.id, ...doc.data() }));
+                console.log(`✅ Tasks carregadas manualmente: ${tasks.length} tasks`);
+                
+                // Migration check
+                if (!migrationDataReady.tasks && tasks.length > 0) {
+                    migrationDataReady.tasks = true;
+                    console.log('✅ Tasks data loaded for migration');
+                    migrateTasksToPersonSystem();
+                }
+            } catch (error) {
+                console.error('Erro ao carregar tasks:', error);
+            }
+        }
+
+        async function loadTaskPeopleManually() {
+            if (!db) {
+                console.log('⚠️ Firebase not connected - using local task people');
+                return;
+            }
+            
+            try {
+                const peopleRef = collection(db, `artifacts/${appId}/public/data/task-people`);
+                const snapshot = await getDocs(peopleRef);
+                taskPeople.length = 0;
+                snapshot.docs.forEach(doc => taskPeople.push({ id: doc.id, ...doc.data() }));
+                console.log(`✅ Task People carregados manualmente: ${taskPeople.length} pessoas`);
+                
+                // Check for orphaned tasks
+                if (tasks.length > 0 && taskPeople.length > 0) {
+                    checkAndFixOrphanedTasks();
+                }
+            } catch (error) {
+                console.error('Erro ao carregar task people:', error);
+            }
+        }
+
+        // 🧹 Auto-cleanup: Delete old completed and failed tasks to reduce Firebase reads
+        async function autoCleanupOldTasks() {
+            if (!db) return;
+            
+            try {
+                const now = new Date();
+                let deletedCount = 0;
+
+                for (const task of tasks) {
+                    let shouldDelete = false;
+                    let reason = '';
+
+                    // Delete approved tasks older than 48 hours
+                    if (task.approved && task.approvedAt) {
+                        const approvedDate = new Date(task.approvedAt);
+                        const hoursSinceApproval = (now - approvedDate) / (1000 * 60 * 60);
+                        if (hoursSinceApproval > 48) {
+                            shouldDelete = true;
+                            reason = `aprovada há ${Math.floor(hoursSinceApproval)}h`;
+                        }
+                    }
+
+                    // Delete failed tasks older than 72 hours
+                    if (task.failed && task.failedAt) {
+                        const failedDate = new Date(task.failedAt);
+                        const hoursSinceFailed = (now - failedDate) / (1000 * 60 * 60);
+                        if (hoursSinceFailed > 72) {
+                            shouldDelete = true;
+                            reason = `falhada há ${Math.floor(hoursSinceFailed)}h`;
+                        }
+                    }
+
+                    // For checklist tasks, check if entire checklist is old
+                    if (task.type === 'checklist' && task.checklistItems) {
+                        const allItemsApprovedOld = task.checklistItems.every(item => {
+                            if (!item.approved || !item.approvedAt) return false;
+                            const approvedDate = new Date(item.approvedAt);
+                            const hoursSinceApproval = (now - approvedDate) / (1000 * 60 * 60);
+                            return hoursSinceApproval > 48;
+                        });
+
+                        const allItemsFailedOld = task.checklistItems.every(item => {
+                            if (!item.failed || !item.failedAt) return false;
+                            const failedDate = new Date(item.failedAt);
+                            const hoursSinceFailed = (now - failedDate) / (1000 * 60 * 60);
+                            return hoursSinceFailed > 72;
+                        });
+
+                        if (allItemsApprovedOld && task.checklistItems.length > 0) {
+                            shouldDelete = true;
+                            reason = 'checklist aprovada há mais de 48h';
+                        } else if (allItemsFailedOld && task.checklistItems.length > 0) {
+                            shouldDelete = true;
+                            reason = 'checklist falhada há mais de 72h';
+                        }
+                    }
+
+                    if (shouldDelete) {
+                        await deleteDoc(doc(db, `artifacts/${appId}/public/data/tasks`, task.id));
+                        deletedCount++;
+                        console.log(`🧹 Auto-limpeza: Task "${task.title}" deletada (${reason})`);
+                    }
+                }
+
+                if (deletedCount > 0) {
+                    console.log(`🧹 Auto-limpeza concluída: ${deletedCount} task(s) antigas deletadas`);
+                    // Reload tasks after cleanup
+                    await loadTasksManually();
+                }
+            } catch (error) {
+                console.error('Erro na auto-limpeza de tasks:', error);
+            }
+        }
+
         function renderTasksPrazosSection() {
             document.getElementById('main-title').textContent = 'Tasks';
             document.getElementById('main-description').textContent = 'Gerencie tarefas e prazos da equipe de forma independente.';
@@ -15390,7 +15509,15 @@
                 </div>
             `;
 
-            renderPeopleTasksCards();
+            // ⚡ Load tasks manually (no real-time to save Firebase reads)
+            loadTasksManually().then(() => {
+                loadTaskPeopleManually().then(() => {
+                    // 🧹 Run auto-cleanup to delete old tasks (48h approved, 72h failed)
+                    autoCleanupOldTasks().then(() => {
+                        renderPeopleTasksCards();
+                    });
+                });
+            });
 
             // Toggle checklist section based on task type
             document.addEventListener('change', function(e) {
@@ -15416,6 +15543,29 @@
         let editingTaskId = null;
         let editingPersonId = null;
 
+        // Handle person card click with permission check
+        function handlePersonCardClick(personId) {
+            const person = taskPeople.find(p => p.id === personId);
+            if (!person) return;
+            
+            if (!canOpenPersonCard(person)) {
+                showErrorMessage('Acesso Restrito', 'Você só pode ver as suas próprias tasks.');
+                return;
+            }
+            
+            openTaskManagementModal(personId);
+        }
+
+        // Check if user can open a specific person's card
+        function canOpenPersonCard(person) {
+            // Admin, supervisor, and coordinator can open all cards
+            if (['admin', 'superv', 'coord'].includes(currentUserRole)) {
+                return true;
+            }
+            // Other users can only open their own card (match by name)
+            return person.name === currentUserName;
+        }
+
         function renderPeopleTasksCards() {
             const container = document.getElementById('people-tasks-container');
             if (!container) return;
@@ -15433,10 +15583,19 @@
                 return;
             }
 
+            // Sort taskPeople to put current user's card first
+            const sortedTaskPeople = [...taskPeople].sort((a, b) => {
+                // Current user's card always comes first
+                if (a.name === currentUserName) return -1;
+                if (b.name === currentUserName) return 1;
+                // Keep original order for others
+                return 0;
+            });
+
             const today = new Date();
             today.setHours(0, 0, 0, 0);
 
-            container.innerHTML = taskPeople.map(person => {
+            container.innerHTML = sortedTaskPeople.map(person => {
                 const personTasks = tasks.filter(t => t.personId === person.id);
                 const pendingTasks = personTasks.filter(t => !t.approved); // Só aprovadas contam como concluídas
 
@@ -15516,9 +15675,10 @@
 
                 const photoUrl = person.photoUrl || 'https://res.cloudinary.com/dqfi22uz0/image/upload/v1749349751/DBB440C2-684E-4DCF-9CD3-B2DDC18F1E53_3_vgocga.jpg';
 
+                const canOpen = canOpenPersonCard(person);
                 return `
-                    <div class="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow border border-stone-200 cursor-pointer relative"
-                         onclick="openTaskManagementModal('${person.id}')">
+                    <div class="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow border border-stone-200 ${canOpen ? 'cursor-pointer' : 'cursor-not-allowed opacity-75'} relative"
+                         onclick="handlePersonCardClick('${person.id}')">
                         ${awaitingApprovalCount > 0 && currentUserRole === 'admin' ? `
                         <div class="absolute top-2 left-2 flex items-center gap-1.5 px-2.5 py-1 rounded-full" style="background-color: #F1D24B;">
                             <svg class="w-4 h-4" style="color: #8B6914;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -15648,6 +15808,9 @@
                     showSuccessMessage('Sucesso!', 'Pessoa adicionada com sucesso.');
                 }
                 closePersonModal();
+                // Reload data manually to reflect changes
+                await loadTaskPeopleManually();
+                renderPeopleTasksCards();
             } catch (error) {
                 console.error('Error saving person:', error);
                 showErrorMessage('Erro', 'Erro ao salvar pessoa: ' + error.message);
@@ -15679,6 +15842,10 @@
                 await deleteDoc(doc(db, `artifacts/${appId}/public/data/task-people`, personId));
                 await logActivity('Excluiu pessoa de Tasks', 'task-person', person.name);
                 showSuccessMessage('Sucesso!', 'Pessoa excluída com sucesso.');
+                // Reload data manually to reflect changes
+                await loadTasksManually();
+                await loadTaskPeopleManually();
+                renderPeopleTasksCards();
             } catch (error) {
                 console.error('Error deleting person:', error);
                 showErrorMessage('Erro', 'Erro ao excluir pessoa.');
@@ -16400,6 +16567,8 @@
                 }
 
                 closeTaskFormModal();
+                // Reload tasks manually to reflect changes
+                await loadTasksManually();
                 renderTasksList();
             } catch (error) {
                 console.error('Error saving task:', error);
@@ -16418,6 +16587,8 @@
                     status: newStatus
                 });
                 await logActivity(newStatus === 'completed' ? 'Concluiu task' : 'Reativou task', 'task', task.title);
+                // Reload tasks manually to reflect changes
+                await loadTasksManually();
                 renderTasksList();
             } catch (error) {
                 console.error('Error toggling task status:', error);
@@ -16437,6 +16608,8 @@
                 await deleteDoc(doc(db, `artifacts/${appId}/public/data/tasks`, taskId));
                 await logActivity('Excluiu task', 'task', task.title);
                 showSuccessMessage('Sucesso!', 'Task excluída com sucesso.');
+                // Reload tasks manually to reflect changes
+                await loadTasksManually();
                 renderTasksList();
             } catch (error) {
                 console.error('Error deleting task:', error);
@@ -16662,6 +16835,8 @@
                 }
 
                 closeChecklistFormModal();
+                // Reload tasks manually to reflect changes
+                await loadTasksManually();
                 renderTasksList();
             } catch (error) {
                 console.error('Error saving checklist:', error);
@@ -16686,6 +16861,9 @@
                     'checklist-item', 
                     `${task.title} - ${items[itemIndex].title}`
                 );
+                // Reload tasks manually to reflect changes
+                await loadTasksManually();
+                renderTasksList();
             } catch (error) {
                 console.error('Error toggling checklist item user completion:', error);
                 showErrorMessage('Erro', 'Erro ao atualizar item da checklist.');
@@ -16703,7 +16881,13 @@
             if (!task || task.type !== 'checklist') return;
 
             const items = [...task.checklistItems];
-            items[itemIndex].approved = !items[itemIndex].approved;
+            const isApproving = !items[itemIndex].approved;
+            items[itemIndex].approved = isApproving;
+            if (isApproving) {
+                items[itemIndex].approvedAt = new Date().toISOString();
+            } else {
+                delete items[itemIndex].approvedAt;
+            }
 
             try {
                 await updateDoc(doc(db, `artifacts/${appId}/public/data/tasks`, taskId), {
@@ -16714,6 +16898,9 @@
                     'checklist-item', 
                     `${task.title} - ${items[itemIndex].title}`
                 );
+                // Reload tasks manually to reflect changes
+                await loadTasksManually();
+                renderTasksList();
             } catch (error) {
                 console.error('Error toggling checklist admin approval:', error);
                 showErrorMessage('Erro', 'Erro ao atualizar aprovação do item.');
@@ -16730,7 +16917,13 @@
             if (!task || task.type !== 'checklist') return;
 
             const items = [...task.checklistItems];
-            items[itemIndex].failed = !items[itemIndex].failed;
+            const isFailing = !items[itemIndex].failed;
+            items[itemIndex].failed = isFailing;
+            if (isFailing) {
+                items[itemIndex].failedAt = new Date().toISOString();
+            } else {
+                delete items[itemIndex].failedAt;
+            }
 
             try {
                 await updateDoc(doc(db, `artifacts/${appId}/public/data/tasks`, taskId), {
@@ -16741,6 +16934,9 @@
                     'checklist-item', 
                     `${task.title} - ${items[itemIndex].title}`
                 );
+                // Reload tasks manually to reflect changes
+                await loadTasksManually();
+                renderTasksList();
             } catch (error) {
                 console.error('Error toggling checklist item failed:', error);
                 showErrorMessage('Erro', 'Erro ao atualizar item da checklist.');
@@ -16757,7 +16953,13 @@
             if (!task || task.type !== 'checklist') return;
 
             const items = [...task.checklistItems];
-            items[itemIndex].approved = !items[itemIndex].approved;
+            const isApproving = !items[itemIndex].approved;
+            items[itemIndex].approved = isApproving;
+            if (isApproving) {
+                items[itemIndex].approvedAt = new Date().toISOString();
+            } else {
+                delete items[itemIndex].approvedAt;
+            }
 
             try {
                 await updateDoc(doc(db, `artifacts/${appId}/public/data/tasks`, taskId), {
@@ -16789,6 +16991,9 @@
                     'checklist-item', 
                     `${task.title} - ${items[itemIndex].title}`
                 );
+                // Reload tasks manually to reflect changes
+                await loadTasksManually();
+                renderTasksList();
             } catch (error) {
                 console.error('Error toggling checklist item approval:', error);
                 showErrorMessage('Erro', 'Erro ao aprovar item da checklist.');
