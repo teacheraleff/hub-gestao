@@ -15025,6 +15025,22 @@
             contentArea.innerHTML = `
                 <div id="tasks-prazos-section" class="max-w-7xl mx-auto">
 
+                    <!-- Auto-cleanup Notice -->
+                    <div class="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                        <div class="flex items-start gap-3">
+                            <svg class="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <div class="text-sm">
+                                <p class="font-semibold text-blue-900 mb-1">Limpeza Automática de Tasks</p>
+                                <p class="text-blue-800">
+                                    <span class="font-medium">Tasks aprovadas</span> são automaticamente excluídas após <span class="font-bold">48 horas</span>.
+                                    <span class="font-medium">Tasks falhadas</span> são excluídas após <span class="font-bold">72 horas</span>.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Legend for task icons -->
                     <div class="mb-6 p-4 bg-white rounded-lg shadow-sm border border-stone-200">
                         <h5 class="font-semibold text-sm text-stone-700 mb-3">Legenda dos Contadores</h5>
@@ -17086,7 +17102,7 @@
                 description: description,
                 urgency: urgency,
                 type: 'aviso',
-                personId: currentPersonId,
+                personId: selectedPersonForTasks,
                 read: false,
                 createdAt: new Date().toISOString(),
                 createdBy: window.currentUserEmail || 'local-user'
@@ -17137,7 +17153,7 @@
             }
 
             closeAvisoFormModal();
-            renderPersonTasks(currentPersonId);
+            renderPersonTasks(selectedPersonForTasks);
         }
 
         async function toggleAvisoRead(taskId) {
@@ -17160,7 +17176,7 @@
             const action = task.read ? 'marcou como lido' : 'marcou como não lido';
             logActivity(`${action} um aviso`, `Aviso: ${task.title}`);
 
-            renderPersonTasks(currentPersonId);
+            renderPersonTasks(selectedPersonForTasks);
         }
 
         function editAviso(taskId) {
