@@ -697,10 +697,10 @@
                                     <!-- Lista será populada aqui -->
                                 </div>
                             </div>
-                            
+
                             <!-- Separador -->
                             <div class="border-t border-stone-300 my-4"></div>
-                            
+
                             <!-- Formulário para Adicionar Novo Strike -->
                             <form onsubmit="handleAddStrike(event)">
                                 <h4 class="text-sm font-bold text-stone-700 mb-3 flex items-center gap-2">
@@ -767,7 +767,7 @@
         let itemsPerPage = 20;
 
         // Filter state for turmas and VIPs
-        let currentTurmasFilter = 'todos';
+        let currentTurmasFilter = 'ativas';
         let currentVipsFilter = 'ativos';
 
         // --- PERMISSION REGISTRY SYSTEM ---
@@ -1327,7 +1327,7 @@
 
             // Tasks listener
             getCollectionListener('metas', metas, renderMetasSection);
-            
+
             // ⚡ TASKS: Real-time disabled to save Firebase reads (90% reduction)
             // Tasks and task-people now load manually only when section is opened
             // This prevents constant real-time sync that was consuming 30k+ reads/day
@@ -4772,6 +4772,11 @@
                     let presentCount = 0;
                     let absentCount = 0;
 
+                    // Debug: Log if attendance data is found
+                    if (!unitAttendance && attendance.length > 0) {
+                        console.warn(`DEBUG: Attendance not found for VIP ${vip.id}. Available IDs:`, attendance.map(a => a.id));
+                    }
+
                     // Buscar dados de presença das PEFs do VIP
                     if (unitAttendance && unitAttendance.lessons && student) {
                         for (let i = 1; i <= 40; i++) {
@@ -4824,6 +4829,9 @@
                 }
 
                 const unitAttendance = attendance.find(a => a.id === turma.id);
+                if (!unitAttendance && attendance.length > 0) {
+                    console.warn(`DEBUG: Attendance not found for Turma ${turma.id}. Available IDs:`, attendance.map(a => a.id));
+                }
                 let totalLessons = 0;
                 let totalPresent = 0;
                 let totalAbsent = 0;
@@ -4835,8 +4843,10 @@
                             if (lessonData && lessonData.students && lessonData.students[studentId]) {
                                 totalLessons++;
                                 const status = lessonData.students[studentId];
-                                if (status === 'P' || status === 'PP') {
+                                if (status === 'P') {
                                     totalPresent++;
+                                } else if (status === 'PP') {
+                                    totalPresent += 0.5;  // Presença parcial
                                 } else if (status === 'F') {
                                     totalAbsent++;
                                 }
@@ -4855,7 +4865,12 @@
                     absencePercentage: absencePercentage,
                     totalLessons: totalLessons
                 };
-            }).filter(t => t.totalLessons > 0).sort((a, b) => b.presencePercentage - a.presencePercentage);
+            }).sort((a, b) => {
+                // Ordenar: primeiro os que têm PEF (presencePercentage > 0 OU totalLessons > 0), depois os sem PEF
+                if (a.totalLessons > 0 && b.totalLessons === 0) return -1;
+                if (a.totalLessons === 0 && b.totalLessons > 0) return 1;
+                return b.presencePercentage - a.presencePercentage;
+            });
 
             contentArea.innerHTML = `
                 <section id="kpis-section" class="base-card">
@@ -9430,7 +9445,7 @@
                 console.log(`🔧 Aplicando preset de permissões para role: ${roleValue}`);
 
                 // Mapear permissões do granularPermissions para os inputs do formulário
-                
+
                 // DOJO
                 if (granularPermissions.dojo.view.includes(roleValue)) {
                     const cb = document.querySelector('input[name="perm_dojo_view_only"]');
@@ -10883,10 +10898,10 @@
         // Helper function to check if supervisor is trying to manage their own tasks
         function isSupervisorManagingOwnTask(taskId) {
             if (currentUserRole !== 'superv') return false;
-            
+
             const task = tasks.find(t => t.id === taskId);
             if (!task) return false;
-            
+
             const person = taskPeople.find(p => p.id === task.personId);
             return person && person.name === currentUserName;
         }
@@ -10897,7 +10912,7 @@
                 showErrorMessage('Erro', 'Apenas admin, coordenadores e supervisores podem marcar tasks como falhadas.');
                 return;
             }
-            
+
             if (isSupervisorManagingOwnTask(taskId)) {
                 showErrorMessage('Erro', 'Supervisores não podem marcar suas próprias tasks como falhadas.');
                 return;
@@ -10941,7 +10956,7 @@
                 showErrorMessage('Erro', 'Apenas admin, coordenadores e supervisores podem aprovar tasks.');
                 return;
             }
-            
+
             if (isSupervisorManagingOwnTask(taskId)) {
                 showErrorMessage('Erro', 'Supervisores não podem aprovar suas próprias tasks.');
                 return;
@@ -14924,14 +14939,14 @@
                 console.log('⚠️ Firebase not connected - using local tasks');
                 return;
             }
-            
+
             try {
                 const tasksRef = collection(db, `artifacts/${appId}/public/data/tasks`);
                 const snapshot = await getDocs(tasksRef);
                 tasks.length = 0;
                 snapshot.docs.forEach(doc => tasks.push({ id: doc.id, ...doc.data() }));
                 console.log(`✅ Tasks carregadas manualmente: ${tasks.length} tasks`);
-                
+
                 // Migration check
                 if (!migrationDataReady.tasks && tasks.length > 0) {
                     migrationDataReady.tasks = true;
@@ -14948,14 +14963,14 @@
                 console.log('⚠️ Firebase not connected - using local task people');
                 return;
             }
-            
+
             try {
                 const peopleRef = collection(db, `artifacts/${appId}/public/data/task-people`);
                 const snapshot = await getDocs(peopleRef);
                 taskPeople.length = 0;
                 snapshot.docs.forEach(doc => taskPeople.push({ id: doc.id, ...doc.data() }));
                 console.log(`✅ Task People carregados manualmente: ${taskPeople.length} pessoas`);
-                
+
                 // Check for orphaned tasks
                 if (tasks.length > 0 && taskPeople.length > 0) {
                     checkAndFixOrphanedTasks();
@@ -14968,7 +14983,7 @@
         // 🧹 Auto-cleanup: Delete old completed and failed tasks to reduce Firebase reads
         async function autoCleanupOldTasks() {
             if (!db) return;
-            
+
             try {
                 const now = new Date();
                 let deletedCount = 0;
@@ -15609,12 +15624,12 @@
         function handlePersonCardClick(personId) {
             const person = taskPeople.find(p => p.id === personId);
             if (!person) return;
-            
+
             if (!canOpenPersonCard(person)) {
                 showErrorMessage('Acesso Restrito', 'Você só pode ver as suas próprias tasks.');
                 return;
             }
-            
+
             openTaskManagementModal(personId);
         }
 
@@ -15814,14 +15829,14 @@
                     </div>
                 `;
             }).join('');
-            
+
             // Add click event listener to person cards
             setTimeout(() => {
                 document.querySelectorAll('.person-card').forEach(card => {
                     card.addEventListener('click', function(e) {
                         // Ignore clicks on edit/delete buttons
                         if (e.target.closest('button')) return;
-                        
+
                         const personId = this.dataset.personId;
                         handlePersonCardClick(personId);
                     });
@@ -16562,7 +16577,7 @@
         function editTask(taskId) {
             const task = tasks.find(t => t.id === taskId);
             if (!task) return;
-            
+
             if (isSupervisorManagingOwnTask(taskId)) {
                 showErrorMessage('Erro', 'Supervisores não podem editar suas próprias tasks.');
                 return;
@@ -16679,7 +16694,7 @@
         async function deleteTask(taskId) {
             const task = tasks.find(t => t.id === taskId);
             if (!task) return;
-            
+
             if (isSupervisorManagingOwnTask(taskId)) {
                 showErrorMessage('Erro', 'Supervisores não podem deletar suas próprias tasks.');
                 return;
@@ -16961,7 +16976,7 @@
                 showErrorMessage('Erro', 'Apenas admin, coordenadores e supervisores podem aprovar checklist items.');
                 return;
             }
-            
+
             if (isSupervisorManagingOwnTask(taskId)) {
                 showErrorMessage('Erro', 'Supervisores não podem aprovar itens das próprias checklists.');
                 return;
@@ -17002,7 +17017,7 @@
                 showErrorMessage('Erro', 'Apenas admin, coordenadores e supervisores podem marcar items como falhados.');
                 return;
             }
-            
+
             if (isSupervisorManagingOwnTask(taskId)) {
                 showErrorMessage('Erro', 'Supervisores não podem marcar itens das próprias checklists como falhados.');
                 return;
@@ -17043,7 +17058,7 @@
                 showErrorMessage('Erro', 'Apenas admin, coordenadores e supervisores podem aprovar items.');
                 return;
             }
-            
+
             if (isSupervisorManagingOwnTask(taskId)) {
                 showErrorMessage('Erro', 'Supervisores não podem aprovar itens das próprias checklists.');
                 return;
@@ -17852,23 +17867,23 @@
             currentStrikeMetaId = metaId;
             const meta = metas.find(m => m.id === metaId);
             if (!meta) return;
-            
+
             document.getElementById('add-strike-modal-title').textContent = `Strikes: ${meta.name}`;
             document.getElementById('strike-description').value = '';
-            
+
             updateStrikeListInModal(metaId);
-            
+
             document.getElementById('add-strike-modal').classList.add('visible');
         }
-        
+
         function updateStrikeListInModal(metaId) {
             const meta = metas.find(m => m.id === metaId);
             if (!meta) return;
-            
+
             const container = document.getElementById('strikes-list-in-modal');
             const strikes = meta.strikes || [];
             const canDelete = hasPermission('metas', 'delete');
-            
+
             if (strikes.length === 0) {
                 container.innerHTML = `
                     <div class="text-center py-6 text-stone-500">
@@ -17880,14 +17895,14 @@
                 const sortedStrikes = [...strikes].sort((a, b) => 
                     new Date(b.timestamp) - new Date(a.timestamp)
                 );
-                
+
                 container.innerHTML = `
                     <div class="space-y-2">
                         ${sortedStrikes.map((strike, index) => {
                             const date = new Date(strike.timestamp);
                             const dateStr = date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
                             const timeStr = date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-                            
+
                             return `
                                 <div class="flex items-start justify-between p-2 bg-white rounded border border-stone-200 hover:bg-stone-50 transition-colors">
                                     <div class="flex-1 min-w-0">
@@ -17934,7 +17949,7 @@
                 `;
             }
         }
-        
+
         async function removeStrikeFromAddModal(metaId, strikeId) {
             await removeStrike(metaId, strikeId);
             updateStrikeListInModal(metaId);
@@ -19915,7 +19930,7 @@
                     }
                     // PP counts as 0.5 attendance
                     if (status === 'PP') {
-                        presentLessons -= 0.5;
+                        presentLessons += 0.5;
                     }
                 }
             }
@@ -19947,12 +19962,17 @@
                 if (lessonData && lessonData.date) { // VIP lessons with date are considered registered
                     totalLessons++;
 
-                    // Check the actual status - VIPs use same structure as turmas but simpler
-                    const status = lessonData.status;
-                    if (status === 'P') {
-                        presentLessons++;
-                    } else if (status === 'PP') {
-                        presentLessons += 0.5; // Partial presence counts as 0.5
+                    // Check the actual status - need to find the student in lessonData.students
+                    // For VIP, we need to get studentId from the VIP record
+                    const vip = vips.find(v => v.id === vipId);
+                    const studentId = vip ? vip.studentId : null;
+                    if (studentId && lessonData.students && lessonData.students[studentId]) {
+                        const status = lessonData.students[studentId];
+                        if (status === 'P') {
+                            presentLessons++;
+                        } else if (status === 'PP') {
+                            presentLessons += 0.5; // Partial presence counts as 0.5
+                        }
                     }
                     // 'F' or undefined counts as 0 (absent)
                 }
@@ -22107,20 +22127,16 @@
             document.getElementById('logout-button').addEventListener('click', handleLogout);
             document.getElementById('pending-logout').addEventListener('click', handleLogout);
 
-            // Always load dashboard on startup - FORCE INICIO SECTION
-            window.navigationTimeout = setTimeout(() => {
-                // Force dashboard render regardless of other listeners
-                renderInicioSection(); 
-                setActiveNavItem(document.querySelector('[data-target="inicio"]'));
-                console.log('Dashboard forced to load on startup');
-            }, 200);
+            // FORCE DEVELOPMENT MODE - Show dashboard without login
+            startAppInDevelopmentMode();
 
             // Initialize click sound system
             initializeClickSound();
             initializeClickSounds();
             observeNewElements();
 
-            initializeFirebase();
+            // Development mode - Firebase disabled for preview
+            // initializeFirebase();
         });
     </script>
 </body>
