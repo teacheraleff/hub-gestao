@@ -769,6 +769,7 @@
         // Filter state for turmas and VIPs
         let currentTurmasFilter = 'todos';
         let currentVipsFilter = 'ativos';
+        let currentProcessosSetorFilter = 'todos';
 
         // --- PERMISSION REGISTRY SYSTEM ---
         const PermissionRegistry = {
@@ -13408,33 +13409,43 @@
         }
 
         function filterProcessos(searchTerm) {
-
-
             const searchLower = searchTerm.toLowerCase().trim();
-
-
             const canManage = can('processos.manage');
 
+            // Helper to get setores from processo steps
+            function getProcessoSetores(processo) {
+                const setores = new Set();
+                if (processo.steps && Array.isArray(processo.steps)) {
+                    processo.steps.forEach(step => {
+                        if (step.type !== 'instrucao' && step.setor) {
+                            setores.add(step.setor);
+                        }
+                    });
+                }
+                return setores;
+            }
 
-
-
-
-            const filteredProcessos = searchLower === '' 
-
-
-                ? processos 
-
-
-                : processos.filter(processo => 
-
-
-                    processo.name.toLowerCase().includes(searchLower) ||
-
-
-                    (processo.description && processo.description.toLowerCase().includes(searchLower))
-
-
-                );
+            // Apply both search and setor filter
+            const filteredProcessos = processos.filter(processo => {
+                // Setor filter
+                if (currentProcessosSetorFilter !== 'todos') {
+                    const setores = getProcessoSetores(processo);
+                    if (!setores.has(currentProcessosSetorFilter)) {
+                        return false;
+                    }
+                }
+                
+                // Search filter
+                if (searchLower !== '') {
+                    const matchesSearch = processo.name.toLowerCase().includes(searchLower) ||
+                        (processo.description && processo.description.toLowerCase().includes(searchLower));
+                    if (!matchesSearch) {
+                        return false;
+                    }
+                }
+                
+                return true;
+            });
 
 
 
@@ -13567,20 +13578,48 @@
 
 
             document.getElementById('processos-grid').innerHTML = processosHtml;
-
-
         }
 
-
+        function setProcessosSetorFilter(setor) {
+            currentProcessosSetorFilter = setor;
+            renderProcessosSection();
+            
+            // Restore search term if any
+            const searchInput = document.getElementById('processo-search');
+            if (searchInput && searchInput.value) {
+                filterProcessos(searchInput.value);
+            }
+        }
 
         function renderProcessosSection() {
             const canManage = can('processos.manage');
 
+            // Helper to get setores from processo steps
+            function getProcessoSetores(processo) {
+                const setores = new Set();
+                if (processo.steps && Array.isArray(processo.steps)) {
+                    processo.steps.forEach(step => {
+                        if (step.type !== 'instrucao' && step.setor) {
+                            setores.add(step.setor);
+                        }
+                    });
+                }
+                return setores;
+            }
+
+            // Apply setor filter
+            const filteredProcessos = currentProcessosSetorFilter === 'todos' 
+                ? processos 
+                : processos.filter(processo => {
+                    const setores = getProcessoSetores(processo);
+                    return setores.has(currentProcessosSetorFilter);
+                });
+
             let processosHtml = '';
-            if (processos.length === 0) {
-                processosHtml = '<div class="col-span-full text-center py-12 text-stone-500"><p>Nenhum processo cadastrado ainda.</p></div>';
+            if (filteredProcessos.length === 0) {
+                processosHtml = '<div class="col-span-full text-center py-12 text-stone-500"><p>Nenhum processo encontrado para este setor.</p></div>';
             } else {
-                processosHtml = processos.map(processo => {
+                processosHtml = filteredProcessos.map(processo => {
                     const editButtons = canManage ? `
                         <div class="flex gap-1">
                             <button class="icon-btn" data-action="edit-processo" data-id="${processo.id}" title="Editar">
@@ -13666,7 +13705,7 @@
                         ${addButton}
                     </div>
 
-                    <div class="mb-4">
+                    <div class="mb-4 space-y-4">
                         <div class="relative">
                             <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
@@ -13676,6 +13715,15 @@
                                    placeholder="Pesquisar processos..." 
                                    class="form-input pl-10" 
                                    oninput="filterProcessos(this.value)">
+                        </div>
+                        <div class="flex flex-wrap gap-2">
+                            <button class="secondary-btn filter-btn \${currentProcessosSetorFilter === 'todos' ? 'active' : ''}" data-action="filter-processos-setor" data-setor="todos">Todos</button>
+                            <button class="secondary-btn filter-btn \${currentProcessosSetorFilter === 'comercial' ? 'active' : ''}" data-action="filter-processos-setor" data-setor="comercial">Comercial</button>
+                            <button class="secondary-btn filter-btn \${currentProcessosSetorFilter === 'pedagogico' ? 'active' : ''}" data-action="filter-processos-setor" data-setor="pedagogico">Pedagógico</button>
+                            <button class="secondary-btn filter-btn \${currentProcessosSetorFilter === 'administrativo' ? 'active' : ''}" data-action="filter-processos-setor" data-setor="administrativo">Administrativo</button>
+                            <button class="secondary-btn filter-btn \${currentProcessosSetorFilter === 'direcao' ? 'active' : ''}" data-action="filter-processos-setor" data-setor="direcao">Direção</button>
+                            <button class="secondary-btn filter-btn \${currentProcessosSetorFilter === 'professor' ? 'active' : ''}" data-action="filter-processos-setor" data-setor="professor">Professor</button>
+                            <button class="secondary-btn filter-btn \${currentProcessosSetorFilter === 'supervisao' ? 'active' : ''}" data-action="filter-processos-setor" data-setor="supervisao">Supervisão</button>
                         </div>
                     </div>
 
@@ -15343,17 +15391,23 @@
 
                             <div class="mt-4 w-full pt-4 border-t border-stone-200">
                                 <div class="flex justify-center items-center gap-6">
-                                    <div class="flex items-center gap-1.5" title="Ativas">
-                                        <svg class="w-5 h-5 text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-                                        </svg>
-                                        <span class="text-xl font-bold text-stone-800">${pendingTasks.length}</span>
+                                    <div class="flex flex-col items-center gap-1" title="Ativas">
+                                        <div class="flex items-center gap-1.5">
+                                            <svg class="w-5 h-5 text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                                            </svg>
+                                            <span class="text-xl font-bold text-stone-800">${pendingTasks.length}</span>
+                                        </div>
+                                        <span class="text-xs text-stone-500 font-medium">Ativas</span>
                                     </div>
-                                    <div class="flex items-center gap-1.5" title="Atrasadas">
-                                        <svg class="w-5 h-5 ${overdueCount > 0 ? 'text-red-500' : 'text-green-500'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                                        </svg>
-                                        <span class="text-xl font-bold ${overdueCount > 0 ? 'text-red-600' : 'text-green-600'}">${overdueCount}</span>
+                                    <div class="flex flex-col items-center gap-1" title="Atrasadas">
+                                        <div class="flex items-center gap-1.5">
+                                            <svg class="w-5 h-5 ${overdueCount > 0 ? 'text-red-500' : 'text-green-500'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                            </svg>
+                                            <span class="text-xl font-bold ${overdueCount > 0 ? 'text-red-600' : 'text-green-600'}">${overdueCount}</span>
+                                        </div>
+                                        <span class="text-xs ${overdueCount > 0 ? 'text-red-500' : 'text-green-500'} font-medium">Atrasadas</span>
                                     </div>
                                 </div>
                             </div>
@@ -18334,6 +18388,7 @@
         window.openProcessoViewModal = openProcessoViewModal;
         window.deleteProcesso = deleteProcesso;
         window.filterProcessos = filterProcessos;
+        window.setProcessosSetorFilter = setProcessosSetorFilter;
         window.addStepToForm = addStepToForm;
         window.removeStepFromForm = removeStepFromForm;
         window.moveStepUp = moveStepUp;
@@ -21681,6 +21736,7 @@
                         'view-processo': () => openProcessoViewModal(id),
                         'edit-processo': () => openProcessoForm(id),
                         'delete-processo': () => deleteProcesso(id),
+                        'filter-processos-setor': () => setProcessosSetorFilter(event.target.dataset.setor),
                         'view-schedule': () => openScheduleForm(id),
                         'add-expense': openExpenseForm,
                         'view-expense': () => openExpenseForm(id),
