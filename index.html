@@ -14781,7 +14781,19 @@
             }
             
             // Outros roles podem abrir apenas seu próprio card
-            return person.name === currentUserName;
+            // Comparar por email primeiro (mais confiável), depois por nome normalizado
+            const currentCollaborator = window.currentCollaborator;
+            
+            // Se temos o email do colaborador atual, comparar com email da pessoa
+            if (currentCollaborator && currentCollaborator.email && person.email) {
+                return currentCollaborator.email.toLowerCase().trim() === person.email.toLowerCase().trim();
+            }
+            
+            // Fallback: comparar nomes normalizados (lowercase e sem espaços extras)
+            const normalizedPersonName = (person.name || '').toLowerCase().trim();
+            const normalizedCurrentName = (currentUserName || '').toLowerCase().trim();
+            
+            return normalizedPersonName === normalizedCurrentName;
         }
         
         // Verificar se usuário atual tem acesso total a tasks
