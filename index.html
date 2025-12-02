@@ -10,11 +10,11 @@
     <script src="/firebase-config.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Palette: SLAP Brand Colors: #F1D24B (Yellow), #FF5C3D (Orange), #84C7DF (Blue), #8671D1 (Purple) -->
     <style>
         body {
-            font-family: 'DM Sans', sans-serif;
+            font-family: 'Spline Sans', sans-serif;
             line-height: 1.25;
         }
         .nav-item.active {
@@ -10931,12 +10931,12 @@
                     <meta charset="UTF-8">
                     <meta name="viewport" content="width=device-width, initial-scale=1.0">
                     <title>PEF - ${turma.name}</title>
-                    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+                    <link href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
                     <style>
                         * { margin: 0; padding: 0; box-sizing: border-box; }
 
                         body { 
-                            font-family: 'DM Sans', Arial, sans-serif; 
+                            font-family: 'Spline Sans', Arial, sans-serif; 
                             line-height: 1.6; 
                             color: #2d3748; 
                             background: #f7fafc;
@@ -11424,12 +11424,12 @@
                     <meta charset="UTF-8">
                     <meta name="viewport" content="width=device-width, initial-scale=1.0">
                     <title>PEF Individual - ${student.name}</title>
-                    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+                    <link href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
                     <style>
                         * { margin: 0; padding: 0; box-sizing: border-box; }
 
                         body { 
-                            font-family: 'DM Sans', Arial, sans-serif; 
+                            font-family: 'Spline Sans', Arial, sans-serif; 
                             line-height: 1.6; 
                             color: #2d3748; 
                             background: #f7fafc;
@@ -19443,36 +19443,43 @@
                                     <tbody>
                                         <tr>
                                             <td>Midterm Test</td>
+                                            <td style="text-align: center;">20</td>
                                             <td style="text-align: center;" class="score">${grades.midtermTest.toFixed(1)}</td>
                                             <td style="text-align: center;" class="percentage">${(grades.midtermTest / 20 * 100).toFixed(0)}%</td>
                                         </tr>
                                         <tr>
                                             <td>Listening Test</td>
+                                            <td style="text-align: center;">20</td>
                                             <td style="text-align: center;" class="score">${grades.listeningTest.toFixed(1)}</td>
                                             <td style="text-align: center;" class="percentage">${(grades.listeningTest / 20 * 100).toFixed(0)}%</td>
                                         </tr>
                                         <tr>
                                             <td>Grammar Test</td>
+                                            <td style="text-align: center;">20</td>
                                             <td style="text-align: center;" class="score">${grades.grammarTest.toFixed(1)}</td>
                                             <td style="text-align: center;" class="percentage">${(grades.grammarTest / 20 * 100).toFixed(0)}%</td>
                                         </tr>
                                         <tr>
                                             <td>Oral Test</td>
+                                            <td style="text-align: center;">20</td>
                                             <td style="text-align: center;" class="score">${grades.oralTest.toFixed(1)}</td>
                                             <td style="text-align: center;" class="percentage">${(grades.oralTest / 20 * 100).toFixed(0)}%</td>
                                         </tr>
                                         <tr>
                                             <td>Participação</td>
+                                            <td style="text-align: center;">10</td>
                                             <td style="text-align: center;" class="score">${grades.participacao.toFixed(1)}</td>
                                             <td style="text-align: center;" class="percentage">${(grades.participacao / 10 * 100).toFixed(0)}%</td>
                                         </tr>
                                         <tr>
                                             <td>Assiduidade</td>
+                                            <td style="text-align: center;">10</td>
                                             <td style="text-align: center;" class="score">${grades.assiduidade.toFixed(1)}</td>
                                             <td style="text-align: center;" class="percentage">${(grades.assiduidade / 10 * 100).toFixed(0)}%</td>
                                         </tr>
                                         <tr class="total-row">
                                             <td>NOTA FINAL</td>
+                                            <td style="text-align: center;">100</td>
                                             <td style="text-align: center;">${total.toFixed(1)}</td>
                                             <td style="text-align: center;">${(total / 100 * 100).toFixed(0)}%</td>
                                         </tr>
@@ -19681,36 +19688,43 @@
                                     <tbody>
                                         <tr>
                                             <td><strong>Midterm Test</strong><br><span style="font-size: 0.8em; color: #666;">Avaliação de meio de curso</span></td>
+                                            <td style="text-align: center;">20</td>
                                             <td style="text-align: center;" class="score">${grades.midtermTest.toFixed(1)}</td>
                                             <td style="text-align: center;" class="percentage">${(grades.midtermTest / 20 * 100).toFixed(0)}%</td>
                                         </tr>
                                         <tr>
                                             <td><strong>Listening Test</strong><br><span style="font-size: 0.8em; color: #666;">Competência auditiva</span></td>
+                                            <td style="text-align: center;">20</td>
                                             <td style="text-align: center;" class="score">${grades.listeningTest.toFixed(1)}</td>
                                             <td style="text-align: center;" class="percentage">${(grades.listeningTest / 20 * 100).toFixed(0)}%</td>
                                         </tr>
                                         <tr>
                                             <td><strong>Grammar Test</strong><br><span style="font-size: 0.8em; color: #666;">Competência gramatical</span></td>
+                                            <td style="text-align: center;">20</td>
                                             <td style="text-align: center;" class="score">${grades.grammarTest.toFixed(1)}</td>
                                             <td style="text-align: center;" class="percentage">${(grades.grammarTest / 20 * 100).toFixed(0)}%</td>
                                         </tr>
                                         <tr>
                                             <td><strong>Oral Test</strong><br><span style="font-size: 0.8em; color: #666;">Competência oral e pronúncia</span></td>
+                                            <td style="text-align: center;">20</td>
                                             <td style="text-align: center;" class="score">${grades.oralTest.toFixed(1)}</td>
                                             <td style="text-align: center;" class="percentage">${(grades.oralTest / 20 * 100).toFixed(0)}%</td>
                                         </tr>
                                         <tr>
                                             <td><strong>Participação</strong><br><span style="font-size: 0.8em; color: #666;">Engajamento em aula</span></td>
+                                            <td style="text-align: center;">10</td>
                                             <td style="text-align: center;" class="score">${grades.participacao.toFixed(1)}</td>
                                             <td style="text-align: center;" class="percentage">${(grades.participacao / 10 * 100).toFixed(0)}%</td>
                                         </tr>
                                         <tr>
                                             <td><strong>Assiduidade</strong><br><span style="font-size: 0.8em; color: #666;">Frequência nas aulas</span></td>
+                                            <td style="text-align: center;">10</td>
                                             <td style="text-align: center;" class="score">${grades.assiduidade.toFixed(1)}</td>
                                             <td style="text-align: center;" class="percentage">${(grades.assiduidade / 10 * 100).toFixed(0)}%</td>
                                         </tr>
                                         <tr class="total-row">
                                             <td><strong>NOTA FINAL</strong></td>
+                                            <td style="text-align: center;">100</td>
                                             <td style="text-align: center;">${total.toFixed(1)}</td>
                                             <td style="text-align: center;">${(total / 100 * 100).toFixed(0)}%</td>
                                         </tr>
@@ -19808,7 +19822,7 @@
                     <title>Report Card - ${turma.name}</title>
                     <style>
                         * { margin: 0; padding: 0; box-sizing: border-box; }
-                        body { font-family: 'DM Sans', 'Arial', sans-serif; line-height: 1.5; color: #2d3748; background: #ffffff; }
+                        body { font-family: 'Spline Sans', 'Arial', sans-serif; line-height: 1.5; color: #2d3748; background: #ffffff; }
                         .container { max-width: 1200px; margin: 0 auto; background: white; }
                         .header { background: #F1D24B; padding: 40px 40px 30px 40px; position: relative; }
                         .logo-section { display: flex; align-items: center; justify-content: center; margin-bottom: 20px; }
@@ -20011,7 +20025,7 @@
                     <title>Report Card - ${student.name}</title>
                     <style>
                         * { margin: 0; padding: 0; box-sizing: border-box; }
-                        body { font-family: 'DM Sans', 'Arial', sans-serif; line-height: 1.5; color: #2d3748; background: #ffffff; }
+                        body { font-family: 'Spline Sans', 'Arial', sans-serif; line-height: 1.5; color: #2d3748; background: #ffffff; }
                         .container { max-width: 800px; margin: 0 auto; background: white; }
                         .header { background: #F1D24B; padding: 40px 40px 30px 40px; position: relative; }
                         .logo-section { display: flex; align-items: center; justify-content: center; margin-bottom: 20px; }
