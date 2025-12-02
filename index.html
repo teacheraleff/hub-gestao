@@ -4403,17 +4403,6 @@
                         </div>
                     </div>
 
-                    \${currentUserRole === 'admin' ? \`
-                        <div class="mb-4">
-                            <button 
-                                onclick="cleanupDuplicateRechamadas()"
-                                class="text-sm px-3 py-1.5 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors"
-                            >
-                                🧹 Limpar Rechamadas Duplicadas
-                            </button>
-                        </div>
-                    \` : ''}
-
                                         ${uniqueTeachers.length > 0 && (currentUserRole !== 'teacher' && currentUserRole !== 'teachertn') ? `
                         <div class="mb-6 flex items-center gap-4">
                             <label class="text-sm font-semibold text-stone-700">Filtrar por professor:</label>
