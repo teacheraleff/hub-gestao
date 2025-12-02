@@ -2675,7 +2675,7 @@
             const vipStudents = students.filter(s => {
                 const hasVipRecord = vips.find(v => v.studentId === s.id);
                 const studentStatus = (s.status || '').toLowerCase();
-                const isCanceled = studentStatus === 'cancelado' || studentStatus === 'não renovado';
+                const isCanceled = studentStatus === 'cancelado' || studentStatus === 'nao renovado';
                 return (s.modalidade === 'VIP' || s.modalidade === 'DUPLA') && hasVipRecord && !isCanceled;
             });
             let filteredVips = vipStudents;
@@ -4253,9 +4253,9 @@
                 const student = students.find(s => s.id === vip.studentId);
                 if (!student) return;
                 
-                // Ignorar alunos cancelados ou não renovados
+                // Ignorar alunos cancelados ou nao renovados
                 const studentStatus = (student.status || '').toLowerCase();
-                if (studentStatus === 'cancelado' || studentStatus === 'não renovado') return;
+                if (studentStatus === 'cancelado' || studentStatus === 'nao renovado') return;
 
                 const attendanceRecord = attendance.find(a => a.id === vip.id);
                 const absences = findConsecutiveAbsences(attendanceRecord, student.id);
@@ -4293,9 +4293,9 @@
                     const student = students.find(s => s.id === studentId);
                     if (!student) return;
                     
-                    // Ignorar alunos cancelados ou não renovados
+                    // Ignorar alunos cancelados ou nao renovados
                     const studentStatus = (student.status || '').toLowerCase();
-                    if (studentStatus === 'cancelado' || studentStatus === 'não renovado') return;
+                    if (studentStatus === 'cancelado' || studentStatus === 'nao renovado') return;
 
                     const absences = findConsecutiveAbsences(attendanceRecord, studentId);
 
@@ -8367,7 +8367,7 @@
                 .filter(s => {
                     if (!s) return false;
                     const status = (s.status || '').toLowerCase();
-                    return status !== 'cancelado' && status !== 'não renovado';
+                    return status !== 'cancelado' && status !== 'nao renovado';
                 });
 
             // Botão de exportação da turma completa
@@ -10988,7 +10988,7 @@
                 .filter(s => {
                     if (!s) return false;
                     const status = (s.status || '').toLowerCase();
-                    return status !== 'cancelado' && status !== 'não renovado';
+                    return status !== 'cancelado' && status !== 'nao renovado';
                 });
             const unitAttendance = attendance.find(a => a.id === turmaId);
             if (!turmaStudents.length) { showErrorMessage("Erro", "Nenhum aluno na turma para exportar."); return; }
@@ -13278,13 +13278,13 @@
                                    oninput="filterProcessos(this.value)">
                         </div>
                         <div class="flex flex-wrap gap-2">
-                            <button class="secondary-btn filter-btn \${currentProcessosSetorFilter === 'todos' ? 'active' : ''}" data-action="filter-processos-setor" data-setor="todos">Todos</button>
-                            <button class="secondary-btn filter-btn \${currentProcessosSetorFilter === 'comercial' ? 'active' : ''}" data-action="filter-processos-setor" data-setor="comercial">Comercial</button>
-                            <button class="secondary-btn filter-btn \${currentProcessosSetorFilter === 'pedagogico' ? 'active' : ''}" data-action="filter-processos-setor" data-setor="pedagogico">Pedagógico</button>
-                            <button class="secondary-btn filter-btn \${currentProcessosSetorFilter === 'administrativo' ? 'active' : ''}" data-action="filter-processos-setor" data-setor="administrativo">Administrativo</button>
-                            <button class="secondary-btn filter-btn \${currentProcessosSetorFilter === 'direcao' ? 'active' : ''}" data-action="filter-processos-setor" data-setor="direcao">Direção</button>
-                            <button class="secondary-btn filter-btn \${currentProcessosSetorFilter === 'professor' ? 'active' : ''}" data-action="filter-processos-setor" data-setor="professor">Professor</button>
-                            <button class="secondary-btn filter-btn \${currentProcessosSetorFilter === 'supervisao' ? 'active' : ''}" data-action="filter-processos-setor" data-setor="supervisao">Supervisão</button>
+                            <button class="secondary-btn filter-btn ${currentProcessosSetorFilter === 'todos' ? 'active' : ''}" data-action="filter-processos-setor" data-setor="todos">Todos</button>
+                            <button class="secondary-btn filter-btn ${currentProcessosSetorFilter === 'comercial' ? 'active' : ''}" data-action="filter-processos-setor" data-setor="comercial">Comercial</button>
+                            <button class="secondary-btn filter-btn ${currentProcessosSetorFilter === 'pedagogico' ? 'active' : ''}" data-action="filter-processos-setor" data-setor="pedagogico">Pedagógico</button>
+                            <button class="secondary-btn filter-btn ${currentProcessosSetorFilter === 'administrativo' ? 'active' : ''}" data-action="filter-processos-setor" data-setor="administrativo">Administrativo</button>
+                            <button class="secondary-btn filter-btn ${currentProcessosSetorFilter === 'direcao' ? 'active' : ''}" data-action="filter-processos-setor" data-setor="direcao">Direção</button>
+                            <button class="secondary-btn filter-btn ${currentProcessosSetorFilter === 'professor' ? 'active' : ''}" data-action="filter-processos-setor" data-setor="professor">Professor</button>
+                            <button class="secondary-btn filter-btn ${currentProcessosSetorFilter === 'supervisao' ? 'active' : ''}" data-action="filter-processos-setor" data-setor="supervisao">Supervisão</button>
                         </div>
                     </div>
 
@@ -15973,7 +15973,7 @@
 
             // Update Firebase
             try {
-                await updateDoc(doc(db, \`artifacts/\${appId}/public/data/tasks\`, task.id), {
+                await updateDoc(doc(db, `artifacts/${appId}/public/data/tasks`, task.id), {
                     personId: targetPersonId,
                     movedAt: new Date().toISOString(),
                     movedBy: currentUserName || 'Admin'
