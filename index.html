@@ -14601,11 +14601,11 @@
                             <h4 id="aviso-form-title">Novo Aviso</h4>
                             <button onclick="closeAvisoFormModal()" class="modal-close-btn">&times;</button>
                         </div>
-                        <form id="aviso-form" onsubmit="handleSubmitAviso(event)">
+                        <form id="aviso-form" onsubmit="return false;">
                             <div class="space-y-4">
                                 <div>
                                     <label class="font-medium text-sm">Título do Aviso <span class="text-red-500">*</span></label>
-                                    <input type="text" id="aviso-title" class="form-input" required placeholder="Ex: Reunião amanhã às 14h">
+                                    <input type="text" id="aviso-title" class="form-input" placeholder="Ex: Reunião amanhã às 14h">
                                 </div>
                                 <div>
                                     <label class="font-medium text-sm">Descrição</label>
@@ -14622,7 +14622,7 @@
                             </div>
                             <div class="mt-6 flex justify-end gap-3">
                                 <button type="button" class="secondary-btn" onclick="closeAvisoFormModal()">Cancelar</button>
-                                <button type="submit" class="primary-btn" style="background-color: #F1D24B; color: #1c1917;" onmouseover="this.style.backgroundColor='#e6c740'" onmouseout="this.style.backgroundColor='#F1D24B'">
+                                <button type="button" class="primary-btn" style="background-color: #F1D24B; color: #1c1917;" onmouseover="this.style.backgroundColor='#e6c740'" onmouseout="this.style.backgroundColor='#F1D24B'" onclick="handleSubmitAviso()">
                                     Salvar Aviso
                                 </button>
                             </div>
@@ -16430,8 +16430,7 @@
             editingTaskId = null;
         }
 
-        async function handleSubmitAviso(e) {
-            e.preventDefault();
+        async function handleSubmitAviso() {
 
             const title = document.getElementById('aviso-title').value.trim();
             const description = document.getElementById('aviso-description').value.trim();
