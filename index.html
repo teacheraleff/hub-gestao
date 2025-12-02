@@ -5790,6 +5790,21 @@
             if (parts.length === 1) return parts[0];
             return parts[0] + ' ' + parts[parts.length - 1];
         }
+        // Helper to render urgency tag
+        function getUrgencyTag(urgency) {
+            if (!urgency) return '';
+            
+            const tags = {
+                'low': '<span class="px-2 py-0.5 text-xs font-semibold rounded" style="background-color: #e0e7ff; color: #3730a3;">BAIXA PRIORIDADE</span>',
+                'normal': '<span class="px-2 py-0.5 text-xs font-semibold rounded" style="background-color: #d1fae5; color: #065f46;">SEM URGÊNCIA</span>',
+                'medium': '<span class="px-2 py-0.5 text-xs font-semibold rounded" style="background-color: #fef3c7; color: #92400e;">MÉDIA PRIORIDADE</span>',
+                'urgent': '<span class="px-2 py-0.5 text-xs font-semibold rounded" style="background-color: #fecaca; color: #991b1b;">URGENTE</span>',
+                'max': '<span class="px-2 py-0.5 text-xs font-semibold rounded" style="background-color: #7c3aed; color: white;">PRIORIDADE MÁXIMA</span>'
+            };
+            
+            return tags[urgency] || '';
+        }
+
 
         // Função para formatação de valores monetários no padrão brasileiro
         function formatCurrencyBR(value) {
@@ -14464,8 +14479,11 @@
                                     <label class="font-medium text-sm">Urgência</label>
                                     <select id="task-urgency" class="form-input">
                                         <option value="">Sem tag</option>
+                                        <option value="low">Baixa Prioridade</option>
                                         <option value="normal">Sem Urgência</option>
+                                        <option value="medium">Média Prioridade</option>
                                         <option value="urgent">Urgente</option>
+                                        <option value="max">Prioridade Máxima</option>
                                     </select>
                                 </div>
                             </div>
@@ -14508,8 +14526,11 @@
                                     <label class="font-medium text-sm">Urgência</label>
                                     <select id="checklist-urgency" class="form-input">
                                         <option value="">Sem tag</option>
+                                        <option value="low">Baixa Prioridade</option>
                                         <option value="normal">Sem Urgência</option>
+                                        <option value="medium">Média Prioridade</option>
                                         <option value="urgent">Urgente</option>
+                                        <option value="max">Prioridade Máxima</option>
                                     </select>
                                 </div>
 
@@ -14576,8 +14597,11 @@
                                     <label class="font-medium text-sm">Urgência</label>
                                     <select id="reminder-urgency" class="form-input">
                                         <option value="">Sem tag</option>
+                                        <option value="low">Baixa Prioridade</option>
                                         <option value="normal">Sem Urgência</option>
+                                        <option value="medium">Média Prioridade</option>
                                         <option value="urgent">Urgente</option>
+                                        <option value="max">Prioridade Máxima</option>
                                     </select>
                                 </div>
 
@@ -14623,8 +14647,11 @@
                                     <label class="font-medium text-sm">Urgência</label>
                                     <select id="aviso-urgency" class="form-input">
                                         <option value="">Sem tag</option>
+                                        <option value="low">Baixa Prioridade</option>
                                         <option value="normal">Sem Urgência</option>
+                                        <option value="medium">Média Prioridade</option>
                                         <option value="urgent">Urgente</option>
+                                        <option value="max">Prioridade Máxima</option>
                                     </select>
                                 </div>
                             </div>
@@ -14758,8 +14785,11 @@
                                             <label class="font-medium text-sm">Urgência</label>
                                             <select id="multiple-lembrete-urgency" class="form-input">
                                                 <option value="">Sem tag</option>
+                                                <option value="low">Baixa Prioridade</option>
                                                 <option value="normal">Sem Urgência</option>
+                                                <option value="medium">Média Prioridade</option>
                                                 <option value="urgent">Urgente</option>
+                                                <option value="max">Prioridade Máxima</option>
                                             </select>
                                         </div>
                                     </div>
@@ -14954,6 +14984,9 @@
                 // Count tasks awaiting approval (completed by user but not approved yet)
                 let awaitingApprovalCount = 0;
                 personTasks.forEach(t => {
+                    // Skip avisos - they use read/unread, not approval system
+                    if (t.type === 'aviso') return;
+                    
                     if (t.type === 'checklist' && t.checklistItems) {
                         // For checklists, count items completed by user but not approved
                         t.checklistItems.forEach(item => {
@@ -14961,8 +14994,15 @@
                                 awaitingApprovalCount++;
                             }
                         });
-                    } else if (t.completedByUser && !t.approved) {
-                        // For normal tasks
+                    } else if (t.type === 'reminder' && t.reminderMode === 'checklist' && t.checklistItems) {
+                        // For reminder checklists, count items completed by user but not approved
+                        t.checklistItems.forEach(item => {
+                            if (item.completedByUser && !item.approved) {
+                                awaitingApprovalCount++;
+                            }
+                        });
+                    } else if (t.completedByUser && !t.approved && !t.failed) {
+                        // For normal tasks and single reminders (not failed)
                         awaitingApprovalCount++;
                     }
                 });
@@ -15289,7 +15329,7 @@
                                 <div class="flex-1">
                                     <div class="flex items-center gap-2 flex-wrap">
                                         <span class="text-white text-xs px-2 py-1 rounded font-semibold" style="background-color: #8671D1;">CHECKLIST</span>
-                                        ${task.urgency ? (task.urgency === 'urgent' ? '<span class="px-2 py-0.5 text-xs font-semibold rounded" style="background-color: #fecaca; color: #991b1b;">URGENTE</span>' : '<span class="px-2 py-0.5 text-xs font-semibold rounded" style="background-color: #d1fae5; color: #065f46;">SEM URGÊNCIA</span>') : ''}
+                                        ${getUrgencyTag(task.urgency)}
                                         <h4 class="font-semibold text-stone-800 ${allApproved ? 'line-through text-stone-500' : ''}">
                                             ${task.title}
                                         </h4>
@@ -15427,7 +15467,7 @@
                                                 </svg>
                                                 LEMBRETE
                                             </span>
-                                            ${task.urgency ? (task.urgency === 'urgent' ? '<span class="px-2 py-0.5 text-xs font-semibold rounded" style="background-color: #fecaca; color: #991b1b;">URGENTE</span>' : '<span class="px-2 py-0.5 text-xs font-semibold rounded" style="background-color: #d1fae5; color: #065f46;">SEM URGÊNCIA</span>') : ''}
+                                            ${getUrgencyTag(task.urgency)}
                                             <h4 class="font-semibold text-stone-800 ${allApproved ? 'line-through text-stone-500' : ''}">
                                                 ${task.title}
                                             </h4>
@@ -15570,7 +15610,7 @@
                                             </svg>
                                             LEMBRETE
                                         </span>
-                                        ${task.urgency ? (task.urgency === 'urgent' ? '<span class="px-2 py-0.5 text-xs font-semibold rounded" style="background-color: #fecaca; color: #991b1b;">URGENTE</span>' : '<span class="px-2 py-0.5 text-xs font-semibold rounded" style="background-color: #d1fae5; color: #065f46;">SEM URGÊNCIA</span>') : ''}
+                                        ${getUrgencyTag(task.urgency)}
                                         <h4 class="font-semibold text-stone-800 ${task.approved ? 'line-through text-stone-500' : ''}">
                                             ${task.title}
                                         </h4>
@@ -15734,7 +15774,7 @@
                                         </svg>
                                         TASK
                                     </span>
-                                    ${task.urgency ? (task.urgency === 'urgent' ? '<span class="px-2 py-0.5 text-xs font-semibold rounded" style="background-color: #fecaca; color: #991b1b;">URGENTE</span>' : '<span class="px-2 py-0.5 text-xs font-semibold rounded" style="background-color: #d1fae5; color: #065f46;">SEM URGÊNCIA</span>') : ''}
+                                    ${getUrgencyTag(task.urgency)}
                                     <h4 class="font-semibold text-stone-800 ${task.approved ? 'line-through text-stone-500' : ''}">
                                         ${task.title}
                                     </h4>
