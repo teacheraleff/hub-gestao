@@ -2671,9 +2671,12 @@
             const statusFilter = currentVipsFilter;
 
             // Only show students who have actual VIP records, not just VIP modality
+            // Also exclude canceled students (status = 'Cancelado' or 'Não Renovado')
             const vipStudents = students.filter(s => {
                 const hasVipRecord = vips.find(v => v.studentId === s.id);
-                return (s.modalidade === 'VIP' || s.modalidade === 'DUPLA') && hasVipRecord;
+                const studentStatus = (s.status || '').toLowerCase();
+                const isCanceled = studentStatus === 'cancelado' || studentStatus === 'não renovado';
+                return (s.modalidade === 'VIP' || s.modalidade === 'DUPLA') && hasVipRecord && !isCanceled;
             });
             let filteredVips = vipStudents;
 
@@ -4249,6 +4252,10 @@
             vips.forEach(vip => {
                 const student = students.find(s => s.id === vip.studentId);
                 if (!student) return;
+                
+                // Ignorar alunos cancelados ou não renovados
+                const studentStatus = (student.status || '').toLowerCase();
+                if (studentStatus === 'cancelado' || studentStatus === 'não renovado') return;
 
                 const attendanceRecord = attendance.find(a => a.id === vip.id);
                 const absences = findConsecutiveAbsences(attendanceRecord, student.id);
@@ -4285,6 +4292,10 @@
                 turma.studentIds?.forEach(studentId => {
                     const student = students.find(s => s.id === studentId);
                     if (!student) return;
+                    
+                    // Ignorar alunos cancelados ou não renovados
+                    const studentStatus = (student.status || '').toLowerCase();
+                    if (studentStatus === 'cancelado' || studentStatus === 'não renovado') return;
 
                     const absences = findConsecutiveAbsences(attendanceRecord, studentId);
 
@@ -4546,7 +4557,7 @@
                                     Página ${window.currentRechamadaPage} de ${totalPages}
                                 </span>
                                 <button 
-                                    onclick="window.currentRechamadaPage = Math.min(` + totalPages + `, window.currentRechamadaPage + 1); renderRechamadaSection();"
+                                    onclick="goToRechamadaPage(Math.min(${totalPages}, window.currentRechamadaPage + 1))"
                                     class="px-3 py-2 rounded-lg border border-stone-300 text-stone-600 hover:bg-stone-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                     ${window.currentRechamadaPage >= totalPages ? 'disabled' : ''}
                                     title="Próxima página"
@@ -4556,7 +4567,7 @@
                                     </svg>
                                 </button>
                                 <button 
-                                    onclick="window.currentRechamadaPage = ` + totalPages + `; renderRechamadaSection();"
+                                    onclick="goToRechamadaPage(${totalPages})"
                                     class="px-3 py-2 rounded-lg border border-stone-300 text-stone-600 hover:bg-stone-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                     ${window.currentRechamadaPage >= totalPages ? 'disabled' : ''}
                                     title="Última página"
@@ -4574,6 +4585,11 @@
 
 
             `;
+        }
+
+        function goToRechamadaPage(page) {
+            window.currentRechamadaPage = page;
+            renderRechamadaSection();
         }
 
         // --- Funções auxiliares de Rechamada ---
@@ -8345,8 +8361,14 @@
             const modalTitle = document.getElementById('form-modal-title');
             const modalContentArea = document.getElementById('form-modal-content-area');
 
-            // Definir turmaStudents primeiro
-            const turmaStudents = (turma.studentIds || []).map(id => students.find(s => s.id === id)).filter(Boolean);
+            // Definir turmaStudents primeiro (excluindo alunos cancelados)
+            const turmaStudents = (turma.studentIds || [])
+                .map(id => students.find(s => s.id === id))
+                .filter(s => {
+                    if (!s) return false;
+                    const status = (s.status || '').toLowerCase();
+                    return status !== 'cancelado' && status !== 'não renovado';
+                });
 
             // Botão de exportação da turma completa
             const exportButton = document.createElement('button');
@@ -10961,7 +10983,13 @@
             const turma = turmas.find(t => t.id === turmaId);
             if (!turma) { showErrorMessage("Erro", "Turma não encontrada."); return; }
 
-            const turmaStudents = (turma.studentIds || []).map(id => students.find(s => s.id === id)).filter(Boolean);
+            const turmaStudents = (turma.studentIds || [])
+                .map(id => students.find(s => s.id === id))
+                .filter(s => {
+                    if (!s) return false;
+                    const status = (s.status || '').toLowerCase();
+                    return status !== 'cancelado' && status !== 'não renovado';
+                });
             const unitAttendance = attendance.find(a => a.id === turmaId);
             if (!turmaStudents.length) { showErrorMessage("Erro", "Nenhum aluno na turma para exportar."); return; }
 
