@@ -4403,7 +4403,18 @@
                         </div>
                     </div>
 
-                    ${uniqueTeachers.length > 0 && (currentUserRole !== 'teacher' && currentUserRole !== 'teachertn') ? `
+                    \${currentUserRole === 'admin' ? \`
+                        <div class="mb-4">
+                            <button 
+                                onclick="cleanupDuplicateRechamadas()"
+                                class="text-sm px-3 py-1.5 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors"
+                            >
+                                🧹 Limpar Rechamadas Duplicadas
+                            </button>
+                        </div>
+                    \` : ''}
+
+                                        ${uniqueTeachers.length > 0 && (currentUserRole !== 'teacher' && currentUserRole !== 'teachertn') ? `
                         <div class="mb-6 flex items-center gap-4">
                             <label class="text-sm font-semibold text-stone-700">Filtrar por professor:</label>
                             <select 
@@ -4705,6 +4716,76 @@
                 showErrorMessage("Erro", "Erro ao salvar rechamada: " + error.message);
             }
         }
+
+
+        // Função para limpar rechamadas duplicadas (aulas sobrepostas)
+        window.cleanupDuplicateRechamadas = async function() {
+            if (!confirm('Isso vai remover rechamadas com aulas duplicadas (ex: se existir 38+39 e 39+40, vai manter apenas 38+39).\n\nDeseja continuar?')) {
+                return;
+            }
+            
+            try {
+                // Agrupar rechamadas por aluno
+                const byStudent = {};
+                rechamadas.forEach(r => {
+                    if (!r.lessons) return;
+                    if (!byStudent[r.studentId]) {
+                        byStudent[r.studentId] = [];
+                    }
+                    byStudent[r.studentId].push(r);
+                });
+                
+                let deletedCount = 0;
+                
+                for (const studentId in byStudent) {
+                    const studentRechamadas = byStudent[studentId];
+                    if (studentRechamadas.length <= 1) continue;
+                    
+                    // Ordenar por primeira aula
+                    studentRechamadas.sort((a, b) => {
+                        const aFirst = parseInt(a.lessons.split('+')[0]);
+                        const bFirst = parseInt(b.lessons.split('+')[0]);
+                        return aFirst - bFirst;
+                    });
+                    
+                    // Identificar quais têm aulas sobrepostas
+                    const usedLessons = new Set();
+                    const toDelete = [];
+                    
+                    studentRechamadas.forEach(r => {
+                        const parts = r.lessons.split('+');
+                        const first = parseInt(parts[0]);
+                        const second = parseInt(parts[1]);
+                        
+                        // Se alguma aula já foi usada, esta rechamada é duplicada
+                        if (usedLessons.has(first) || usedLessons.has(second)) {
+                            toDelete.push(r.id);
+                        } else {
+                            usedLessons.add(first);
+                            usedLessons.add(second);
+                        }
+                    });
+                    
+                    // Deletar as duplicadas
+                    for (const id of toDelete) {
+                        await deleteDoc(doc(db, `artifacts/${appId}/public/data/rechamadas`, id));
+                        deletedCount++;
+                    }
+                }
+                
+                if (deletedCount > 0) {
+                    await logActivity('Limpou rechamadas duplicadas', 'rechamada', `${deletedCount} rechamadas removidas`);
+                    showSuccessMessage('Limpeza Concluída', `${deletedCount} rechamada(s) duplicada(s) removida(s).`);
+                    setTimeout(() => renderRechamadaSection(), 500);
+                } else {
+                    showSuccessMessage('Tudo Certo', 'Não foram encontradas rechamadas duplicadas.');
+                }
+                
+            } catch (error) {
+                console.error('Erro ao limpar rechamadas:', error);
+                showErrorMessage('Erro', 'Erro ao limpar rechamadas: ' + error.message);
+            }
+        };
 
         function viewRechamadaDetails(rechamadaId) {
             const rechamada = rechamadas.find(r => r.id === rechamadaId);
