@@ -9171,12 +9171,12 @@
 
                     <div class="border-t pt-4 flex justify-between items-center">
                         <div class="flex items-center gap-6">
-                            <label class="flex items-center gap-2 cursor-pointer" title="Marcar como feito (todos podem)">
+                            <label class="flex items-center gap-2 cursor-pointer" title="Marcar como lido">
                                 <input type="checkbox" ${task.completedByUser ? 'checked' : ''} 
                                        class="h-4 w-4 rounded"
                                        style="accent-color: #10b981;"
                                        onchange="toggleUserCompletion('${task.id}', this.checked)">
-                                <span class="text-sm font-medium text-green-700">Feito</span>
+                                <span class="text-sm font-medium text-green-700">Lido</span>
                             </label>
                             ${currentUserRole === 'admin' ? `
                             <label class="flex items-center gap-2 cursor-pointer" title="Aprovar (só admin)">
@@ -15235,7 +15235,7 @@
                                     return `
                                         <div class="flex items-start gap-3 p-3 rounded border" style="${item.approved ? 'background-color: #f5f5f4; border-color: #e7e5e4;' : itemOverdue ? 'background-color: #fef2f2; border-color: #fca5a5;' : itemToday ? 'background-color: #fefce8; border-color: #fde047;' : 'background-color: white; border-color: #e7e5e4;'}">
                                             <div class="flex flex-col gap-2">
-                                                <label class="flex items-center gap-2 cursor-pointer" title="Marcar como feito (todos podem)">
+                                                <label class="flex items-center gap-2 cursor-pointer" title="Marcar como feito">
                                                     <input type="checkbox" 
                                                            ${item.completedByUser ? 'checked' : ''}
                                                            onchange="toggleChecklistUserCompletion('${task.id}', ${index})"
@@ -15329,7 +15329,7 @@
                                                 Prazo: ${formatDateBR(task.dueDate)}
                                             </span>
                                             ` : '<span class="text-stone-400">Sem prazo definido</span>'}
-                                            <span class="font-semibold text-green-600">${completedByUserCount}/${totalCount} feitos</span>
+                                            <span class="font-semibold text-green-600">${completedByUserCount}/${totalCount} lidos</span>
                                             <span class="font-semibold" style="color: #FFA500;">${approvedCount}/${totalCount} aprovados</span>
                                             ${isOverdueReminder && !allApproved ? '<span class="text-red-600 font-semibold">ATRASADO</span>' : ''}
                                             ${isTodayReminder && !allApproved ? '<span class="text-yellow-600 font-semibold">HOJE</span>' : ''}
@@ -15357,13 +15357,13 @@
                                         return `
                                             <div class="flex items-start gap-3 p-3 rounded border" style="${item.approved ? 'background-color: #f5f5f4; border-color: #e7e5e4;' : itemOverdue ? 'background-color: #fff7ed; border-color: #fed7aa;' : itemToday ? 'background-color: #fefce8; border-color: #fde047;' : 'background-color: white; border-color: #e7e5e4;'}">
                                                 <div class="flex flex-col gap-2">
-                                                    <label class="flex items-center gap-2 cursor-pointer" title="Marcar como feito (todos podem)">
+                                                    <label class="flex items-center gap-2 cursor-pointer" title="Marcar como lido">
                                                         <input type="checkbox" 
                                                                ${item.completedByUser ? 'checked' : ''}
                                                                onchange="toggleChecklistUserCompletion('${task.id}', ${index})"
                                                                class="h-4 w-4 rounded border-gray-300"
                                                                style="accent-color: #10b981;">
-                                                        <span class="text-xs font-medium text-green-700">Feito</span>
+                                                        <span class="text-xs font-medium text-green-700">Lido</span>
                                                     </label>
                                                     ${canManage ? `
                                                     <label class="flex items-center gap-2 cursor-pointer" title="Aprovar (só admin)">
@@ -15471,13 +15471,13 @@
                                         ${isTodayReminder && !task.approved ? '<span class="text-yellow-600 font-semibold">HOJE</span>' : ''}
                                         ${task.createdBy ? `<span class="text-stone-400">• por ${getFirstName(task.createdBy)}</span>` : ''}
                                         <div class="flex items-center gap-3 ml-auto">
-                                            <label class="flex items-center gap-1.5 cursor-pointer" title="Marcar como feito (todos podem)">
+                                            <label class="flex items-center gap-1.5 cursor-pointer" title="Marcar como lido">
                                                 <input type="checkbox" 
                                                        ${task.completedByUser ? 'checked' : ''}
                                                        onchange="toggleUserCompletion('${task.id}', this.checked)"
                                                        class="h-4 w-4 rounded border-gray-300"
                                                        style="accent-color: #10b981;">
-                                                <span class="text-xs font-medium text-green-700">Feito</span>
+                                                <span class="text-xs font-medium text-green-700">Lido</span>
                                             </label>
                                             ${canManage ? `
                                             <label class="flex items-center gap-1.5 cursor-pointer" title="Aprovar (só admin)">
@@ -15590,14 +15590,20 @@
 
                 // Normal task rendering
                 return `
-                    <div class="mb-4 p-4 rounded-lg border-2 ${task.approved ? 'bg-stone-200 border-stone-300 opacity-70' : isOverdue ? 'bg-red-50 border-red-300' : isToday ? 'bg-yellow-50 border-yellow-300' : 'bg-white border-stone-200'}">
+                    <div class="mb-4 p-4 rounded-lg border-2" style="${task.approved ? 'background-color: #d6d3d1; border-color: #a8a29e; opacity: 0.7;' : isOverdue ? 'background-color: #fef2f2; border-color: #fca5a5;' : isToday ? 'background-color: #fefce8; border-color: #fde047;' : 'background-color: #fffef5; border-color: #F1D24B;'}">
                         <div class="flex items-start justify-between">
                             <div class="flex-1">
-                                <div class="flex items-center gap-2">
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <span class="text-stone-800 text-xs px-2 py-1 rounded font-semibold flex items-center gap-1" style="background-color: #F1D24B;">
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                                        </svg>
+                                        TASK
+                                    </span>
+                                    ${task.urgency ? (task.urgency === 'urgent' ? '<span class="px-2 py-0.5 text-xs font-semibold rounded" style="background-color: #fecaca; color: #991b1b;">URGENTE</span>' : '<span class="px-2 py-0.5 text-xs font-semibold rounded" style="background-color: #d1fae5; color: #065f46;">SEM URGÊNCIA</span>') : ''}
                                     <h4 class="font-semibold text-stone-800 ${task.approved ? 'line-through text-stone-500' : ''}">
                                         ${task.title}
                                     </h4>
-                                    ${task.urgency ? (task.urgency === 'urgent' ? '<span class="px-2 py-0.5 text-xs font-semibold rounded" style="background-color: #fecaca; color: #991b1b;">URGENTE</span>' : '<span class="px-2 py-0.5 text-xs font-semibold rounded" style="background-color: #d1fae5; color: #065f46;">SEM URGÊNCIA</span>') : ''}
                                 </div>
                                 ${task.completedByUser && !task.approved ? '<span class="text-xs text-green-600 font-semibold mt-1 block">AGUARDANDO APROVAÇÃO</span>' : ''}
                                 ${task.description ? `<p class="text-sm text-stone-600 mt-2">${task.description}</p>` : ''}
@@ -15621,7 +15627,7 @@
                                     ${isToday && !task.approved ? '<span class="text-yellow-600 font-semibold">HOJE</span>' : ''}
                                     ${task.createdBy ? `<span class="text-stone-400">• por ${getFirstName(task.createdBy)}</span>` : ''}
                                     <div class="flex items-center gap-3 ml-auto">
-                                        <label class="flex items-center gap-1.5 cursor-pointer" title="Marcar como feito (todos podem)">
+                                        <label class="flex items-center gap-1.5 cursor-pointer" title="Marcar como feito">
                                             <input type="checkbox" 
                                                    ${task.completedByUser ? 'checked' : ''}
                                                    onchange="toggleUserCompletion('${task.id}', this.checked)"
@@ -15937,18 +15943,17 @@
             const activityDescription = `Moveu task "${task.title}" de ${oldPerson.name} para ${newPerson.name}`;
             await logActivity(activityDescription, 'task-move', task.title);
 
-            // Update Firebase if connected
-            if (db) {
-                try {
-                    const taskRef = doc(db, 'tasksPrazos', task.id);
-                    await updateDoc(taskRef, {
-                        personId: targetPersonId,
-                        movedAt: serverTimestamp(),
-                        movedBy: currentUserName || 'Admin'
-                    });
-                } catch (error) {
-                    console.error('Erro ao atualizar task no Firebase:', error);
-                }
+            // Update Firebase
+            try {
+                await updateDoc(doc(db, \`artifacts/\${appId}/public/data/tasks\`, task.id), {
+                    personId: targetPersonId,
+                    movedAt: new Date().toISOString(),
+                    movedBy: currentUserName || 'Admin'
+                });
+            } catch (error) {
+                console.error('Erro ao atualizar task no Firebase:', error);
+                showErrorMessage('Erro', 'Erro ao mover task no banco de dados.');
+                return;
             }
 
             showSuccessMessage('Sucesso!', `Task movida para ${newPerson.name}`);
