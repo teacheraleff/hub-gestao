@@ -14803,15 +14803,15 @@
                     // Pular avisos
                     if (t.type === 'aviso') return;
                     
-                    // Se tem checklistItems, contar cada item não aprovado e não falhado
-                    if (t.checklistItems && Array.isArray(t.checklistItems)) {
+                    // Se tem checklistItems com itens, contar cada item não aprovado e não falhado
+                    if (t.checklistItems && Array.isArray(t.checklistItems) && t.checklistItems.length > 0) {
                         t.checklistItems.forEach(item => {
                             if (!item.approved && !item.failed) {
                                 activeCount++;
                             }
                         });
                     } else if (!t.approved && !t.failed) {
-                        // Tarefa normal (sem checklist items) - contar se não aprovada e não falhada
+                        // Tarefa normal ou sem checklist items - contar se não aprovada e não falhada
                         activeCount++;
                     }
                 });
@@ -16306,6 +16306,11 @@
 
             if (!title) {
                 alert('Por favor, insira um título para o aviso.');
+                return;
+            }
+
+            if (!selectedPersonForTasks) {
+                showErrorMessage('Erro', 'Por favor, selecione um colaborador primeiro.');
                 return;
             }
 
