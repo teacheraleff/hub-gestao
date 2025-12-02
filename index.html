@@ -10,11 +10,11 @@
     <script src="/firebase-config.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=TASA+Orbiter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- Palette: SLAP Brand Colors: #F1D24B (Yellow), #FF5C3D (Orange), #84C7DF (Blue), #8671D1 (Purple) -->
     <style>
         body {
-            font-family: 'Spline Sans', sans-serif;
+            font-family: 'TASA Orbiter', sans-serif;
             line-height: 1.25;
         }
         .nav-item.active {
@@ -1025,6 +1025,89 @@
                         'tasks-prazos.view_all': true,
                         'tasks-prazos.add_task': true
                     }
+                },
+                'superv': {
+                    label: 'Supervisor',
+                    description: 'Acesso total ao sistema igual ao Admin',
+                    permissions: {
+                        'inicio.edit_employee_month': true,
+                        'dojo.add_competitor': true,
+                        'dojo.edit_points': true,
+                        'dojo.delete_competitor': true,
+                        'dojo.add_active_mission': true,
+                        'alunos.full_access': true,
+                        'turmas.full_access': true,
+                        'vips.full_access': true,
+                        'grade.full_access': true,
+                        'calendario.edit_fixed_periods': true,
+                        'calendario.add_event': true,
+                        'calendario.edit_event': true,
+                        'calendario.delete_event': true,
+                        'links-uteis.full_access': true,
+                        'links-uteis.add_link': true,
+                        'links-uteis.edit_link': true,
+                        'links-uteis.delete_link': true,
+                        'processos.view': true,
+                        'processos.manage': true,
+                        'processos.edit_steps': true,
+                        'tasks-prazos.view_all': true,
+                        'tasks-prazos.complete_own': true,
+                        'tasks-prazos.complete_all': true,
+                        'tasks-prazos.add_task': true,
+                        'tasks-prazos.edit_task': true,
+                        'tasks-prazos.delete_task': true,
+                        'tasks-prazos.add_person': true,
+                        'tasks-prazos.edit_person': true,
+                        'tasks-prazos.delete_person': true,
+                        'tasks-prazos.add_reminder': true,
+                        'tasks-prazos.approve_task': true,
+                        'gestao-tns.full_access': true,
+                        'rechamada.full_access': true,
+                        'kpis-pedagogico.full_access': true,
+                        'logs-atividades.full_access': true,
+                        'colaboradores.full_access': true
+                    }
+                },
+                'coord': {
+                    label: 'Coordenador',
+                    description: 'Acesso total ao sistema igual ao Admin',
+                    permissions: {
+                        'inicio.edit_employee_month': true,
+                        'dojo.add_competitor': true,
+                        'dojo.edit_points': true,
+                        'dojo.delete_competitor': true,
+                        'dojo.add_active_mission': true,
+                        'alunos.full_access': true,
+                        'turmas.full_access': true,
+                        'vips.full_access': true,
+                        'grade.full_access': true,
+                        'calendario.edit_fixed_periods': true,
+                        'calendario.add_event': true,
+                        'calendario.edit_event': true,
+                        'calendario.delete_event': true,
+                        'links-uteis.full_access': true,
+                        'links-uteis.add_link': true,
+                        'links-uteis.edit_link': true,
+                        'links-uteis.delete_link': true,
+                        'processos.view': true,
+                        'processos.manage': true,
+                        'processos.edit_steps': true,
+                        'tasks-prazos.view_all': true,
+                        'tasks-prazos.complete_own': true,
+                        'tasks-prazos.complete_all': true,
+                        'tasks-prazos.add_task': true,
+                        'tasks-prazos.edit_task': true,
+                        'tasks-prazos.delete_task': true,
+                        'tasks-prazos.add_person': true,
+                        'tasks-prazos.edit_person': true,
+                        'tasks-prazos.delete_person': true,
+                        'tasks-prazos.add_reminder': true,
+                        'tasks-prazos.approve_task': true,
+                        'gestao-tns.full_access': true,
+                        'rechamada.full_access': true,
+                        'kpis-pedagogico.full_access': true,
+                        'logs-atividades.full_access': true
+                    }
                 }
             }
         };
@@ -1051,6 +1134,17 @@
         function can(permissionKey) {
             // Admin SEMPRE tem acesso total - verificação dupla de segurança
             if (currentUserRole === 'admin') return true;
+            
+            // Supervisor e Coordenador também têm acesso total igual ao admin
+            if (['superv', 'coord'].includes(currentUserRole)) {
+                // Usar preset da role que tem permissões completas
+                const preset = PermissionRegistry.presets[currentUserRole];
+                if (preset && preset.permissions) {
+                    return preset.permissions[permissionKey] === true;
+                }
+                // Fallback: se não encontrar no preset, dar acesso
+                return true;
+            }
 
             // Se não tem colaborador logado, usar fallback baseado em role
             if (!currentCollaborator || !currentCollaborator.permissions) {
@@ -3886,10 +3980,12 @@
                 'designer': { label: 'Designer', color: 'bg-indigo-100 text-indigo-800' }
             };
 
-            // Ordenar colaboradores alfabeticamente por nome
-            const sortedCollaborators = [...collaborators].sort((a, b) => 
-                a.name.localeCompare(b.name, 'pt-BR', { sensitivity: 'base' })
-            );
+            // Ordenar colaboradores alfabeticamente por nome (com proteção para nomes undefined)
+            const sortedCollaborators = [...collaborators]
+                .filter(c => c && c.name)
+                .sort((a, b) => 
+                    (a.name || '').localeCompare(b.name || '', 'pt-BR', { sensitivity: 'base' })
+                );
 
             contentArea.innerHTML = `
                 <section id="colaboradores-section" class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
@@ -3907,6 +4003,8 @@
                             <tbody>
                                 ${sortedCollaborators.map(c => {
                                     const roleInfo = roleLabels[c.role] || { label: 'Não definido', color: 'bg-gray-100 text-gray-800' };
+                                    const pagesCount = c.allowedPages ? c.allowedPages.length : 0;
+                                    const hasFullAccess = ['admin', 'superv', 'coord'].includes(c.role);
 
                                     return `
                                     <tr>
@@ -3914,7 +4012,7 @@
                                         <td class="text-sm text-stone-600">${c.email || '<span class="text-stone-400 italic">Não informado</span>'}</td>
                                         <td><span class="px-2 py-1 rounded-full text-xs font-semibold ${roleInfo.color}">${roleInfo.label}</span></td>
                                         <td>
-                                            ${c.role === 'admin' ? 
+                                            ${hasFullAccess ? 
                                                 '<span class="text-xs text-purple-600 font-semibold">Acesso Total</span>' : 
                                                 `<span class="text-xs text-stone-600">${pagesCount} ${pagesCount === 1 ? 'página' : 'páginas'}</span>`
                                             }
@@ -4757,8 +4855,8 @@
             const studentsInVIP = activeStudents.filter(s => s.modalidade === 'VIP' || s.modalidade === 'DUPLA').length;
             const totalTurmas = turmas.length;
 
-            // Calcular idade média dos alunos
-            const studentsWithBirthdate = students.filter(s => s.birthDate);
+            // Calcular idade média dos alunos (apenas alunos ativos)
+            const studentsWithBirthdate = activeStudents.filter(s => s.birthDate);
             let averageAge = 0;
             if (studentsWithBirthdate.length > 0) {
                 const ages = studentsWithBirthdate.map(s => {
@@ -10931,12 +11029,12 @@
                     <meta charset="UTF-8">
                     <meta name="viewport" content="width=device-width, initial-scale=1.0">
                     <title>PEF - ${turma.name}</title>
-                    <link href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+                    <link href="https://fonts.googleapis.com/css2?family=TASA+Orbiter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
                     <style>
                         * { margin: 0; padding: 0; box-sizing: border-box; }
 
                         body { 
-                            font-family: 'Spline Sans', Arial, sans-serif; 
+                            font-family: 'TASA Orbiter', Arial, sans-serif; 
                             line-height: 1.6; 
                             color: #2d3748; 
                             background: #f7fafc;
@@ -11424,12 +11522,12 @@
                     <meta charset="UTF-8">
                     <meta name="viewport" content="width=device-width, initial-scale=1.0">
                     <title>PEF Individual - ${student.name}</title>
-                    <link href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+                    <link href="https://fonts.googleapis.com/css2?family=TASA+Orbiter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
                     <style>
                         * { margin: 0; padding: 0; box-sizing: border-box; }
 
                         body { 
-                            font-family: 'Spline Sans', Arial, sans-serif; 
+                            font-family: 'TASA Orbiter', Arial, sans-serif; 
                             line-height: 1.6; 
                             color: #2d3748; 
                             background: #f7fafc;
@@ -14697,6 +14795,27 @@
                 // Excluir avisos da contagem de ativas (avisos são apenas informações, não tarefas)
                 const pendingTasks = personTasks.filter(t => !t.approved && t.type !== 'aviso');
 
+                // Count active tasks/items (each checklist item counts as 1)
+                let activeCount = 0;
+                
+                // Conta itens de checklist de TODAS as tarefas que têm checklistItems
+                personTasks.forEach(t => {
+                    // Pular avisos
+                    if (t.type === 'aviso') return;
+                    
+                    // Se tem checklistItems, contar cada item não aprovado e não falhado
+                    if (t.checklistItems && Array.isArray(t.checklistItems)) {
+                        t.checklistItems.forEach(item => {
+                            if (!item.approved && !item.failed) {
+                                activeCount++;
+                            }
+                        });
+                    } else if (!t.approved && !t.failed) {
+                        // Tarefa normal (sem checklist items) - contar se não aprovada e não falhada
+                        activeCount++;
+                    }
+                });
+
                 // Count completed tasks and items
                 let completedCount = 0;
                 personTasks.forEach(t => {
@@ -14832,7 +14951,7 @@
                                             <svg class="w-5 h-5 text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
                                             </svg>
-                                            <span class="text-xl font-bold text-stone-800">${pendingTasks.length}</span>
+                                            <span class="text-xl font-bold text-stone-800">${activeCount}</span>
                                         </div>
                                         <span class="text-xs text-stone-500 font-medium">Ativas</span>
                                     </div>
@@ -15664,18 +15783,20 @@
                 return;
             }
 
+            const existingTaskData = editingTaskId ? tasks.find(t => t.id === editingTaskId) : null;
             const taskData = {
                 title,
                 description,
                 dueDate,
                 link: link || null,
-                urgency: urgency || 'normal',
+                urgency: urgency,
                 personId: selectedPersonForTasks,
                 type: 'normal',
-                status: editingTaskId ? (tasks.find(t => t.id === editingTaskId)?.status || 'pending') : 'pending',
-                completedByUser: editingTaskId ? (tasks.find(t => t.id === editingTaskId)?.completedByUser || false) : false,
-                approved: editingTaskId ? (tasks.find(t => t.id === editingTaskId)?.approved || false) : false,
-                createdAt: editingTaskId ? (tasks.find(t => t.id === editingTaskId)?.createdAt || new Date().toISOString()) : new Date().toISOString()
+                status: existingTaskData?.status || 'pending',
+                completedByUser: existingTaskData?.completedByUser || false,
+                approved: existingTaskData?.approved || false,
+                createdAt: existingTaskData?.createdAt || new Date().toISOString(),
+                createdBy: existingTaskData?.createdBy || currentUserName || 'Admin'
             };
 
             try {
@@ -15943,12 +16064,13 @@
                 description,
                 dueDate,
                 link: link || null,
-                urgency: urgency || 'normal',
+                urgency: urgency,
                 personId: selectedPersonForTasks,
                 type: 'checklist',
                 checklistItems: checklistItems,
-                status: editingTaskId ? (originalTask?.status || 'pending') : 'pending',
-                createdAt: editingTaskId ? (originalTask?.createdAt || new Date().toISOString()) : new Date().toISOString()
+                status: originalTask?.status || 'pending',
+                createdAt: originalTask?.createdAt || new Date().toISOString(),
+                createdBy: originalTask?.createdBy || currentUserName || 'Admin'
             };
 
             try {
@@ -16195,55 +16317,34 @@
                 personId: selectedPersonForTasks,
                 read: false,
                 createdAt: new Date().toISOString(),
-                createdBy: window.currentUserEmail || 'local-user'
+                createdBy: currentUserName || 'Admin'
             };
 
-            if (editingTaskId) {
-                // Edit existing aviso
-                avisoData.id = editingTaskId;
-                const existingAviso = localTasksData.find(t => t.id === editingTaskId);
-                if (existingAviso) {
-                    avisoData.createdAt = existingAviso.createdAt;
-                    avisoData.createdBy = existingAviso.createdBy;
-                    avisoData.read = existingAviso.read;
-                }
-
-                const index = localTasksData.findIndex(t => t.id === editingTaskId);
-                if (index !== -1) {
-                    localTasksData[index] = avisoData;
-                }
-
-                if (window.firebaseConnected && window.db) {
-                    try {
-                        await window.db.collection('tasks').doc(editingTaskId).update(avisoData);
-                        console.log('Aviso updated in Firebase');
-                    } catch (error) {
-                        console.error('Error updating aviso in Firebase:', error);
+            try {
+                if (editingTaskId) {
+                    // Edit existing aviso
+                    const existingAviso = tasks.find(t => t.id === editingTaskId);
+                    if (existingAviso) {
+                        avisoData.createdAt = existingAviso.createdAt;
+                        avisoData.createdBy = existingAviso.createdBy;
+                        avisoData.read = existingAviso.read;
                     }
+
+                    await setDoc(doc(db, `artifacts/${appId}/public/data/tasks`, editingTaskId), avisoData);
+                    await logActivity('Editou um aviso', 'aviso', title);
+                    showSuccessMessage('Sucesso!', 'Aviso editado com sucesso.');
+                } else {
+                    // Create new aviso
+                    await addDoc(collection(db, `artifacts/${appId}/public/data/tasks`), avisoData);
+                    await logActivity('Criou um novo aviso', 'aviso', title);
+                    showSuccessMessage('Sucesso!', 'Aviso criado com sucesso.');
                 }
 
-                logActivity('Editou um aviso', `Aviso: ${title}`);
-                showNotification('Aviso editado com sucesso!', 'success');
-            } else {
-                // Create new aviso
-                avisoData.id = 'aviso_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-                localTasksData.push(avisoData);
-
-                if (window.firebaseConnected && window.db) {
-                    try {
-                        await window.db.collection('tasks').doc(avisoData.id).set(avisoData);
-                        console.log('Aviso saved to Firebase');
-                    } catch (error) {
-                        console.error('Error saving aviso to Firebase:', error);
-                    }
-                }
-
-                logActivity('Criou um novo aviso', `Aviso: ${title}`);
-                showNotification('Aviso criado com sucesso!', 'success');
+                closeAvisoFormModal();
+            } catch (error) {
+                console.error('Error saving aviso:', error);
+                showErrorMessage('Erro', 'Não foi possível salvar o aviso.');
             }
-
-            closeAvisoFormModal();
-            renderTasksList();
         }
 
         async function toggleAvisoRead(taskId) {
@@ -16427,7 +16528,7 @@
                 description,
                 dueDate,
                 link: link || null,
-                urgency: urgency || 'normal',
+                urgency: urgency,
                 personId: selectedPersonForTasks,
                 type: 'reminder',
                 reminderMode: reminderMode,
@@ -16435,7 +16536,8 @@
                 completedByUser: existingTask?.completedByUser || false,
                 approved: existingTask?.approved || false,
                 failed: existingTask?.failed || false,
-                createdAt: existingTask?.createdAt || new Date().toISOString()
+                createdAt: existingTask?.createdAt || new Date().toISOString(),
+                createdBy: existingTask?.createdBy || currentUserName || 'Admin'
             };
 
             // Se for checklist de lembretes, coletar os itens
@@ -19822,7 +19924,7 @@
                     <title>Report Card - ${turma.name}</title>
                     <style>
                         * { margin: 0; padding: 0; box-sizing: border-box; }
-                        body { font-family: 'Spline Sans', 'Arial', sans-serif; line-height: 1.5; color: #2d3748; background: #ffffff; }
+                        body { font-family: 'TASA Orbiter', 'Arial', sans-serif; line-height: 1.5; color: #2d3748; background: #ffffff; }
                         .container { max-width: 1200px; margin: 0 auto; background: white; }
                         .header { background: #F1D24B; padding: 40px 40px 30px 40px; position: relative; }
                         .logo-section { display: flex; align-items: center; justify-content: center; margin-bottom: 20px; }
@@ -20025,7 +20127,7 @@
                     <title>Report Card - ${student.name}</title>
                     <style>
                         * { margin: 0; padding: 0; box-sizing: border-box; }
-                        body { font-family: 'Spline Sans', 'Arial', sans-serif; line-height: 1.5; color: #2d3748; background: #ffffff; }
+                        body { font-family: 'TASA Orbiter', 'Arial', sans-serif; line-height: 1.5; color: #2d3748; background: #ffffff; }
                         .container { max-width: 800px; margin: 0 auto; background: white; }
                         .header { background: #F1D24B; padding: 40px 40px 30px 40px; position: relative; }
                         .logo-section { display: flex; align-items: center; justify-content: center; margin-bottom: 20px; }
