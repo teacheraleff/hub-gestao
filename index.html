@@ -10556,15 +10556,86 @@
 
         // Função para admin aprovar task (só admin)
 
-        // Helper function to check if supervisor is trying to manage their own tasks
+        // Helper function to check if supervisor is trying to approve/fail their own tasks (tasks in their own card)
         function isSupervisorManagingOwnTask(taskId) {
-            if (currentUserRole !== 'superv') return false;
+            if (!['superv', 'coord'].includes(currentUserRole)) return false;
 
             const task = tasks.find(t => t.id === taskId);
             if (!task) return false;
 
             const person = taskPeople.find(p => p.id === task.personId);
-            return person && person.name === currentUserName;
+            if (!person) return false;
+            
+            // Comparar por email primeiro (mais confiável), depois por nome normalizado
+            const currentCollaborator = window.currentCollaborator;
+            
+            // Se temos o email do colaborador atual, comparar com email da pessoa
+            if (currentCollaborator && currentCollaborator.email && person.email) {
+                return currentCollaborator.email.toLowerCase().trim() === person.email.toLowerCase().trim();
+            }
+            
+            // Fallback: comparar nomes normalizados
+            const normalizedPersonName = (person.name || '').toLowerCase().trim();
+            const normalizedCurrentName = (currentUserName || '').toLowerCase().trim();
+            
+            return normalizedPersonName === normalizedCurrentName;
+        }
+        
+        // Helper function to check if user can edit/delete a task
+        // Admin can edit/delete anything
+        // All other roles can only edit/delete tasks/reminders/avisos they created themselves
+        function canSupervisorEditOrDeleteTask(taskId) {
+            // Admin can edit/delete any task
+            if (currentUserRole === 'admin') return true;
+            
+            const task = tasks.find(t => t.id === taskId);
+            if (!task) return false;
+            
+            // All other roles can only edit/delete tasks they created themselves
+            const taskCreator = (task.createdBy || '').toLowerCase().trim();
+            const currentName = (currentUserName || '').toLowerCase().trim();
+            
+            // Also check by email if available
+            const currentCollaborator = window.currentCollaborator;
+            if (currentCollaborator && currentCollaborator.email && task.createdByEmail) {
+                return currentCollaborator.email.toLowerCase().trim() === task.createdByEmail.toLowerCase().trim();
+            }
+            
+            return taskCreator === currentName;
+        }
+        
+        // Helper function to check if user can mark task as done (read for reminders/avisos)
+        // Users can always mark their own items as done/read
+        function canUserCompleteTask(taskId) {
+            const task = tasks.find(t => t.id === taskId);
+            if (!task) return false;
+            
+            // Admin can complete any task
+            if (currentUserRole === 'admin') return true;
+            
+            // For reminders and avisos, the owner of the card or the creator can mark as done
+            if (['reminder', 'aviso'].includes(task.type)) {
+                // Check if user created this task
+                const taskCreator = (task.createdBy || '').toLowerCase().trim();
+                const currentName = (currentUserName || '').toLowerCase().trim();
+                if (taskCreator === currentName) return true;
+                
+                // Check if task is in user's own card
+                const person = taskPeople.find(p => p.id === task.personId);
+                if (person) {
+                    const currentCollaborator = window.currentCollaborator;
+                    if (currentCollaborator && currentCollaborator.email && person.email) {
+                        if (currentCollaborator.email.toLowerCase().trim() === person.email.toLowerCase().trim()) {
+                            return true;
+                        }
+                    }
+                    const normalizedPersonName = (person.name || '').toLowerCase().trim();
+                    if (normalizedPersonName === currentName) return true;
+                }
+            }
+            
+            // For regular tasks, check standard permissions
+            return can('tasks-prazos.complete_all') || can('tasks-prazos.complete_own');
         }
 
         async function toggleTaskFailed(taskId, isFailed) {
@@ -10575,7 +10646,7 @@
             }
 
             if (isSupervisorManagingOwnTask(taskId)) {
-                showErrorMessage('Erro', 'Supervisores não podem marcar suas próprias tasks como falhadas.');
+                showErrorMessage('Erro', 'Supervisores e coordenadores não podem marcar suas próprias tasks como falhadas.');
                 return;
             }
             const taskRef = doc(db, `artifacts/${appId}/public/data/tasks`, taskId);
@@ -10618,7 +10689,7 @@
             }
 
             if (isSupervisorManagingOwnTask(taskId)) {
-                showErrorMessage('Erro', 'Supervisores não podem aprovar suas próprias tasks.');
+                showErrorMessage('Erro', 'Supervisores e coordenadores não podem aprovar suas próprias tasks.');
                 return;
             }
 
@@ -15236,7 +15307,10 @@
                                         <span class="font-semibold" style="color: #8671D1;">${approvedCount}/${totalCount} aprovados</span>
                                         ${isOverdue && !allApproved ? '<span class="text-red-600 font-semibold">ATRASADA</span>' : ''}
                                         ${isToday && !allApproved ? '<span class="text-yellow-600 font-semibold">HOJE</span>' : ''}
-                                        ${task.createdBy ? `<span class="text-stone-400">• por ${getFirstName(task.createdBy)}</span>` : ''}
+                                        ${task.createdBy ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-stone-100 text-stone-600 border border-stone-200">
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                                            ${getFirstName(task.createdBy)}
+                                        </span>` : ''}
                                     </div>
                                 </div>
                                 ${canManage ? `
@@ -15373,7 +15447,10 @@
                                             <span class="font-semibold" style="color: #FFA500;">${approvedCount}/${totalCount} aprovados</span>
                                             ${isOverdueReminder && !allApproved ? '<span class="text-red-600 font-semibold">ATRASADO</span>' : ''}
                                             ${isTodayReminder && !allApproved ? '<span class="text-yellow-600 font-semibold">HOJE</span>' : ''}
-                                            ${task.createdBy ? `<span class="text-stone-400">• por ${getFirstName(task.createdBy)}</span>` : ''}
+                                            ${task.createdBy ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-stone-100 text-stone-600 border border-stone-200">
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                                            ${getFirstName(task.createdBy)}
+                                        </span>` : ''}
                                         </div>
                                     </div>
                                     ${canManage ? `
@@ -15509,7 +15586,10 @@
                                         ` : '<span class="text-stone-400">Sem prazo definido</span>'}
                                         ${isOverdueReminder && !task.approved ? '<span class="text-red-600 font-semibold">ATRASADO</span>' : ''}
                                         ${isTodayReminder && !task.approved ? '<span class="text-yellow-600 font-semibold">HOJE</span>' : ''}
-                                        ${task.createdBy ? `<span class="text-stone-400">• por ${getFirstName(task.createdBy)}</span>` : ''}
+                                        ${task.createdBy ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-stone-100 text-stone-600 border border-stone-200">
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                                            ${getFirstName(task.createdBy)}
+                                        </span>` : ''}
                                         <div class="flex items-center gap-3 ml-auto">
                                             <label class="flex items-center gap-1.5 cursor-pointer" title="Marcar como lido">
                                                 <input type="checkbox" 
@@ -15600,7 +15680,10 @@
                                                    class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
                                             <span class="text-sm font-medium text-stone-700">Marcar como lido</span>
                                         </label>
-                                        ${task.createdBy ? `<span class="text-stone-400 text-xs ml-2">• por ${getFirstName(task.createdBy)}</span>` : ''}
+                                        ${task.createdBy ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-stone-100 text-stone-600 border border-stone-200 ml-2">
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                                            ${getFirstName(task.createdBy)}
+                                        </span>` : ''}
                                     </div>
                                 </div>
                                 ${canManage ? `
@@ -15665,7 +15748,10 @@
                                     </span>
                                     ${isOverdue && !task.approved ? '<span class="text-red-600 font-semibold">ATRASADA</span>' : ''}
                                     ${isToday && !task.approved ? '<span class="text-yellow-600 font-semibold">HOJE</span>' : ''}
-                                    ${task.createdBy ? `<span class="text-stone-400">• por ${getFirstName(task.createdBy)}</span>` : ''}
+                                    ${task.createdBy ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-stone-100 text-stone-600 border border-stone-200">
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                                            ${getFirstName(task.createdBy)}
+                                        </span>` : ''}
                                     <div class="flex items-center gap-3 ml-auto">
                                         <label class="flex items-center gap-1.5 cursor-pointer" title="Marcar como feito">
                                             <input type="checkbox" 
@@ -15742,8 +15828,9 @@
             const task = tasks.find(t => t.id === taskId);
             if (!task) return;
 
-            if (isSupervisorManagingOwnTask(taskId)) {
-                showErrorMessage('Erro', 'Supervisores não podem editar suas próprias tasks.');
+            // Supervisores podem apenas editar tasks que eles mesmos criaram
+            if (!canSupervisorEditOrDeleteTask(taskId)) {
+                showErrorMessage('Erro', 'Você pode apenas editar itens criados por você mesmo.');
                 return;
             }
 
@@ -15890,8 +15977,9 @@
             const task = tasks.find(t => t.id === taskId);
             if (!task) return;
 
-            if (isSupervisorManagingOwnTask(taskId)) {
-                showErrorMessage('Erro', 'Supervisores não podem deletar suas próprias tasks.');
+            // Supervisores podem apenas excluir tasks que eles mesmos criaram
+            if (!canSupervisorEditOrDeleteTask(taskId)) {
+                showErrorMessage('Erro', 'Você pode apenas excluir itens criados por você mesmo.');
                 return;
             }
 
@@ -16173,7 +16261,7 @@
             }
 
             if (isSupervisorManagingOwnTask(taskId)) {
-                showErrorMessage('Erro', 'Supervisores não podem aprovar itens das próprias checklists.');
+                showErrorMessage('Erro', 'Supervisores e coordenadores não podem aprovar itens das próprias checklists.');
                 return;
             }
 
@@ -16214,7 +16302,7 @@
             }
 
             if (isSupervisorManagingOwnTask(taskId)) {
-                showErrorMessage('Erro', 'Supervisores não podem marcar itens das próprias checklists como falhados.');
+                showErrorMessage('Erro', 'Supervisores e coordenadores não podem marcar itens das próprias checklists como falhados.');
                 return;
             }
 
@@ -16255,7 +16343,7 @@
             }
 
             if (isSupervisorManagingOwnTask(taskId)) {
-                showErrorMessage('Erro', 'Supervisores não podem aprovar itens das próprias checklists.');
+                showErrorMessage('Erro', 'Supervisores e coordenadores não podem aprovar itens das próprias checklists.');
                 return;
             }
 
