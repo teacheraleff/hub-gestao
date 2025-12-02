@@ -16455,7 +16455,8 @@
                 personId: selectedPersonForTasks,
                 read: false,
                 createdAt: new Date().toISOString(),
-                createdBy: currentUserName || 'Admin'
+                createdBy: currentUserName || 'Admin',
+                createdByEmail: window.currentCollaborator?.email || ''
             };
 
             try {
@@ -17152,6 +17153,7 @@
         window.closeReminderFormModal = closeReminderFormModal;
         window.openAddAvisoForm = openAddAvisoForm;
         window.closeAvisoFormModal = closeAvisoFormModal;
+        window.handleSubmitAviso = handleSubmitAviso;
         window.toggleAvisoRead = toggleAvisoRead;
         window.toggleReminderRead = toggleReminderRead;
         window.toggleReminderItemRead = toggleReminderItemRead;
