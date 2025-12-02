@@ -4448,9 +4448,9 @@
                                     Página ${window.currentRechamadaPage} de ${totalPages}
                                 </span>
                                 <button 
-                                    onclick="window.currentRechamadaPage = Math.min(${totalPages}, window.currentRechamadaPage + 1); renderRechamadaSection();"
+                                    onclick="window.currentRechamadaPage = Math.min(` + totalPages + `, window.currentRechamadaPage + 1); renderRechamadaSection();"
                                     class="px-3 py-2 rounded-lg border border-stone-300 text-stone-600 hover:bg-stone-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                                    ${window.currentRechamadaPage === ${totalPages} ? 'disabled' : ''}
+                                    ${window.currentRechamadaPage >= totalPages ? 'disabled' : ''}
                                     title="Próxima página"
                                 >
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -4458,9 +4458,9 @@
                                     </svg>
                                 </button>
                                 <button 
-                                    onclick="window.currentRechamadaPage = ${totalPages}; renderRechamadaSection();"
+                                    onclick="window.currentRechamadaPage = ` + totalPages + `; renderRechamadaSection();"
                                     class="px-3 py-2 rounded-lg border border-stone-300 text-stone-600 hover:bg-stone-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                                    ${window.currentRechamadaPage === ${totalPages} ? 'disabled' : ''}
+                                    ${window.currentRechamadaPage >= totalPages ? 'disabled' : ''}
                                     title="Última página"
                                 >
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
