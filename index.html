@@ -12723,17 +12723,17 @@
                                         <td>${formatDateBR(tn.date)}</td>
                                         <td>${tn.time || '-'}</td>
                                         <td>${avaliador?.name || 'Não especificado'}</td>
-                                        <td>
-                                            <span class="inline-block px-2 py-1 text-xs rounded bg-blue-100 text-blue-700 font-semibold">
-                                                ${tn.level}
-                                            </span>
-                                        </td>
                                         <td class="text-center">
                                             <button class="px-3 py-1 text-sm rounded font-semibold transition-all ${tn.convertedToMatricula ? 'bg-green-500 text-white hover:bg-green-600' : 'bg-stone-200 text-stone-600 hover:bg-stone-300'}" 
                                                     onclick='toggleTNMatricula("${tn.id}")' 
                                                     title="${tn.convertedToMatricula ? 'Clique para desmarcar' : 'Clique para marcar como convertido'}">
                                                 ${tn.convertedToMatricula ? '✓ Sim' : 'Não'}
                                             </button>
+                                        </td>
+                                        <td>
+                                            <span class="inline-block px-2 py-1 text-xs rounded bg-blue-100 text-blue-700 font-semibold">
+                                                ${tn.level}
+                                            </span>
                                         </td>
                                         <td class="whitespace-nowrap">
                                             <button class="secondary-btn w-auto text-sm" onclick='viewTN("${tn.id}")'>Ver</button>
@@ -13027,15 +13027,24 @@
                     // localStorage mode
                     tn.convertedToMatricula = newValue;
                     localStorage.setItem('testes-nivel', JSON.stringify(testesNivel));
+                    renderEvaluatorSummaryCards();
                     renderTNsList();
                 } else {
-                    // Firebase mode
+                    // Firebase mode - update local state immediately for UI feedback
+                    tn.convertedToMatricula = newValue;
+                    renderEvaluatorSummaryCards();
+                    renderTNsList();
+                    
                     const docRef = doc(db, `artifacts/${appId}/public/data/testes-nivel`, tnId);
                     await updateDoc(docRef, { convertedToMatricula: newValue });
                     await logActivity(newValue ? 'Marcou TN como convertido em matrícula' : 'Desmarcou TN como convertido em matrícula', 'tn', tn.candidateName);
                 }
             } catch (error) {
                 console.error('Error toggling TN matrícula:', error);
+                // Revert local state on error
+                tn.convertedToMatricula = !newValue;
+                renderEvaluatorSummaryCards();
+                renderTNsList();
                 showErrorMessage("Erro", "Erro ao atualizar status de matrícula.");
             }
         }
