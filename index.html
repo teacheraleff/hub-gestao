@@ -2674,9 +2674,7 @@
             // Also exclude canceled students (status = 'Cancelado' or 'Não Renovado')
             const vipStudents = students.filter(s => {
                 const hasVipRecord = vips.find(v => v.studentId === s.id);
-                const studentStatus = (s.status || '').toLowerCase();
-                const isCanceled = studentStatus === 'cancelado' || studentStatus === 'nao renovado';
-                return (s.modalidade === 'VIP' || s.modalidade === 'DUPLA') && hasVipRecord && !isCanceled;
+                return (s.modalidade === 'VIP' || s.modalidade === 'DUPLA') && hasVipRecord;
             });
             let filteredVips = vipStudents;
 
@@ -2759,6 +2757,22 @@
                 filteredVips = filteredVips.filter(student => {
                     const vipRecord = vips.find(v => v.studentId === student.id);
                     return vipRecord && vipRecord.finalizado === true;
+                });
+            }
+
+            // Apply status filter for "Cancelados" - students with canceled status
+            if (statusFilter === 'cancelados') {
+                filteredVips = filteredVips.filter(student => {
+                    const studentStatus = (student.status || '').toLowerCase();
+                    return studentStatus === 'cancelado' || studentStatus === 'nao renovado';
+                });
+            }
+
+            // For "Ativos" filter, exclude canceled students
+            if (statusFilter === 'ativos') {
+                filteredVips = filteredVips.filter(student => {
+                    const studentStatus = (student.status || '').toLowerCase();
+                    return studentStatus !== 'cancelado' && studentStatus !== 'nao renovado';
                 });
             }
 
@@ -2887,20 +2901,43 @@
                 // Get status tag for contract expiration/ending
                 const statusTag = getVipStatusTag(vipRecord);
 
-                // Check if VIP is finalized
+                // Check if VIP is finalized or student is canceled
                 const isFinalizado = vipRecord?.finalizado === true;
-                const cardBg = isFinalizado ? 'bg-stone-100' : 'bg-white';
-                const opacity = isFinalizado ? 'opacity-75' : '';
-                const textColor = isFinalizado ? 'text-stone-600' : 'text-stone-800';
-                const textColorLight = isFinalizado ? 'text-stone-500' : 'text-stone-600';
-                const borderColor = isFinalizado ? 'border-stone-200' : 'border-stone-100';
+                const studentStatus = (student.status || '').toLowerCase();
+                const isCancelado = studentStatus === 'cancelado' || studentStatus === 'nao renovado';
+                
+                // Styling based on status
+                let cardBg, opacity, textColor, textColorLight, borderColor, borderStyle;
+                if (isCancelado) {
+                    cardBg = 'bg-red-50';
+                    opacity = 'opacity-80';
+                    textColor = 'text-stone-700';
+                    textColorLight = 'text-stone-600';
+                    borderColor = 'border-red-200';
+                    borderStyle = 'border-2 border-red-400';
+                } else if (isFinalizado) {
+                    cardBg = 'bg-stone-100';
+                    opacity = 'opacity-75';
+                    textColor = 'text-stone-600';
+                    textColorLight = 'text-stone-500';
+                    borderColor = 'border-stone-200';
+                    borderStyle = 'border border-stone-300';
+                } else {
+                    cardBg = 'bg-white';
+                    opacity = '';
+                    textColor = 'text-stone-800';
+                    textColorLight = 'text-stone-600';
+                    borderColor = 'border-stone-100';
+                    borderStyle = 'border';
+                }
 
                 return `
-                <div class="base-card flex flex-col ${cardBg} ${opacity} border ${isFinalizado ? 'border-stone-300' : ''}" id="vip-card-${student.id}">
+                <div class="base-card flex flex-col ${cardBg} ${opacity} ${borderStyle}" id="vip-card-${student.id}">
                     <div class="flex-1">
                         <div class="mb-2 flex justify-between items-start">
                             <h3 class="text-xl font-bold ${textColor}">${student.name}</h3>
-                            ${isFinalizado ? `<span class="px-2 py-1 text-xs font-semibold bg-stone-300 text-stone-700 rounded">FINALIZADO</span>` : ''}
+                            ${isCancelado ? `<span class="px-2 py-1 text-xs font-semibold bg-red-500 text-white rounded">CANCELADO</span>` : ''}
+                            ${isFinalizado && !isCancelado ? `<span class="px-2 py-1 text-xs font-semibold bg-stone-300 text-stone-700 rounded">FINALIZADO</span>` : ''}
                         </div>
                         <div class="card-content">
                             <p class="text-sm ${textColorLight} mb-2"><strong>Status:</strong> <span class="status-tag" style="background-color: ${isFinalizado ? '#D1D5DB' : (student.status === 'Ativo' ? '#D1FAE5' : student.status === 'Inativo' ? '#DBEAFE' : student.status === 'Pendente' ? '#FEF3C7' : '#F3F4F6')}; color: ${isFinalizado ? '#4B5563' : (student.status === 'Ativo' ? '#065F46' : student.status === 'Inativo' ? '#1E40AF' : student.status === 'Pendente' ? '#92400E' : '#4B5563')};">${student.status || 'Pendente'}</span></p>
@@ -3203,6 +3240,7 @@
                         <button class="secondary-btn filter-btn ${currentVipsFilter === 'a-finalizar' ? 'active' : ''}" data-filter="a-finalizar">A Finalizar</button>
                         <button class="secondary-btn filter-btn ${currentVipsFilter === 'expirados' ? 'active' : ''}" data-filter="expirados">Expirados</button>
                         <button class="secondary-btn filter-btn ${currentVipsFilter === 'finalizados' ? 'active' : ''}" data-filter="finalizados">Finalizados</button>
+                        <button class="secondary-btn filter-btn ${currentVipsFilter === 'cancelados' ? 'active' : ''}" data-filter="cancelados" style="border-color: #EF4444; color: #EF4444;">Cancelados</button>
                     </div>
                     ` : ''}
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="vips-grid">
@@ -8465,26 +8503,14 @@
             const modalTitle = document.getElementById('form-modal-title');
             const modalContentArea = document.getElementById('form-modal-content-area');
 
-            // Definir turmaStudents primeiro (excluindo alunos cancelados)
+            // Definir turmaStudents (incluindo alunos cancelados para manter histórico)
             const turmaStudents = (turma.studentIds || [])
                 .map(id => students.find(s => s.id === id))
-                .filter(s => {
-                    if (!s) return false;
-                    const status = (s.status || '').toLowerCase();
-                    return status !== 'cancelado' && status !== 'nao renovado';
-                });
+                .filter(s => s);
 
-            // Botão de exportação da turma completa
-            const exportButton = document.createElement('button');
-            exportButton.className = 'secondary-btn w-auto';
-            exportButton.textContent = 'Exportar PEF';
-            exportButton.dataset.action = 'export-turma-pef';
-            exportButton.dataset.id = turmaId;
-            modalHeader.insertBefore(exportButton, modalHeader.querySelector('.modal-close-btn'));
-
-            // Dropdown de exportação individual por aluno
+            // Dropdown de exportação individual por aluno (turma total export removed)
             const exportStudentDropdown = document.createElement('div');
-            exportStudentDropdown.className = 'relative inline-block ml-2';
+            exportStudentDropdown.className = 'relative inline-block';
             exportStudentDropdown.innerHTML = `
                 <button type="button" class="secondary-btn w-auto dropdown-toggle" id="export-student-btn-${turmaId}">
                     Exportar Aluno
@@ -8553,9 +8579,13 @@
 
                 const studentsHtml = turmaStudents.map(student => {
                     const studentStatus = lessonData?.students?.[student.id] || '';
+                    const studentStatusLower = (student.status || '').toLowerCase();
+                    const isCancelado = studentStatusLower === 'cancelado' || studentStatusLower === 'nao renovado';
+                    const canceladoStyle = isCancelado ? 'opacity-60 bg-red-50 border-red-300' : '';
+                    const canceladoTag = isCancelado ? '<span class="px-1 py-0.5 text-xs font-bold bg-red-500 text-white rounded ml-1">CANCELADO</span>' : '';
                     return `
-                        <div class="pef-student-attendance-row flex flex-col items-center gap-2" data-student-id="${student.id}">
-                            <span class="text-sm font-medium text-center">${student.name}</span>
+                        <div class="pef-student-attendance-row flex flex-col items-center gap-2 ${canceladoStyle}" data-student-id="${student.id}">
+                            <span class="text-sm font-medium text-center">${student.name}${canceladoTag}</span>
                             <div class="pef-status-btn-group flex gap-1">
                                 <button data-action="mark-attendance" data-status="P" class="${studentStatus === 'P' ? 'active P' : ''}">P</button>
                                 <button data-action="mark-attendance" data-status="F" class="${studentStatus === 'F' ? 'active F' : ''}">F</button>
@@ -10651,10 +10681,16 @@
                 await updateDoc(taskRef, { completedByUser: isCompleted });
                 const task = tasks.find(t => t.id === taskId);
                 if (task) {
+                    // Update local data immediately
+                    task.completedByUser = isCompleted;
                     await logActivity(isCompleted ? 'Marcou task como feita' : 'Desmarcou task como feita', 'task', task.title);
                 }
+                // Reload tasks to ensure data is synced
+                await loadTasksManually();
+                renderTasksList();
             } catch (error) {
                 console.error("Error updating user completion:", error);
+                showErrorMessage('Erro', 'Erro ao atualizar status. Tente novamente.');
             }
         }
 
@@ -19378,7 +19414,9 @@
 
             // Check if any field is empty or zero
             const hasEmptyFields = !midtermEl.value || !listeningEl.value || !grammarEl.value || 
-                                 !oralEl.value || !participacaoEl.value || !assiduidadeEl.value;
+                                 !oralEl.value || !participacaoEl.value || !assiduidadeEl.value ||
+                                 midterm === 0 || listening === 0 || grammar === 0 || 
+                                 oral === 0 || participacao === 0 || assiduidade === 0;
 
             const total = midterm + listening + grammar + oral + participacao + assiduidade;
 
@@ -19495,9 +19533,11 @@
             const participacao = parseFloat(participacaoEl.value) || 0;
             const assiduidade = parseFloat(assiduidadeEl.value) || 0;
 
-            // Check if any field is empty
+            // Check if any field is empty or zero
             const hasEmptyFields = !midtermEl.value || !listeningEl.value || !grammarEl.value || 
-                                 !oralEl.value || !participacaoEl.value || !assiduidadeEl.value;
+                                 !oralEl.value || !participacaoEl.value || !assiduidadeEl.value ||
+                                 midterm === 0 || listening === 0 || grammar === 0 || 
+                                 oral === 0 || participacao === 0 || assiduidade === 0;
 
             const total = midterm + listening + grammar + oral + participacao + assiduidade;
 
