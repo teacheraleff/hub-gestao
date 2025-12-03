@@ -214,6 +214,7 @@
         .secondary-btn { background-color: #f3f4f6; color: #4b5563; border: 1px solid #d1d5db; padding: 0.5rem 1rem; border-radius: 0.375rem; font-weight: 600; transition: all 0.2s; }
         .secondary-btn:hover { background-color: #e5e7eb; }
         .secondary-btn.active { background-color: #F1D24B; color: #44403c; border-color: #F1D24B;}
+        .secondary-btn.filter-btn[data-filter="cancelados"].active { background-color: #EF4444; color: white; border-color: #EF4444; }
         .danger-btn { background-color: #ef4444; color: white; padding: 0.5rem 1rem; border-radius: 0.375rem; font-weight: 600; transition: background-color 0.2s; border: none; cursor: pointer; }
         .danger-btn:hover { background-color: #dc2626; }
 
@@ -2963,7 +2964,7 @@
                     </div>
                     <div class="mt-auto pt-4 border-t ${borderColor} flex flex-wrap gap-2">
                         ${vipRecord ? `
-                            <button class="primary-btn !text-sm flex-1 flex items-center justify-center ${isFinalizado ? 'opacity-50' : ''}" data-action="${isFinalizado ? 'vip-finalizado' : 'open-vip-pef'}" data-id="${vipRecord.id}">PEF</button>
+                            <button class="primary-btn !text-sm flex-1 flex items-center justify-center ${isFinalizado && !isCancelado ? 'opacity-50' : ''}" data-action="${isFinalizado ? 'vip-finalizado' : 'open-vip-pef'}" data-id="${vipRecord.id}">PEF</button>
                             <button class="secondary-btn !text-sm flex-1 flex items-center justify-center ${isFinalizado ? 'opacity-50' : ''}" data-action="${isFinalizado ? 'vip-finalizado' : 'open-vip-notas'}" data-id="${vipRecord.id}">Notas</button>
                             ${(currentUserRole !== 'teacher' && currentUserRole !== 'teachertn') ? `<button class="secondary-btn !text-sm flex-1 ${isFinalizado ? 'opacity-50 cursor-not-allowed' : ''}" data-action="${isFinalizado ? 'vip-finalizado' : 'edit-vip'}" data-id="${vipRecord.id}" ${isFinalizado ? 'disabled' : ''}>Configurar</button>` : ''}
                             ${isFinalizado && (currentUserRole !== 'teacher' && currentUserRole !== 'teachertn') ? `<button class="secondary-btn !text-sm flex-1 min-w-[120px]" style="background-color: #10B981; color: white;" data-action="reativar-vip" data-id="${vipRecord.id}">Reativar</button>` : ''}
