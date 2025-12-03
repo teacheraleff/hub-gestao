@@ -12724,10 +12724,10 @@
                                         <td>${tn.time || '-'}</td>
                                         <td>${avaliador?.name || 'Não especificado'}</td>
                                         <td class="text-center">
-                                            <button class="px-3 py-1 text-sm rounded font-semibold transition-all ${tn.convertedToMatricula ? 'bg-green-500 text-white hover:bg-green-600' : 'bg-stone-200 text-stone-600 hover:bg-stone-300'}" 
+                                            <button class="px-4 py-1 text-sm rounded font-semibold transition-all w-14 ${tn.convertedToMatricula ? 'bg-green-500 text-white hover:bg-green-600' : 'bg-stone-200 text-stone-600 hover:bg-stone-300'}" 
                                                     onclick='toggleTNMatricula("${tn.id}")' 
                                                     title="${tn.convertedToMatricula ? 'Clique para desmarcar' : 'Clique para marcar como convertido'}">
-                                                ${tn.convertedToMatricula ? '✓ Sim' : 'Não'}
+                                                ${tn.convertedToMatricula ? 'Sim' : 'Não'}
                                             </button>
                                         </td>
                                         <td>
