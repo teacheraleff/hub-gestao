@@ -1541,7 +1541,10 @@
             // Testes de Nível listener
             getCollectionListener('testes-nivel', testesNivel, () => {
                 const activePageId = contentArea.firstElementChild?.id;
-                if (activePageId === 'gestao-tns-section') renderTNsList();
+                if (activePageId === 'gestao-tns-section') {
+                    renderEvaluatorSummaryCards();
+                    renderTNsList();
+                }
             });
 
             // Períodos Fixos listener - carregar na inicialização para evitar delay
@@ -12573,6 +12576,12 @@
                         </div>
                     </div>
 
+
+                    <!-- Cards de resumo por avaliador -->
+                    <div id="evaluator-summary-cards" class="mb-6 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                        <!-- Cards serão renderizados dinamicamente -->
+                    </div>
+
                     <div id="tns-list-container">
                         <!-- Lista será renderizada aqui -->
                     </div>
@@ -12584,6 +12593,7 @@
                 const saved = localStorage.getItem('testes-nivel');
                 testesNivel = saved ? JSON.parse(saved) : [];
             }
+            renderEvaluatorSummaryCards();
             renderTNsList();
 
             // Adicionar event listeners para busca e filtro
@@ -12591,6 +12601,65 @@
                 document.getElementById('tn-search')?.addEventListener('input', renderTNsList);
                 document.getElementById('tn-evaluator-filter')?.addEventListener('change', renderTNsList);
             }, 100);
+        }
+
+        function renderEvaluatorSummaryCards() {
+            const container = document.getElementById('evaluator-summary-cards');
+            if (!container) return;
+
+            const evaluatorStats = {};
+            
+            testesNivel.forEach(tn => {
+                const evaluatorId = tn.evaluatorId;
+                if (!evaluatorId) return;
+                
+                if (!evaluatorStats[evaluatorId]) {
+                    const evaluator = collaborators.find(c => c.id === evaluatorId);
+                    evaluatorStats[evaluatorId] = {
+                        name: evaluator?.name || 'Desconhecido',
+                        total: 0,
+                        converted: 0
+                    };
+                }
+                
+                evaluatorStats[evaluatorId].total++;
+                if (tn.convertedToMatricula) {
+                    evaluatorStats[evaluatorId].converted++;
+                }
+            });
+
+            const sortedEvaluators = Object.values(evaluatorStats).sort((a, b) => b.total - a.total);
+
+            if (sortedEvaluators.length === 0) {
+                container.innerHTML = '';
+                return;
+            }
+
+            container.innerHTML = sortedEvaluators.map(evaluatorData => {
+                const conversionRate = evaluatorData.total > 0 ? Math.round((evaluatorData.converted / evaluatorData.total) * 100) : 0;
+                const rateColor = conversionRate >= 70 ? 'text-green-600' : conversionRate >= 40 ? 'text-yellow-600' : 'text-red-600';
+                const bgColor = conversionRate >= 70 ? 'bg-green-50 border-green-200' : conversionRate >= 40 ? 'bg-yellow-50 border-yellow-200' : 'bg-stone-50 border-stone-200';
+                
+                return `
+                    <div class="p-4 rounded-lg border ${bgColor} transition-all hover:shadow-md">
+                        <h4 class="font-bold text-stone-800 text-sm mb-2 truncate" title="${evaluatorData.name}">${evaluatorData.name}</h4>
+                        <div class="flex items-center justify-between">
+                            <div class="text-center">
+                                <span class="text-2xl font-bold text-stone-700">${evaluatorData.total}</span>
+                                <p class="text-xs text-stone-500">TNs</p>
+                            </div>
+                            <div class="text-center">
+                                <span class="text-2xl font-bold ${rateColor}">${conversionRate}%</span>
+                                <p class="text-xs text-stone-500">Conversão</p>
+                            </div>
+                        </div>
+                        <div class="mt-2 w-full bg-stone-200 rounded-full h-2">
+                            <div class="h-2 rounded-full ${conversionRate >= 70 ? 'bg-green-500' : conversionRate >= 40 ? 'bg-yellow-500' : 'bg-stone-400'}" style="width: ${conversionRate}%"></div>
+                        </div>
+                        <p class="text-xs text-stone-500 mt-1 text-center">${evaluatorData.converted} de ${evaluatorData.total} convertidos</p>
+                    </div>
+                `;
+            }).join('');
         }
 
         function renderTNsList() {
@@ -12624,9 +12693,11 @@
                 return;
             }
 
-            // Ordenar alfabeticamente por nome do candidato
+            // Ordenar por data (mais recente primeiro)
             const sortedTNs = [...filteredTNs].sort((a, b) => {
-                return a.candidateName.localeCompare(b.candidateName, 'pt-BR', { sensitivity: 'base' });
+                const dateA = a.date ? new Date(a.date) : new Date(0);
+                const dateB = b.date ? new Date(b.date) : new Date(0);
+                return dateB - dateA; // Mais recente primeiro
             });
 
             container.innerHTML = `
@@ -12638,6 +12709,7 @@
                                 <th>Data</th>
                                 <th>Horário</th>
                                 <th>Avaliador</th>
+                                <th class="text-center">Matrícula</th>
                                 <th>Nível</th>
                                 <th>Ações</th>
                             </tr>
@@ -12646,7 +12718,7 @@
                             ${sortedTNs.map(tn => {
                                 const avaliador = collaborators.find(c => c.id === tn.evaluatorId);
                                 return `
-                                    <tr>
+                                    <tr class="${tn.convertedToMatricula ? 'bg-green-50' : ''}">
                                         <td class="font-semibold">${tn.candidateName}</td>
                                         <td>${formatDateBR(tn.date)}</td>
                                         <td>${tn.time || '-'}</td>
@@ -12655,6 +12727,13 @@
                                             <span class="inline-block px-2 py-1 text-xs rounded bg-blue-100 text-blue-700 font-semibold">
                                                 ${tn.level}
                                             </span>
+                                        </td>
+                                        <td class="text-center">
+                                            <button class="px-3 py-1 text-sm rounded font-semibold transition-all ${tn.convertedToMatricula ? 'bg-green-500 text-white hover:bg-green-600' : 'bg-stone-200 text-stone-600 hover:bg-stone-300'}" 
+                                                    onclick='toggleTNMatricula("${tn.id}")' 
+                                                    title="${tn.convertedToMatricula ? 'Clique para desmarcar' : 'Clique para marcar como convertido'}">
+                                                ${tn.convertedToMatricula ? '✓ Sim' : 'Não'}
+                                            </button>
                                         </td>
                                         <td class="whitespace-nowrap">
                                             <button class="secondary-btn w-auto text-sm" onclick='viewTN("${tn.id}")'>Ver</button>
@@ -12937,6 +13016,31 @@
         }
 
         window.openTNModal = openTNModal;
+        async function toggleTNMatricula(tnId) {
+            const tn = testesNivel.find(t => t.id === tnId);
+            if (!tn) return;
+
+            const newValue = !tn.convertedToMatricula;
+
+            try {
+                if (!db) {
+                    // localStorage mode
+                    tn.convertedToMatricula = newValue;
+                    localStorage.setItem('testes-nivel', JSON.stringify(testesNivel));
+                    renderTNsList();
+                } else {
+                    // Firebase mode
+                    const docRef = doc(db, `artifacts/${appId}/public/data/testes-nivel`, tnId);
+                    await updateDoc(docRef, { convertedToMatricula: newValue });
+                    await logActivity(newValue ? 'Marcou TN como convertido em matrícula' : 'Desmarcou TN como convertido em matrícula', 'tn', tn.candidateName);
+                }
+            } catch (error) {
+                console.error('Error toggling TN matrícula:', error);
+                showErrorMessage("Erro", "Erro ao atualizar status de matrícula.");
+            }
+        }
+
+        window.toggleTNMatricula = toggleTNMatricula;
         window.viewTN = viewTN;
         window.editTN = editTN;
         window.deleteTN = deleteTN;
