@@ -14579,7 +14579,7 @@
                         </div>
                         <div class="p-6">
                             <!-- Filter buttons -->
-                            <div class="mb-4 flex flex-wrap gap-2" id="tasks-filter-buttons">
+                            <div class="mb-4 flex flex-wrap gap-2 justify-center" id="tasks-filter-buttons">
                                 <button class="secondary-btn filter-btn" data-filter="todas" onclick="setTasksFilter('todas')">Todas</button>
                                 <button class="secondary-btn filter-btn" data-filter="urgentes" onclick="setTasksFilter('urgentes')">Urgentes</button>
                                 <button class="secondary-btn filter-btn" data-filter="atrasadas" onclick="setTasksFilter('atrasadas')">Atrasadas</button>
@@ -14588,7 +14588,7 @@
                                 <button class="secondary-btn filter-btn" data-filter="antigas" onclick="setTasksFilter('antigas')">Mais Antigas</button>
                             </div>
                             ${(can('tasks-prazos.add_task') || can('tasks-prazos.add_reminder')) ? `
-                            <div class="mb-6 flex justify-end gap-3 flex-wrap">
+                            <div class="mb-6 flex justify-center gap-3 flex-wrap">
                                 ${can('tasks-prazos.add_task') ? `
                                 <button class="primary-btn" style="background-color: #F1D24B;" onmouseover="this.style.backgroundColor='#E0C03D'" onmouseout="this.style.backgroundColor='#F1D24B'" onclick="openAddTaskForm()">
                                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
