@@ -12553,6 +12553,11 @@
                     </div>
 
 
+                    <!-- Contador Geral de TNs -->
+                    <div id="tn-general-stats" class="mb-6 grid grid-cols-2 md:grid-cols-3 gap-4">
+                        <!-- Stats serão renderizados dinamicamente -->
+                    </div>
+
                     <!-- Cards de resumo por avaliador -->
                     <div id="evaluator-summary-cards" class="mb-6 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                         <!-- Cards serão renderizados dinamicamente -->
@@ -12569,6 +12574,7 @@
                 const saved = localStorage.getItem('testes-nivel');
                 testesNivel = saved ? JSON.parse(saved) : [];
             }
+            renderTNGeneralStats();
             renderEvaluatorSummaryCards();
             renderTNsList();
 
@@ -12582,7 +12588,69 @@
         let currentTNsPage = 1;
         const TNS_PER_PAGE = 15;
 
-        function renderEvaluatorSummaryCards() {
+        function renderTNGeneralStats() {
+            const container = document.getElementById('tn-general-stats');
+            if (!container) return;
+
+            const totalTNs = testesNivel.length;
+            const convertedTNs = testesNivel.filter(tn => tn.convertedToMatricula).length;
+            const conversionRate = totalTNs > 0 ? Math.round((convertedTNs / totalTNs) * 100) : 0;
+            const pendingTNs = totalTNs - convertedTNs;
+
+            const rateColor = conversionRate >= 70 ? 'text-green-600' : conversionRate >= 40 ? 'text-yellow-600' : 'text-stone-600';
+            const rateBg = conversionRate >= 70 ? 'from-green-50 to-green-100 border-green-200' : conversionRate >= 40 ? 'from-yellow-50 to-yellow-100 border-yellow-200' : 'from-stone-50 to-stone-100 border-stone-200';
+
+            container.innerHTML = `
+                <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-5 rounded-xl border border-blue-200 shadow-sm">
+                    <div class="flex items-center gap-3 mb-2">
+                        <div class="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="text-sm text-blue-600 font-medium">Total de TNs</p>
+                            <p class="text-3xl font-bold text-blue-700">${totalTNs}</p>
+                        </div>
+                    </div>
+                    <p class="text-xs text-blue-500">Testes de nível realizados</p>
+                </div>
+
+                <div class="bg-gradient-to-br from-green-50 to-green-100 p-5 rounded-xl border border-green-200 shadow-sm">
+                    <div class="flex items-center gap-3 mb-2">
+                        <div class="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="text-sm text-green-600 font-medium">Convertidos</p>
+                            <p class="text-3xl font-bold text-green-700">${convertedTNs}</p>
+                        </div>
+                    </div>
+                    <p class="text-xs text-green-500">Matriculados após o TN</p>
+                </div>
+
+                <div class="bg-gradient-to-br ${rateBg} p-5 rounded-xl border shadow-sm">
+                    <div class="flex items-center gap-3 mb-2">
+                        <div class="w-10 h-10 rounded-full ${conversionRate >= 70 ? 'bg-green-500' : conversionRate >= 40 ? 'bg-yellow-500' : 'bg-stone-500'} flex items-center justify-center">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="text-sm ${rateColor} font-medium">Taxa de Conversão</p>
+                            <p class="text-3xl font-bold ${rateColor}">${conversionRate}%</p>
+                        </div>
+                    </div>
+                    <div class="w-full bg-white/50 rounded-full h-2 mt-2">
+                        <div class="h-2 rounded-full ${conversionRate >= 70 ? 'bg-green-500' : conversionRate >= 40 ? 'bg-yellow-500' : 'bg-stone-400'}" style="width: ${conversionRate}%"></div>
+                    </div>
+                </div>
+            `;
+        }
+
+                function renderEvaluatorSummaryCards() {
             const container = document.getElementById('evaluator-summary-cards');
             if (!container) return;
 
