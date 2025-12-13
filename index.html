@@ -1012,6 +1012,38 @@
                         'tasks-prazos.add_reminder': true,
                         'gestao-tns.full_access': true
                     }
+                },
+                'comercial': {
+                    label: 'Comercial',
+                    description: 'Acesso comercial com foco em alunos e turmas',
+                    permissions: {
+                        'alunos.full_access': true,
+                        'turmas.full_access': true,
+                        'vips.full_access': true,
+                        'grade.full_access': true,
+                        'calendario.add_event': true,
+                        'calendario.edit_event': true,
+                        'calendario.delete_event': true,
+                        'links-uteis.view_only': true,
+                        'processos.view': true,
+                        'tasks-prazos.view_all': true,
+                        'tasks-prazos.complete_own': true,
+                        'tasks-prazos.add_reminder': true,
+                        'gestao-tns.full_access': true,
+                        'rechamada.full_access': true,
+                        'kpis-pedagogico.full_access': true
+                    }
+                },
+                'designer': {
+                    label: 'Designer',
+                    description: 'Acesso limitado para designer',
+                    permissions: {
+                        'links-uteis.view_only': true,
+                        'processos.view': true,
+                        'tasks-prazos.view_all': true,
+                        'tasks-prazos.complete_own': true,
+                        'tasks-prazos.add_reminder': true
+                    }
                 }
             }
         };
@@ -4134,6 +4166,7 @@
         // --- RECHAMADA SECTION ---
         window.currentRechamadaTeacherFilter = 'todos';
         window.currentRechamadaPage = 1;
+        window.cachedRechamadaData = null; // Cache for rechamada calculations
         const RECHAMADA_ITEMS_PER_PAGE = 10;
 
         // Helper: Verificar se rechamada está expirada (>6 meses da data de contato)
@@ -4310,6 +4343,9 @@
             // Ordenar por data da primeira falta (mais recente primeiro)
             filteredStudents.sort((a, b) => new Date(b.firstDate) - new Date(a.firstDate));
 
+            // Lista única de professores
+            const uniqueTeachers = [...new Set(studentsWithConsecutiveAbsences.map(s => s.teacher))].filter(t => t && t !== 'Não especificado').sort();
+
             // Paginação
             const totalItems = filteredStudents.length;
             const totalPages = Math.ceil(totalItems / RECHAMADA_ITEMS_PER_PAGE);
@@ -4323,8 +4359,8 @@
             const endIndex = startIndex + RECHAMADA_ITEMS_PER_PAGE;
             const paginatedStudents = filteredStudents.slice(startIndex, endIndex);
 
-            // Lista únicalha de professores
-            const uniqueTeachers = [...new Set(studentsWithConsecutiveAbsences.map(s => s.teacher))].filter(t => t && t !== 'Não especificado').sort();
+            // Cache data for fast pagination
+            window.cachedRechamadaData = { filteredStudents, uniqueTeachers, totalItems, totalPages };
 
             contentArea.innerHTML = `
                 <section id="rechamada-section">
@@ -4544,9 +4580,40 @@
 
         function goToRechamadaPage(page) {
             window.currentRechamadaPage = page;
-            renderRechamadaSection();
+            // Use cached data if available for faster pagination
+            if (window.cachedRechamadaData) {
+                renderRechamadaListOnly();
+            } else {
+                renderRechamadaSection();
+            }
         }
         window.goToRechamadaPage = goToRechamadaPage;
+        
+        // Fast re-render using cached data (no recalculation)
+        function renderRechamadaListOnly() {
+            if (!window.cachedRechamadaData) {
+                renderRechamadaSection();
+                return;
+            }
+            
+            const { filteredStudents, uniqueTeachers, totalItems, totalPages } = window.cachedRechamadaData;
+            
+            // Garantir que a página atual é válida
+            if (window.currentRechamadaPage > totalPages) {
+                window.currentRechamadaPage = Math.max(1, totalPages);
+            }
+            
+            const startIndex = (window.currentRechamadaPage - 1) * RECHAMADA_ITEMS_PER_PAGE;
+            const endIndex = startIndex + RECHAMADA_ITEMS_PER_PAGE;
+            const paginatedStudents = filteredStudents.slice(startIndex, endIndex);
+            
+            // Update only the list container
+            const listContainer = document.getElementById('rechamada-list-container');
+            if (listContainer) {
+                listContainer.innerHTML = renderRechamadaListHTML(paginatedStudents, startIndex, endIndex, totalItems, totalPages, uniqueTeachers);
+            }
+        }
+        window.renderRechamadaListOnly = renderRechamadaListOnly;
 
         // --- Funções auxiliares de Rechamada ---
         function openRechamadaModal(studentId, studentName, teacherName, lessons, firstDate, secondDate) {
@@ -12448,7 +12515,7 @@
             const contentArea = document.getElementById('content-area');
 
             // Preparar lista de avaliadores
-            const evaluators = collaborators.filter(c => c.isEvaluator === true);
+            const evaluators = collaborators.filter(c => c.isEvaluator === true || c.role === 'coord');
             const evaluatorOptions = evaluators.map(e => 
                 `<option value="${e.id}">${e.name}</option>`
             ).join('');
@@ -12743,7 +12810,7 @@
                         <label class="font-medium text-sm">Avaliador *</label>
                         <select id="tn-evaluator" class="form-input" required>
                             <option value="">Selecione quem avaliou</option>
-                            ${collaborators.filter(c => c.isEvaluator === true).map(c => 
+                            ${collaborators.filter(c => c.isEvaluator === true || c.role === 'coord').map(c => 
                                 `<option value="${c.id}" ${tn?.evaluatorId === c.id ? 'selected' : ''}>${c.name}</option>`
                             ).join('')}
                         </select>
@@ -18801,8 +18868,12 @@ function openAddChecklistForm() {
                 oralTest: 0,
                 participacao: 0,
                 assiduidade: 0,
-                observacoes: ''
+                observacao: ''
             };
+            // Fallback para dados antigos que usavam 'observacoes' com 's'
+            if (!grades.observacao && grades.observacoes) {
+                grades.observacao = grades.observacoes;
+            }
 
             // Auto-calculate attendance for VIP - calculate and display, but only auto-fill if no manual value exists
             const autoAttendance = calculateVipAttendanceScore(vip.id);
@@ -19289,7 +19360,7 @@ function openAddChecklistForm() {
                 oralTest: parseFloat(gradeElements.oralTest.value) || 0,
                 participacao: parseFloat(gradeElements.participacao.value) || 0,
                 assiduidade: parseFloat(gradeElements.assiduidade.value) || 0,
-                observacoes: observacoesEl ? observacoesEl.value.trim() : ''
+                observacao: observacoesEl ? observacoesEl.value.trim() : ''
             };
 
             console.log('Collected VIP grades:', grades);
@@ -19434,8 +19505,12 @@ function openAddChecklistForm() {
                 oralTest: 0,
                 participacao: 0,
                 assiduidade: 0,
-                observacoes: ''
+                observacao: ''
             };
+            // Fallback para dados antigos que usavam 'observacoes' com 's'
+            if (!grades.observacao && grades.observacoes) {
+                grades.observacao = grades.observacoes;
+            }
 
             const formElements = {
                 midtermTest: document.getElementById('midterm-test'),
@@ -19667,8 +19742,12 @@ function openAddChecklistForm() {
                 oralTest: 0,
                 participacao: 0,
                 assiduidade: 0,
-                observacoes: ''
+                observacao: ''
             };
+            // Fallback para dados antigos que usavam 'observacoes' com 's'
+            if (!grades.observacao && grades.observacoes) {
+                grades.observacao = grades.observacoes;
+            }
 
             // Capturar observações do formulário se estiver aberto
             const observacoesEl = document.getElementById(`observacao-${studentId}`);
