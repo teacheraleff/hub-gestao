@@ -3178,7 +3178,7 @@
                         <button class="secondary-btn filter-btn ${currentVipsFilter === 'a-finalizar' ? 'active' : ''}" data-filter="a-finalizar">A Finalizar</button>
                         <button class="secondary-btn filter-btn ${currentVipsFilter === 'expirados' ? 'active' : ''}" data-filter="expirados">Expirados</button>
                         <button class="secondary-btn filter-btn ${currentVipsFilter === 'finalizados' ? 'active' : ''}" data-filter="finalizados">Finalizados</button>
-                        <button class="secondary-btn filter-btn ${currentVipsFilter === 'cancelados' ? 'active' : ''}" data-filter="cancelados" style="border-color: #EF4444; ${currentVipsFilter === 'cancelados' ? 'color: white; background-color: #EF4444;' : 'color: #EF4444;'}">Cancelados</button>
+                        <button class="secondary-btn filter-btn text-red-500 border-red-500 hover:bg-red-50 ${currentVipsFilter === 'cancelados' ? 'active !bg-red-500 !text-white !border-red-500' : ''}" data-filter="cancelados">Cancelados</button>
                     </div>
                     ` : ''}
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="vips-grid">
@@ -4525,7 +4525,7 @@
                             </div>
                             <div class="flex items-center gap-2">
                                 <button 
-                                    onclick="window.currentRechamadaPage = 1; renderRechamadaSection();"
+                                    onclick="goToRechamadaPage(1)"
                                     class="px-3 py-2 rounded-lg border border-stone-300 text-stone-600 hover:bg-stone-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                     ${window.currentRechamadaPage === 1 ? 'disabled' : ''}
                                     title="Primeira página"
@@ -4535,7 +4535,7 @@
                                     </svg>
                                 </button>
                                 <button 
-                                    onclick="window.currentRechamadaPage = Math.max(1, window.currentRechamadaPage - 1); renderRechamadaSection();"
+                                    onclick="goToRechamadaPage(Math.max(1, window.currentRechamadaPage - 1))"
                                     class="px-3 py-2 rounded-lg border border-stone-300 text-stone-600 hover:bg-stone-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                     ${window.currentRechamadaPage === 1 ? 'disabled' : ''}
                                     title="Página anterior"
@@ -12531,13 +12531,19 @@
                             </select>
                         </div>
                         <div class="flex gap-2">
-                            <button class="secondary-btn w-auto" onclick="exportTNsList()">
+                            <button class="secondary-btn w-auto flex items-center" onclick="openEvaluatorManagementModal()">
+                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                                </svg>
+                                Gerenciar Avaliadores
+                            </button>
+                            <button class="secondary-btn w-auto flex items-center" onclick="exportTNsList()">
                                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                                 </svg>
                                 Exportar Lista
                             </button>
-                            <button class="primary-btn w-auto" data-action="add-tn">
+                            <button class="primary-btn w-auto flex items-center" data-action="add-tn">
                                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
                                 </svg>
@@ -13081,6 +13087,166 @@
         window.editTN = editTN;
         window.deleteTN = deleteTN;
         window.exportTNsList = exportTNsList;
+        window.openEvaluatorManagementModal = openEvaluatorManagementModal;
+        window.addEvaluator = addEvaluator;
+        window.removeEvaluator = removeEvaluator;
+
+        function openEvaluatorManagementModal() {
+            clearModalHeaderButtons();
+            document.getElementById('form-modal-title').textContent = 'Gerenciar Avaliadores';
+
+            const currentEvaluators = collaborators.filter(c => c.isEvaluator === true || c.role === 'coord');
+            const nonEvaluators = collaborators.filter(c => c.isEvaluator !== true && c.role !== 'coord');
+
+            document.getElementById('form-modal-content-area').innerHTML = `
+                <div class="space-y-6">
+                    <!-- Seção para adicionar novo avaliador -->
+                    <div class="p-4 bg-stone-50 rounded-lg border border-stone-200">
+                        <h3 class="font-semibold text-stone-800 mb-3">Adicionar Novo Avaliador</h3>
+                        <div class="flex gap-2">
+                            <select id="new-evaluator-select" class="form-input flex-grow">
+                                <option value="">Selecione um colaborador...</option>
+                                ${nonEvaluators.map(c => `<option value="${c.id}">${c.name} (${c.role})</option>`).join('')}
+                            </select>
+                            <button type="button" class="primary-btn w-auto" onclick="addEvaluator()">
+                                <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                                </svg>
+                                Adicionar
+                            </button>
+                        </div>
+                        ${nonEvaluators.length === 0 ? '<p class="text-sm text-stone-500 mt-2">Todos os colaboradores já são avaliadores.</p>' : ''}
+                    </div>
+
+                    <!-- Lista de avaliadores atuais -->
+                    <div>
+                        <h3 class="font-semibold text-stone-800 mb-3">Avaliadores Atuais (${currentEvaluators.length})</h3>
+                        <div class="space-y-2 max-h-80 overflow-y-auto">
+                            ${currentEvaluators.length === 0 ? '<p class="text-stone-500 text-sm">Nenhum avaliador cadastrado.</p>' : 
+                              currentEvaluators.map(e => {
+                                const isCoord = e.role === 'coord';
+                                const tnsCount = testesNivel.filter(tn => tn.evaluatorId === e.id).length;
+                                return `
+                                    <div class="flex items-center justify-between p-3 bg-white rounded-lg border border-stone-200 hover:border-stone-300 transition-colors">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-white font-bold text-sm">
+                                                ${e.name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()}
+                                            </div>
+                                            <div>
+                                                <p class="font-medium text-stone-800">${e.name}</p>
+                                                <div class="flex items-center gap-2">
+                                                    <span class="text-xs text-stone-500">${e.role}</span>
+                                                    ${isCoord ? '<span class="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">Coord (automático)</span>' : ''}
+                                                    <span class="text-xs text-stone-400">${tnsCount} TN${tnsCount !== 1 ? 's' : ''} realizados</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        ${!isCoord ? `
+                                            <button onclick="removeEvaluator('${e.id}')" class="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded-lg transition-colors" title="Remover como avaliador">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                                </svg>
+                                            </button>
+                                        ` : `
+                                            <span class="text-xs text-stone-400 italic">Não removível</span>
+                                        `}
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end pt-4 border-t">
+                        <button type="button" class="secondary-btn" onclick="closeFormModal()">Fechar</button>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('form-modal').classList.add('visible');
+        }
+
+        async function addEvaluator() {
+            const select = document.getElementById('new-evaluator-select');
+            const collaboratorId = select?.value;
+
+            if (!collaboratorId) {
+                showErrorMessage("Atenção", "Selecione um colaborador para adicionar como avaliador.");
+                return;
+            }
+
+            const collaborator = collaborators.find(c => c.id === collaboratorId);
+            if (!collaborator) {
+                showErrorMessage("Erro", "Colaborador não encontrado.");
+                return;
+            }
+
+            try {
+                if (db) {
+                    await db.collection('colaboradores').doc(collaboratorId).update({
+                        isEvaluator: true
+                    });
+                    showSuccessMessage("Sucesso!", `${collaborator.name} agora é um avaliador.`);
+                } else {
+                    collaborator.isEvaluator = true;
+                    localStorage.setItem('colaboradores', JSON.stringify(collaborators));
+                    showSuccessMessage("Sucesso!", `${collaborator.name} agora é um avaliador.`);
+                }
+                
+                // Refresh the modal
+                openEvaluatorManagementModal();
+                
+                // Also refresh the main section if visible
+                if (currentPage === 'gestao-tns') {
+                    renderGestaoTNsSection();
+                    openEvaluatorManagementModal();
+                }
+            } catch (error) {
+                console.error('Error adding evaluator:', error);
+                showErrorMessage("Erro", "Não foi possível adicionar o avaliador. Tente novamente.");
+            }
+        }
+
+        async function removeEvaluator(collaboratorId) {
+            const collaborator = collaborators.find(c => c.id === collaboratorId);
+            if (!collaborator) {
+                showErrorMessage("Erro", "Colaborador não encontrado.");
+                return;
+            }
+
+            // Check if collaborator has any TNs
+            const tnsCount = testesNivel.filter(tn => tn.evaluatorId === collaboratorId).length;
+            
+            const confirmMsg = tnsCount > 0 
+                ? `${collaborator.name} possui ${tnsCount} TN${tnsCount > 1 ? 's' : ''} registrados. Deseja remover o status de avaliador mesmo assim? Os TNs existentes serão mantidos.`
+                : `Deseja remover ${collaborator.name} como avaliador?`;
+
+            if (!confirm(confirmMsg)) return;
+
+            try {
+                if (db) {
+                    await db.collection('colaboradores').doc(collaboratorId).update({
+                        isEvaluator: false
+                    });
+                    showSuccessMessage("Sucesso!", `${collaborator.name} não é mais um avaliador.`);
+                } else {
+                    collaborator.isEvaluator = false;
+                    localStorage.setItem('colaboradores', JSON.stringify(collaborators));
+                    showSuccessMessage("Sucesso!", `${collaborator.name} não é mais um avaliador.`);
+                }
+                
+                // Refresh the modal
+                openEvaluatorManagementModal();
+                
+                // Also refresh the main section if visible
+                if (currentPage === 'gestao-tns') {
+                    renderGestaoTNsSection();
+                    openEvaluatorManagementModal();
+                }
+            } catch (error) {
+                console.error('Error removing evaluator:', error);
+                showErrorMessage("Erro", "Não foi possível remover o avaliador. Tente novamente.");
+            }
+        }
 
         function renderCalendarioSection() {
             document.getElementById('main-title').textContent = 'Calendário';
