@@ -12514,8 +12514,12 @@
 
             const contentArea = document.getElementById('content-area');
 
-            // Preparar lista de avaliadores (independente de colaboradores)
-            const evaluators = avaliadores || [];
+            // Preparar lista de avaliadores (nova coleção + colaboradores legados)
+            const legacyEvaluators = collaborators.filter(c => c.isEvaluator === true || c.role === 'coord');
+            const evaluators = [
+                ...(avaliadores || []),
+                ...legacyEvaluators.filter(le => !(avaliadores || []).some(a => a.id === le.id))
+            ];
             const evaluatorOptions = evaluators.map(e => 
                 `<option value="${e.id}">${e.name}</option>`
             ).join('');
@@ -12661,7 +12665,7 @@
                 if (!evaluatorId) return;
                 
                 if (!evaluatorStats[evaluatorId]) {
-                    const evaluator = avaliadores.find(a => a.id === evaluatorId);
+                    const evaluator = (avaliadores || []).find(a => a.id === evaluatorId) || collaborators.find(c => c.id === evaluatorId);
                     evaluatorStats[evaluatorId] = {
                         name: evaluator?.name || 'Desconhecido',
                         total: 0,
@@ -12784,7 +12788,7 @@
                         </thead>
                         <tbody>
                             ${paginatedTNs.map(tn => {
-                                const avaliador = avaliadores.find(a => a.id === tn.evaluatorId);
+                                const avaliador = (avaliadores || []).find(a => a.id === tn.evaluatorId) || collaborators.find(c => c.id === tn.evaluatorId);
                                 return `
                                     <tr class="${tn.convertedToMatricula ? 'bg-green-50' : ''}">
                                         <td class="font-semibold">${tn.candidateName}</td>
@@ -12884,9 +12888,16 @@
                         <label class="font-medium text-sm">Avaliador *</label>
                         <select id="tn-evaluator" class="form-input" required>
                             <option value="">Selecione quem avaliou</option>
-                            ${(avaliadores || []).map(c => 
-                                `<option value="${c.id}" ${tn?.evaluatorId === c.id ? 'selected' : ''}>${c.name}</option>`
-                            ).join('')}
+                            ${(() => {
+                                const legacyEvals = collaborators.filter(c => c.isEvaluator === true || c.role === 'coord');
+                                const allEvals = [
+                                    ...(avaliadores || []),
+                                    ...legacyEvals.filter(le => !(avaliadores || []).some(a => a.id === le.id))
+                                ];
+                                return allEvals.map(c => 
+                                    `<option value="${c.id}" ${tn?.evaluatorId === c.id ? 'selected' : ''}>${c.name}</option>`
+                                ).join('');
+                            })()}
                         </select>
                     </div>
 
@@ -12983,7 +12994,7 @@
             if (!tn) return;
 
             clearModalHeaderButtons();
-            const avaliador = avaliadores.find(a => a.id === tn.evaluatorId);
+            const avaliador = (avaliadores || []).find(a => a.id === tn.evaluatorId) || collaborators.find(c => c.id === tn.evaluatorId);
 
             document.getElementById('form-modal-title').textContent = 'Detalhes do Teste de Nível';
 
@@ -13084,7 +13095,7 @@
             const csvRows = [headers.join(',')];
 
             sortedTNs.forEach(tn => {
-                const avaliador = avaliadores.find(a => a.id === tn.evaluatorId);
+                const avaliador = (avaliadores || []).find(a => a.id === tn.evaluatorId) || collaborators.find(c => c.id === tn.evaluatorId);
                 const row = [
                     `"${tn.candidateName || ''}"`,
                     `"${tn.phone || ''}"`,
@@ -13163,7 +13174,11 @@
             clearModalHeaderButtons();
             document.getElementById('form-modal-title').textContent = 'Gerenciar Avaliadores';
 
-            const currentEvaluators = avaliadores || [];
+            const legacyEvaluators = collaborators.filter(c => c.isEvaluator === true || c.role === 'coord');
+            const currentEvaluators = [
+                ...(avaliadores || []),
+                ...legacyEvaluators.filter(le => !(avaliadores || []).some(a => a.id === le.id))
+            ];
 
             document.getElementById('form-modal-content-area').innerHTML = `
                 <div class="space-y-6">
