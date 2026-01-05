@@ -630,7 +630,7 @@
         const pendingView = document.getElementById('pending-view');
 
         let db, auth, storage, userId, currentUserName, currentUserRole;
-        let usersData = [], students = [], turmas = [], vips = [], attendance = [], tasks = [], events = [], collaborators = [], schedules = [], expenses = [], dojoRanking = [], dojoMissions = [], activityLogs = [], rechamadas = [], linksUteis = [], processos = [];
+        let usersData = [], students = [], turmas = [], vips = [], attendance = [], tasks = [], events = [], collaborators = [], schedules = [], expenses = [], dojoRanking = [], dojoMissions = [], activityLogs = [], rechamadas = [], linksUteis = [], processos = [], avaliadores = [];
         let userProfiles = {};
         let monthlyHighlight = {
             name: 'João Silva',
@@ -12514,8 +12514,8 @@
 
             const contentArea = document.getElementById('content-area');
 
-            // Preparar lista de avaliadores
-            const evaluators = collaborators.filter(c => c.isEvaluator === true || c.role === 'coord');
+            // Preparar lista de avaliadores (independente de colaboradores)
+            const evaluators = avaliadores || [];
             const evaluatorOptions = evaluators.map(e => 
                 `<option value="${e.id}">${e.name}</option>`
             ).join('');
@@ -12661,7 +12661,7 @@
                 if (!evaluatorId) return;
                 
                 if (!evaluatorStats[evaluatorId]) {
-                    const evaluator = collaborators.find(c => c.id === evaluatorId);
+                    const evaluator = avaliadores.find(a => a.id === evaluatorId);
                     evaluatorStats[evaluatorId] = {
                         name: evaluator?.name || 'Desconhecido',
                         total: 0,
@@ -12784,7 +12784,7 @@
                         </thead>
                         <tbody>
                             ${paginatedTNs.map(tn => {
-                                const avaliador = collaborators.find(c => c.id === tn.evaluatorId);
+                                const avaliador = avaliadores.find(a => a.id === tn.evaluatorId);
                                 return `
                                     <tr class="${tn.convertedToMatricula ? 'bg-green-50' : ''}">
                                         <td class="font-semibold">${tn.candidateName}</td>
@@ -12884,7 +12884,7 @@
                         <label class="font-medium text-sm">Avaliador *</label>
                         <select id="tn-evaluator" class="form-input" required>
                             <option value="">Selecione quem avaliou</option>
-                            ${collaborators.filter(c => c.isEvaluator === true || c.role === 'coord').map(c => 
+                            ${(avaliadores || []).map(c => 
                                 `<option value="${c.id}" ${tn?.evaluatorId === c.id ? 'selected' : ''}>${c.name}</option>`
                             ).join('')}
                         </select>
@@ -12983,7 +12983,7 @@
             if (!tn) return;
 
             clearModalHeaderButtons();
-            const avaliador = collaborators.find(c => c.id === tn.evaluatorId);
+            const avaliador = avaliadores.find(a => a.id === tn.evaluatorId);
 
             document.getElementById('form-modal-title').textContent = 'Detalhes do Teste de Nível';
 
@@ -13084,7 +13084,7 @@
             const csvRows = [headers.join(',')];
 
             sortedTNs.forEach(tn => {
-                const avaliador = collaborators.find(c => c.id === tn.evaluatorId);
+                const avaliador = avaliadores.find(a => a.id === tn.evaluatorId);
                 const row = [
                     `"${tn.candidateName || ''}"`,
                     `"${tn.phone || ''}"`,
@@ -13163,8 +13163,7 @@
             clearModalHeaderButtons();
             document.getElementById('form-modal-title').textContent = 'Gerenciar Avaliadores';
 
-            const currentEvaluators = collaborators.filter(c => c.isEvaluator === true || c.role === 'coord');
-            const nonEvaluators = collaborators.filter(c => c.isEvaluator !== true && c.role !== 'coord');
+            const currentEvaluators = avaliadores || [];
 
             document.getElementById('form-modal-content-area').innerHTML = `
                 <div class="space-y-6">
@@ -13172,18 +13171,14 @@
                     <div class="p-4 bg-stone-50 rounded-lg border border-stone-200">
                         <h3 class="font-semibold text-stone-800 mb-3">Adicionar Novo Avaliador</h3>
                         <div class="flex gap-2">
-                            <select id="new-evaluator-select" class="form-input flex-grow">
-                                <option value="">Selecione um colaborador...</option>
-                                ${nonEvaluators.map(c => `<option value="${c.id}">${c.name} (${c.role})</option>`).join('')}
-                            </select>
-                            <button type="button" class="primary-btn w-auto" onclick="addEvaluator()">
+                            <input type="text" id="new-evaluator-name" class="form-input flex-grow" placeholder="Nome do avaliador...">
+                            <button type="button" class="primary-btn w-auto flex items-center" onclick="addEvaluator()">
                                 <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
                                 </svg>
                                 Adicionar
                             </button>
                         </div>
-                        ${nonEvaluators.length === 0 ? '<p class="text-sm text-stone-500 mt-2">Todos os colaboradores já são avaliadores.</p>' : ''}
                     </div>
 
                     <!-- Lista de avaliadores atuais -->
@@ -13192,7 +13187,6 @@
                         <div class="space-y-2 max-h-80 overflow-y-auto">
                             ${currentEvaluators.length === 0 ? '<p class="text-stone-500 text-sm">Nenhum avaliador cadastrado.</p>' : 
                               currentEvaluators.map(e => {
-                                const isCoord = e.role === 'coord';
                                 const tnsCount = testesNivel.filter(tn => tn.evaluatorId === e.id).length;
                                 return `
                                     <div class="flex items-center justify-between p-3 bg-white rounded-lg border border-stone-200 hover:border-stone-300 transition-colors">
@@ -13202,22 +13196,14 @@
                                             </div>
                                             <div>
                                                 <p class="font-medium text-stone-800">${e.name}</p>
-                                                <div class="flex items-center gap-2">
-                                                    <span class="text-xs text-stone-500">${e.role}</span>
-                                                    ${isCoord ? '<span class="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">Coord (automático)</span>' : ''}
-                                                    <span class="text-xs text-stone-400">${tnsCount} TN${tnsCount !== 1 ? 's' : ''} realizados</span>
-                                                </div>
+                                                <span class="text-xs text-stone-400">${tnsCount} TN${tnsCount !== 1 ? 's' : ''} realizados</span>
                                             </div>
                                         </div>
-                                        ${!isCoord ? `
-                                            <button onclick="removeEvaluator('${e.id}')" class="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded-lg transition-colors" title="Remover como avaliador">
-                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                                                </svg>
-                                            </button>
-                                        ` : `
-                                            <span class="text-xs text-stone-400 italic">Não removível</span>
-                                        `}
+                                        <button onclick="removeEvaluator('${e.id}')" class="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded-lg transition-colors" title="Remover avaliador">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                            </svg>
+                                        </button>
                                     </div>
                                 `;
                             }).join('')}
@@ -13234,37 +13220,36 @@
         }
 
         async function addEvaluator() {
-            const select = document.getElementById('new-evaluator-select');
-            const collaboratorId = select?.value;
+            const nameInput = document.getElementById('new-evaluator-name');
+            const name = nameInput?.value?.trim();
 
-            if (!collaboratorId) {
-                showErrorMessage("Atenção", "Selecione um colaborador para adicionar como avaliador.");
+            if (!name) {
+                showErrorMessage("Atenção", "Digite o nome do avaliador.");
                 return;
             }
 
-            const collaborator = collaborators.find(c => c.id === collaboratorId);
-            if (!collaborator) {
-                showErrorMessage("Erro", "Colaborador não encontrado.");
+            // Check if evaluator already exists
+            if (avaliadores.some(a => a.name.toLowerCase() === name.toLowerCase())) {
+                showErrorMessage("Atenção", "Já existe um avaliador com este nome.");
                 return;
             }
 
             try {
+                const newEvaluator = {
+                    name: name,
+                    createdAt: new Date().toISOString(),
+                    createdBy: currentUserName
+                };
+
                 if (db) {
-                    await db.collection('colaboradores').doc(collaboratorId).update({
-                        isEvaluator: true
-                    });
-                    showSuccessMessage("Sucesso!", `${collaborator.name} agora é um avaliador.`);
+                    const docRef = await addDoc(collection(db, `artifacts/${appId}/public/data/avaliadores`), newEvaluator);
+                    showSuccessMessage("Sucesso!", `${name} foi adicionado como avaliador.`);
                 } else {
-                    collaborator.isEvaluator = true;
-                    localStorage.setItem('colaboradores', JSON.stringify(collaborators));
-                    showSuccessMessage("Sucesso!", `${collaborator.name} agora é um avaliador.`);
-                }
-                
-                // Refresh the modal
-                openEvaluatorManagementModal();
-                
-                // Also refresh the main section if visible
-                if (currentPage === 'gestao-tns') {
+                    newEvaluator.id = 'eval_' + Date.now();
+                    avaliadores.push(newEvaluator);
+                    localStorage.setItem('avaliadores', JSON.stringify(avaliadores));
+                    showSuccessMessage("Sucesso!", `${name} foi adicionado como avaliador.`);
+                    openEvaluatorManagementModal();
                     renderGestaoTNsSection();
                     openEvaluatorManagementModal();
                 }
@@ -13274,39 +13259,35 @@
             }
         }
 
-        async function removeEvaluator(collaboratorId) {
-            const collaborator = collaborators.find(c => c.id === collaboratorId);
-            if (!collaborator) {
-                showErrorMessage("Erro", "Colaborador não encontrado.");
+        async function removeEvaluator(evaluatorId) {
+            const evaluator = avaliadores.find(e => e.id === evaluatorId);
+            if (!evaluator) {
+                showErrorMessage("Erro", "Avaliador não encontrado.");
                 return;
             }
 
-            // Check if collaborator has any TNs
-            const tnsCount = testesNivel.filter(tn => tn.evaluatorId === collaboratorId).length;
+            // Check if evaluator has any TNs
+            const tnsCount = testesNivel.filter(tn => tn.evaluatorId === evaluatorId).length;
             
             const confirmMsg = tnsCount > 0 
-                ? `${collaborator.name} possui ${tnsCount} TN${tnsCount > 1 ? 's' : ''} registrados. Deseja remover o status de avaliador mesmo assim? Os TNs existentes serão mantidos.`
-                : `Deseja remover ${collaborator.name} como avaliador?`;
+                ? `${evaluator.name} possui ${tnsCount} TN${tnsCount > 1 ? 's' : ''} registrados. Deseja remover este avaliador? Os TNs existentes serão mantidos.`
+                : `Deseja remover ${evaluator.name} da lista de avaliadores?`;
 
             if (!confirm(confirmMsg)) return;
 
             try {
                 if (db) {
-                    await db.collection('colaboradores').doc(collaboratorId).update({
-                        isEvaluator: false
-                    });
-                    showSuccessMessage("Sucesso!", `${collaborator.name} não é mais um avaliador.`);
+                    const docRef = doc(db, `artifacts/${appId}/public/data/avaliadores`, evaluatorId);
+                    await deleteDoc(docRef);
+                    showSuccessMessage("Sucesso!", `${evaluator.name} foi removido da lista de avaliadores.`);
                 } else {
-                    collaborator.isEvaluator = false;
-                    localStorage.setItem('colaboradores', JSON.stringify(collaborators));
-                    showSuccessMessage("Sucesso!", `${collaborator.name} não é mais um avaliador.`);
-                }
-                
-                // Refresh the modal
-                openEvaluatorManagementModal();
-                
-                // Also refresh the main section if visible
-                if (currentPage === 'gestao-tns') {
+                    const index = avaliadores.findIndex(e => e.id === evaluatorId);
+                    if (index > -1) {
+                        avaliadores.splice(index, 1);
+                        localStorage.setItem('avaliadores', JSON.stringify(avaliadores));
+                    }
+                    showSuccessMessage("Sucesso!", `${evaluator.name} foi removido da lista de avaliadores.`);
+                    openEvaluatorManagementModal();
                     renderGestaoTNsSection();
                     openEvaluatorManagementModal();
                 }
