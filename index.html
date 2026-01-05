@@ -1481,6 +1481,13 @@
                 }
             });
 
+            getCollectionListener('avaliadores', avaliadores, () => {
+                const activePageId = contentArea.firstElementChild?.id;
+                if (activePageId === 'gestao-tns-section') {
+                    renderGestaoTNsSection();
+                }
+            });
+
             // Períodos Fixos listener - carregar na inicialização para evitar delay
             getCollectionListener('fixed-date-cards', fixedDateCards, () => {
                 const activePageId = contentArea.firstElementChild?.id;
