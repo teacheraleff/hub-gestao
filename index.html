@@ -1510,7 +1510,7 @@
                         // Re-render if we're on the dashboard
                         const activePageId = contentArea.firstElementChild?.id;
                         if (activePageId === 'inicio-section') {
-                            renderMonthlyHighlight();
+                            
                         }
                     } else {
                         console.log('No monthly highlight document found');
@@ -1895,48 +1895,7 @@
                             </div>
                         </div>
 
-                        <!-- Top 3 Dojo Section -->
-                        <div class="bg-white p-4 rounded-lg shadow-sm border border-stone-200">
-                            <h4 class="text-base font-semibold text-stone-800 mb-3">Top 3 Dojo</h4>
-                            <div class="space-y-2">
-                                ${getTop3DojoRanking().map((item, index) => `
-                                    <div class="flex items-center justify-between p-2 rounded-lg" style="background-color: ${
-                                        index === 0 ? '#F1D24B20' : 
-                                        index === 1 ? '#84C7DF20' : 
-                                        '#FF5C3D20'
-                                    }">
-                                        <div class="flex items-center space-x-2">
-                                            <span class="text-lg font-bold" style="color: ${
-                                                index === 0 ? '#F1D24B' : 
-                                                index === 1 ? '#84C7DF' : 
-                                                '#FF5C3D'
-                                            }">${
-                                                index === 0 ? 
-                                                    `<svg class="inline-block w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                        <circle cx="12" cy="8" r="6" fill="#FFD700" stroke="#DAA520" stroke-width="2"/>
-                                                        <rect x="10" y="14" width="4" height="8" fill="#DAA520"/>
-                                                        <text x="12" y="10" text-anchor="middle" fill="#DAA520" font-size="8" font-weight="bold">1</text>
-                                                    </svg>` : 
-                                                index === 1 ? 
-                                                    `<svg class="inline-block w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                        <circle cx="12" cy="8" r="6" fill="#C0C0C0" stroke="#A8A8A8" stroke-width="2"/>
-                                                        <rect x="10" y="14" width="4" height="8" fill="#A8A8A8"/>
-                                                        <text x="12" y="10" text-anchor="middle" fill="#666666" font-size="8" font-weight="bold">2</text>
-                                                    </svg>` : 
-                                                    `<svg class="inline-block w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                        <circle cx="12" cy="8" r="6" fill="#CD7F32" stroke="#8B4513" stroke-width="2"/>
-                                                        <rect x="10" y="14" width="4" height="8" fill="#8B4513"/>
-                                                        <text x="12" y="10" text-anchor="middle" fill="#654321" font-size="8" font-weight="bold">3</text>
-                                                    </svg>`
-                                            }</span>
-                                            <span class="font-medium text-stone-700">${item.name}</span>
-                                        </div>
-                                        <span class="text-sm font-semibold text-stone-700">${item.points || 0} pts</span>
-                                    </div>
-                                `).join('')}
-                                ${getTop3DojoRanking().length === 0 ? '<p class="text-sm text-stone-500 text-center py-4">Ainda não há ranking</p>' : ''}
-                            </div>
-                        </div>
+
                     </div>
 
 
@@ -2000,29 +1959,13 @@
                             </div>
                         </div>
 
-                        <!-- Destaque do Mês -->
-                        <div class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
-                            <div class="flex justify-between items-center mb-4">
-                                <h4 class="text-lg font-bold text-stone-800">Destaque do Mês</h4>
-                                ${currentUserRole === 'admin' ? `
-                                    <button class="text-sm" style="color: #F1D24B;" data-action="edit-monthly-highlight">
-                                        <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                                        </svg>
-                                        Editar
-                                    </button>
-                                ` : ''}
-                            </div>
-                            <div id="monthly-highlight-content">
-                                <!-- Monthly highlight content will be rendered here -->
-                            </div>
-                        </div>
+
                     </div>
                 </div>
             `;
 
             // Initialize monthly highlight and fortune cookie
-            renderMonthlyHighlight();
+            
             renderFortuneCookie();
         }
 
@@ -2105,7 +2048,7 @@
                     // Development mode - update local variable only
                     console.log('Development mode: updating local monthly highlight');
                     monthlyHighlight = data;
-                    renderMonthlyHighlight();
+                    
                     document.getElementById('form-modal').classList.remove('visible');
                     showSuccessMessage("Sucesso!", "Destaque do mês atualizado localmente (modo desenvolvimento).");
                     return;
