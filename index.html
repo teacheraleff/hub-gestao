@@ -13257,10 +13257,10 @@
                 };
 
                 if (db) {
-                    const docRef = await addDoc(collection(db, \`artifacts/\${appId}/public/data/avaliadores\`), newEvaluator);
+                    const docRef = await addDoc(collection(db, `artifacts/${appId}/public/data/avaliadores`), newEvaluator);
                     newEvaluator.id = docRef.id;
                     avaliadores.push(newEvaluator);
-                    showSuccessMessage("Sucesso!", \`\${name} foi adicionado como avaliador.\`);
+                    showSuccessMessage("Sucesso!", `${name} foi adicionado como avaliador.`);
                     openEvaluatorManagementModal();
                     renderGestaoTNsSection();
                 } else {
