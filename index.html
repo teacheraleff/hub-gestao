@@ -6490,6 +6490,10 @@
                             <input type="checkbox" id="aluno-fora-brasil" class="h-4 w-4 rounded text-yellow-500 focus:ring-yellow-400" ${aluno?.foraBrasil ? 'checked' : ''} onchange="toggleLocationFields()">
                             <label for="aluno-fora-brasil" class="ml-2 text-sm font-medium text-stone-700">Mora fora do Brasil?</label>
                         </div>
+                        <div class="flex items-center">
+                            <input type="checkbox" id="aluno-influenciador" class="h-4 w-4 rounded text-purple-500 focus:ring-purple-400" ${aluno?.isInfluencer ? 'checked' : ''}>
+                            <label for="aluno-influenciador" class="ml-2 text-sm font-medium text-stone-700">Influenciador</label>
+                        </div>
                         <div class="grid grid-cols-2 gap-4">
                             <div><label class="font-medium text-sm">Local (Cidade/País)</label><input type="text" id="aluno-local" class="form-input" placeholder="Ex: São Paulo ou Toronto, Canadá" value="${aluno?.local || ''}"></div>
                             <div>
@@ -6813,6 +6817,7 @@
                 estado: document.getElementById('aluno-estado').value,
                 continente: document.getElementById('aluno-continente').value,
                 foraBrasil: document.getElementById('aluno-fora-brasil').checked,
+                isInfluencer: document.getElementById('aluno-influenciador').checked,
                 currentLevel: document.getElementById('aluno-currentLevel').value || '',
                 completedLevels: completedLevels,
                 neverCompletedLevels: document.getElementById('aluno-neverCompletedLevels').checked,
@@ -13620,7 +13625,136 @@
             initializeCalendar();
         }
 
-        // --- LINKS ÚTEIS SECTION ---
+        // --- GESTÃO INFLUÊNCIA SECTION ---
+        function renderInfluencerManagementSection() {
+            document.getElementById('main-title').textContent = 'Gestão Influência';
+            document.getElementById('main-description').textContent = 'Acompanhamento de alunos influenciadores e suas presenças.';
+            const contentArea = document.getElementById('content-area');
+
+            const influencers = students.filter(s => s.isInfluencer === true);
+
+            const influencerData = influencers.map(inf => {
+                const studentAttendance = attendance.filter(a => a.studentId === inf.id);
+                const presences = studentAttendance.filter(a => a.status === 'P' || a.status === 'Presente').length;
+                const total = studentAttendance.length;
+                const sortedDates = studentAttendance
+                    .sort((a, b) => new Date(b.date) - new Date(a.date))
+                    .slice(0, 10);
+                return {
+                    ...inf,
+                    totalClasses: total,
+                    presences: presences,
+                    recentClasses: sortedDates
+                };
+            });
+
+            contentArea.innerHTML = `
+                <div id="gestao-influencia-section">
+                    <div class="mb-6 grid grid-cols-2 md:grid-cols-3 gap-4">
+                        <div class="bg-gradient-to-br from-purple-50 to-purple-100 p-5 rounded-xl border border-purple-200 shadow-sm">
+                            <div class="flex items-center gap-3 mb-2">
+                                <div class="w-10 h-10 rounded-full bg-purple-500 flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-purple-600 font-medium">Total Influenciadores</p>
+                                    <p class="text-3xl font-bold text-purple-700">${influencers.length}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-gradient-to-br from-green-50 to-green-100 p-5 rounded-xl border border-green-200 shadow-sm">
+                            <div class="flex items-center gap-3 mb-2">
+                                <div class="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-green-600 font-medium">Ativos</p>
+                                    <p class="text-3xl font-bold text-green-700">${influencers.filter(i => i.status === 'Ativo').length}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-5 rounded-xl border border-blue-200 shadow-sm">
+                            <div class="flex items-center gap-3 mb-2">
+                                <div class="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-blue-600 font-medium">Total de Aulas</p>
+                                    <p class="text-3xl font-bold text-blue-700">${influencerData.reduce((sum, i) => sum + i.presences, 0)}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    ${influencerData.length === 0 ? `
+                        <div class="bg-white rounded-xl border border-stone-200 p-12 text-center">
+                            <svg class="w-16 h-16 mx-auto text-stone-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            </svg>
+                            <h3 class="text-lg font-semibold text-stone-600 mb-2">Nenhum influenciador cadastrado</h3>
+                            <p class="text-stone-500">Para adicionar influenciadores, edite um aluno e marque a opção "Influenciador".</p>
+                        </div>
+                    ` : `
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            ${influencerData.map(inf => `
+                                <div class="bg-white rounded-xl border border-stone-200 shadow-sm overflow-hidden">
+                                    <div class="p-4 border-b border-stone-100 bg-gradient-to-r from-purple-50 to-white">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-12 h-12 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center text-white font-bold text-lg">
+                                                ${inf.name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()}
+                                            </div>
+                                            <div class="flex-1">
+                                                <h4 class="font-semibold text-stone-800">${inf.name}</h4>
+                                                <div class="flex items-center gap-2 mt-1">
+                                                    <span class="text-xs px-2 py-0.5 rounded-full ${inf.status === 'Ativo' ? 'bg-green-100 text-green-700' : 'bg-stone-100 text-stone-600'}">${inf.status || 'Sem status'}</span>
+                                                    <span class="text-xs text-stone-500">${inf.modalidade || ''}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="p-4">
+                                        <div class="flex items-center justify-between mb-3">
+                                            <span class="text-sm text-stone-600">Aulas realizadas:</span>
+                                            <span class="text-lg font-bold text-purple-600">${inf.presences}</span>
+                                        </div>
+                                        ${inf.recentClasses.length > 0 ? `
+                                            <div class="border-t border-stone-100 pt-3">
+                                                <p class="text-xs text-stone-500 mb-2">Últimas aulas:</p>
+                                                <div class="space-y-1 max-h-32 overflow-y-auto">
+                                                    ${inf.recentClasses.map(c => `
+                                                        <div class="flex items-center justify-between text-sm py-1 px-2 rounded ${c.status === 'P' || c.status === 'Presente' ? 'bg-green-50' : 'bg-red-50'}">
+                                                            <span class="text-stone-600">${formatDateBR(c.date)}</span>
+                                                            <span class="${c.status === 'P' || c.status === 'Presente' ? 'text-green-600' : 'text-red-600'} font-medium">
+                                                                ${c.status === 'P' || c.status === 'Presente' ? 'Presente' : 'Falta'}
+                                                            </span>
+                                                        </div>
+                                                    `).join('')}
+                                                </div>
+                                            </div>
+                                        ` : `
+                                            <p class="text-sm text-stone-400 text-center py-2">Sem registros de aulas</p>
+                                        `}
+                                    </div>
+                                    <div class="p-3 bg-stone-50 border-t border-stone-100">
+                                        <button class="w-full text-sm text-purple-600 hover:text-purple-700 font-medium" onclick="openAlunoModal('${inf.id}')">
+                                            Ver perfil completo
+                                        </button>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `}
+                </div>
+            `;
+        }
+
+                // --- LINKS ÚTEIS SECTION ---
         function renderLinksUteisSection() {
             document.getElementById('main-title').textContent = 'Links Úteis';
             document.getElementById('main-description').textContent = 'Recursos e links compartilhados pela equipe.';
@@ -21205,7 +21339,8 @@ function openAddChecklistForm() {
                     icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>',
                     items: [
                         { key: 'kpis-pedagogico', label: 'KPIs', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>', roles: ['admin', 'coord', 'superv', 'comercial'] },
-                        { key: 'gestao-tns', label: 'Gestão TNs', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>', roles: ['admin', 'teachertn', 'coord', 'superv', 'estagiario', 'comercial'] }
+                        { key: 'gestao-tns', label: 'Gestão TNs', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>', roles: ['admin', 'teachertn', 'coord', 'superv', 'estagiario', 'comercial'] },
+                        { key: 'gestao-influencia', label: 'Gestão Influência', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M17 11l2 2 4-4"/></svg>', roles: ['admin', 'coord', 'superv', 'comercial'] }
                     ]
                 },
                 direcao: {
@@ -21690,7 +21825,7 @@ function openAddChecklistForm() {
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            const pageRenderers = { 'inicio': renderInicioSection, 'alunos': renderAlunosSection, 'turmas': renderTurmasSection, 'vips': renderVipsSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection, 'financeiro': renderFolhaPagamentoSection, 'colaboradores': renderColaboradoresSection, 'dojo': renderDojoSection, 'calendario': renderCalendarioSection, 'links-uteis': renderLinksUteisSection, 'processos': renderProcessosSection, 'tasks-prazos': renderTasksPrazosSection, 'gestao-tns': renderGestaoTNsSection, 'rechamada': renderRechamadaSection, 'kpis-pedagogico': renderKPIsPedagogicoSection, 'logs-atividades': renderLogsAtividadesSection  };
+            const pageRenderers = { 'inicio': renderInicioSection, 'alunos': renderAlunosSection, 'turmas': renderTurmasSection, 'vips': renderVipsSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection, 'financeiro': renderFolhaPagamentoSection, 'colaboradores': renderColaboradoresSection, 'dojo': renderDojoSection, 'calendario': renderCalendarioSection, 'links-uteis': renderLinksUteisSection, 'processos': renderProcessosSection, 'tasks-prazos': renderTasksPrazosSection, 'gestao-tns': renderGestaoTNsSection, 'gestao-influencia': renderInfluencerManagementSection, 'rechamada': renderRechamadaSection, 'kpis-pedagogico': renderKPIsPedagogicoSection, 'logs-atividades': renderLogsAtividadesSection  };
 
             document.body.addEventListener('click', (event) => {
                 // Close modals when clicking overlay or close button
