@@ -12483,6 +12483,20 @@
                                 <option value="">Todos os avaliadores</option>
                                 ${evaluatorOptions}
                             </select>
+                            <select id="tn-month-filter" class="form-input !w-auto">
+                                <option value="">Todos os meses</option>
+                                ${(() => {
+                                    const months = [];
+                                    const now = new Date();
+                                    for (let i = 0; i < 12; i++) {
+                                        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                                        const value = d.toISOString().slice(0, 7);
+                                        const label = d.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+                                        months.push(`<option value="${value}">${label.charAt(0).toUpperCase() + label.slice(1)}</option>`);
+                                    }
+                                    return months.join('');
+                                })()}
+                            </select>
                         </div>
                         <div class="flex gap-2">
                             <button class="secondary-btn w-auto flex items-center" onclick="openEvaluatorManagementModal()">
@@ -12536,6 +12550,7 @@
             setTimeout(() => {
                 document.getElementById('tn-search')?.addEventListener('input', () => renderTNsList(true));
                 document.getElementById('tn-evaluator-filter')?.addEventListener('change', () => renderTNsList(true));
+                document.getElementById('tn-month-filter')?.addEventListener('change', () => { renderTNGeneralStats(); renderTNsList(true); });
             }, 100);
         }
 
@@ -12546,10 +12561,19 @@
             const container = document.getElementById('tn-general-stats');
             if (!container) return;
 
-            const totalTNs = testesNivel.length;
-            const convertedTNs = testesNivel.filter(tn => tn.convertedToMatricula).length;
+            const monthFilter = document.getElementById('tn-month-filter')?.value || '';
+            let filteredTNs = testesNivel;
+            
+            if (monthFilter) {
+                filteredTNs = testesNivel.filter(tn => tn.date && tn.date.startsWith(monthFilter));
+            }
+
+            const totalTNs = filteredTNs.length;
+            const convertedTNs = filteredTNs.filter(tn => tn.convertedToMatricula).length;
             const conversionRate = totalTNs > 0 ? Math.round((convertedTNs / totalTNs) * 100) : 0;
+            const trafegoTNs = filteredTNs.filter(tn => tn.fromTrafego).length;
             const pendingTNs = totalTNs - convertedTNs;
+            const monthLabel = monthFilter ? new Date(monthFilter + '-01').toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }) : 'Todos os períodos';
 
             const rateColor = conversionRate >= 70 ? 'text-green-600' : conversionRate >= 40 ? 'text-yellow-600' : 'text-stone-600';
             const rateBg = conversionRate >= 70 ? 'from-green-50 to-green-100 border-green-200' : conversionRate >= 40 ? 'from-yellow-50 to-yellow-100 border-yellow-200' : 'from-stone-50 to-stone-100 border-stone-200';
@@ -12731,6 +12755,7 @@
                                 <th>Data</th>
                                 <th>Horário</th>
                                 <th>Avaliador</th>
+                                <th class="text-center">Tráfego</th>
                                 <th class="text-center">Matrícula</th>
                                 <th>Nível</th>
                                 <th>Ações</th>
@@ -12745,6 +12770,13 @@
                                         <td>${formatDateBR(tn.date)}</td>
                                         <td>${tn.time || '-'}</td>
                                         <td>${avaliador?.name || 'Não especificado'}</td>
+                                        <td class="text-center">
+                                            <button class="px-4 py-1 text-sm rounded font-semibold transition-all w-14 ${tn.fromTrafego ? 'bg-purple-500 text-white hover:bg-purple-600' : 'bg-stone-200 text-stone-600 hover:bg-stone-300'}" 
+                                                    onclick='toggleTNTrafego("${tn.id}")' 
+                                                    title="${tn.fromTrafego ? 'Clique para desmarcar' : 'Clique para marcar como vindo de tráfego'}">
+                                                ${tn.fromTrafego ? 'Sim' : 'Não'}
+                                            </button>
+                                        </td>
                                         <td class="text-center">
                                             <button class="px-4 py-1 text-sm rounded font-semibold transition-all w-14 ${tn.convertedToMatricula ? 'bg-green-500 text-white hover:bg-green-600' : 'bg-stone-200 text-stone-600 hover:bg-stone-300'}" 
                                                     onclick='toggleTNMatricula("${tn.id}")' 
@@ -13017,6 +13049,7 @@
             // Aplicar filtros atuais
             const searchTerm = document.getElementById('tn-search')?.value.toLowerCase() || '';
             const evaluatorFilter = document.getElementById('tn-evaluator-filter')?.value || '';
+            const monthFilter = document.getElementById('tn-month-filter')?.value || '';
 
             let filteredTNs = testesNivel;
 
@@ -13030,51 +13063,204 @@
                 filteredTNs = filteredTNs.filter(tn => tn.evaluatorId === evaluatorFilter);
             }
 
+            if (monthFilter) {
+                filteredTNs = filteredTNs.filter(tn => tn.date && tn.date.startsWith(monthFilter));
+            }
+
             if (filteredTNs.length === 0) {
                 showErrorMessage("Erro", "Nenhum teste de nível encontrado com os filtros aplicados.");
                 return;
             }
 
-            // Ordenar alfabeticamente
-            const sortedTNs = [...filteredTNs].sort((a, b) => 
-                a.candidateName.localeCompare(b.candidateName, 'pt-BR', { sensitivity: 'base' })
-            );
+            // Ordenar por data (mais recente primeiro)
+            const sortedTNs = [...filteredTNs].sort((a, b) => new Date(b.date) - new Date(a.date));
 
-            // Criar CSV
-            const headers = ['Nome do Candidato', 'Celular', 'Data', 'Horário', 'Avaliador', 'Nível Atribuído', 'Observações'];
-            const csvRows = [headers.join(',')];
+            // Estatísticas
+            const totalTNs = sortedTNs.length;
+            const convertidos = sortedTNs.filter(tn => tn.convertedToMatricula).length;
+            const trafego = sortedTNs.filter(tn => tn.fromTrafego).length;
+            const taxaConversao = totalTNs > 0 ? ((convertidos / totalTNs) * 100).toFixed(1) : 0;
 
-            sortedTNs.forEach(tn => {
-                const avaliador = (avaliadores || []).find(a => a.id === tn.evaluatorId) || collaborators.find(c => c.id === tn.evaluatorId);
-                const row = [
-                    `"${tn.candidateName || ''}"`,
-                    `"${tn.phone || ''}"`,
-                    `"${formatDateBR(tn.date)}"`,
-                    `"${tn.time || ''}"`,
-                    `"${avaliador?.name || 'Não especificado'}"`,
-                    `"${tn.level || ''}"`,
-                    `"${(tn.observations || '').replace(/"/g, '""')}"` // Escapar aspas duplas
-                ];
-                csvRows.push(row.join(','));
-            });
+            // Gerar HTML do relatório
+            const reportHTML = `
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatório de Testes de Nível - SLAP</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: #f5f5f4; 
+            color: #1c1917;
+            padding: 20px;
+        }
+        .container { max-width: 1000px; margin: 0 auto; background: white; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .header { 
+            background: linear-gradient(135deg, #F1D24B 0%, #d4a84b 100%); 
+            padding: 30px; 
+            border-radius: 12px 12px 0 0;
+            text-align: center;
+        }
+        .header h1 { color: #1c1917; font-size: 28px; margin-bottom: 5px; }
+        .header p { color: #44403c; font-size: 14px; }
+        .stats-grid { 
+            display: grid; 
+            grid-template-columns: repeat(4, 1fr); 
+            gap: 15px; 
+            padding: 20px 30px;
+            background: #fafaf9;
+            border-bottom: 1px solid #e7e5e4;
+        }
+        .stat-card { 
+            background: white; 
+            padding: 15px; 
+            border-radius: 8px; 
+            text-align: center;
+            border: 1px solid #e7e5e4;
+        }
+        .stat-card .number { font-size: 28px; font-weight: bold; color: #1c1917; }
+        .stat-card .label { font-size: 12px; color: #78716c; margin-top: 5px; }
+        .stat-card.green .number { color: #16a34a; }
+        .stat-card.purple .number { color: #9333ea; }
+        .stat-card.blue .number { color: #2563eb; }
+        .content { padding: 30px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th { 
+            background: #f5f5f4; 
+            padding: 12px 10px; 
+            text-align: left; 
+            font-size: 12px; 
+            text-transform: uppercase; 
+            color: #78716c;
+            border-bottom: 2px solid #e7e5e4;
+        }
+        td { 
+            padding: 12px 10px; 
+            border-bottom: 1px solid #e7e5e4; 
+            font-size: 14px;
+        }
+        tr:hover { background: #fafaf9; }
+        .badge { 
+            display: inline-block; 
+            padding: 4px 10px; 
+            border-radius: 20px; 
+            font-size: 11px; 
+            font-weight: 600;
+        }
+        .badge-green { background: #dcfce7; color: #16a34a; }
+        .badge-gray { background: #f5f5f4; color: #78716c; }
+        .badge-purple { background: #f3e8ff; color: #9333ea; }
+        .badge-blue { background: #dbeafe; color: #2563eb; }
+        .level-badge { background: #dbeafe; color: #1d4ed8; padding: 4px 12px; border-radius: 6px; font-weight: 600; }
+        .footer { 
+            padding: 20px 30px; 
+            background: #fafaf9; 
+            border-radius: 0 0 12px 12px;
+            text-align: center;
+            font-size: 12px;
+            color: #78716c;
+        }
+        .print-btn { 
+            position: fixed; 
+            bottom: 30px; 
+            right: 30px; 
+            background: #F1D24B; 
+            color: #1c1917; 
+            border: none; 
+            padding: 15px 30px; 
+            border-radius: 8px; 
+            font-size: 16px; 
+            font-weight: 600; 
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .print-btn:hover { background: #d4a84b; }
+        @media print { 
+            body { background: white; padding: 0; }
+            .container { box-shadow: none; }
+            .print-btn { display: none; }
+            .header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .stats-grid { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .badge { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Relatório de Testes de Nível</h1>
+            <p>Gerado em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}</p>
+        </div>
+        
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="number">${totalTNs}</div>
+                <div class="label">Total de TNs</div>
+            </div>
+            <div class="stat-card green">
+                <div class="number">${convertidos}</div>
+                <div class="label">Convertidos</div>
+            </div>
+            <div class="stat-card purple">
+                <div class="number">${trafego}</div>
+                <div class="label">Via Tráfego</div>
+            </div>
+            <div class="stat-card blue">
+                <div class="number">${taxaConversao}%</div>
+                <div class="label">Taxa de Conversão</div>
+            </div>
+        </div>
+        
+        <div class="content">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Candidato</th>
+                        <th>Celular</th>
+                        <th>Data</th>
+                        <th>Horário</th>
+                        <th>Avaliador</th>
+                        <th>Nível</th>
+                        <th>Tráfego</th>
+                        <th>Matrícula</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${sortedTNs.map(tn => {
+                        const avaliador = (avaliadores || []).find(a => a.id === tn.evaluatorId) || collaborators.find(c => c.id === tn.evaluatorId);
+                        return `
+                            <tr>
+                                <td><strong>${tn.candidateName}</strong></td>
+                                <td>${tn.phone || '-'}</td>
+                                <td>${formatDateBR(tn.date)}</td>
+                                <td>${tn.time || '-'}</td>
+                                <td>${avaliador?.name || '-'}</td>
+                                <td><span class="level-badge">${tn.level}</span></td>
+                                <td><span class="badge ${tn.fromTrafego ? 'badge-purple' : 'badge-gray'}">${tn.fromTrafego ? 'Sim' : 'Não'}</span></td>
+                                <td><span class="badge ${tn.convertedToMatricula ? 'badge-green' : 'badge-gray'}">${tn.convertedToMatricula ? 'Sim' : 'Não'}</span></td>
+                            </tr>
+                        `;
+                    }).join('')}
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="footer">
+            SLAP - Sistema de Gestão | hubslap.com.br
+        </div>
+    </div>
+    
+    <button class="print-btn" onclick="window.print()">Imprimir / Salvar PDF</button>
+</body>
+</html>`;
 
-            const csvContent = csvRows.join('\n');
-
-            // Criar e baixar arquivo
-            const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            const url = URL.createObjectURL(blob);
-
-            const dateStr = new Date().toISOString().split('T')[0];
-            link.setAttribute('href', url);
-            link.setAttribute('download', `testes-nivel-${dateStr}.csv`);
-            link.style.visibility = 'hidden';
-
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-
-            showSuccessMessage("Sucesso!", `${sortedTNs.length} teste(s) de nível exportado(s) com sucesso.`);
+            // Abrir nova janela com o relatório
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(reportHTML);
+            printWindow.document.close();
         }
 
         window.openTNModal = openTNModal;
@@ -13112,6 +13298,35 @@
         }
 
         window.toggleTNMatricula = toggleTNMatricula;
+
+        async function toggleTNTrafego(tnId) {
+            const tn = testesNivel.find(t => t.id === tnId);
+            if (!tn) return;
+
+            const newValue = !tn.fromTrafego;
+
+            try {
+                if (!db) {
+                    tn.fromTrafego = newValue;
+                    localStorage.setItem('testes-nivel', JSON.stringify(testesNivel));
+                    renderTNsList();
+                } else {
+                    tn.fromTrafego = newValue;
+                    renderTNsList();
+                    
+                    const docRef = doc(db, `artifacts/${appId}/public/data/testes-nivel`, tnId);
+                    await updateDoc(docRef, { fromTrafego: newValue });
+                    await logActivity(newValue ? 'Marcou TN como vindo de tráfego' : 'Desmarcou TN como vindo de tráfego', 'tn', tn.candidateName);
+                }
+            } catch (error) {
+                console.error('Error toggling TN tráfego:', error);
+                tn.fromTrafego = !newValue;
+                renderTNsList();
+                showErrorMessage("Erro", "Erro ao atualizar status de tráfego.");
+            }
+        }
+
+        window.toggleTNTrafego = toggleTNTrafego;
         window.viewTN = viewTN;
         window.editTN = editTN;
         window.deleteTN = deleteTN;
