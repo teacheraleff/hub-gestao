@@ -1178,47 +1178,6 @@
 
             // Initialize with demo data
 
-            // Add demo agendamentos TN
-            agendamentosTN = [
-                {
-                    id: 'demo-agendamento-1',
-                    name: 'Fernanda Souza',
-                    phone: '(11) 98765-4321',
-                    indicacao: 'Instagram',
-                    dataAgendamento: '2026-01-10',
-                    horaAgendamento: '14:00',
-                    status: 'agendou',
-                    observacoes: 'Interessada em VIP',
-                    createdAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString()
-                },
-                {
-                    id: 'demo-agendamento-2',
-                    name: 'Ricardo Mendes',
-                    phone: '(21) 99876-5432',
-                    indicacao: 'Indicação Amigo',
-                    dataAgendamento: '2026-01-11',
-                    horaAgendamento: '10:30',
-                    status: 'aguardando',
-                    observacoes: 'Quer entrar em turma',
-                    createdAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString()
-                },
-                {
-                    id: 'demo-agendamento-3',
-                    name: 'Juliana Costa',
-                    phone: '(31) 97654-3210',
-                    indicacao: 'Google',
-                    dataAgendamento: '2026-01-09',
-                    horaAgendamento: '16:00',
-                    status: 'remarcar',
-                    observacoes: 'Pediu para remarcar para a próxima semana',
-                    createdAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString()
-                }
-            ];
-            localStorage.setItem('agendamentos-tn', JSON.stringify(agendamentosTN));
-
             // Add demo turma with students
             turmas = [{
                 id: "demo-turma-1",
@@ -12654,7 +12613,7 @@
                     const index = agendamentosTN.findIndex(a => a.id === agendamentoId);
                     if (index !== -1) {
                         agendamentosTN[index].status = newStatus;
-                        localStorage.setItem('agendamentosTN', JSON.stringify(agendamentosTN));
+                        localStorage.setItem('agendamentos-tn', JSON.stringify(agendamentosTN));
                     }
                 } else {
                     await updateDoc(doc(db, `artifacts/${appId}/public/data/agendamentos-tn`, agendamentoId), { status: newStatus });
@@ -12757,7 +12716,7 @@
                         data.createdAt = new Date();
                         agendamentosTN.push(data);
                     }
-                    localStorage.setItem('agendamentosTN', JSON.stringify(agendamentosTN));
+                    localStorage.setItem('agendamentos-tn', JSON.stringify(agendamentosTN));
                 } else {
                     if (agendamentoId) {
                         await updateDoc(doc(db, `artifacts/${appId}/public/data/agendamentos-tn`, agendamentoId), data);
@@ -12791,7 +12750,7 @@
             try {
                 if (window.isDevelopmentMode) {
                     agendamentosTN = agendamentosTN.filter(a => a.id !== agendamentoId);
-                    localStorage.setItem('agendamentosTN', JSON.stringify(agendamentosTN));
+                    localStorage.setItem('agendamentos-tn', JSON.stringify(agendamentosTN));
                 } else {
                     await deleteDoc(doc(db, `artifacts/${appId}/public/data/agendamentos-tn`, agendamentoId));
                     await logActivity('excluir', 'agendamento-tn', agendamento.nome);
