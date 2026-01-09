@@ -6466,6 +6466,14 @@
             'ACC': 'ACC'
         };
 
+        function toggleInfluencerSelect() {
+            const checkbox = document.getElementById('aluno-veio-influenciador');
+            const container = document.getElementById('influencer-select-container');
+            if (checkbox && container) {
+                container.classList.toggle('hidden', !checkbox.checked);
+            }
+        }
+        
         function openAlunoForm(alunoId = null) {
             clearModalHeaderButtons();
             const aluno = alunoId ? students.find(s => s.id === alunoId) : null;
@@ -6501,6 +6509,20 @@
                         <div class="flex items-center">
                             <input type="checkbox" id="aluno-influenciador" class="h-4 w-4 rounded text-purple-500 focus:ring-purple-400" ${aluno?.isInfluencer ? 'checked' : ''}>
                             <label for="aluno-influenciador" class="ml-2 text-sm font-medium text-stone-700">Influenciador</label>
+                        </div>
+                        <div class="space-y-2">
+                            <div class="flex items-center">
+                                <input type="checkbox" id="aluno-veio-influenciador" class="h-4 w-4 rounded text-green-500 focus:ring-green-400" ${aluno?.referredByInfluencer ? 'checked' : ''} onchange="toggleInfluencerSelect()">
+                                <label for="aluno-veio-influenciador" class="ml-2 text-sm font-medium text-stone-700">Veio por Indicação de Influenciador</label>
+                            </div>
+                            <div id="influencer-select-container" class="${aluno?.referredByInfluencer ? '' : 'hidden'}">
+                                <select id="aluno-influenciador-indicou" class="form-input">
+                                    <option value="">Selecione o influenciador</option>
+                                    ${students.filter(s => s.isInfluencer && s.status === 'Ativo').map(inf => 
+                                        '<option value="' + inf.id + '" ' + (aluno?.referredByInfluencerId === inf.id ? 'selected' : '') + '>' + inf.name + '</option>'
+                                    ).join('')}
+                                </select>
+                            </div>
                         </div>
                         <div class="grid grid-cols-2 gap-4">
                             <div><label class="font-medium text-sm">Local (Cidade/País)</label><input type="text" id="aluno-local" class="form-input" placeholder="Ex: São Paulo ou Toronto, Canadá" value="${aluno?.local || ''}"></div>
@@ -6826,6 +6848,8 @@
                 continente: document.getElementById('aluno-continente').value,
                 foraBrasil: document.getElementById('aluno-fora-brasil').checked,
                 isInfluencer: document.getElementById('aluno-influenciador').checked,
+                referredByInfluencer: document.getElementById('aluno-veio-influenciador').checked,
+                referredByInfluencerId: document.getElementById('aluno-veio-influenciador').checked ? document.getElementById('aluno-influenciador-indicou').value : '',
                 currentLevel: document.getElementById('aluno-currentLevel').value || '',
                 completedLevels: completedLevels,
                 neverCompletedLevels: document.getElementById('aluno-neverCompletedLevels').checked,
@@ -12271,8 +12295,6 @@
                                'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
             
             function parseBirthDate(bd) { if (!bd) return null; if (bd.toDate) return bd.toDate(); if (bd.seconds) return new Date(bd.seconds * 1000); return new Date(bd); }
-            console.log('Total students:', students.length, 'Active with birthDate:', students.filter(s => s.status === 'ativo' && s.birthDate).length);
-            console.log('Sample students:', students.slice(0,3).map(s => ({name: s.name, status: s.status, birthDate: s.birthDate})));
             const activeStudents = students.filter(s => s.status === 'ativo' && s.birthDate);
             
             const studentsByMonth = {};
@@ -14160,13 +14182,17 @@
                 const sortedDates = studentAttendance
                     .sort((a, b) => new Date(b.date) - new Date(a.date))
                     .slice(0, 10);
+                const referredStudents = students.filter(s => s.referredByInfluencer && s.referredByInfluencerId === inf.id);
                 return {
                     ...inf,
                     totalClasses: total,
                     presences: presences,
-                    recentClasses: sortedDates
+                    recentClasses: sortedDates,
+                    referredStudents: referredStudents
                 };
             });
+
+            const totalReferred = influencerData.reduce((sum, i) => sum + i.referredStudents.length, 0);
 
             contentArea.innerHTML = `
                 <div id="gestao-influencia-section">
@@ -14185,6 +14211,19 @@
                             </div>
                         </div>
                         <div class="bg-gradient-to-br from-green-50 to-green-100 p-5 rounded-xl border border-green-200 shadow-sm">
+                            <div class="flex items-center gap-3 mb-2">
+                                <div class="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-green-600 font-medium">Alunos Indicados</p>
+                                    <p class="text-3xl font-bold text-green-700">${totalReferred}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-5 rounded-xl border border-blue-200 shadow-sm">
                             <div class="flex items-center gap-3 mb-2">
                                 <div class="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center">
                                     <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -14259,6 +14298,24 @@
                                             </div>
                                         ` : `
                                             <p class="text-sm text-stone-400 text-center py-2">Sem registros de aulas</p>
+                                        `}
+                                    </div>
+                                    <div class="p-4 border-t border-stone-100">
+                                        <div class="flex items-center justify-between mb-2">
+                                            <span class="text-sm font-medium text-stone-700">Alunos Indicados:</span>
+                                            <span class="text-sm font-bold text-green-600">${inf.referredStudents.length}</span>
+                                        </div>
+                                        ${inf.referredStudents.length > 0 ? `
+                                            <div class="space-y-1 max-h-32 overflow-y-auto">
+                                                ${inf.referredStudents.map(s => `
+                                                    <div class="flex items-center justify-between text-sm py-1 px-2 rounded bg-green-50">
+                                                        <span class="text-stone-700 truncate">${s.name}</span>
+                                                        <span class="text-xs px-2 py-0.5 rounded-full ${s.status === 'Ativo' ? 'bg-green-100 text-green-700' : 'bg-stone-100 text-stone-600'}">${s.status || 'Sem status'}</span>
+                                                    </div>
+                                                `).join('')}
+                                            </div>
+                                        ` : `
+                                            <p class="text-sm text-stone-400 text-center py-1">Nenhum aluno indicado</p>
                                         `}
                                     </div>
                                     <div class="p-3 bg-stone-50 border-t border-stone-100">
