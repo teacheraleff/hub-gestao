@@ -12270,6 +12270,7 @@
             const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 
                                'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
             
+            function parseBirthDate(bd) { if (!bd) return null; if (bd.toDate) return bd.toDate(); if (bd.seconds) return new Date(bd.seconds * 1000); return new Date(bd); }
             const activeStudents = students.filter(s => s.status === 'ativo' && s.birthDate);
             
             const studentsByMonth = {};
@@ -12278,15 +12279,15 @@
             }
             
             activeStudents.forEach(student => {
-                const birthDate = new Date(student.birthDate);
+                const birthDate = parseBirthDate(student.birthDate);
                 const month = birthDate.getMonth();
                 studentsByMonth[month].push(student);
             });
             
             for (let i = 0; i < 12; i++) {
                 studentsByMonth[i].sort((a, b) => {
-                    const dayA = new Date(a.birthDate).getDate();
-                    const dayB = new Date(b.birthDate).getDate();
+                    const dayA = parseBirthDate(a.birthDate).getDate();
+                    const dayB = parseBirthDate(b.birthDate).getDate();
                     return dayA - dayB;
                 });
             }
@@ -12359,7 +12360,7 @@
                             ` : `
                                 <div class="divide-y divide-stone-100 border-t border-stone-100">
                                     ${monthStudents.map(student => {
-                                        const birthDate = new Date(student.birthDate);
+                                        const birthDate = parseBirthDate(student.birthDate);
                                         const day = birthDate.getDate();
                                         const age = calculateAge(student.birthDate, monthIndex);
                                         const status = getBirthdayStatus(student.birthDate, monthIndex);
