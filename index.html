@@ -1178,6 +1178,47 @@
 
             // Initialize with demo data
 
+            // Add demo agendamentos TN
+            agendamentosTN = [
+                {
+                    id: 'demo-agendamento-1',
+                    name: 'Fernanda Souza',
+                    phone: '(11) 98765-4321',
+                    indicacao: 'Instagram',
+                    dataAgendamento: '2026-01-10',
+                    horaAgendamento: '14:00',
+                    status: 'agendou',
+                    observacoes: 'Interessada em VIP',
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                },
+                {
+                    id: 'demo-agendamento-2',
+                    name: 'Ricardo Mendes',
+                    phone: '(21) 99876-5432',
+                    indicacao: 'Indicação Amigo',
+                    dataAgendamento: '2026-01-11',
+                    horaAgendamento: '10:30',
+                    status: 'aguardando',
+                    observacoes: 'Quer entrar em turma',
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                },
+                {
+                    id: 'demo-agendamento-3',
+                    name: 'Juliana Costa',
+                    phone: '(31) 97654-3210',
+                    indicacao: 'Google',
+                    dataAgendamento: '2026-01-09',
+                    horaAgendamento: '16:00',
+                    status: 'remarcar',
+                    observacoes: 'Pediu para remarcar para a próxima semana',
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                }
+            ];
+            localStorage.setItem('agendamentos-tn', JSON.stringify(agendamentosTN));
+
             // Add demo turma with students
             turmas = [{
                 id: "demo-turma-1",
@@ -12473,7 +12514,7 @@
             { value: 'Agendou TN', color: 'bg-blue-100 text-blue-700', icon: '<svg class="w-3 h-3 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>' },
             { value: 'Cancelou TN', color: 'bg-red-100 text-red-700', icon: '<svg class="w-3 h-3 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>' },
             { value: 'Aguardando Agendamento', color: 'bg-yellow-100 text-yellow-700', icon: '<svg class="w-3 h-3 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>' },
-            { value: 'Ira Remarcar TN', color: 'bg-orange-100 text-orange-700', icon: '<svg class="w-3 h-3 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>' },
+            { value: 'Irá Remarcar TN', color: 'bg-orange-100 text-orange-700', icon: '<svg class="w-3 h-3 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>' },
             { value: 'Realizou TN', color: 'bg-green-100 text-green-700', icon: '<svg class="w-3 h-3 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>' },
             { value: 'Ausente', color: 'bg-stone-100 text-stone-700', icon: '<svg class="w-3 h-3 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' }
         ];
@@ -12481,6 +12522,17 @@
         function getStatusAgendamentoStyle(status) {
             const option = statusAgendamentoOptions.find(o => o.value === status);
             return option || { value: status, color: 'bg-stone-100 text-stone-600', icon: '<svg class="w-3 h-3 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>' };
+        }
+
+        const posTNOptions = [
+            { value: 'Aguardando retorno', color: 'bg-purple-100 text-purple-700', icon: '<svg class="w-3 h-3 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>' },
+            { value: 'Entrar em contato', color: 'bg-teal-100 text-teal-700', icon: '<svg class="w-3 h-3 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>' },
+            { value: 'Matricula em andamento', color: 'bg-green-100 text-green-700', icon: '<svg class="w-3 h-3 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>' }
+        ];
+
+        function getPosTNStyle(posTN) {
+            const option = posTNOptions.find(o => o.value === posTN);
+            return option || { value: '', color: 'bg-stone-100 text-stone-500', icon: '' };
         }
 
         function renderAgendamentosTNsSection() {
@@ -12549,7 +12601,12 @@
                                                         ${statusStyle.icon} ${ag.status || 'Definir'}
                                                     </button>
                                                 </td>
-                                                <td class="px-4 py-3 text-sm text-stone-600">${ag.posTN || '-'}</td>
+                                                <td class="px-4 py-3">
+                                                    <button onclick="cyclePosTNStatus('${ag.id}')" 
+                                                        class="px-3 py-1 rounded-full text-xs font-medium ${getPosTNStyle(ag.posTN).color} hover:opacity-80 transition-opacity cursor-pointer">
+                                                        ${getPosTNStyle(ag.posTN).icon} ${ag.posTN || 'Definir'}
+                                                    </button>
+                                                </td>
                                                 <td class="px-4 py-3 text-center">
                                                     <div class="flex items-center justify-center gap-2">
                                                         <button onclick="editAgendamentoTN('${ag.id}')" class="text-blue-600 hover:text-blue-800" title="Editar">
@@ -12653,9 +12710,13 @@
                     
                     <div>
                         <label class="block text-sm font-medium text-stone-700 mb-1">Pos-TN</label>
-                        <input type="text" id="agendamento-pos-tn" value="${agendamento?.posTN || ''}" 
-                            placeholder="Observacoes pos teste de nivel..."
+                        <select id="agendamento-pos-tn" 
                             class="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400">
+                            <option value="" ${!agendamento?.posTN ? 'selected' : ''}>Selecione...</option>
+                            <option value="Aguardando retorno" ${agendamento?.posTN === 'Aguardando retorno' ? 'selected' : ''}>Aguardando retorno</option>
+                            <option value="Entrar em contato" ${agendamento?.posTN === 'Entrar em contato' ? 'selected' : ''}>Entrar em contato</option>
+                            <option value="Matricula em andamento" ${agendamento?.posTN === 'Matricula em andamento' ? 'selected' : ''}>Matricula em andamento</option>
+                        </select>
                     </div>
                     
                     <div class="flex gap-3 pt-4">
@@ -12744,9 +12805,41 @@
         }
 
         window.openAgendamentoTNModal = openAgendamentoTNModal;
+        window.saveAgendamentoTN = saveAgendamentoTN;
         window.editAgendamentoTN = editAgendamentoTN;
         window.deleteAgendamentoTN = deleteAgendamentoTN;
         window.cycleAgendamentoStatus = cycleAgendamentoStatus;
+
+        async function cyclePosTNStatus(agendamentoId) {
+            const posTNValues = ['', 'Aguardando retorno', 'Entrar em contato', 'Matricula em andamento'];
+            
+            if (window.isDevelopmentMode) {
+                const stored = localStorage.getItem('agendamentos-tn');
+                const agendamentos = stored ? JSON.parse(stored) : [];
+                const agendamento = agendamentos.find(a => a.id === agendamentoId);
+                if (agendamento) {
+                    const currentIndex = posTNValues.indexOf(agendamento.posTN || '');
+                    const nextIndex = (currentIndex + 1) % posTNValues.length;
+                    agendamento.posTN = posTNValues[nextIndex];
+                    agendamento.updatedAt = new Date().toISOString();
+                    localStorage.setItem('agendamentos-tn', JSON.stringify(agendamentos));
+                    agendamentosTN = agendamentos;
+                    renderAgendamentosTNsSection();
+                }
+            } else if (window.firebaseConnected && window.db) {
+                const agendamento = agendamentosTN.find(a => a.id === agendamentoId);
+                if (agendamento) {
+                    const currentIndex = posTNValues.indexOf(agendamento.posTN || '');
+                    const nextIndex = (currentIndex + 1) % posTNValues.length;
+                    const newPosTN = posTNValues[nextIndex];
+                    await window.db.collection('agendamentos-tn').doc(agendamentoId).update({
+                        posTN: newPosTN,
+                        updatedAt: new Date().toISOString()
+                    });
+                }
+            }
+        }
+        window.cyclePosTNStatus = cyclePosTNStatus;
         window.filterAgendamentosTNs = filterAgendamentosTNs;
 
                 // --- GESTÃO TNs SECTION ---
