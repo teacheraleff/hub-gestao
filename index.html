@@ -12296,7 +12296,7 @@
             const currentMonthBirthdays = studentsByMonth[currentMonth].length;
             
             function calculateAge(birthDateStr, forMonth) {
-                const birthDate = new Date(birthDateStr);
+                const birthDate = parseBirthDate(birthDateStr);
                 let age = currentYear - birthDate.getFullYear();
                 if (forMonth < birthDate.getMonth() || (forMonth === birthDate.getMonth() && currentDay < birthDate.getDate())) {
                     age--;
@@ -12305,7 +12305,7 @@
             }
             
             function getBirthdayStatus(birthDateStr, monthIndex) {
-                const birthDate = new Date(birthDateStr);
+                const birthDate = parseBirthDate(birthDateStr);
                 const day = birthDate.getDate();
                 
                 if (monthIndex === currentMonth) {
