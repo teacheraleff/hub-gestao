@@ -12271,6 +12271,8 @@
                                'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
             
             function parseBirthDate(bd) { if (!bd) return null; if (bd.toDate) return bd.toDate(); if (bd.seconds) return new Date(bd.seconds * 1000); return new Date(bd); }
+            console.log('Total students:', students.length, 'Active with birthDate:', students.filter(s => s.status === 'ativo' && s.birthDate).length);
+            console.log('Sample students:', students.slice(0,3).map(s => ({name: s.name, status: s.status, birthDate: s.birthDate})));
             const activeStudents = students.filter(s => s.status === 'ativo' && s.birthDate);
             
             const studentsByMonth = {};
