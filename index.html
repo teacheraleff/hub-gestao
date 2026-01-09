@@ -1488,6 +1488,14 @@
                 }
             });
 
+            // Agendamentos TNs listener
+            getCollectionListener('agendamentos-tn', agendamentosTN, () => {
+                const activePageId = contentArea.firstElementChild?.id;
+                if (activePageId === 'agendamentos-tns-section') {
+                    renderAgendamentosTNsSection();
+                }
+            });
+
             // Períodos Fixos listener - carregar na inicialização para evitar delay
             getCollectionListener('fixed-date-cards', fixedDateCards, () => {
                 const activePageId = contentArea.firstElementChild?.id;
@@ -12460,8 +12468,287 @@
 
         window.changeLogsCollaboratorFilter = changeLogsCollaboratorFilter;
 
-        // --- GESTÃO TNs SECTION ---
+        // --- AGENDAMENTOS TNs SECTION ---
+        const statusAgendamentoOptions = [
+            { value: 'Agendou TN', color: 'bg-blue-100 text-blue-700', icon: '📅' },
+            { value: 'Cancelou TN', color: 'bg-red-100 text-red-700', icon: '❌' },
+            { value: 'Aguardando Agendamento', color: 'bg-yellow-100 text-yellow-700', icon: '⏳' },
+            { value: 'Irá Remarcar TN', color: 'bg-orange-100 text-orange-700', icon: '🔄' },
+            { value: 'Realizou TN', color: 'bg-green-100 text-green-700', icon: '✅' },
+            { value: 'Ausente', color: 'bg-stone-100 text-stone-700', icon: '👤' }
+        ];
+
+        function getStatusAgendamentoStyle(status) {
+            const option = statusAgendamentoOptions.find(o => o.value === status);
+            return option || { value: status, color: 'bg-stone-100 text-stone-600', icon: '❓' };
+        }
+
+        function renderAgendamentosTNsSection() {
+            document.getElementById('main-title').textContent = 'Agendamentos TNs';
+            document.getElementById('main-description').textContent = 'Controle de agendamentos de testes de nível.';
+            const contentArea = document.getElementById('content-area');
+
+            const sortedAgendamentos = [...agendamentosTN].sort((a, b) => {
+                const dateA = new Date(a.data || 0);
+                const dateB = new Date(b.data || 0);
+                return dateB - dateA;
+            });
+
+            contentArea.innerHTML = `
+                <div id="agendamentos-tns-section">
+                    <div class="mb-4 flex flex-wrap gap-2 items-center justify-between">
+                        <div class="flex flex-wrap gap-2">
+                            <input type="text" id="agendamentos-search" placeholder="Buscar por nome..." 
+                                class="px-3 py-2 border border-stone-300 rounded-lg text-sm focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400"
+                                onkeyup="filterAgendamentosTNs()">
+                        </div>
+                        <button class="primary-btn flex items-center gap-2" onclick="openAgendamentoTNModal()">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                            </svg>
+                            Adicionar Agendamento
+                        </button>
+                    </div>
+
+                    <div class="bg-white rounded-xl border border-stone-200 shadow-sm overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-stone-200" id="agendamentos-table">
+                                <thead class="bg-stone-50">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Data</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Nome</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Nível/Plano</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Status</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Pós-TN</th>
+                                        <th class="px-4 py-3 text-center text-xs font-semibold text-stone-600 uppercase tracking-wider">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-stone-100" id="agendamentos-tbody">
+                                    ${sortedAgendamentos.length === 0 ? `
+                                        <tr>
+                                            <td colspan="6" class="px-4 py-12 text-center text-stone-500">
+                                                <svg class="w-12 h-12 mx-auto text-stone-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                                                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                                                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                                                </svg>
+                                                <p>Nenhum agendamento cadastrado</p>
+                                            </td>
+                                        </tr>
+                                    ` : sortedAgendamentos.map(ag => {
+                                        const statusStyle = getStatusAgendamentoStyle(ag.status);
+                                        return `
+                                            <tr class="hover:bg-stone-50 transition-colors agendamento-row" data-name="${(ag.nome || '').toLowerCase()}">
+                                                <td class="px-4 py-3 text-sm text-stone-700">${formatDateBR(ag.data)}</td>
+                                                <td class="px-4 py-3 text-sm font-medium text-stone-800">${ag.nome || '-'}</td>
+                                                <td class="px-4 py-3 text-sm text-stone-600">${ag.nivelPlano || '-'}</td>
+                                                <td class="px-4 py-3">
+                                                    <button onclick="cycleAgendamentoStatus('${ag.id}')" 
+                                                        class="px-3 py-1 rounded-full text-xs font-medium ${statusStyle.color} hover:opacity-80 transition-opacity cursor-pointer">
+                                                        ${statusStyle.icon} ${ag.status || 'Definir'}
+                                                    </button>
+                                                </td>
+                                                <td class="px-4 py-3 text-sm text-stone-600">${ag.posTN || '-'}</td>
+                                                <td class="px-4 py-3 text-center">
+                                                    <div class="flex items-center justify-center gap-2">
+                                                        <button onclick="editAgendamentoTN('${ag.id}')" class="text-blue-600 hover:text-blue-800" title="Editar">
+                                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                                            </svg>
+                                                        </button>
+                                                        <button onclick="deleteAgendamentoTN('${ag.id}')" class="text-red-600 hover:text-red-800" title="Excluir">
+                                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                                            </svg>
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        `;
+                                    }).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function filterAgendamentosTNs() {
+            const searchTerm = document.getElementById('agendamentos-search').value.toLowerCase();
+            const rows = document.querySelectorAll('.agendamento-row');
+            rows.forEach(row => {
+                const name = row.dataset.name || '';
+                row.style.display = name.includes(searchTerm) ? '' : 'none';
+            });
+        }
+
+        async function cycleAgendamentoStatus(agendamentoId) {
+            const agendamento = agendamentosTN.find(a => a.id === agendamentoId);
+            if (!agendamento) return;
+
+            const currentIndex = statusAgendamentoOptions.findIndex(o => o.value === agendamento.status);
+            const nextIndex = (currentIndex + 1) % statusAgendamentoOptions.length;
+            const newStatus = statusAgendamentoOptions[nextIndex].value;
+
+            try {
+                if (window.isDevelopmentMode) {
+                    const index = agendamentosTN.findIndex(a => a.id === agendamentoId);
+                    if (index !== -1) {
+                        agendamentosTN[index].status = newStatus;
+                        localStorage.setItem('agendamentosTN', JSON.stringify(agendamentosTN));
+                    }
+                } else {
+                    await updateDoc(doc(db, `artifacts/${appId}/public/data/agendamentos-tn`, agendamentoId), { status: newStatus });
+                }
+                renderAgendamentosTNsSection();
+            } catch (error) {
+                console.error('Error updating status:', error);
+                showErrorMessage('Erro', 'Falha ao atualizar status.');
+            }
+        }
+
+        function openAgendamentoTNModal(agendamentoId = null) {
+            clearModalHeaderButtons();
+            const agendamento = agendamentoId ? agendamentosTN.find(a => a.id === agendamentoId) : null;
+            
+            document.getElementById('form-modal-title').textContent = agendamento ? 'Editar Agendamento' : 'Novo Agendamento';
+            
+            const statusOptionsHtml = statusAgendamentoOptions.map(opt => 
+                `<option value="${opt.value}" ${agendamento?.status === opt.value ? 'selected' : ''}>${opt.icon} ${opt.value}</option>`
+            ).join('');
+            
+            document.getElementById('form-modal-body').innerHTML = `
+                <form id="agendamento-tn-form" class="space-y-4">
+                    <input type="hidden" id="agendamento-id" value="${agendamentoId || ''}">
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-stone-700 mb-1">Data</label>
+                        <input type="date" id="agendamento-data" value="${agendamento?.data || ''}" 
+                            class="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-stone-700 mb-1">Nome</label>
+                        <input type="text" id="agendamento-nome" value="${agendamento?.nome || ''}" 
+                            placeholder="Nome do interessado"
+                            class="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-stone-700 mb-1">Nível/Plano</label>
+                        <input type="text" id="agendamento-nivel-plano" value="${agendamento?.nivelPlano || ''}" 
+                            placeholder="Ex: Básico, Intermediário, Plano Anual..."
+                            class="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-stone-700 mb-1">Status</label>
+                        <select id="agendamento-status" 
+                            class="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400">
+                            ${statusOptionsHtml}
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-stone-700 mb-1">Pós-TN</label>
+                        <input type="text" id="agendamento-pos-tn" value="${agendamento?.posTN || ''}" 
+                            placeholder="Observações pós teste de nível..."
+                            class="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400">
+                    </div>
+                </form>
+            `;
+
+            document.getElementById('form-modal-save').onclick = saveAgendamentoTN;
+            document.getElementById('form-modal-save').textContent = 'Salvar';
+            document.getElementById('form-modal').classList.remove('hidden');
+        }
+
+        async function saveAgendamentoTN() {
+            const agendamentoId = document.getElementById('agendamento-id').value;
+            
+            const data = {
+                data: document.getElementById('agendamento-data').value,
+                nome: document.getElementById('agendamento-nome').value,
+                nivelPlano: document.getElementById('agendamento-nivel-plano').value,
+                status: document.getElementById('agendamento-status').value,
+                posTN: document.getElementById('agendamento-pos-tn').value
+            };
+
+            if (!data.nome) {
+                showErrorMessage('Erro', 'O nome é obrigatório.');
+                return;
+            }
+
+            try {
+                if (window.isDevelopmentMode) {
+                    if (agendamentoId) {
+                        const index = agendamentosTN.findIndex(a => a.id === agendamentoId);
+                        if (index !== -1) {
+                            agendamentosTN[index] = { ...agendamentosTN[index], ...data };
+                        }
+                    } else {
+                        data.id = 'agendamento_' + Date.now();
+                        data.createdAt = new Date();
+                        agendamentosTN.push(data);
+                    }
+                    localStorage.setItem('agendamentosTN', JSON.stringify(agendamentosTN));
+                } else {
+                    if (agendamentoId) {
+                        await updateDoc(doc(db, `artifacts/${appId}/public/data/agendamentos-tn`, agendamentoId), data);
+                        await logActivity('editar', 'agendamento-tn', data.nome, { status: data.status });
+                    } else {
+                        data.createdAt = serverTimestamp();
+                        await addDoc(collection(db, `artifacts/${appId}/public/data/agendamentos-tn`), data);
+                        await logActivity('criar', 'agendamento-tn', data.nome, { status: data.status });
+                    }
+                }
+                
+                closeFormModal();
+                renderAgendamentosTNsSection();
+                showSuccessMessage('Sucesso', agendamentoId ? 'Agendamento atualizado!' : 'Agendamento criado!');
+            } catch (error) {
+                console.error('Error saving agendamento:', error);
+                showErrorMessage('Erro', 'Falha ao salvar agendamento.');
+            }
+        }
+
+        function editAgendamentoTN(agendamentoId) {
+            openAgendamentoTNModal(agendamentoId);
+        }
+
+        async function deleteAgendamentoTN(agendamentoId) {
+            const agendamento = agendamentosTN.find(a => a.id === agendamentoId);
+            if (!agendamento) return;
+
+            if (!confirm(`Tem certeza que deseja excluir o agendamento de "${agendamento.nome}"?`)) return;
+
+            try {
+                if (window.isDevelopmentMode) {
+                    agendamentosTN = agendamentosTN.filter(a => a.id !== agendamentoId);
+                    localStorage.setItem('agendamentosTN', JSON.stringify(agendamentosTN));
+                } else {
+                    await deleteDoc(doc(db, `artifacts/${appId}/public/data/agendamentos-tn`, agendamentoId));
+                    await logActivity('excluir', 'agendamento-tn', agendamento.nome);
+                }
+                renderAgendamentosTNsSection();
+                showSuccessMessage('Sucesso', 'Agendamento excluído!');
+            } catch (error) {
+                console.error('Error deleting agendamento:', error);
+                showErrorMessage('Erro', 'Falha ao excluir agendamento.');
+            }
+        }
+
+        window.openAgendamentoTNModal = openAgendamentoTNModal;
+        window.editAgendamentoTN = editAgendamentoTN;
+        window.deleteAgendamentoTN = deleteAgendamentoTN;
+        window.cycleAgendamentoStatus = cycleAgendamentoStatus;
+        window.filterAgendamentosTNs = filterAgendamentosTNs;
+
+                // --- GESTÃO TNs SECTION ---
         let testesNivel = [];
+        let agendamentosTN = [];
 
         function renderGestaoTNsSection() {
             document.getElementById('main-title').textContent = 'Gestão TNs';
@@ -21339,6 +21626,7 @@ function openAddChecklistForm() {
                     icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>',
                     items: [
                         { key: 'kpis-pedagogico', label: 'KPIs', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>', roles: ['admin', 'coord', 'superv', 'comercial'] },
+                        { key: 'agendamentos-tns', label: 'Agendamentos TNs', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>', roles: ['admin', 'teachertn', 'coord', 'superv', 'estagiario', 'comercial'] },
                         { key: 'gestao-tns', label: 'Gestão TNs', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>', roles: ['admin', 'teachertn', 'coord', 'superv', 'estagiario', 'comercial'] },
                         { key: 'gestao-influencia', label: 'Gestão Influência', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M17 11l2 2 4-4"/></svg>', roles: ['admin', 'coord', 'superv', 'comercial'] }
                     ]
@@ -21825,7 +22113,7 @@ function openAddChecklistForm() {
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            const pageRenderers = { 'inicio': renderInicioSection, 'alunos': renderAlunosSection, 'turmas': renderTurmasSection, 'vips': renderVipsSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection, 'financeiro': renderFolhaPagamentoSection, 'colaboradores': renderColaboradoresSection, 'dojo': renderDojoSection, 'calendario': renderCalendarioSection, 'links-uteis': renderLinksUteisSection, 'processos': renderProcessosSection, 'tasks-prazos': renderTasksPrazosSection, 'gestao-tns': renderGestaoTNsSection, 'gestao-influencia': renderInfluencerManagementSection, 'rechamada': renderRechamadaSection, 'kpis-pedagogico': renderKPIsPedagogicoSection, 'logs-atividades': renderLogsAtividadesSection  };
+            const pageRenderers = { 'inicio': renderInicioSection, 'alunos': renderAlunosSection, 'turmas': renderTurmasSection, 'vips': renderVipsSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection, 'financeiro': renderFolhaPagamentoSection, 'colaboradores': renderColaboradoresSection, 'dojo': renderDojoSection, 'calendario': renderCalendarioSection, 'links-uteis': renderLinksUteisSection, 'processos': renderProcessosSection, 'tasks-prazos': renderTasksPrazosSection, 'agendamentos-tns': renderAgendamentosTNsSection, 'gestao-tns': renderGestaoTNsSection, 'gestao-influencia': renderInfluencerManagementSection, 'rechamada': renderRechamadaSection, 'kpis-pedagogico': renderKPIsPedagogicoSection, 'logs-atividades': renderLogsAtividadesSection  };
 
             document.body.addEventListener('click', (event) => {
                 // Close modals when clicking overlay or close button
