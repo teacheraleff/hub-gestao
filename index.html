@@ -12727,17 +12727,19 @@
                                 <thead class="bg-stone-50">
                                     <tr>
                                         <th class="px-4 py-3 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Data</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Horário</th>
                                         <th class="px-4 py-3 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Nome</th>
                                         <th class="px-4 py-3 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Nível/Plano</th>
                                         <th class="px-4 py-3 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Status</th>
                                         <th class="px-4 py-3 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Pós-TN</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Observações</th>
                                         <th class="px-4 py-3 text-center text-xs font-semibold text-stone-600 uppercase tracking-wider">Ações</th>
                                     </tr>
                                 </thead>
                                 <tbody class="bg-white divide-y divide-stone-100" id="agendamentos-tbody">
                                     ${sortedAgendamentos.length === 0 ? `
                                         <tr>
-                                            <td colspan="6" class="px-4 py-12 text-center text-stone-500">
+                                            <td colspan="8" class="px-4 py-12 text-center text-stone-500">
                                                 <svg class="w-12 h-12 mx-auto text-stone-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
                                                     <line x1="16" y1="2" x2="16" y2="6"></line>
@@ -12893,10 +12895,12 @@
             
             const data = {
                 data: document.getElementById('agendamento-data').value,
+                horario: document.getElementById('agendamento-horario').value,
                 nome: document.getElementById('agendamento-nome').value,
                 nivelPlano: document.getElementById('agendamento-nivel-plano').value,
                 status: document.getElementById('agendamento-status').value,
-                posTN: document.getElementById('agendamento-pos-tn').value
+                posTN: document.getElementById('agendamento-pos-tn').value,
+                observacoes: document.getElementById('agendamento-observacoes').value
             };
 
             if (!data.nome) {
