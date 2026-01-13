@@ -3696,12 +3696,17 @@
                     <!-- Month Tabs -->
                     <div class="bg-white rounded-xl shadow-sm border border-stone-200 mb-6">
                         <div class="flex overflow-x-auto p-2 gap-1" id="month-tabs">
-                            ${months.map((month, index) => `
-                                <button onclick="selectFolhaMonth(${index})" 
-                                    class="px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${index === currentMonth ? 'bg-yellow-400 text-stone-800' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'}">
-                                    ${month.short} ${String(currentYear).slice(-2)}
-                                </button>
-                            `).join('')}
+                            ${[2026, 2027].flatMap(year => 
+                                months.map((month, monthIndex) => {
+                                    const isSelected = monthIndex === currentMonth && year === currentYear;
+                                    return `
+                                        <button onclick="selectFolhaMonth(${monthIndex}, ${year})" 
+                                            class="px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${isSelected ? 'bg-yellow-400 text-stone-800' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'}">
+                                            ${month.short} ${String(year).slice(-2)}
+                                        </button>
+                                    `;
+                                })
+                            ).join('')}
                         </div>
                     </div>
 
@@ -3836,8 +3841,9 @@
         }
 
         // Function to select month in Folha de Pagamento
-        function selectFolhaMonth(monthIndex) {
+        function selectFolhaMonth(monthIndex, year = null) {
             selectedFolhaMonth = monthIndex;
+            if (year) selectedFolhaYear = year;
             renderFolhaPagamentoSection();
         }
         window.selectFolhaMonth = selectFolhaMonth;
@@ -22735,7 +22741,7 @@ function openAddChecklistForm() {
             observeNewElements();
 
             // Force development mode - show hub without login
-            window.FORCE_DEV_MODE = true; // Enabled for preview
+            window.FORCE_DEV_MODE = false; // Disabled - using Firebase
 
             initializeFirebase();
         });
