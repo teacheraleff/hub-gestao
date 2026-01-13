@@ -22489,8 +22489,7 @@ function openAddChecklistForm() {
                 'gestao-influencia': ['admin', 'coord', 'superv', 'comercial'],
                 'colaboradores': ['admin'],
                 'folha-pagamento': ['admin'],
-                'financeiro': ['admin'],
-            'folha-pagamento': ['admin'],
+                'financeiro': ['admin']
             };
 
             return pagePermissions[pageKey]?.includes(userRole) || false;
