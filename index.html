@@ -3698,8 +3698,8 @@
             contentArea.innerHTML = `
                 <div id="folha-pagamento-content" class="space-y-6">
                     <!-- Month Tabs -->
-                    <div class="bg-white rounded-xl shadow-sm border border-stone-200 mb-6">
-                        <div class="flex overflow-x-auto p-2 gap-1" id="month-tabs">
+                    <div class="bg-white rounded-xl shadow-sm border border-stone-200 mb-6 overflow-hidden">
+                        <div class="flex overflow-x-auto p-2 gap-1 max-w-full" id="month-tabs" style="scrollbar-width: thin;">
                             ${[2026, 2027].flatMap(year => 
                                 months.map((month, monthIndex) => {
                                     const isSelected = monthIndex === currentMonth && year === currentYear;
@@ -4048,8 +4048,8 @@
             contentArea.innerHTML = `
                 <div id="entradas-section" class="space-y-6">
                     <!-- Month Tabs -->
-                    <div class="bg-white rounded-xl shadow-sm border border-stone-200 mb-6">
-                        <div class="flex overflow-x-auto p-2 gap-1" id="entradas-month-tabs">
+                    <div class="bg-white rounded-xl shadow-sm border border-stone-200 mb-6 overflow-hidden">
+                        <div class="flex overflow-x-auto p-2 gap-1 max-w-full" id="entradas-month-tabs" style="scrollbar-width: thin;">
                             ${[2026, 2027].flatMap(year => 
                                 months.map((month, monthIndex) => {
                                     const isSelected = monthIndex === currentMonth && year === currentYear;
