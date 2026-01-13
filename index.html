@@ -3676,7 +3676,7 @@
             }).filter(Boolean).sort((a, b) => a.effectiveDueDate - b.effectiveDueDate);
 
             // Calculate totals
-            const totalExpensesBase = monthlyExpenses.reduce((sum, exp) => sum + Number(exp.amount) + Number(exp.extraAmount || 0), 0);
+            const totalExpensesBase = monthlyExpenses.reduce((sum, exp) => sum + Number(exp.amount || 0), 0);
             const totalPaidValues = monthlyExpenses.reduce((sum, exp) => {
                 if (exp.paidAmount && exp.paidAmount > 0) {
                     return sum + Number(exp.paidAmount);
@@ -3684,7 +3684,7 @@
                 return sum;
             }, 0);
             const totalToPay = totalExpensesBase - totalPaidValues;
-            const totalPending = monthlyExpenses.filter(exp => !exp.isPaid).reduce((sum, exp) => sum + Number(exp.amount) + Number(exp.extraAmount || 0), 0);
+            const totalPending = monthlyExpenses.filter(exp => !exp.isPaid).reduce((sum, exp) => sum + Number(exp.amount || 0), 0);
             const totalPaid = monthlyExpenses.filter(exp => exp.isPaid).reduce((sum, exp) => sum + Number(exp.paidAmount || exp.amount), 0);
 
             // Count fixed vs variable
@@ -3736,10 +3736,18 @@
                             <button class="primary-btn w-auto" data-action="add-expense">+ Nova Despesa</button>
                         </div>
 
-                        <div class="flex gap-2 mb-6" id="expenses-filter-buttons">
-                            <button class="secondary-btn filter-btn active" data-filter="todos" onclick="filterExpensesByType('todos')">Todos</button>
-                            <button class="secondary-btn filter-btn" data-filter="fixo" onclick="filterExpensesByType('fixo')">Fixos</button>
-                            <button class="secondary-btn filter-btn" data-filter="variavel" onclick="filterExpensesByType('variavel')">Variáveis</button>
+                        <div class="flex flex-wrap gap-4 mb-6 items-center justify-between">
+                            <div class="flex gap-2" id="expenses-filter-buttons">
+                                <button class="secondary-btn filter-btn active" data-filter="todos" onclick="filterExpensesByType('todos')">Todos</button>
+                                <button class="secondary-btn filter-btn" data-filter="fixo" onclick="filterExpensesByType('fixo')">Fixos</button>
+                                <button class="secondary-btn filter-btn" data-filter="variavel" onclick="filterExpensesByType('variavel')">Variáveis</button>
+                            </div>
+                            <div class="flex gap-2 items-center">
+                                <span class="text-sm text-stone-500">Ordenar:</span>
+                                <button class="px-3 py-1.5 text-sm rounded-lg border transition-all ${window.expenseSortOrder === 'dueDate' ? 'bg-yellow-400 border-yellow-400 text-stone-800' : 'bg-white border-stone-300 text-stone-600 hover:border-stone-400'}" onclick="sortExpensesBy('dueDate')">Vencimento</button>
+                                <button class="px-3 py-1.5 text-sm rounded-lg border transition-all ${window.expenseSortOrder === 'amountAsc' ? 'bg-yellow-400 border-yellow-400 text-stone-800' : 'bg-white border-stone-300 text-stone-600 hover:border-stone-400'}" onclick="sortExpensesBy('amountAsc')">Menor Valor</button>
+                                <button class="px-3 py-1.5 text-sm rounded-lg border transition-all ${window.expenseSortOrder === 'amountDesc' ? 'bg-yellow-400 border-yellow-400 text-stone-800' : 'bg-white border-stone-300 text-stone-600 hover:border-stone-400'}" onclick="sortExpensesBy('amountDesc')">Maior Valor</button>
+                            </div>
                         </div>
 
                         <div class="overflow-x-auto">
@@ -3751,13 +3759,27 @@
                                         <th>Tipo</th>
                                         <th>Vencimento</th>
                                         <th class="text-right">Valor (R$)</th>
-                                        <th class="text-right">Valor Extra (R$)</th>
                                         <th class="text-right">Valor Pago (R$)</th>
                                         <th class="text-center">Ações</th>
                                     </tr>
                                 </thead>
                                 <tbody id="expenses-list">
-                                    ${monthlyExpenses.length > 0 ? monthlyExpenses.map(exp => {
+                                    ${(() => {
+                                        // Apply sorting
+                                        const sortOrder = window.expenseSortOrder || 'dueDate';
+                                        const sortedExpenses = [...monthlyExpenses].sort((a, b) => {
+                                            if (sortOrder === 'dueDate') {
+                                                const dateA = a.effectiveDueDate || '9999-12-31';
+                                                const dateB = b.effectiveDueDate || '9999-12-31';
+                                                return dateA.localeCompare(dateB);
+                                            } else if (sortOrder === 'amountAsc') {
+                                                return Number(a.amount || 0) - Number(b.amount || 0);
+                                            } else if (sortOrder === 'amountDesc') {
+                                                return Number(b.amount || 0) - Number(a.amount || 0);
+                                            }
+                                            return 0;
+                                        });
+                                        return sortedExpenses.length > 0 ? sortedExpenses.map(exp => {
                                         const isFixed = exp.isFixedSalary || exp.tipo === 'fixo';
                                         const typeLabel = isFixed ? '<span class="px-2 py-0.5 rounded-full text-xs bg-purple-100 text-purple-700">Fixo</span>' : '<span class="px-2 py-0.5 rounded-full text-xs bg-stone-100 text-stone-600">Variável</span>';
                                         const dueDateFormatted = exp.effectiveDueDate ? new Date(exp.effectiveDueDate).toLocaleDateString('pt-BR') : '-';
@@ -3768,11 +3790,13 @@
                                                         class="h-5 w-5 rounded border-gray-300 text-yellow-500 focus:ring-yellow-400 cursor-pointer" 
                                                         ${exp.isPaid ? 'checked' : ''}>
                                                 </td>
-                                                <td class="font-medium ${exp.isPaid ? 'line-through text-stone-400' : ''}">${exp.description}</td>
+                                                <td class="font-medium ${exp.isPaid ? 'line-through text-stone-400' : ''}">
+                                                    ${exp.description}
+                                                    ${exp.isFixedSalary && exp.employeeRole ? `<span class="ml-2 px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-700">${exp.employeeRole}</span>` : ''}
+                                                </td>
                                                 <td>${typeLabel}</td>
                                                 <td class="text-sm text-stone-600">${dueDateFormatted}</td>
                                                 <td class="text-right font-medium">${Number(exp.amount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
-                                                <td class="text-right text-stone-600">${Number(exp.extraAmount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
                                                 <td class="text-right font-medium text-green-600">${exp.isPaid ? Number(exp.paidAmount || exp.amount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : '-'}</td>
                                                 <td class="text-center">
                                                     <div class="flex items-center justify-center gap-2">
@@ -3792,7 +3816,7 @@
                                         `;
                                     }).join('') : `
                                         <tr>
-                                            <td colspan="8" class="text-center py-8 text-stone-500">
+                                            <td colspan="7" class="text-center py-8 text-stone-500">
                                                 <svg class="w-12 h-12 mx-auto text-stone-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <rect x="2" y="4" width="20" height="16" rx="2"/>
                                                     <path d="M7 15h0M2 9.5h20"/>
@@ -3801,7 +3825,8 @@
                                                 <p class="text-sm mt-1">Clique em "+ Nova Despesa" para adicionar</p>
                                             </td>
                                         </tr>
-                                    `}
+                                    `;
+                                    })()}
                                 </tbody>
                             </table>
                         </div>
@@ -3836,6 +3861,15 @@
             });
         }
         window.filterExpensesByType = filterExpensesByType;
+
+        // Initialize sort order
+        window.expenseSortOrder = 'dueDate';
+
+        function sortExpensesBy(order) {
+            window.expenseSortOrder = order;
+            renderFolhaPagamentoSection();
+        }
+        window.sortExpensesBy = sortExpensesBy;
 
         function renderColaboradoresSection() {
             document.getElementById('main-title').textContent = 'Gestão de Colaboradores';
@@ -10204,9 +10238,8 @@
                         <input type="number" min="1" max="31" id="expense-dueDay" class="form-input" value="${expense?.dueDay || ''}">
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div><label class="font-medium text-sm">Valor Base (R$)</label><input type="number" step="0.01" id="expense-amount" class="form-input" required value="${expense?.amount || ''}"></div>
-                        <div><label class="font-medium text-sm">Valor Extra (R$)</label><input type="number" step="0.01" id="expense-extraAmount" class="form-input" value="${expense?.extraAmount || ''}"></div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div><label class="font-medium text-sm">Valor (R$)</label><input type="number" step="0.01" id="expense-amount" class="form-input" required value="${expense?.amount || ''}"></div>
                         <div><label class="font-medium text-sm">Valor Pago (R$)</label><input type="number" step="0.01" id="expense-paidAmount" class="form-input" value="${expense?.paidAmount || ''}"></div>
                     </div>
 
@@ -10262,7 +10295,7 @@
                 description: baseDescription,
                 tipo: tipo,
                 amount: document.getElementById('expense-amount').value,
-                extraAmount: document.getElementById('expense-extraAmount').value || 0,
+                
                 paidAmount: document.getElementById('expense-paidAmount').value || 0,
                 isPaid: false,
                 isFixedSalary: isFixedSalary,
@@ -10376,7 +10409,7 @@
 
             if (isPaid) {
                 // Quando marcado como pago, abrir modal para inserir valor pago
-                const totalExpenseValue = Number(expense.amount) + Number(expense.extraAmount || 0);
+                const totalExpenseValue = Number(expense.amount || 0);
                 clearModalHeaderButtons();
                 const modalTitle = document.getElementById('form-modal-title');
                 const modalContentArea = document.getElementById('form-modal-content-area');
