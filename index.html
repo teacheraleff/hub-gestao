@@ -3699,7 +3699,7 @@
                             ${months.map((month, index) => `
                                 <button onclick="selectFolhaMonth(${index})" 
                                     class="px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${index === currentMonth ? 'bg-yellow-400 text-stone-800' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'}">
-                                    ${month.short}
+                                    ${month.short} ${String(currentYear).slice(-2)}
                                 </button>
                             `).join('')}
                         </div>
@@ -10282,6 +10282,26 @@
                 }
             } catch (error) { console.error("Error saving expense:", error); showErrorMessage("Erro", "Falha ao salvar despesa."); }
         }
+        async function deleteExpense(expenseId) {
+            if (!confirm('Tem certeza que deseja excluir esta despesa?')) return;
+
+            try {
+                const expense = expenses.find(e => e.id === expenseId);
+                if (window.isDevelopmentMode) {
+                    expenses = expenses.filter(e => e.id !== expenseId);
+                    localStorage.setItem('expenses', JSON.stringify(expenses));
+                } else if (window.firebaseConnected && window.db) {
+                    await deleteDoc(doc(db, `artifacts/${appId}/public/data/expenses`, expenseId));
+                    if (expense) await logActivity('deletar', 'despesa', expense.description, {});
+                }
+                showSuccessMessage("Sucesso!", "Despesa excluída com sucesso.");
+                renderFolhaPagamentoSection();
+            } catch (error) {
+                console.error("Error deleting expense:", error);
+                showErrorMessage("Erro", "Não foi possível excluir a despesa.");
+            }
+        }
+
         async function toggleExpensePaid(expenseId, isPaid) {
             const expense = expenses.find(e => e.id === expenseId);
             if (!expense) return;
@@ -22500,6 +22520,8 @@ function openAddChecklistForm() {
                         'filter-processos-setor': () => setProcessosSetorFilter(event.target.dataset.setor),
                         'view-schedule': () => openScheduleForm(id),
                         'add-expense': openExpenseForm,
+                        'edit-expense': () => openExpenseForm(id),
+                        'delete-expense': () => deleteExpense(id),
                         'view-expense': () => openExpenseForm(id),
 
                         'delete-item': () => safeDeleteItem(collection, id),
@@ -22612,7 +22634,7 @@ function openAddChecklistForm() {
             observeNewElements();
 
             // Force development mode - show hub without login
-            window.FORCE_DEV_MODE = false; // Enabled for preview
+            window.FORCE_DEV_MODE = true; // Enabled for preview
 
             initializeFirebase();
         });
