@@ -3919,6 +3919,7 @@
         let entradasSortOrder = 'date';
         let entradasCurrentPage = 1;
         const entradasPerPage = 15;
+        let entradasPaymentFilter = 'all';
 
         window.selectEntradasMonth = function(month, year) {
             selectedEntradasMonth = month;
@@ -3937,6 +3938,12 @@
             entradasCurrentPage = page;
             renderEntradasSection();
             document.getElementById('entradas-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        };
+
+        window.setEntradasPaymentFilter = function(filter) {
+            entradasPaymentFilter = filter;
+            entradasCurrentPage = 1;
+            renderEntradasSection();
         };
 
         function renderEntradasPagination(currentPage, totalPages, startIdx, endIdx, totalCount) {
@@ -4198,8 +4205,21 @@
             // Combine manual and projected entradas
             const allMonthlyEntradas = [...monthlyEntradas, ...studentEntradas];
 
+            // Filtrar por tipo de pagamento
+            const filteredEntradas = entradasPaymentFilter === 'all' 
+                ? allMonthlyEntradas 
+                : allMonthlyEntradas.filter(ent => {
+                    // Buscar paymentType do aluno se for entrada projetada
+                    if (ent.studentId) {
+                        const student = students.find(s => s.id === ent.studentId);
+                        const paymentType = ent.paymentType || (student ? student.paymentType : '') || '';
+                        return paymentType === entradasPaymentFilter;
+                    }
+                    return ent.paymentType === entradasPaymentFilter;
+                });
+
             // Sort entradas
-            const sortedEntradas = [...allMonthlyEntradas].sort((a, b) => {
+            const sortedEntradas = [...filteredEntradas].sort((a, b) => {
                 if (entradasSortOrder === 'date') {
                     return String(a.date || '').localeCompare(String(b.date || ''));
                 } else if (entradasSortOrder === 'amountAsc') {
@@ -4219,10 +4239,10 @@
             const endIndex = startIndex + entradasPerPage;
             const paginatedEntradas = sortedEntradas.slice(startIndex, endIndex);
 
-            // Calculate totals
-            const totalEntradas = allMonthlyEntradas.reduce((sum, e) => sum + Number(e.amount || 0), 0);
-            const receivedTotal = allMonthlyEntradas.filter(e => e.status === 'received').reduce((sum, e) => sum + Number(e.amount || 0), 0);
-            const pendingTotal = allMonthlyEntradas.filter(e => e.status === 'pending').reduce((sum, e) => sum + Number(e.amount || 0), 0);
+            // Calculate totals (usando entradas filtradas)
+            const totalEntradas = filteredEntradas.reduce((sum, e) => sum + Number(e.amount || 0), 0);
+            const receivedTotal = filteredEntradas.filter(e => e.status === 'received').reduce((sum, e) => sum + Number(e.amount || 0), 0);
+            const pendingTotal = filteredEntradas.filter(e => e.status === 'pending').reduce((sum, e) => sum + Number(e.amount || 0), 0);
 
             const categoryLabels = {
                 'mensalidade': 'Parcela',
@@ -4273,13 +4293,28 @@
 
                     <!-- Actions Bar -->
                     <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
-                        <div class="flex items-center gap-2">
-                            <label class="text-sm text-stone-600">Ordenar:</label>
-                            <select onchange="setEntradasSortOrder(this.value)" class="px-3 py-1.5 rounded-lg border border-stone-300 text-sm">
-                                <option value="date" ${entradasSortOrder === 'date' ? 'selected' : ''}>Data</option>
-                                <option value="amountDesc" ${entradasSortOrder === 'amountDesc' ? 'selected' : ''}>Maior Valor</option>
-                                <option value="amountAsc" ${entradasSortOrder === 'amountAsc' ? 'selected' : ''}>Menor Valor</option>
-                            </select>
+                        <div class="flex flex-wrap items-center gap-4">
+                            <div class="flex items-center gap-2">
+                                <label class="text-sm text-stone-600">Ordenar:</label>
+                                <select onchange="setEntradasSortOrder(this.value)" class="px-3 py-1.5 rounded-lg border border-stone-300 text-sm">
+                                    <option value="date" ${entradasSortOrder === 'date' ? 'selected' : ''}>Data</option>
+                                    <option value="amountDesc" ${entradasSortOrder === 'amountDesc' ? 'selected' : ''}>Maior Valor</option>
+                                    <option value="amountAsc" ${entradasSortOrder === 'amountAsc' ? 'selected' : ''}>Menor Valor</option>
+                                </select>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <label class="text-sm text-stone-600">Pagamento:</label>
+                                <select onchange="setEntradasPaymentFilter(this.value)" class="px-3 py-1.5 rounded-lg border border-stone-300 text-sm">
+                                    <option value="all" ${entradasPaymentFilter === 'all' ? 'selected' : ''}>Todos</option>
+                                    <option value="Cartão" ${entradasPaymentFilter === 'Cartão' ? 'selected' : ''}>Cartão</option>
+                                    <option value="Boleto" ${entradasPaymentFilter === 'Boleto' ? 'selected' : ''}>Boleto</option>
+                                    <option value="Assinatura" ${entradasPaymentFilter === 'Assinatura' ? 'selected' : ''}>Assinatura</option>
+                                    <option value="PIX" ${entradasPaymentFilter === 'PIX' ? 'selected' : ''}>PIX</option>
+                                    <option value="Dinheiro" ${entradasPaymentFilter === 'Dinheiro' ? 'selected' : ''}>Dinheiro</option>
+                                    <option value="Permuta" ${entradasPaymentFilter === 'Permuta' ? 'selected' : ''}>Permuta</option>
+                                    <option value="Bolsa" ${entradasPaymentFilter === 'Bolsa' ? 'selected' : ''}>Bolsa</option>
+                                </select>
+                            </div>
                         </div>
                         <button onclick="openAddEntradaModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
