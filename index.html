@@ -18,12 +18,12 @@
             line-height: 1.25;
         }
         html, body { overflow-x: hidden !important; max-width: 100vw; width: 100%; }
-        
+
         /* Container overflow control */
         #content-area { overflow-x: hidden; max-width: 100%; box-sizing: border-box; }
         #content-area > div { max-width: 100%; overflow-x: hidden; box-sizing: border-box; }
         .dashboard-section { max-width: 100%; width: 100%; overflow-x: hidden; box-sizing: border-box; }
-        
+
         /* Month tabs horizontal scroll */
         .month-tab-strip { 
             overflow-x: auto; 
@@ -35,11 +35,11 @@
         .month-tab-strip::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 3px; }
         .month-tab-strip::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
         .month-tab-btn { flex-shrink: 0; white-space: nowrap; }
-        
+
         /* Section content overflow fix */
         #folha-pagamento-content, #entradas-section { max-width: 100%; overflow-x: hidden; }
         #folha-pagamento-content .grid, #entradas-section .grid { max-width: 100%; }
-        
+
         /* Table container scroll */
         .table-scroll-container { overflow-x: auto; max-width: 100%; }
         .table-scroll-container table { min-width: 600px; }
@@ -1096,7 +1096,7 @@
         function can(permissionKey) {
             // Admin SEMPRE tem acesso total - verificação dupla de segurança
             if (currentUserRole === 'admin') return true;
-            
+
             // Supervisor e Coordenador também têm acesso total igual ao admin
             if (['superv', 'coord'].includes(currentUserRole)) {
                 // Usar preset da role que tem permissões completas
@@ -1318,7 +1318,7 @@
                 // Check for ?dev=1 URL parameter to skip login
                 const urlParams = new URLSearchParams(window.location.search);
                 const devMode = urlParams.get('dev') === '1';
-                
+
                 if (devMode || window.FORCE_DEV_MODE || !firebaseConfig.apiKey) {
                     console.warn("Configuração do Firebase não encontrada. Executando em modo de desenvolvimento local.");
                     // Initialize in development mode with localStorage
@@ -1559,7 +1559,7 @@
                         // Re-render if we're on the dashboard
                         const activePageId = contentArea.firstElementChild?.id;
                         if (activePageId === 'inicio-section') {
-                            
+
                         }
                     } else {
                         console.log('No monthly highlight document found');
@@ -2014,7 +2014,7 @@
             `;
 
             // Initialize monthly highlight and fortune cookie
-            
+
             renderFortuneCookie();
         }
 
@@ -2097,7 +2097,7 @@
                     // Development mode - update local variable only
                     console.log('Development mode: updating local monthly highlight');
                     monthlyHighlight = data;
-                    
+
                     document.getElementById('form-modal').classList.remove('visible');
                     showSuccessMessage("Sucesso!", "Destaque do mês atualizado localmente (modo desenvolvimento).");
                     return;
@@ -2835,7 +2835,7 @@
                 const isFinalizado = vipRecord?.finalizado === true;
                 const studentStatus = (student.status || '').toLowerCase();
                 const isCancelado = studentStatus === 'cancelado' || studentStatus === 'nao renovado';
-                
+
                 // Styling based on status
                 let cardBg, opacity, textColor, textColorLight, borderColor, borderStyle;
                 if (isCancelado) {
@@ -3663,7 +3663,7 @@
             document.getElementById('main-description').textContent = 'Gerencie as despesas e pagamentos mensais da empresa.';
 
             const contentArea = document.getElementById('content-area');
-            
+
             const months = [
                 { name: 'Janeiro', short: 'Jan' },
                 { name: 'Fevereiro', short: 'Fev' },
@@ -3701,7 +3701,7 @@
                 if (exp.isFixedSalary && dueDate) {
                     return { ...exp, effectiveDueDate: dueDate };
                 }
-                
+
                 // For variable expenses, only show if matches selected month/year
                 if (dueDate && dueDate.getUTCMonth() === currentMonth && dueDate.getUTCFullYear() === currentYear) {
                     return { ...exp, effectiveDueDate: dueDate };
@@ -3888,12 +3888,12 @@
         function filterExpensesByType(type) {
             const rows = document.querySelectorAll('.expense-row');
             const buttons = document.querySelectorAll('#expenses-filter-buttons .filter-btn');
-            
+
             buttons.forEach(btn => {
                 btn.classList.remove('active');
                 if (btn.dataset.filter === type) btn.classList.add('active');
             });
-            
+
             rows.forEach(row => {
                 if (type === 'todos') {
                     row.style.display = '';
@@ -3917,22 +3917,64 @@
         let selectedEntradasMonth = new Date().getMonth();
         let selectedEntradasYear = new Date().getFullYear();
         let entradasSortOrder = 'date';
-        
+        let entradasCurrentPage = 1;
+        const entradasPerPage = 15;
+
         window.selectEntradasMonth = function(month, year) {
             selectedEntradasMonth = month;
             selectedEntradasYear = year;
+            entradasCurrentPage = 1;
             renderEntradasSection();
         };
-        
+
         window.setEntradasSortOrder = function(order) {
             entradasSortOrder = order;
+            entradasCurrentPage = 1;
             renderEntradasSection();
         };
-        
+
+        window.setEntradasPage = function(page) {
+            entradasCurrentPage = page;
+            renderEntradasSection();
+            document.getElementById('entradas-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        };
+
+        function renderEntradasPagination(currentPage, totalPages, startIdx, endIdx, totalCount) {
+            const maxVisible = 5;
+            let start = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+            let end = Math.min(totalPages, start + maxVisible - 1);
+            if (end - start + 1 < maxVisible) {
+                start = Math.max(1, end - maxVisible + 1);
+            }
+            
+            let pagesHtml = '';
+            if (start > 1) {
+                pagesHtml += '<span class="px-2 py-1 text-stone-400">...</span>';
+            }
+            for (let i = start; i <= end; i++) {
+                const isActive = i === currentPage;
+                pagesHtml += '<button onclick="setEntradasPage(' + i + ')" class="px-3 py-1 rounded text-sm font-medium ' + (isActive ? 'bg-emerald-500 text-white' : 'text-stone-600 hover:bg-stone-100') + '">' + i + '</button>';
+            }
+            if (end < totalPages) {
+                pagesHtml += '<span class="px-2 py-1 text-stone-400">...</span>';
+            }
+            
+            return '<div class="flex items-center justify-between mt-4 pt-4 border-t border-stone-200">' +
+                '<div class="text-sm text-stone-600">Mostrando ' + (startIdx + 1) + '-' + Math.min(endIdx, totalCount) + ' de ' + totalCount + ' entradas</div>' +
+                '<div class="flex items-center gap-1">' +
+                    '<button onclick="setEntradasPage(1)" ' + (currentPage === 1 ? 'disabled' : '') + ' class="px-2 py-1 rounded text-sm ' + (currentPage === 1 ? 'text-stone-300 cursor-not-allowed' : 'text-stone-600 hover:bg-stone-100') + '"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/></svg></button>' +
+                    '<button onclick="setEntradasPage(' + (currentPage - 1) + ')" ' + (currentPage === 1 ? 'disabled' : '') + ' class="px-2 py-1 rounded text-sm ' + (currentPage === 1 ? 'text-stone-300 cursor-not-allowed' : 'text-stone-600 hover:bg-stone-100') + '"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg></button>' +
+                    pagesHtml +
+                    '<button onclick="setEntradasPage(' + (currentPage + 1) + ')" ' + (currentPage === totalPages ? 'disabled' : '') + ' class="px-2 py-1 rounded text-sm ' + (currentPage === totalPages ? 'text-stone-300 cursor-not-allowed' : 'text-stone-600 hover:bg-stone-100') + '"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg></button>' +
+                    '<button onclick="setEntradasPage(' + totalPages + ')" ' + (currentPage === totalPages ? 'disabled' : '') + ' class="px-2 py-1 rounded text-sm ' + (currentPage === totalPages ? 'text-stone-300 cursor-not-allowed' : 'text-stone-600 hover:bg-stone-100') + '"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"/></svg></button>' +
+                '</div>' +
+            '</div>';
+        }
+
         window.openAddEntradaModal = function() {
             const modal = document.getElementById('entrada-modal');
             if (!modal) return;
-            
+
             document.getElementById('entrada-modal-title').textContent = 'Outra Entrada';
             document.getElementById('entrada-id').value = '';
             document.getElementById('entrada-description').value = '';
@@ -3942,14 +3984,14 @@
             document.getElementById('entrada-student').value = '';
             document.getElementById('entrada-notes').value = '';
             document.getElementById('entrada-status').value = 'received';
-            
+
             modal.classList.add('visible');
         };
-        
+
         window.editEntrada = function(id) {
             const entrada = entradas.find(e => e.id === id);
             if (!entrada) return;
-            
+
             const modal = document.getElementById('entrada-modal');
             document.getElementById('entrada-modal-title').textContent = 'Editar Entrada';
             document.getElementById('entrada-id').value = id;
@@ -3960,13 +4002,13 @@
             document.getElementById('entrada-student').value = entrada.studentId || '';
             document.getElementById('entrada-notes').value = entrada.notes || '';
             document.getElementById('entrada-status').value = entrada.status || 'received';
-            
+
             modal.classList.add('visible');
         };
-        
+
         window.saveEntrada = async function(event) {
             event.preventDefault();
-            
+
             const id = document.getElementById('entrada-id').value;
             const data = {
                 description: document.getElementById('entrada-description').value,
@@ -3978,7 +4020,7 @@
                 status: document.getElementById('entrada-status').value,
                 updatedAt: serverTimestamp()
             };
-            
+
             try {
                 if (window.isDevelopmentMode) {
                     if (id) {
@@ -4002,7 +4044,7 @@
                 showErrorMessage('Erro', 'Não foi possível salvar a entrada.');
             }
         };
-        
+
         window.confirmProjectedEntrada = async function(studentId, amount, date) {
             try {
                 const student = students.find(s => s.id === studentId);
@@ -4010,17 +4052,17 @@
                     showErrorMessage("Erro", "Aluno não encontrado.");
                     return;
                 }
-                
+
                 const newEntrada = {
                     studentId: studentId,
-                    description: "Mensalidade - " + student.name,
+                    description: "Parcela - " + student.name,
                     category: "mensalidade",
                     amount: amount,
                     date: date,
                     status: "received",
                     createdAt: serverTimestamp()
                 };
-                
+
                 if (window.isDevelopmentMode) {
                     entradas.push({ id: "entrada-" + Date.now(), ...newEntrada });
                 } else {
@@ -4033,14 +4075,14 @@
                 showErrorMessage("Erro", "Não foi possível confirmar o pagamento.");
             }
         };
-        
+
         window.toggleEntradaStatus = async function(id) {
             try {
                 const entrada = entradas.find(e => e.id === id);
                 if (!entrada) return;
-                
+
                 const newStatus = entrada.status === "received" ? "pending" : "received";
-                
+
                 if (window.isDevelopmentMode) {
                     entrada.status = newStatus;
                 } else {
@@ -4055,7 +4097,7 @@
 
         window.deleteEntrada = async function(id) {
             if (!confirm('Tem certeza que deseja excluir esta entrada?')) return;
-            
+
             try {
                 if (window.isDevelopmentMode) {
                     const idx = entradas.findIndex(e => e.id === id);
@@ -4069,13 +4111,13 @@
                 showErrorMessage('Erro', 'Não foi possível excluir a entrada.');
             }
         };
-        
+
         function renderEntradasSection() {
             document.getElementById('main-title').textContent = 'Entradas';
             document.getElementById('main-description').textContent = 'Gerencie todas as entradas de dinheiro da empresa.';
-            
+
             const contentArea = document.getElementById('content-area');
-            
+
             const months = [
                 { name: 'Janeiro', short: 'Jan' },
                 { name: 'Fevereiro', short: 'Fev' },
@@ -4090,33 +4132,43 @@
                 { name: 'Novembro', short: 'Nov' },
                 { name: 'Dezembro', short: 'Dez' }
             ];
-            
+
             const currentMonth = selectedEntradasMonth;
             const currentYear = selectedEntradasYear;
             const monthName = months[currentMonth].name;
-            
+
             // Filter entradas for selected month
             const monthlyEntradas = entradas.filter(ent => {
                 if (!ent.date) return false;
                 const entDate = new Date(ent.date);
                 return entDate.getMonth() === currentMonth && entDate.getFullYear() === currentYear;
             });
-            
-            // Generate projected student payments (mensalidades)
-            // Generate projected student payments for active students with monthlyValue
+
+            // Generate projected student payments (parcelas)
+            // Generate projected student payments for active students with monthlyValue and projection months
             const activeStudentsWithPayment = students.filter(s => s.status === 'Ativo' && s.amountReceived && parseFloat(s.amountReceived) > 0);
-            
+
+            // Formato do mês para verificação: "YYYY-MM"
+            const currentMonthKey = currentYear + '-' + String(currentMonth + 1).padStart(2, '0');
+
             const studentEntradas = activeStudentsWithPayment
                 .map(s => {
-                    // Check if student started after this month (if startDate exists)
-                    if (s.startDate) {
-                        const startDate = new Date(s.startDate + 'T12:00:00');
-                        if (startDate.getFullYear() > currentYear || 
-                            (startDate.getFullYear() === currentYear && startDate.getMonth() > currentMonth)) {
-                            return null; // Student hasn't started yet
+                    // Se o aluno tem meses de projeção definidos, verificar se este mês está incluído
+                    if (s.projectionMonths && s.projectionMonths.length > 0) {
+                        if (!s.projectionMonths.includes(currentMonthKey)) {
+                            return null; // Este mês não está nos meses de projeção do aluno
+                        }
+                    } else {
+                        // Fallback: se não tem meses de projeção, usar lógica antiga (verificar data de início)
+                        if (s.startDate) {
+                            const startDate = new Date(s.startDate + 'T12:00:00');
+                            if (startDate.getFullYear() > currentYear || 
+                                (startDate.getFullYear() === currentYear && startDate.getMonth() > currentMonth)) {
+                                return null; // Student hasn't started yet
+                            }
                         }
                     }
-                    
+
                     // Check if there's already a manual entry for this student this month
                     const hasManualEntry = entradas.some(e => 
                         e.studentId === s.id && 
@@ -4125,25 +4177,27 @@
                         new Date(e.date + 'T12:00:00').getFullYear() === currentYear
                     );
                     if (hasManualEntry) return null;
-                    
+
                     return {
                         id: 'projected-' + s.id,
                         studentId: s.id,
-                        description: 'Mensalidade - ' + s.name,
+                        description: 'Parcela - ' + s.name,
                         category: 'mensalidade',
                         amount: parseFloat(s.amountReceived),
                         date: currentYear + '-' + String(currentMonth + 1).padStart(2, '0') + '-05',
                         status: 'pending',
-                        isProjected: true
+                        isProjected: true,
+                        modalidade: s.modalidade || '',
+                        paymentType: s.paymentType || ''
                     };
                 })
                 .filter(e => e !== null);
-            
-            
-            
+
+
+
             // Combine manual and projected entradas
             const allMonthlyEntradas = [...monthlyEntradas, ...studentEntradas];
-            
+
             // Sort entradas
             const sortedEntradas = [...allMonthlyEntradas].sort((a, b) => {
                 if (entradasSortOrder === 'date') {
@@ -4155,21 +4209,30 @@
                 }
                 return 0;
             });
-            
+
+            // Pagination logic
+            const totalEntradasCount = sortedEntradas.length;
+            const totalPages = Math.ceil(totalEntradasCount / entradasPerPage);
+            if (entradasCurrentPage > totalPages && totalPages > 0) entradasCurrentPage = totalPages;
+            if (entradasCurrentPage < 1) entradasCurrentPage = 1;
+            const startIndex = (entradasCurrentPage - 1) * entradasPerPage;
+            const endIndex = startIndex + entradasPerPage;
+            const paginatedEntradas = sortedEntradas.slice(startIndex, endIndex);
+
             // Calculate totals
             const totalEntradas = allMonthlyEntradas.reduce((sum, e) => sum + Number(e.amount || 0), 0);
             const receivedTotal = allMonthlyEntradas.filter(e => e.status === 'received').reduce((sum, e) => sum + Number(e.amount || 0), 0);
             const pendingTotal = allMonthlyEntradas.filter(e => e.status === 'pending').reduce((sum, e) => sum + Number(e.amount || 0), 0);
-            
+
             const categoryLabels = {
-                'mensalidade': 'Mensalidade',
+                'mensalidade': 'Parcela',
                 'matricula': 'Matrícula',
                 'material': 'Material Didático',
                 'evento': 'Evento',
                 'investimento': 'Investimento',
                 'outros': 'Outros'
             };
-            
+
             contentArea.innerHTML = `
                 <div id="entradas-section" class="space-y-6">
                     <!-- Month Tabs -->
@@ -4190,7 +4253,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <!-- Summary Cards -->
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                         <div class="bg-gradient-to-br from-green-50 to-green-100 p-5 rounded-lg border border-green-200">
@@ -4207,7 +4270,7 @@
                             <p class="text-2xl font-bold text-amber-800">${pendingTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
                         </div>
                     </div>
-                    
+
                     <!-- Actions Bar -->
                     <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
                         <div class="flex items-center gap-2">
@@ -4223,13 +4286,13 @@
                             Outra Entrada
                         </button>
                     </div>
-                    
+
                     <!-- Info Note -->
                     <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 flex items-center gap-2">
                         <svg class="w-5 h-5 text-blue-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                        <p class="text-sm text-blue-700">As mensalidades dos alunos ativos (com "Valor Recebido" preenchido) aparecem automaticamente. Use "Outra Entrada" para matrículas, eventos, etc.</p>
+                        <p class="text-sm text-blue-700">As parcelas dos alunos ativos (com "Valor Recebido" preenchido) aparecem automaticamente. Use "Outra Entrada" para matrículas, eventos, etc.</p>
                     </div>
-                    
+
                     <!-- Entradas Table -->
                     <div class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
                         <div class="overflow-x-auto">
@@ -4245,15 +4308,48 @@
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-stone-100">
-                                    ${sortedEntradas.length > 0 ? sortedEntradas.map(ent => {
+                                    ${paginatedEntradas.length > 0 ? paginatedEntradas.map(ent => {
                                         const date = ent.date ? new Date(ent.date + 'T12:00:00').toLocaleDateString('pt-BR') : '-';
                                         const isProjected = ent.isProjected || false;
                                         const statusClass = ent.status === 'received' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800';
                                         const statusLabel = ent.status === 'received' ? 'Recebido' : 'Pendente';
+                                        
+                                        // Buscar dados do aluno se for entrada de aluno
+                                        const student = ent.studentId ? students.find(s => s.id === ent.studentId) : null;
+                                        const modalidade = ent.modalidade || (student ? student.modalidade : '') || '';
+                                        const paymentType = ent.paymentType || (student ? student.paymentType : '') || '';
+                                        
+                                        // Tags de modalidade
+                                        const modalidadeTag = modalidade ? (
+                                            modalidade.toUpperCase() === 'VIP' || modalidade.toUpperCase() === 'DUPLA' 
+                                                ? '<span class="ml-1 px-1.5 py-0.5 text-xs bg-purple-100 text-purple-700 rounded font-medium">VIP</span>'
+                                                : modalidade.toUpperCase() === 'TURMA' 
+                                                    ? '<span class="ml-1 px-1.5 py-0.5 text-xs bg-blue-100 text-blue-700 rounded font-medium">Turma</span>'
+                                                    : ''
+                                        ) : '';
+                                        
+                                        // Tags de pagamento
+                                        const paymentLabels = {
+                                            'Cartão de Crédito': { label: 'Cartão', class: 'bg-indigo-100 text-indigo-700' },
+                                            'Boleto': { label: 'Boleto', class: 'bg-orange-100 text-orange-700' },
+                                            'Assinatura': { label: 'Assinatura', class: 'bg-teal-100 text-teal-700' },
+                                            'PIX': { label: 'PIX', class: 'bg-green-100 text-green-700' },
+                                            'Dinheiro': { label: 'Dinheiro', class: 'bg-yellow-100 text-yellow-700' }
+                                        };
+                                        const paymentInfo = paymentLabels[paymentType] || null;
+                                        const paymentTag = paymentInfo ? '<span class="ml-1 px-1.5 py-0.5 text-xs ' + paymentInfo.class + ' rounded font-medium">' + paymentInfo.label + '</span>' : '';
+                                        
                                         return `
                                             <tr class="hover:bg-stone-50">
                                                 <td class="px-4 py-3 text-sm text-stone-600">${date}</td>
-                                                <td class="px-4 py-3 text-sm font-medium text-stone-800">${ent.description || '-'}${isProjected ? ' <span class="ml-2 px-1.5 py-0.5 text-xs bg-blue-100 text-blue-700 rounded">Projetado</span>' : ''}</td>
+                                                <td class="px-4 py-3 text-sm font-medium text-stone-800">
+                                                    <div class="flex flex-wrap items-center gap-1">
+                                                        <span>${ent.description || '-'}</span>
+                                                        ${isProjected ? '<span class="px-1.5 py-0.5 text-xs bg-slate-100 text-slate-600 rounded">Projetado</span>' : ''}
+                                                        ${modalidadeTag}
+                                                        ${paymentTag}
+                                                    </div>
+                                                </td>
                                                 <td class="px-4 py-3 text-sm text-stone-600">${categoryLabels[ent.category] || ent.category || '-'}</td>
                                                 <td class="px-4 py-3 text-sm font-semibold text-green-700">${Number(ent.amount || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
                                                 <td class="px-4 py-3"><span class="px-2 py-1 rounded-full text-xs font-medium ${statusClass}">${statusLabel}</span></td>
@@ -4279,9 +4375,12 @@
                                 </tbody>
                             </table>
                         </div>
+                        
+                        <!-- Pagination Controls -->
+                        ${totalPages > 1 ? renderEntradasPagination(entradasCurrentPage, totalPages, startIndex, endIndex, totalEntradasCount) : ''}
                     </div>
                 </div>
-                
+
                 <!-- Entrada Modal -->
                 <div id="entrada-modal" class="modal-overlay fixed inset-0 bg-black/50 flex items-center justify-center z-50">
                     <div class="modal-content bg-white rounded-xl shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
@@ -4296,7 +4395,7 @@
                                 <input type="hidden" id="entrada-id">
                                 <div>
                                     <label class="block text-sm font-medium text-stone-700 mb-1">Descrição *</label>
-                                    <input type="text" id="entrada-description" required class="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500" placeholder="Ex: Mensalidade João Silva">
+                                    <input type="text" id="entrada-description" required class="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500" placeholder="Ex: Parcela João Silva">
                                 </div>
                                 <div class="grid grid-cols-2 gap-4">
                                     <div>
@@ -4639,7 +4738,7 @@
             vips.forEach(vip => {
                 const student = students.find(s => s.id === vip.studentId);
                 if (!student) return;
-                
+
                 // Ignorar alunos cancelados ou nao renovados
                 const studentStatus = (student.status || '').toLowerCase();
                 if (studentStatus === 'cancelado' || studentStatus === 'nao renovado') return;
@@ -4679,7 +4778,7 @@
                 turma.studentIds?.forEach(studentId => {
                     const student = students.find(s => s.id === studentId);
                     if (!student) return;
-                    
+
                     // Ignorar alunos cancelados ou nao renovados
                     const studentStatus = (student.status || '').toLowerCase();
                     if (studentStatus === 'cancelado' || studentStatus === 'nao renovado') return;
@@ -4748,12 +4847,12 @@
             // Paginação
             const totalItems = filteredStudents.length;
             const totalPages = Math.ceil(totalItems / RECHAMADA_ITEMS_PER_PAGE);
-            
+
             // Garantir que a página atual é válida
             if (window.currentRechamadaPage > totalPages) {
                 window.currentRechamadaPage = Math.max(1, totalPages);
             }
-            
+
             const startIndex = (window.currentRechamadaPage - 1) * RECHAMADA_ITEMS_PER_PAGE;
             const endIndex = startIndex + RECHAMADA_ITEMS_PER_PAGE;
             const paginatedStudents = filteredStudents.slice(startIndex, endIndex);
@@ -4915,7 +5014,7 @@
                                 </tbody>
                             </table>
                         </div>
-                        
+
                         <!-- Pagination Controls -->
                         ${totalPages > 1 ? `
                         <div class="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 pt-4 border-t border-stone-200">
@@ -4987,25 +5086,25 @@
             }
         }
         window.goToRechamadaPage = goToRechamadaPage;
-        
+
         // Fast re-render using cached data (no recalculation)
         function renderRechamadaListOnly() {
             if (!window.cachedRechamadaData) {
                 renderRechamadaSection();
                 return;
             }
-            
+
             const { filteredStudents, uniqueTeachers, totalItems, totalPages } = window.cachedRechamadaData;
-            
+
             // Garantir que a página atual é válida
             if (window.currentRechamadaPage > totalPages) {
                 window.currentRechamadaPage = Math.max(1, totalPages);
             }
-            
+
             const startIndex = (window.currentRechamadaPage - 1) * RECHAMADA_ITEMS_PER_PAGE;
             const endIndex = startIndex + RECHAMADA_ITEMS_PER_PAGE;
             const paginatedStudents = filteredStudents.slice(startIndex, endIndex);
-            
+
             // Update only the list container
             const listContainer = document.getElementById('rechamada-list-container');
             if (listContainer) {
@@ -5123,7 +5222,7 @@
             if (!confirm('Isso vai remover rechamadas com aulas duplicadas (ex: se existir 38+39 e 39+40, vai manter apenas 38+39).\n\nDeseja continuar?')) {
                 return;
             }
-            
+
             try {
                 // Agrupar rechamadas por aluno
                 const byStudent = {};
@@ -5134,29 +5233,29 @@
                     }
                     byStudent[r.studentId].push(r);
                 });
-                
+
                 let deletedCount = 0;
-                
+
                 for (const studentId in byStudent) {
                     const studentRechamadas = byStudent[studentId];
                     if (studentRechamadas.length <= 1) continue;
-                    
+
                     // Ordenar por primeira aula
                     studentRechamadas.sort((a, b) => {
                         const aFirst = parseInt(a.lessons.split('+')[0]);
                         const bFirst = parseInt(b.lessons.split('+')[0]);
                         return aFirst - bFirst;
                     });
-                    
+
                     // Identificar quais têm aulas sobrepostas
                     const usedLessons = new Set();
                     const toDelete = [];
-                    
+
                     studentRechamadas.forEach(r => {
                         const parts = r.lessons.split('+');
                         const first = parseInt(parts[0]);
                         const second = parseInt(parts[1]);
-                        
+
                         // Se alguma aula já foi usada, esta rechamada é duplicada
                         if (usedLessons.has(first) || usedLessons.has(second)) {
                             toDelete.push(r.id);
@@ -5165,14 +5264,14 @@
                             usedLessons.add(second);
                         }
                     });
-                    
+
                     // Deletar as duplicadas
                     for (const id of toDelete) {
                         await deleteDoc(doc(db, `artifacts/${appId}/public/data/rechamadas`, id));
                         deletedCount++;
                     }
                 }
-                
+
                 if (deletedCount > 0) {
                     await logActivity('Limpou rechamadas duplicadas', 'rechamada', `${deletedCount} rechamadas removidas`);
                     showSuccessMessage('Limpeza Concluída', `${deletedCount} rechamada(s) duplicada(s) removida(s).`);
@@ -5180,7 +5279,7 @@
                 } else {
                     showSuccessMessage('Tudo Certo', 'Não foram encontradas rechamadas duplicadas.');
                 }
-                
+
             } catch (error) {
                 console.error('Erro ao limpar rechamadas:', error);
                 showErrorMessage('Erro', 'Erro ao limpar rechamadas: ' + error.message);
@@ -6285,7 +6384,7 @@
         // Helper to render urgency tag
         function getUrgencyTag(urgency) {
             if (!urgency) return '';
-            
+
             const tags = {
                 'low': '<span class="px-2 py-0.5 text-xs font-semibold rounded" style="background-color: #e0e7ff; color: #3730a3;">BAIXA PRIORIDADE</span>',
                 'normal': '<span class="px-2 py-0.5 text-xs font-semibold rounded" style="background-color: #d1fae5; color: #065f46;">SEM URGÊNCIA</span>',
@@ -6294,7 +6393,7 @@
                 'max': '<span class="px-2 py-0.5 text-xs font-semibold rounded" style="background-color: #7c3aed; color: white;">PRIORIDADE MÁXIMA</span>',
                 'dojo': '<span class="px-2 py-0.5 text-xs font-semibold rounded" style="background-color: #fcd34d; color: #78350f;">SLAP DOJO</span>'
             };
-            
+
             return tags[urgency] || '';
         }
 
@@ -6914,7 +7013,7 @@
                 container.classList.toggle('hidden', !checkbox.checked);
             }
         }
-        
+
         function openAlunoForm(alunoId = null) {
             clearModalHeaderButtons();
             const aluno = alunoId ? students.find(s => s.id === alunoId) : null;
@@ -7103,6 +7202,13 @@
                     <div id="aluno-amount-fields" class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div><label class="font-medium text-sm">Valor Pago (R$)</label><input type="number" step="0.01" id="aluno-amountPaid" class="form-input" value="${aluno?.amountPaid || ''}"></div>
                         <div><label class="font-medium text-sm">Valor Recebido (R$)</label><input type="number" step="0.01" id="aluno-amountReceived" class="form-input" value="${aluno?.amountReceived || ''}"></div>
+                    </div>
+                    <div class="mt-4">
+                        <label class="font-medium text-sm">Meses de Projeção das Parcelas</label>
+                        <p class="text-xs text-stone-500 mb-2">Selecione os meses em que as parcelas serão projetadas na seção de Entradas</p>
+                        <div id="aluno-projection-months" class="grid grid-cols-4 md:grid-cols-6 gap-2">
+                            ${generateProjectionMonthsCheckboxes(aluno?.projectionMonths || [])}
+                        </div>
                     </div>
                     ` : ''}
 
@@ -7320,6 +7426,10 @@
                 data.parcelas = document.getElementById('aluno-parcelas').value;
                 data.amountPaid = document.getElementById('aluno-amountPaid').value;
                 data.amountReceived = document.getElementById('aluno-amountReceived').value;
+                
+                // Coletar meses de projeção selecionados
+                const projectionMonthCheckboxes = document.querySelectorAll('input[name="projection-month"]:checked');
+                data.projectionMonths = Array.from(projectionMonthCheckboxes).map(cb => cb.value);
             }
             if (!data.name) { showErrorMessage("Erro", "O nome do aluno é obrigatório."); return; }
             if (!data.modalidade) { showErrorMessage("Erro", "A modalidade é obrigatória."); return; }
@@ -7371,6 +7481,37 @@
                 console.error("Error saving student:", error);
                 showErrorMessage("Erro", "Falha ao salvar os dados do aluno.");
             }
+        }
+
+        function generateProjectionMonthsCheckboxes(selectedMonths = []) {
+            const months = [
+                { value: '2026-01', label: 'Jan/26' },
+                { value: '2026-02', label: 'Fev/26' },
+                { value: '2026-03', label: 'Mar/26' },
+                { value: '2026-04', label: 'Abr/26' },
+                { value: '2026-05', label: 'Mai/26' },
+                { value: '2026-06', label: 'Jun/26' },
+                { value: '2026-07', label: 'Jul/26' },
+                { value: '2026-08', label: 'Ago/26' },
+                { value: '2026-09', label: 'Set/26' },
+                { value: '2026-10', label: 'Out/26' },
+                { value: '2026-11', label: 'Nov/26' },
+                { value: '2026-12', label: 'Dez/26' },
+                { value: '2027-01', label: 'Jan/27' },
+                { value: '2027-02', label: 'Fev/27' },
+                { value: '2027-03', label: 'Mar/27' },
+                { value: '2027-04', label: 'Abr/27' },
+                { value: '2027-05', label: 'Mai/27' },
+                { value: '2027-06', label: 'Jun/27' }
+            ];
+            
+            return months.map(m => {
+                const isChecked = selectedMonths.includes(m.value);
+                return '<label class="flex items-center gap-1.5 p-2 rounded border ' + (isChecked ? 'border-green-500 bg-green-50' : 'border-stone-200 hover:bg-stone-50') + ' cursor-pointer">' +
+                    '<input type="checkbox" name="projection-month" value="' + m.value + '" ' + (isChecked ? 'checked' : '') + ' class="h-4 w-4 rounded text-green-600">' +
+                    '<span class="text-xs font-medium">' + m.label + '</span>' +
+                '</label>';
+            }).join('');
         }
 
         function openAlunoModal(alunoId) {
@@ -10767,7 +10908,7 @@
                 description: baseDescription,
                 tipo: tipo,
                 amount: document.getElementById('expense-amount').value,
-                
+
                 paidAmount: document.getElementById('expense-paidAmount').value || 0,
                 isPaid: false,
                 isFixedSalary: isFixedSalary,
@@ -11194,61 +11335,61 @@
 
             const person = taskPeople.find(p => p.id === task.personId);
             if (!person) return false;
-            
+
             // Comparar por email primeiro (mais confiável), depois por nome normalizado
             const currentCollaborator = window.currentCollaborator;
-            
+
             // Se temos o email do colaborador atual, comparar com email da pessoa
             if (currentCollaborator && currentCollaborator.email && person.email) {
                 return currentCollaborator.email.toLowerCase().trim() === person.email.toLowerCase().trim();
             }
-            
+
             // Fallback: comparar nomes normalizados
             const normalizedPersonName = (person.name || '').toLowerCase().trim();
             const normalizedCurrentName = (currentUserName || '').toLowerCase().trim();
-            
+
             return normalizedPersonName === normalizedCurrentName;
         }
-        
+
         // Helper function to check if user can edit/delete a task
         // Admin can edit/delete anything
         // All other roles can only edit/delete tasks/reminders/avisos they created themselves
         function canSupervisorEditOrDeleteTask(taskId) {
             // Admin can edit/delete any task
             if (currentUserRole === 'admin') return true;
-            
+
             const task = tasks.find(t => t.id === taskId);
             if (!task) return false;
-            
+
             // All other roles can only edit/delete tasks they created themselves
             const taskCreator = (task.createdBy || '').toLowerCase().trim();
             const currentName = (currentUserName || '').toLowerCase().trim();
-            
+
             // Also check by email if available
             const currentCollaborator = window.currentCollaborator;
             if (currentCollaborator && currentCollaborator.email && task.createdByEmail) {
                 return currentCollaborator.email.toLowerCase().trim() === task.createdByEmail.toLowerCase().trim();
             }
-            
+
             return taskCreator === currentName;
         }
-        
+
         // Helper function to check if user can mark task as done (read for reminders/avisos)
         // Users can always mark their own items as done/read
         function canUserCompleteTask(taskId) {
             const task = tasks.find(t => t.id === taskId);
             if (!task) return false;
-            
+
             // Admin can complete any task
             if (currentUserRole === 'admin') return true;
-            
+
             // For reminders and avisos, the owner of the card or the creator can mark as done
             if (['reminder', 'aviso'].includes(task.type)) {
                 // Check if user created this task
                 const taskCreator = (task.createdBy || '').toLowerCase().trim();
                 const currentName = (currentUserName || '').toLowerCase().trim();
                 if (taskCreator === currentName) return true;
-                
+
                 // Check if task is in user's own card
                 const person = taskPeople.find(p => p.id === task.personId);
                 if (person) {
@@ -11262,7 +11403,7 @@
                     if (normalizedPersonName === currentName) return true;
                 }
             }
-            
+
             // For regular tasks, check standard permissions
             return can('tasks-prazos.complete_all') || can('tasks-prazos.complete_own');
         }
@@ -11328,7 +11469,7 @@
             if (isApproved) {
                 // Excluir a task ao aprovar
                 const taskTitle = task.title;
-                
+
                 // Remover do array local
                 const taskIndex = tasks.findIndex(t => t.id === taskId);
                 if (taskIndex > -1) {
@@ -12813,29 +12954,29 @@
             document.getElementById('main-title').textContent = 'Aniversariantes';
             document.getElementById('main-description').textContent = 'Aniversariantes de todos os meses do ano.';
             const contentArea = document.getElementById('content-area');
-            
+
             const today = new Date();
             const currentMonth = today.getMonth();
             const currentDay = today.getDate();
             const currentYear = today.getFullYear();
-            
+
             const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 
                                'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-            
+
             function parseBirthDate(bd) { if (!bd) return null; if (bd.toDate) return bd.toDate(); if (bd.seconds) return new Date(bd.seconds * 1000); return new Date(bd); }
             const activeStudents = students.filter(s => s.status === 'ativo' && s.birthDate);
-            
+
             const studentsByMonth = {};
             for (let i = 0; i < 12; i++) {
                 studentsByMonth[i] = [];
             }
-            
+
             activeStudents.forEach(student => {
                 const birthDate = parseBirthDate(student.birthDate);
                 const month = birthDate.getMonth();
                 studentsByMonth[month].push(student);
             });
-            
+
             for (let i = 0; i < 12; i++) {
                 studentsByMonth[i].sort((a, b) => {
                     const dayA = parseBirthDate(a.birthDate).getDate();
@@ -12843,10 +12984,10 @@
                     return dayA - dayB;
                 });
             }
-            
+
             const totalBirthdays = activeStudents.length;
             const currentMonthBirthdays = studentsByMonth[currentMonth].length;
-            
+
             function calculateAge(birthDateStr, forMonth) {
                 const birthDate = parseBirthDate(birthDateStr);
                 let age = currentYear - birthDate.getFullYear();
@@ -12855,11 +12996,11 @@
                 }
                 return age + 1;
             }
-            
+
             function getBirthdayStatus(birthDateStr, monthIndex) {
                 const birthDate = parseBirthDate(birthDateStr);
                 const day = birthDate.getDate();
-                
+
                 if (monthIndex === currentMonth) {
                     if (day === currentDay) {
                         return { badge: '<span class="px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full ml-2">Hoje!</span>', rowClass: 'bg-green-50', isToday: true };
@@ -12874,18 +13015,18 @@
                     return { badge: '', rowClass: '', isToday: false };
                 }
             }
-            
+
             const orderedMonths = [];
             for (let i = 0; i < 12; i++) {
                 orderedMonths.push((currentMonth + i) % 12);
             }
-            
+
             let monthsHtml = '';
             orderedMonths.forEach((monthIndex, orderIndex) => {
                 const monthStudents = studentsByMonth[monthIndex];
                 const isCurrentMonth = monthIndex === currentMonth;
                 const isExpanded = isCurrentMonth;
-                
+
                 monthsHtml += `
                     <div class="bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden">
                         <button onclick="toggleBirthdayMonth(${monthIndex})" 
@@ -12917,7 +13058,7 @@
                                         const age = calculateAge(student.birthDate, monthIndex);
                                         const status = getBirthdayStatus(student.birthDate, monthIndex);
                                         const phoneClean = student.phone ? student.phone.replace(/[^0-9]/g, '') : '';
-                                        
+
                                         return `
                                             <div class="p-4 flex items-center gap-4 hover:bg-stone-50 transition-colors ${status.rowClass}">
                                                 <div class="flex-shrink-0 w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
@@ -12951,7 +13092,7 @@
                     </div>
                 `;
             });
-            
+
             contentArea.innerHTML = `
                 <div class="space-y-6">
                     <div class="bg-gradient-to-r from-yellow-400 to-yellow-500 rounded-2xl p-6 text-stone-800">
@@ -12968,14 +13109,14 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="space-y-4">
                         ${monthsHtml}
                     </div>
                 </div>
             `;
         }
-        
+
         function toggleBirthdayMonth(monthIndex) {
             const content = document.getElementById(`birthday-month-${monthIndex}`);
             const chevron = document.getElementById(`birthday-chevron-${monthIndex}`);
@@ -13360,17 +13501,17 @@
         function openAgendamentoTNModal(agendamentoId = null) {
             clearModalHeaderButtons();
             const agendamento = agendamentoId ? agendamentosTN.find(a => a.id === agendamentoId) : null;
-            
+
             document.getElementById('form-modal-title').textContent = agendamento ? 'Editar Agendamento' : 'Novo Agendamento';
-            
+
             const statusOptionsHtml = statusAgendamentoOptions.map(opt => 
                 `<option value="${opt.value}" ${agendamento?.status === opt.value ? 'selected' : ''}>${opt.value}</option>`
             ).join('');
-            
+
             document.getElementById('form-modal-content-area').innerHTML = `
                 <form id="agendamento-tn-form" class="space-y-4">
                     <input type="hidden" id="agendamento-id" value="${agendamentoId || ''}">
-                    
+
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-stone-700 mb-1">Data</label>
@@ -13383,21 +13524,21 @@
                                 class="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400">
                         </div>
                     </div>
-                    
+
                     <div>
                         <label class="block text-sm font-medium text-stone-700 mb-1">Nome</label>
                         <input type="text" id="agendamento-nome" value="${agendamento?.nome || ''}" 
                             placeholder="Nome do interessado"
                             class="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400">
                     </div>
-                    
+
                     <div>
                         <label class="block text-sm font-medium text-stone-700 mb-1">Nivel/Plano</label>
                         <input type="text" id="agendamento-nivel-plano" value="${agendamento?.nivelPlano || ''}" 
                             placeholder="Ex: Basico, Intermediario, Plano Anual..."
                             class="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400">
                     </div>
-                    
+
                     <div>
                         <label class="block text-sm font-medium text-stone-700 mb-1">Status</label>
                         <select id="agendamento-status" 
@@ -13405,7 +13546,7 @@
                             ${statusOptionsHtml}
                         </select>
                     </div>
-                    
+
                     <div>
                         <label class="block text-sm font-medium text-stone-700 mb-1">Pos-TN</label>
                         <select id="agendamento-pos-tn" 
@@ -13416,14 +13557,14 @@
                             <option value="Matrícula em Andamento" ${agendamento?.posTN === 'Matrícula em Andamento' ? 'selected' : ''}>Matrícula em Andamento</option>
                         </select>
                     </div>
-                    
+
                     <div>
                         <label class="block text-sm font-medium text-stone-700 mb-1">Observações</label>
                         <textarea id="agendamento-observacoes" rows="2" 
                             class="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400"
                             placeholder="Informações adicionais...">${agendamento?.observacoes || ''}</textarea>
                     </div>
-                    
+
                     <div class="flex gap-3 pt-4">
                         <button type="button" onclick="closeFormModal()" class="flex-1 px-4 py-2 border border-stone-300 rounded-lg text-stone-700 hover:bg-stone-50">Cancelar</button>
                         <button type="button" onclick="saveAgendamentoTN()" class="flex-1 px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 font-medium">Salvar</button>
@@ -13436,7 +13577,7 @@
 
         async function saveAgendamentoTN() {
             const agendamentoId = document.getElementById('agendamento-id').value;
-            
+
             const data = {
                 data: document.getElementById('agendamento-data').value,
                 horario: document.getElementById('agendamento-horario').value,
@@ -13475,7 +13616,7 @@
                         await logActivity('criar', 'agendamento-tn', data.nome, { status: data.status });
                     }
                 }
-                
+
                 closeFormModal();
                 renderAgendamentosTNsSection();
                 showSuccessMessage('Sucesso', agendamentoId ? 'Agendamento atualizado!' : 'Agendamento criado!');
@@ -13519,7 +13660,7 @@
 
         async function cyclePosTNStatus(agendamentoId) {
             const posTNValues = ['', 'Aguardando Retorno', 'Entrar em Contato', 'Matrícula em Andamento'];
-            
+
             if (window.isDevelopmentMode) {
                 const stored = localStorage.getItem('agendamentos-tn');
                 const agendamentos = stored ? JSON.parse(stored) : [];
@@ -13539,12 +13680,12 @@
                     const currentIndex = posTNValues.indexOf(agendamento.posTN || '');
                     const nextIndex = (currentIndex + 1) % posTNValues.length;
                     const newPosTN = posTNValues[nextIndex];
-                    
+
                     // Update locally first for immediate UI feedback
                     agendamento.posTN = newPosTN;
                     agendamento.updatedAt = new Date().toISOString();
                     renderAgendamentosTNsSection();
-                    
+
                     // Then sync to Firebase
                     await window.db.collection('agendamentos-tn').doc(agendamentoId).update({
                         posTN: newPosTN,
@@ -13668,7 +13809,7 @@
 
             const monthFilter = document.getElementById('tn-month-filter')?.value || '';
             let filteredTNs = testesNivel;
-            
+
             if (monthFilter) {
                 filteredTNs = testesNivel.filter(tn => tn.date && tn.date.startsWith(monthFilter));
             }
@@ -13738,11 +13879,11 @@
             if (!container) return;
 
             const evaluatorStats = {};
-            
+
             testesNivel.forEach(tn => {
                 const evaluatorId = tn.evaluatorId;
                 if (!evaluatorId) return;
-                
+
                 if (!evaluatorStats[evaluatorId]) {
                     const evaluator = (avaliadores || []).find(a => a.id === evaluatorId) || collaborators.find(c => c.id === evaluatorId);
                     evaluatorStats[evaluatorId] = {
@@ -13751,7 +13892,7 @@
                         converted: 0
                     };
                 }
-                
+
                 evaluatorStats[evaluatorId].total++;
                 if (tn.convertedToMatricula) {
                     evaluatorStats[evaluatorId].converted++;
@@ -13769,7 +13910,7 @@
                 const conversionRate = evaluatorData.total > 0 ? Math.round((evaluatorData.converted / evaluatorData.total) * 100) : 0;
                 const rateColor = conversionRate >= 70 ? 'text-green-600' : conversionRate >= 40 ? 'text-yellow-600' : 'text-red-600';
                 const bgColor = conversionRate >= 70 ? 'bg-green-50 border-green-200' : conversionRate >= 40 ? 'bg-yellow-50 border-yellow-200' : 'bg-stone-50 border-stone-200';
-                
+
                 return `
                     <div class="p-4 rounded-lg border ${bgColor} transition-all hover:shadow-md">
                         <h4 class="font-bold text-stone-800 text-sm mb-2 truncate" title="${evaluatorData.name}">${evaluatorData.name}</h4>
@@ -13794,7 +13935,7 @@
 
         function renderTNsList(resetPage = false) {
             if (resetPage) currentTNsPage = 1;
-            
+
             const container = document.getElementById('tns-list-container');
             const searchTerm = document.getElementById('tn-search')?.value.toLowerCase() || '';
             const evaluatorFilter = document.getElementById('tn-evaluator-filter')?.value || '';
@@ -13836,7 +13977,7 @@
             const totalPages = Math.ceil(sortedTNs.length / TNS_PER_PAGE);
             if (currentTNsPage > totalPages) currentTNsPage = totalPages;
             if (currentTNsPage < 1) currentTNsPage = 1;
-            
+
             const startIndex = (currentTNsPage - 1) * TNS_PER_PAGE;
             const endIndex = startIndex + TNS_PER_PAGE;
             const paginatedTNs = sortedTNs.slice(startIndex, endIndex);
@@ -14299,7 +14440,7 @@
             <h1>Relatório de Testes de Nível</h1>
             <p>Gerado em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}</p>
         </div>
-        
+
         <div class="stats-grid">
             <div class="stat-card">
                 <div class="number">${totalTNs}</div>
@@ -14318,7 +14459,7 @@
                 <div class="label">Taxa de Conversão</div>
             </div>
         </div>
-        
+
         <div class="content">
             <table>
                 <thead>
@@ -14352,12 +14493,12 @@
                 </tbody>
             </table>
         </div>
-        
+
         <div class="footer">
             SLAP - Sistema de Gestão | hubslap.com.br
         </div>
     </div>
-    
+
     <button class="print-btn" onclick="window.print()">Imprimir / Salvar PDF</button>
 </body>
 </html>`;
@@ -14387,7 +14528,7 @@
                     tn.convertedToMatricula = newValue;
                     renderEvaluatorSummaryCards();
                     renderTNsList();
-                    
+
                     const docRef = doc(db, `artifacts/${appId}/public/data/testes-nivel`, tnId);
                     await updateDoc(docRef, { convertedToMatricula: newValue });
                     await logActivity(newValue ? 'Marcou TN como convertido em matrícula' : 'Desmarcou TN como convertido em matrícula', 'tn', tn.candidateName);
@@ -14418,7 +14559,7 @@
                 } else {
                     tn.fromTrafego = newValue;
                     renderTNsList();
-                    
+
                     const docRef = doc(db, `artifacts/${appId}/public/data/testes-nivel`, tnId);
                     await updateDoc(docRef, { fromTrafego: newValue });
                     await logActivity(newValue ? 'Marcou TN como vindo de tráfego' : 'Desmarcou TN como vindo de tráfego', 'tn', tn.candidateName);
@@ -14557,7 +14698,7 @@
 
             // Check if evaluator has any TNs
             const tnsCount = testesNivel.filter(tn => tn.evaluatorId === evaluatorId).length;
-            
+
             const confirmMsg = tnsCount > 0 
                 ? `${evaluator.name} possui ${tnsCount} TN${tnsCount > 1 ? 's' : ''} registrados. Deseja remover este avaliador? Os TNs existentes serão mantidos.`
                 : `Deseja remover ${evaluator.name} da lista de avaliadores?`;
@@ -15015,7 +15156,7 @@
                         return false;
                     }
                 }
-                
+
                 // Search filter
                 if (searchLower !== '') {
                     const matchesSearch = processo.name.toLowerCase().includes(searchLower) ||
@@ -15024,7 +15165,7 @@
                         return false;
                     }
                 }
-                
+
                 return true;
             });
 
@@ -15164,7 +15305,7 @@
         function setProcessosSetorFilter(setor) {
             currentProcessosSetorFilter = setor;
             renderProcessosSection();
-            
+
             // Restore search term if any
             const searchInput = document.getElementById('processo-search');
             if (searchInput && searchInput.value) {
@@ -16332,7 +16473,7 @@
                                 <p id="task-modal-collaborator-role" class="text-sm text-stone-600 mt-1"></p>
                             </div>
                             <div class="flex items-center gap-3">
-                                
+
                                 <button onclick="closeTaskManagementModal()" class="modal-close-btn">&times;</button>
                             </div>
                         </div>
@@ -16831,29 +16972,29 @@
             if (['admin', 'superv', 'coord'].includes(currentUserRole)) {
                 return true;
             }
-            
+
             // Para outros roles: bloquear cards de ADMIN, SUPERV e COORD (sigiloso)
             const personRole = person.role ? person.role.toLowerCase() : '';
             if (['admin', 'superv', 'coord'].includes(personRole)) {
                 return false; // Cards de admin/superv/coord são sigilosos
             }
-            
+
             // Outros roles podem abrir apenas seu próprio card
             // Comparar por email primeiro (mais confiável), depois por nome normalizado
             const currentCollaborator = window.currentCollaborator;
-            
+
             // Se temos o email do colaborador atual, comparar com email da pessoa
             if (currentCollaborator && currentCollaborator.email && person.email) {
                 return currentCollaborator.email.toLowerCase().trim() === person.email.toLowerCase().trim();
             }
-            
+
             // Fallback: comparar nomes normalizados (lowercase e sem espaços extras)
             const normalizedPersonName = (person.name || '').toLowerCase().trim();
             const normalizedCurrentName = (currentUserName || '').toLowerCase().trim();
-            
+
             return normalizedPersonName === normalizedCurrentName;
         }
-        
+
         // Verificar se usuário atual tem acesso total a tasks
         function hasFullTaskAccess() {
             return ['admin', 'superv', 'coord'].includes(currentUserRole);
@@ -16895,12 +17036,12 @@
 
                 // Count active tasks/items (each checklist item counts as 1)
                 let activeCount = 0;
-                
+
                 // Conta itens de checklist de TODAS as tarefas que têm checklistItems
                 personTasks.forEach(t => {
                     // Pular avisos
                     if (t.type === 'aviso') return;
-                    
+
                     // Se tem checklistItems com itens, contar cada item não aprovado e não falhado
                     if (t.checklistItems && Array.isArray(t.checklistItems) && t.checklistItems.length > 0) {
                         t.checklistItems.forEach(item => {
@@ -16935,7 +17076,7 @@
                 personTasks.forEach(t => {
                     // Skip avisos - they use read/unread, not approval system
                     if (t.type === 'aviso') return;
-                    
+
                     if (t.type === 'checklist' && t.checklistItems) {
                         // For checklists, count items completed by user but not approved
                         t.checklistItems.forEach(item => {
@@ -17004,7 +17145,7 @@
                 const personRole = person.role ? person.role.toLowerCase() : '';
                 const isPrivilegedCard = ['admin', 'superv', 'coord'].includes(personRole);
                 const showLockIcon = !canOpen && isPrivilegedCard;
-                
+
                 return `
                     <div class="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow border border-stone-200 ${canOpen ? 'cursor-pointer' : 'cursor-not-allowed'} relative person-card"
                          style="${!canOpen ? 'opacity: 0.85;' : ''}"
@@ -17875,7 +18016,7 @@
         function renderTaskLinks(task) {
             const links = task.links || (task.link ? [{ name: 'Documento', url: task.link }] : []);
             if (links.length === 0) return '';
-            
+
             return '<div class="flex flex-wrap gap-2 mt-2">' + links.map(link => {
                 const linkName = link.name || 'Link';
                 return `<a href="${link.url}" target="_blank" rel="noopener noreferrer" 
@@ -18076,7 +18217,7 @@
                 if (task.reminderMode === 'checklist' && task.checklistItems) {
                     document.querySelector('input[name="reminder-mode"][value="checklist"]').checked = true;
                     toggleReminderMode();
-                    
+
                     // Preenche os itens da checklist do lembrete
                     const itemsContainer = document.getElementById('reminder-items-container');
                     if (itemsContainer) {
@@ -18387,7 +18528,7 @@ function openAddChecklistForm() {
         function toggleChecklistExpand(taskId) {
             const itemsContainer = document.getElementById('checklist-items-' + taskId);
             const arrow = document.getElementById('checklist-arrow-' + taskId);
-            
+
             if (itemsContainer && arrow) {
                 itemsContainer.classList.toggle('hidden');
                 if (itemsContainer.classList.contains('hidden')) {
@@ -18634,7 +18775,7 @@ function openAddChecklistForm() {
             if (!task) return;
 
             const newReadStatus = !task.read;
-            
+
             // Atualizar localmente
             task.read = newReadStatus;
             task.approved = newReadStatus;  // Marcar como aprovado para ir para Concluídas
@@ -18681,7 +18822,7 @@ function openAddChecklistForm() {
                     console.error('Error toggling reminder read:', error);
                 }
             }
-                
+
             await logActivity(isRead ? 'Marcou lembrete como lido' : 'Desmarcou lembrete', 'reminder', task.title);
             renderTasksList();
             renderPeopleTasksCards();
@@ -18804,7 +18945,7 @@ function openAddChecklistForm() {
 
             // Preservar dados ao editar
             const existingTask = editingTaskId ? tasks.find(t => t.id === editingTaskId) : null;
-            
+
             let reminderData = {
                 title,
                 description,
