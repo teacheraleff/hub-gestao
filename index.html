@@ -630,7 +630,7 @@
         const pendingView = document.getElementById('pending-view');
 
         let db, auth, storage, userId, currentUserName, currentUserRole;
-        let usersData = [], students = [], turmas = [], vips = [], attendance = [], tasks = [], events = [], collaborators = [], schedules = [], expenses = [], dojoRanking = [], dojoMissions = [], activityLogs = [], rechamadas = [], linksUteis = [], processos = [], avaliadores = [];
+        let usersData = [], students = [], turmas = [], vips = [], attendance = [], tasks = [], events = [], collaborators = [], schedules = [], expenses = [], dojoRanking = [], dojoMissions = [], activityLogs = [], rechamadas = [], linksUteis = [], processos = [], avaliadores = [], entradas = [];
         let userProfiles = {};
         let monthlyHighlight = {
             name: 'João Silva',
@@ -1443,6 +1443,10 @@
             getCollectionListener('expenses', expenses, () => {
                 const activePageId = contentArea.firstElementChild?.id;
                 if (activePageId === 'folha-pagamento-section') renderFolhaPagamentoSection();
+            });
+            getCollectionListener('entradas', entradas, () => {
+                const activePageId = contentArea.firstElementChild?.id;
+                if (activePageId === 'entradas-section') renderEntradasSection();
             });
 
 
@@ -3692,7 +3696,7 @@
             const variableCount = monthlyExpenses.filter(exp => !exp.isFixedSalary && exp.tipo !== 'fixo').length;
 
             contentArea.innerHTML = `
-                <div id="folha-pagamento-content">
+                <div id="folha-pagamento-content" class="space-y-6">
                     <!-- Month Tabs -->
                     <div class="bg-white rounded-xl shadow-sm border border-stone-200 mb-6">
                         <div class="flex overflow-x-auto p-2 gap-1" id="month-tabs">
@@ -3876,6 +3880,340 @@
             renderFolhaPagamentoSection();
         }
         window.sortExpensesBy = sortExpensesBy;
+
+        // ===================== ENTRADAS SECTION =====================
+        let selectedEntradasMonth = new Date().getMonth();
+        let selectedEntradasYear = new Date().getFullYear();
+        let entradasSortOrder = 'date';
+        
+        window.selectEntradasMonth = function(month, year) {
+            selectedEntradasMonth = month;
+            selectedEntradasYear = year;
+            renderEntradasSection();
+        };
+        
+        window.setEntradasSortOrder = function(order) {
+            entradasSortOrder = order;
+            renderEntradasSection();
+        };
+        
+        window.openAddEntradaModal = function() {
+            const modal = document.getElementById('entrada-modal');
+            if (!modal) return;
+            
+            document.getElementById('entrada-modal-title').textContent = 'Nova Entrada';
+            document.getElementById('entrada-id').value = '';
+            document.getElementById('entrada-description').value = '';
+            document.getElementById('entrada-amount').value = '';
+            document.getElementById('entrada-date').value = new Date().toISOString().split('T')[0];
+            document.getElementById('entrada-category').value = 'mensalidade';
+            document.getElementById('entrada-student').value = '';
+            document.getElementById('entrada-notes').value = '';
+            document.getElementById('entrada-status').value = 'received';
+            
+            modal.classList.add('visible');
+        };
+        
+        window.editEntrada = function(id) {
+            const entrada = entradas.find(e => e.id === id);
+            if (!entrada) return;
+            
+            const modal = document.getElementById('entrada-modal');
+            document.getElementById('entrada-modal-title').textContent = 'Editar Entrada';
+            document.getElementById('entrada-id').value = id;
+            document.getElementById('entrada-description').value = entrada.description || '';
+            document.getElementById('entrada-amount').value = entrada.amount || '';
+            document.getElementById('entrada-date').value = entrada.date || '';
+            document.getElementById('entrada-category').value = entrada.category || 'mensalidade';
+            document.getElementById('entrada-student').value = entrada.studentId || '';
+            document.getElementById('entrada-notes').value = entrada.notes || '';
+            document.getElementById('entrada-status').value = entrada.status || 'received';
+            
+            modal.classList.add('visible');
+        };
+        
+        window.saveEntrada = async function(event) {
+            event.preventDefault();
+            
+            const id = document.getElementById('entrada-id').value;
+            const data = {
+                description: document.getElementById('entrada-description').value,
+                amount: parseFloat(document.getElementById('entrada-amount').value) || 0,
+                date: document.getElementById('entrada-date').value,
+                category: document.getElementById('entrada-category').value,
+                studentId: document.getElementById('entrada-student').value,
+                notes: document.getElementById('entrada-notes').value,
+                status: document.getElementById('entrada-status').value,
+                updatedAt: serverTimestamp()
+            };
+            
+            try {
+                if (window.isDevelopmentMode) {
+                    if (id) {
+                        const idx = entradas.findIndex(e => e.id === id);
+                        if (idx >= 0) entradas[idx] = { ...entradas[idx], ...data };
+                    } else {
+                        entradas.push({ id: 'ent-' + Date.now(), ...data, createdAt: new Date() });
+                    }
+                } else {
+                    if (id) {
+                        await updateDoc(doc(db, `artifacts/${appId}/public/data/entradas`, id), data);
+                    } else {
+                        data.createdAt = serverTimestamp();
+                        await addDoc(collection(db, `artifacts/${appId}/public/data/entradas`), data);
+                    }
+                }
+                document.getElementById('entrada-modal').classList.remove('visible');
+                renderEntradasSection();
+            } catch (error) {
+                console.error('Error saving entrada:', error);
+                showErrorMessage('Erro', 'Não foi possível salvar a entrada.');
+            }
+        };
+        
+        window.deleteEntrada = async function(id) {
+            if (!confirm('Tem certeza que deseja excluir esta entrada?')) return;
+            
+            try {
+                if (window.isDevelopmentMode) {
+                    const idx = entradas.findIndex(e => e.id === id);
+                    if (idx >= 0) entradas.splice(idx, 1);
+                } else {
+                    await deleteDoc(doc(db, `artifacts/${appId}/public/data/entradas`, id));
+                }
+                renderEntradasSection();
+            } catch (error) {
+                console.error('Error deleting entrada:', error);
+                showErrorMessage('Erro', 'Não foi possível excluir a entrada.');
+            }
+        };
+        
+        function renderEntradasSection() {
+            document.getElementById('main-title').textContent = 'Entradas';
+            document.getElementById('main-description').textContent = 'Gerencie todas as entradas de dinheiro da empresa.';
+            
+            const contentArea = document.getElementById('content-area');
+            
+            const months = [
+                { name: 'Janeiro', short: 'Jan' },
+                { name: 'Fevereiro', short: 'Fev' },
+                { name: 'Março', short: 'Mar' },
+                { name: 'Abril', short: 'Abr' },
+                { name: 'Maio', short: 'Mai' },
+                { name: 'Junho', short: 'Jun' },
+                { name: 'Julho', short: 'Jul' },
+                { name: 'Agosto', short: 'Ago' },
+                { name: 'Setembro', short: 'Set' },
+                { name: 'Outubro', short: 'Out' },
+                { name: 'Novembro', short: 'Nov' },
+                { name: 'Dezembro', short: 'Dez' }
+            ];
+            
+            const currentMonth = selectedEntradasMonth;
+            const currentYear = selectedEntradasYear;
+            const monthName = months[currentMonth].name;
+            
+            // Filter entradas for selected month
+            const monthlyEntradas = entradas.filter(ent => {
+                if (!ent.date) return false;
+                const entDate = new Date(ent.date);
+                return entDate.getMonth() === currentMonth && entDate.getFullYear() === currentYear;
+            });
+            
+            // Sort entradas
+            const sortedEntradas = [...monthlyEntradas].sort((a, b) => {
+                if (entradasSortOrder === 'date') {
+                    return String(a.date || '').localeCompare(String(b.date || ''));
+                } else if (entradasSortOrder === 'amountAsc') {
+                    return Number(a.amount || 0) - Number(b.amount || 0);
+                } else if (entradasSortOrder === 'amountDesc') {
+                    return Number(b.amount || 0) - Number(a.amount || 0);
+                }
+                return 0;
+            });
+            
+            // Calculate totals
+            const totalEntradas = monthlyEntradas.reduce((sum, e) => sum + Number(e.amount || 0), 0);
+            const receivedTotal = monthlyEntradas.filter(e => e.status === 'received').reduce((sum, e) => sum + Number(e.amount || 0), 0);
+            const pendingTotal = monthlyEntradas.filter(e => e.status === 'pending').reduce((sum, e) => sum + Number(e.amount || 0), 0);
+            
+            const categoryLabels = {
+                'mensalidade': 'Mensalidade',
+                'matricula': 'Matrícula',
+                'material': 'Material Didático',
+                'evento': 'Evento',
+                'outros': 'Outros'
+            };
+            
+            contentArea.innerHTML = `
+                <div id="entradas-section" class="space-y-6">
+                    <!-- Month Tabs -->
+                    <div class="bg-white rounded-xl shadow-sm border border-stone-200 mb-6">
+                        <div class="flex overflow-x-auto p-2 gap-1" id="entradas-month-tabs">
+                            ${[2026, 2027].flatMap(year => 
+                                months.map((month, monthIndex) => {
+                                    const isSelected = monthIndex === currentMonth && year === currentYear;
+                                    return `
+                                        <button onclick="selectEntradasMonth(${monthIndex}, ${year})" 
+                                            class="px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${isSelected ? 'bg-green-500 text-white' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'}">
+                                            ${month.short} ${String(year).slice(-2)}
+                                        </button>
+                                    `;
+                                })
+                            ).join('')}
+                        </div>
+                    </div>
+                    
+                    <!-- Summary Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                        <div class="bg-gradient-to-br from-green-50 to-green-100 p-5 rounded-lg border border-green-200">
+                            <h3 class="text-xs font-medium text-green-700 uppercase tracking-wide mb-1">Total do Mês</h3>
+                            <p class="text-2xl font-bold text-green-800">${totalEntradas.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                            <p class="text-xs text-green-600 mt-1">${monthlyEntradas.length} entradas</p>
+                        </div>
+                        <div class="bg-gradient-to-br from-emerald-50 to-emerald-100 p-5 rounded-lg border border-emerald-200">
+                            <h3 class="text-xs font-medium text-emerald-700 uppercase tracking-wide mb-1">Recebido</h3>
+                            <p class="text-2xl font-bold text-emerald-800">${receivedTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                        </div>
+                        <div class="bg-gradient-to-br from-amber-50 to-amber-100 p-5 rounded-lg border border-amber-200">
+                            <h3 class="text-xs font-medium text-amber-700 uppercase tracking-wide mb-1">Pendente</h3>
+                            <p class="text-2xl font-bold text-amber-800">${pendingTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Actions Bar -->
+                    <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
+                        <div class="flex items-center gap-2">
+                            <label class="text-sm text-stone-600">Ordenar:</label>
+                            <select onchange="setEntradasSortOrder(this.value)" class="px-3 py-1.5 rounded-lg border border-stone-300 text-sm">
+                                <option value="date" ${entradasSortOrder === 'date' ? 'selected' : ''}>Data</option>
+                                <option value="amountDesc" ${entradasSortOrder === 'amountDesc' ? 'selected' : ''}>Maior Valor</option>
+                                <option value="amountAsc" ${entradasSortOrder === 'amountAsc' ? 'selected' : ''}>Menor Valor</option>
+                            </select>
+                        </div>
+                        <button onclick="openAddEntradaModal()" class="primary-btn flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                            Nova Entrada
+                        </button>
+                    </div>
+                    
+                    <!-- Entradas Table -->
+                    <div class="bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead class="bg-stone-50 border-b border-stone-200">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase">Data</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase">Descrição</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase">Categoria</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase">Valor</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase">Status</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-stone-100">
+                                    ${sortedEntradas.length > 0 ? sortedEntradas.map(ent => {
+                                        const date = ent.date ? new Date(ent.date + 'T12:00:00').toLocaleDateString('pt-BR') : '-';
+                                        const statusClass = ent.status === 'received' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800';
+                                        const statusLabel = ent.status === 'received' ? 'Recebido' : 'Pendente';
+                                        return `
+                                            <tr class="hover:bg-stone-50">
+                                                <td class="px-4 py-3 text-sm text-stone-600">${date}</td>
+                                                <td class="px-4 py-3 text-sm font-medium text-stone-800">${ent.description || '-'}</td>
+                                                <td class="px-4 py-3 text-sm text-stone-600">${categoryLabels[ent.category] || ent.category || '-'}</td>
+                                                <td class="px-4 py-3 text-sm font-semibold text-green-700">${Number(ent.amount || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                                                <td class="px-4 py-3"><span class="px-2 py-1 rounded-full text-xs font-medium ${statusClass}">${statusLabel}</span></td>
+                                                <td class="px-4 py-3">
+                                                    <div class="flex gap-2">
+                                                        <button onclick="editEntrada('${ent.id}')" class="text-stone-500 hover:text-stone-700" title="Editar">
+                                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                                        </button>
+                                                        <button onclick="deleteEntrada('${ent.id}')" class="text-red-500 hover:text-red-700" title="Excluir">
+                                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        `;
+                                    }).join('') : `
+                                        <tr>
+                                            <td colspan="6" class="px-4 py-8 text-center text-stone-500">
+                                                Nenhuma entrada registrada para ${monthName} ${currentYear}.
+                                            </td>
+                                        </tr>
+                                    `}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Entrada Modal -->
+                <div id="entrada-modal" class="modal-overlay fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div class="modal-content bg-white rounded-xl shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+                        <div class="p-6">
+                            <div class="flex justify-between items-center mb-6">
+                                <h2 id="entrada-modal-title" class="text-xl font-bold text-stone-800">Nova Entrada</h2>
+                                <button onclick="document.getElementById('entrada-modal').classList.remove('visible')" class="text-stone-500 hover:text-stone-700">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                </button>
+                            </div>
+                            <form onsubmit="saveEntrada(event)" class="space-y-4">
+                                <input type="hidden" id="entrada-id">
+                                <div>
+                                    <label class="block text-sm font-medium text-stone-700 mb-1">Descrição *</label>
+                                    <input type="text" id="entrada-description" required class="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500" placeholder="Ex: Mensalidade João Silva">
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-stone-700 mb-1">Valor *</label>
+                                        <input type="number" id="entrada-amount" step="0.01" required class="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500" placeholder="0,00">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-stone-700 mb-1">Data *</label>
+                                        <input type="date" id="entrada-date" required class="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-stone-700 mb-1">Categoria</label>
+                                        <select id="entrada-category" class="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                                            <option value="mensalidade">Mensalidade</option>
+                                            <option value="matricula">Matrícula</option>
+                                            <option value="material">Material Didático</option>
+                                            <option value="evento">Evento</option>
+                                            <option value="outros">Outros</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-stone-700 mb-1">Status</label>
+                                        <select id="entrada-status" class="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                                            <option value="received">Recebido</option>
+                                            <option value="pending">Pendente</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-stone-700 mb-1">Aluno (opcional)</label>
+                                    <select id="entrada-student" class="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                                        <option value="">-- Selecionar Aluno --</option>
+                                        ${students.filter(s => s.status === 'Ativo').sort((a,b) => (a.name || '').localeCompare(b.name || '')).map(s => `<option value="${s.id}">${s.name}</option>`).join('')}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-stone-700 mb-1">Observações</label>
+                                    <textarea id="entrada-notes" rows="2" class="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500" placeholder="Observações adicionais..."></textarea>
+                                </div>
+                                <div class="flex justify-end gap-3 pt-4">
+                                    <button type="button" onclick="document.getElementById('entrada-modal').classList.remove('visible')" class="px-4 py-2 text-stone-600 hover:text-stone-800">Cancelar</button>
+                                    <button type="submit" class="primary-btn">Salvar</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
 
         function renderColaboradoresSection() {
             document.getElementById('main-title').textContent = 'Gestão de Colaboradores';
@@ -22015,7 +22353,7 @@ function openAddChecklistForm() {
                     icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>',
                     items: [
                         { key: 'colaboradores', label: 'Colaboradores', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="5"/><path d="M3 21v-2a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4v2"/></svg>', roles: ['admin'] },
-                        { key: 'financeiro', label: 'Financeiro', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>', roles: ['admin'] },
+                        { key: 'entradas', label: 'Entradas', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>', roles: ['admin'] },
                         { key: 'folha-pagamento', label: 'Folha de Pagamento', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M7 15h0M2 9.5h20"/></svg>', roles: ['admin'] }
                     ]
                 }
@@ -22489,14 +22827,14 @@ function openAddChecklistForm() {
                 'gestao-influencia': ['admin', 'coord', 'superv', 'comercial'],
                 'colaboradores': ['admin'],
                 'folha-pagamento': ['admin'],
-                'financeiro': ['admin']
+                'entradas': ['admin']
             };
 
             return pagePermissions[pageKey]?.includes(userRole) || false;
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            const pageRenderers = { 'inicio': renderInicioSection, 'alunos': renderAlunosSection, 'aniversariantes': renderAniversariantesSection, 'turmas': renderTurmasSection, 'vips': renderVipsSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection, 'financeiro': renderFolhaPagamentoSection, 'colaboradores': renderColaboradoresSection, 'dojo': renderDojoSection, 'calendario': renderCalendarioSection, 'links-uteis': renderLinksUteisSection, 'processos': renderProcessosSection, 'tasks-prazos': renderTasksPrazosSection, 'agendamentos-tns': renderAgendamentosTNsSection, 'gestao-tns': renderGestaoTNsSection, 'gestao-influencia': renderInfluencerManagementSection, 'rechamada': renderRechamadaSection, 'kpis-pedagogico': renderKPIsPedagogicoSection, 'logs-atividades': renderLogsAtividadesSection  };
+            const pageRenderers = { 'inicio': renderInicioSection, 'alunos': renderAlunosSection, 'aniversariantes': renderAniversariantesSection, 'turmas': renderTurmasSection, 'vips': renderVipsSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection, 'entradas': renderEntradasSection, 'colaboradores': renderColaboradoresSection, 'dojo': renderDojoSection, 'calendario': renderCalendarioSection, 'links-uteis': renderLinksUteisSection, 'processos': renderProcessosSection, 'tasks-prazos': renderTasksPrazosSection, 'agendamentos-tns': renderAgendamentosTNsSection, 'gestao-tns': renderGestaoTNsSection, 'gestao-influencia': renderInfluencerManagementSection, 'rechamada': renderRechamadaSection, 'kpis-pedagogico': renderKPIsPedagogicoSection, 'logs-atividades': renderLogsAtividadesSection  };
 
             document.body.addEventListener('click', (event) => {
                 // Close modals when clicking overlay or close button
