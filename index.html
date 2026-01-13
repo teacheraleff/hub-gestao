@@ -3620,287 +3620,222 @@
             gridContainer.innerHTML = gridHtml;
         }
 
+        // Global variable to track selected month for Folha de Pagamento
+        let selectedFolhaMonth = new Date().getMonth();
+        let selectedFolhaYear = new Date().getFullYear();
+
         function renderFolhaPagamentoSection() {
-            document.getElementById('main-title').textContent = 'Setor Financeiro';
-            document.getElementById('main-description').textContent = 'Gerencie as despesas e contas a pagar do mês.';
+            document.getElementById('main-title').textContent = 'Folha de Pagamento';
+            document.getElementById('main-description').textContent = 'Gerencie as despesas e pagamentos mensais da empresa.';
 
-            const now = new Date();
-            const currentMonth = now.getMonth();
-            const currentYear = now.getFullYear();
-            const monthName = now.toLocaleString('pt-BR', { month: 'long' });
+            const contentArea = document.getElementById('content-area');
+            
+            const months = [
+                { name: 'Janeiro', short: 'Jan' },
+                { name: 'Fevereiro', short: 'Fev' },
+                { name: 'Março', short: 'Mar' },
+                { name: 'Abril', short: 'Abr' },
+                { name: 'Maio', short: 'Mai' },
+                { name: 'Junho', short: 'Jun' },
+                { name: 'Julho', short: 'Jul' },
+                { name: 'Agosto', short: 'Ago' },
+                { name: 'Setembro', short: 'Set' },
+                { name: 'Outubro', short: 'Out' },
+                { name: 'Novembro', short: 'Nov' },
+                { name: 'Dezembro', short: 'Dez' }
+            ];
 
+            const currentMonth = selectedFolhaMonth;
+            const currentYear = selectedFolhaYear;
+            const monthName = months[currentMonth].name;
+
+            // Filter expenses for selected month - include fixed expenses that apply to all months
             const monthlyExpenses = expenses.map(exp => {
                 let dueDate;
                 if (exp.isFixedSalary && exp.dueDay) {
+                    // Fixed salary expenses apply to all months
                     const day = parseInt(exp.dueDay, 10);
                     if (day > 0 && day < 32) {
                        dueDate = new Date(currentYear, currentMonth, day);
                     }
                 } else if (exp.dueDate) {
-                    // Create date as UTC to avoid timezone issues with date-only strings
                     const parts = exp.dueDate.split('-');
                     dueDate = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2]));
                 }
 
+                // For fixed salaries, always show in current selected month
+                if (exp.isFixedSalary && dueDate) {
+                    return { ...exp, effectiveDueDate: dueDate };
+                }
+                
+                // For variable expenses, only show if matches selected month/year
                 if (dueDate && dueDate.getUTCMonth() === currentMonth && dueDate.getUTCFullYear() === currentYear) {
                     return { ...exp, effectiveDueDate: dueDate };
                 }
                 return null;
             }).filter(Boolean).sort((a, b) => a.effectiveDueDate - b.effectiveDueDate);
 
-            // Calcular valor total de todas as despesas
-            const totalExpensesBase = monthlyExpenses
-                .reduce((sum, exp) => sum + Number(exp.amount) + Number(exp.extraAmount || 0), 0);
-
-            // Calcular todos os valores pagos (incluindo valores parciais digitados)
-            const totalPaidValues = monthlyExpenses
-                .reduce((sum, exp) => {
-                    if (exp.paidAmount && exp.paidAmount > 0) {
-                        return sum + Number(exp.paidAmount);
-                    }
-                    return sum;
-                }, 0);
-
-            // Total a pagar = Total das despesas - Valores já pagos
+            // Calculate totals
+            const totalExpensesBase = monthlyExpenses.reduce((sum, exp) => sum + Number(exp.amount) + Number(exp.extraAmount || 0), 0);
+            const totalPaidValues = monthlyExpenses.reduce((sum, exp) => {
+                if (exp.paidAmount && exp.paidAmount > 0) {
+                    return sum + Number(exp.paidAmount);
+                }
+                return sum;
+            }, 0);
             const totalToPay = totalExpensesBase - totalPaidValues;
+            const totalPending = monthlyExpenses.filter(exp => !exp.isPaid).reduce((sum, exp) => sum + Number(exp.amount) + Number(exp.extraAmount || 0), 0);
+            const totalPaid = monthlyExpenses.filter(exp => exp.isPaid).reduce((sum, exp) => sum + Number(exp.paidAmount || exp.amount), 0);
 
-            // Total despesas pendentes (apenas não pagas) - para exibição no card
-            const totalExpenses = monthlyExpenses
-                .filter(exp => !exp.isPaid)
-                .reduce((sum, exp) => sum + Number(exp.amount) + Number(exp.extraAmount || 0), 0);
-
-            const totalPaid = monthlyExpenses
-                .filter(exp => exp.isPaid)
-                .reduce((sum, exp) => sum + Number(exp.paidAmount || exp.amount), 0);
-
-            // Calcular receita total usando o mesmo método da seção de alunos
-            const totalRevenue = students.reduce((sum, student) => {
-                return sum + parseFloat(student.amountReceived || student.amountPaid || 0);
-            }, 0);
-
-            // CORREÇÃO: Lucro real = Receita - TODAS as despesas efetivas (pagas + valores pagos parciais + despesas pendentes)
-            const totalEffectiveExpenses = totalPaidValues + totalExpenses;
-            const profit = totalRevenue - totalEffectiveExpenses;
-
-            // Load financial profit settings from localStorage
-            const profitSettings = financialProfitSettings;
-
-            // Calculate ticket médio mensal (média dos valores pagos pelos alunos)
-            const totalAmountPaid = students.reduce((sum, student) => {
-                return sum + parseFloat(student.amountPaid || 0);
-            }, 0);
-            const ticketMedio = students.length > 0 ? totalAmountPaid / students.length : 0;
-
-            // Calculate VIP profit per VIP (not total, just per 1 VIP average)
-            const vipSchoolProfit = profitSettings.vipMonthlyPayment - profitSettings.vipTeacherPayment;
-
-            // Calculate Turma profit per class (average of 5 students per class)
-            const exampleStudentsPerClass = 5;
-            const turmaRevenuePerClass = exampleStudentsPerClass * profitSettings.turmaStudentPayment;
-            const turmaSchoolProfit = turmaRevenuePerClass - profitSettings.turmaTeacherPayment;
+            // Count fixed vs variable
+            const fixedCount = monthlyExpenses.filter(exp => exp.isFixedSalary || exp.tipo === 'fixo').length;
+            const variableCount = monthlyExpenses.filter(exp => !exp.isFixedSalary && exp.tipo !== 'fixo').length;
 
             contentArea.innerHTML = `
-                <!-- Cards de Resumo Financeiro -->
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                    <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-6 rounded-lg border border-stone-200" id="expense-card-receita">
-                        <div class="flex items-center justify-between mb-2">
-                            <h3 class="text-sm font-medium text-stone-700 uppercase tracking-wide">Receita Total</h3>
-                            <div class="flex gap-2 items-center">
-                                <button onclick="toggleCardVisibility('expense-card-receita')" class="text-stone-400 hover:text-stone-600 transition-colors p-1" title="Ocultar/Mostrar informações">
-                                    <svg class="w-4 h-4 eye-icon-open" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                                    </svg>
-                                    <svg class="w-4 h-4 eye-icon-closed hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path>
-                                    </svg>
+                <div id="folha-pagamento-content">
+                    <!-- Month Tabs -->
+                    <div class="bg-white rounded-xl shadow-sm border border-stone-200 mb-6">
+                        <div class="flex overflow-x-auto p-2 gap-1" id="month-tabs">
+                            ${months.map((month, index) => `
+                                <button onclick="selectFolhaMonth(${index})" 
+                                    class="px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${index === currentMonth ? 'bg-yellow-400 text-stone-800' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'}">
+                                    ${month.short}
                                 </button>
-                                <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                                </svg>
-                            </div>
+                            `).join('')}
                         </div>
-                        <p class="text-4xl font-bold text-stone-800 card-content">${totalRevenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
-                        <p class="text-xs text-stone-600 mt-1">Entrada de receita</p>
-                    </div>
-                    <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-6 rounded-lg border border-stone-200" id="expense-card-pendentes">
-                        <div class="flex items-center justify-between mb-2">
-                            <h3 class="text-sm font-medium text-stone-700 uppercase tracking-wide">Despesas Pendentes</h3>
-                            <div class="flex gap-2 items-center">
-                                <button onclick="toggleCardVisibility('expense-card-pendentes')" class="text-stone-400 hover:text-stone-600 transition-colors p-1" title="Ocultar/Mostrar informações">
-                                    <svg class="w-4 h-4 eye-icon-open" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                                    </svg>
-                                    <svg class="w-4 h-4 eye-icon-closed hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path>
-                                    </svg>
-                                </button>
-                                <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                </svg>
-                            </div>
-                        </div>
-                        <p class="text-4xl font-bold text-stone-800 card-content">${totalExpenses.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
-                        <p class="text-xs text-stone-600 mt-1">Aguardando pagamento</p>
-                    </div>
-                    <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-6 rounded-lg border border-stone-200" id="expense-card-lucro">
-                        <div class="flex items-center justify-between mb-2">
-                            <h3 class="text-sm font-medium text-stone-700 uppercase tracking-wide">Lucro</h3>
-                            <div class="flex gap-2 items-center">
-                                <button onclick="toggleCardVisibility('expense-card-lucro')" class="text-stone-400 hover:text-stone-600 transition-colors p-1" title="Ocultar/Mostrar informações">
-                                    <svg class="w-4 h-4 eye-icon-open" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                                    </svg>
-                                    <svg class="w-4 h-4 eye-icon-closed hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path>
-                                    </svg>
-                                </button>
-                                <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
-                                </svg>
-                            </div>
-                        </div>
-                        <p class="text-4xl font-bold text-stone-800 card-content">${profit.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
-                        <p class="text-xs text-stone-600 mt-1">Resultado líquido</p>
                     </div>
 
-                    <!-- Card Ticket Médio Mensal -->
-                    <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-6 rounded-lg border border-stone-200" id="expense-card-ticket">
-                        <div class="flex items-center justify-between mb-2">
-                            <h3 class="text-sm font-medium text-stone-700 uppercase tracking-wide">Ticket Médio Mensal</h3>
-                            <div class="flex gap-2 items-center">
-                                <button onclick="toggleCardVisibility('expense-card-ticket')" class="text-stone-400 hover:text-stone-600 transition-colors p-1" title="Ocultar/Mostrar informações">
-                                    <svg class="w-4 h-4 eye-icon-open" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                                    </svg>
-                                    <svg class="w-4 h-4 eye-icon-closed hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path>
-                                    </svg>
-                                </button>
-                                <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
-                                </svg>
-                            </div>
+                    <!-- Summary Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                        <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-5 rounded-lg border border-stone-200">
+                            <h3 class="text-xs font-medium text-stone-500 uppercase tracking-wide mb-1">Total do Mês</h3>
+                            <p class="text-2xl font-bold text-stone-800">${totalExpensesBase.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                            <p class="text-xs text-stone-500 mt-1">${monthlyExpenses.length} despesas</p>
                         </div>
-                        <p class="text-4xl font-bold text-stone-800 card-content">${ticketMedio.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
-                        <p class="text-xs text-stone-600 mt-1">Valor médio por aluno ativo</p>
+                        <div class="bg-gradient-to-br from-green-50 to-green-100 p-5 rounded-lg border border-green-200">
+                            <h3 class="text-xs font-medium text-green-600 uppercase tracking-wide mb-1">Total Pago</h3>
+                            <p class="text-2xl font-bold text-green-700">${totalPaid.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                            <p class="text-xs text-green-600 mt-1">${monthlyExpenses.filter(e => e.isPaid).length} pagas</p>
+                        </div>
+                        <div class="bg-gradient-to-br from-amber-50 to-amber-100 p-5 rounded-lg border border-amber-200">
+                            <h3 class="text-xs font-medium text-amber-600 uppercase tracking-wide mb-1">Pendente</h3>
+                            <p class="text-2xl font-bold text-amber-700">${totalPending.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                            <p class="text-xs text-amber-600 mt-1">${monthlyExpenses.filter(e => !e.isPaid).length} pendentes</p>
+                        </div>
+                        <div class="bg-gradient-to-br from-purple-50 to-purple-100 p-5 rounded-lg border border-purple-200">
+                            <h3 class="text-xs font-medium text-purple-600 uppercase tracking-wide mb-1">Despesas Fixas</h3>
+                            <p class="text-2xl font-bold text-purple-700">${fixedCount}</p>
+                            <p class="text-xs text-purple-600 mt-1">Projetadas todo mês</p>
+                        </div>
                     </div>
 
-                </div>
+                    <!-- Expenses Table -->
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
+                        <div class="flex justify-between items-center mb-6 flex-wrap gap-4">
+                            <h3 class="text-xl font-bold text-stone-800">Despesas de ${monthName}</h3>
+                            <button class="primary-btn w-auto" data-action="add-expense">+ Nova Despesa</button>
+                        </div>
 
-                <section id="folha-pagamento-section" class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
-                    <div class="flex justify-between items-center mb-6 flex-wrap gap-4">
-                         <h3 class="text-xl font-bold text-stone-800">Despesas de ${monthName.charAt(0).toUpperCase() + monthName.slice(1)}</h3>
-                         <button class="primary-btn w-auto" data-action="add-expense">+ Nova Despesa</button>
-                    </div>
+                        <div class="flex gap-2 mb-6" id="expenses-filter-buttons">
+                            <button class="secondary-btn filter-btn active" data-filter="todos" onclick="filterExpensesByType('todos')">Todos</button>
+                            <button class="secondary-btn filter-btn" data-filter="fixo" onclick="filterExpensesByType('fixo')">Fixos</button>
+                            <button class="secondary-btn filter-btn" data-filter="variavel" onclick="filterExpensesByType('variavel')">Variáveis</button>
+                        </div>
 
-                    <div class="flex gap-2 mb-6" id="expenses-filter-buttons">
-                        <button class="secondary-btn filter-btn active" data-filter="todos">Todos</button>
-                        <button class="secondary-btn filter-btn" data-filter="fixo">Fixos</button>
-                        <button class="secondary-btn filter-btn" data-filter="variavel">Variáveis</button>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th>Pago</th>
-                                    <th>Descrição</th>
-                                    <th>Vencimento</th>
-                                    <th class="text-right">Valor Base (R$)</th>
-                                    <th class="text-right">Valor Extra (R$)</th>
-                                    <th class="text-right">Valor Pago (R$)</th>
-                                    <th class="text-center">
-                                        <div class="flex items-center justify-center gap-2">
-                                            <span>Ações</span>
-                                            <button onclick="toggleAllExpensesVisibility()" class="text-stone-400 hover:text-stone-600 transition-colors p-1" title="Ocultar/Mostrar todas as informações" id="toggle-all-expenses-btn">
-                                                <svg class="w-3.5 h-3.5 eye-icon-open" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                                                </svg>
-                                                <svg class="w-3.5 h-3.5 eye-icon-closed hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path>
-                                                </svg>
-                                            </button>
-                                        </div>
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody id="expenses-list">
-                                ${monthlyExpenses.length > 0 ? monthlyExpenses.map(exp => `
-                                    <tr id="expense-row-${exp.id}" class="${exp.isPaid ? 'paid' : ''}" data-expense-type="${exp.tipo || 'variavel'}">
-                                        <td class="text-center"><input type="checkbox" data-action="toggle-expense" data-id="${exp.id}" class="h-5 w-5 rounded border-gray-300 text-yellow-500 focus:ring-yellow-400" ${exp.isPaid ? 'checked' : ''}></td>
-                                        <td class="font-medium cursor-pointer" data-action="view-expense" data-id="${exp.id}">
-                                            <div class="flex items-center justify-between">
-                                                <div class="flex-1">
-                                                    <span class="row-content">${exp.description}</span> 
-                                                    ${exp.isFixedSalary && exp.employeeRole ? `<span class="sector-tag row-content">${exp.employeeRole}</span>` : ''}
-                                                    <span class="inline-block ml-2 px-2 py-1 text-xs rounded-full row-content ${exp.tipo === 'fixo' ? 'bg-blue-100 text-blue-800' : 'bg-orange-100 text-orange-800'}">${exp.tipo === 'fixo' ? 'Fixo' : 'Variável'}</span>
-                                                </div>
-                                                <button onclick="event.stopPropagation(); toggleRowVisibility('expense-row-${exp.id}')" class="text-stone-400 hover:text-stone-600 transition-colors p-1 ml-2" title="Ocultar/Mostrar informações">
-                                                    <svg class="w-3.5 h-3.5 eye-icon-open" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                                                    </svg>
-                                                    <svg class="w-3.5 h-3.5 eye-icon-closed hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path>
-                                                    </svg>
-                                                </button>
-                                            </div>
-                                        </td>
-                                        <td class="cursor-pointer row-content" data-action="view-expense" data-id="${exp.id}">${formatDateBR(exp.effectiveDueDate)}</td>
-                                        <td class="text-right font-mono cursor-pointer row-content" data-action="view-expense" data-id="${exp.id}">${Number(exp.amount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
-                                        <td class="text-right font-mono cursor-pointer row-content" data-action="view-expense" data-id="${exp.id}">${Number(exp.extraAmount || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
-                                        <td class="text-right font-mono cursor-pointer row-content" data-action="view-expense" data-id="${exp.id}">${Number(exp.paidAmount || (exp.isPaid ? exp.amount : 0)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
-                                        <td class="text-center">
-                                            <button class="task-delete-btn" data-action="delete-item" data-collection="expenses" data-id="${exp.id}">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                                            </button>
-                                        </td>
+                        <div class="overflow-x-auto">
+                            <table class="data-table w-full">
+                                <thead>
+                                    <tr>
+                                        <th class="text-center">Pago</th>
+                                        <th>Descrição</th>
+                                        <th>Tipo</th>
+                                        <th>Vencimento</th>
+                                        <th class="text-right">Valor (R$)</th>
+                                        <th class="text-right">Valor Extra (R$)</th>
+                                        <th class="text-right">Valor Pago (R$)</th>
+                                        <th class="text-center">Ações</th>
                                     </tr>
-                                `).join('') : '<tr><td colspan="7" class="text-center py-8 text-stone-500">Nenhuma despesa para este mês.</td></tr>'}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody id="expenses-list">
+                                    ${monthlyExpenses.length > 0 ? monthlyExpenses.map(exp => {
+                                        const isFixed = exp.isFixedSalary || exp.tipo === 'fixo';
+                                        const typeLabel = isFixed ? '<span class="px-2 py-0.5 rounded-full text-xs bg-purple-100 text-purple-700">Fixo</span>' : '<span class="px-2 py-0.5 rounded-full text-xs bg-stone-100 text-stone-600">Variável</span>';
+                                        const dueDateFormatted = exp.effectiveDueDate ? new Date(exp.effectiveDueDate).toLocaleDateString('pt-BR') : '-';
+                                        return `
+                                            <tr class="expense-row ${exp.isPaid ? 'opacity-60' : ''}" data-expense-type="${isFixed ? 'fixo' : 'variavel'}">
+                                                <td class="text-center">
+                                                    <input type="checkbox" data-action="toggle-expense" data-id="${exp.id}" 
+                                                        class="h-5 w-5 rounded border-gray-300 text-yellow-500 focus:ring-yellow-400 cursor-pointer" 
+                                                        ${exp.isPaid ? 'checked' : ''}>
+                                                </td>
+                                                <td class="font-medium ${exp.isPaid ? 'line-through text-stone-400' : ''}">${exp.description}</td>
+                                                <td>${typeLabel}</td>
+                                                <td class="text-sm text-stone-600">${dueDateFormatted}</td>
+                                                <td class="text-right font-medium">${Number(exp.amount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                                                <td class="text-right text-stone-600">${Number(exp.extraAmount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                                                <td class="text-right font-medium text-green-600">${exp.isPaid ? Number(exp.paidAmount || exp.amount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : '-'}</td>
+                                                <td class="text-center">
+                                                    <div class="flex items-center justify-center gap-2">
+                                                        <button data-action="edit-expense" data-id="${exp.id}" class="text-blue-600 hover:text-blue-800" title="Editar">
+                                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                                            </svg>
+                                                        </button>
+                                                        <button data-action="delete-expense" data-id="${exp.id}" class="text-red-600 hover:text-red-800" title="Excluir">
+                                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                                            </svg>
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        `;
+                                    }).join('') : `
+                                        <tr>
+                                            <td colspan="8" class="text-center py-8 text-stone-500">
+                                                <svg class="w-12 h-12 mx-auto text-stone-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <rect x="2" y="4" width="20" height="16" rx="2"/>
+                                                    <path d="M7 15h0M2 9.5h20"/>
+                                                </svg>
+                                                <p>Nenhuma despesa cadastrada para ${monthName}</p>
+                                                <p class="text-sm mt-1">Clique em "+ Nova Despesa" para adicionar</p>
+                                            </td>
+                                        </tr>
+                                    `}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
-                    <div class="data-total">
-                        <p>Total a Pagar: ${totalToPay.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
-                    </div>
-                </section>
+                </div>
             `;
-
-            // Adicionar event listeners para os filtros de despesas
-            setTimeout(() => {
-                const filterButtons = document.querySelectorAll('#expenses-filter-buttons .filter-btn');
-                filterButtons.forEach(btn => {
-                    btn.addEventListener('click', (e) => {
-                        // Remove active class from all buttons
-                        filterButtons.forEach(b => b.classList.remove('active'));
-                        // Add active class to clicked button
-                        e.target.classList.add('active');
-
-                        const filter = e.target.dataset.filter;
-                        filterExpensesByType(filter);
-                    });
-                });
-            }, 100);
         }
 
+        // Function to select month in Folha de Pagamento
+        function selectFolhaMonth(monthIndex) {
+            selectedFolhaMonth = monthIndex;
+            renderFolhaPagamentoSection();
+        }
+        window.selectFolhaMonth = selectFolhaMonth;
+
         // Function to filter expenses by type
-        function filterExpensesByType(filter) {
-            const rows = document.querySelectorAll('#expenses-list tr[data-expense-type]');
+        function filterExpensesByType(type) {
+            const rows = document.querySelectorAll('.expense-row');
+            const buttons = document.querySelectorAll('#expenses-filter-buttons .filter-btn');
+            
+            buttons.forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.filter === type) btn.classList.add('active');
+            });
+            
             rows.forEach(row => {
-                const expenseType = row.dataset.expenseType;
-                if (filter === 'todos') {
+                if (type === 'todos') {
                     row.style.display = '';
                 } else {
-                    row.style.display = expenseType === filter ? '' : 'none';
+                    row.style.display = row.dataset.expenseType === type ? '' : 'none';
                 }
             });
         }
-
-
+        window.filterExpensesByType = filterExpensesByType;
 
         function renderColaboradoresSection() {
             document.getElementById('main-title').textContent = 'Gestão de Colaboradores';
@@ -13011,6 +12946,13 @@
                     const currentIndex = posTNValues.indexOf(agendamento.posTN || '');
                     const nextIndex = (currentIndex + 1) % posTNValues.length;
                     const newPosTN = posTNValues[nextIndex];
+                    
+                    // Update locally first for immediate UI feedback
+                    agendamento.posTN = newPosTN;
+                    agendamento.updatedAt = new Date().toISOString();
+                    renderAgendamentosTNsSection();
+                    
+                    // Then sync to Firebase
                     await window.db.collection('agendamentos-tn').doc(agendamentoId).update({
                         posTN: newPosTN,
                         updatedAt: new Date().toISOString()
@@ -21946,7 +21888,8 @@ function openAddChecklistForm() {
                     icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>',
                     items: [
                         { key: 'colaboradores', label: 'Colaboradores', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="5"/><path d="M3 21v-2a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4v2"/></svg>', roles: ['admin'] },
-                        { key: 'financeiro', label: 'Financeiro', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>', roles: ['admin'] }
+                        { key: 'financeiro', label: 'Financeiro', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>', roles: ['admin'] },
+                        { key: 'folha-pagamento', label: 'Folha de Pagamento', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M7 15h0M2 9.5h20"/></svg>', roles: ['admin'] }
                     ]
                 }
             };
@@ -22420,6 +22363,7 @@ function openAddChecklistForm() {
                 'colaboradores': ['admin'],
                 'folha-pagamento': ['admin'],
                 'financeiro': ['admin'],
+            'folha-pagamento': ['admin'],
             };
 
             return pagePermissions[pageKey]?.includes(userRole) || false;
