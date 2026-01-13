@@ -10239,13 +10239,27 @@
             document.getElementById('form-modal-content-area').onsubmit = saveExpense;
             document.getElementById('form-modal').classList.add('visible');
         }
+        function addMonthsToDate(dateStr, months) {
+            const [year, month, day] = dateStr.split('-').map(Number);
+            const date = new Date(year, month - 1 + months, day);
+            // Handle month overflow (e.g., Jan 31 + 1 month = Feb 28/29)
+            if (date.getDate() !== day) {
+                date.setDate(0); // Go to last day of previous month
+            }
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const d = String(date.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+
         async function saveExpense(event) {
             event.preventDefault();
             const expenseId = document.getElementById('expense-id').value;
             const isFixedSalary = document.getElementById('expense-isFixedSalary').checked;
             const tipo = document.getElementById('expense-tipo').value;
+            const baseDescription = document.getElementById('expense-description').value;
             const data = {
-                description: document.getElementById('expense-description').value,
+                description: baseDescription,
                 tipo: tipo,
                 amount: document.getElementById('expense-amount').value,
                 extraAmount: document.getElementById('expense-extraAmount').value || 0,
@@ -10269,17 +10283,71 @@
                 }
             }
 
-            if (!db) { console.warn("Offline mode."); closeFormModal(); return; }
             try {
-                if (expenseId) {
-                    const existingExpense = expenses.find(e => e.id === expenseId);
-                    await updateDoc(doc(db, `artifacts/${appId}/public/data/expenses`, expenseId), {...existingExpense, ...data});
-                    showSuccessMessage("Sucesso!", "Despesa atualizada.");
+                // Check if this is a new variable expense with parcels
+                const parcelCount = parseInt(data.parcelas) || 0;
+                const shouldCreateParcels = !expenseId && tipo === 'variavel' && parcelCount > 1 && data.dueDate;
+                const parcelGroupId = shouldCreateParcels ? 'parcel_group_' + Date.now() : null;
+
+                if (window.isDevelopmentMode) {
+                    if (expenseId) {
+                        // Editing existing expense
+                        const index = expenses.findIndex(e => e.id === expenseId);
+                        if (index !== -1) {
+                            expenses[index] = { ...expenses[index], ...data };
+                        }
+                    } else if (shouldCreateParcels) {
+                        // Create multiple parcels
+                        for (let i = 0; i < parcelCount; i++) {
+                            const parcelData = { ...data };
+                            parcelData.id = 'expense_' + Date.now() + '_' + i;
+                            parcelData.createdAt = new Date().toISOString();
+                            parcelData.dueDate = addMonthsToDate(data.dueDate, i);
+                            parcelData.description = `${baseDescription} (${i + 1}/${parcelCount})`;
+                            parcelData.parcelGroupId = parcelGroupId;
+                            parcelData.parcelNumber = i + 1;
+                            parcelData.totalParcels = parcelCount;
+                            expenses.push(parcelData);
+                        }
+                    } else {
+                        // Single expense
+                        data.id = 'expense_' + Date.now();
+                        data.createdAt = new Date().toISOString();
+                        expenses.push(data);
+                    }
+                    localStorage.setItem('expenses', JSON.stringify(expenses));
+                    const msg = shouldCreateParcels ? `${parcelCount} parcelas criadas.` : (expenseId ? "Despesa atualizada." : "Nova despesa adicionada.");
+                    showSuccessMessage("Sucesso!", msg);
+                } else if (window.firebaseConnected && db) {
+                    if (expenseId) {
+                        const existingExpense = expenses.find(e => e.id === expenseId);
+                        await updateDoc(doc(db, `artifacts/${appId}/public/data/expenses`, expenseId), {...existingExpense, ...data});
+                        showSuccessMessage("Sucesso!", "Despesa atualizada.");
+                    } else if (shouldCreateParcels) {
+                        // Create multiple parcels in Firebase
+                        for (let i = 0; i < parcelCount; i++) {
+                            const parcelData = { ...data };
+                            parcelData.createdAt = serverTimestamp();
+                            parcelData.dueDate = addMonthsToDate(data.dueDate, i);
+                            parcelData.description = `${baseDescription} (${i + 1}/${parcelCount})`;
+                            parcelData.parcelGroupId = parcelGroupId;
+                            parcelData.parcelNumber = i + 1;
+                            parcelData.totalParcels = parcelCount;
+                            await addDoc(collection(db, `artifacts/${appId}/public/data/expenses`), parcelData);
+                        }
+                        showSuccessMessage("Sucesso!", `${parcelCount} parcelas criadas.`);
+                    } else {
+                        data.createdAt = serverTimestamp();
+                        await addDoc(collection(db, `artifacts/${appId}/public/data/expenses`), data);
+                        showSuccessMessage("Sucesso!", "Nova despesa adicionada.");
+                    }
                 } else {
-                    data.createdAt = serverTimestamp();
-                    await addDoc(collection(db, `artifacts/${appId}/public/data/expenses`), data);
-                    showSuccessMessage("Sucesso!", "Nova despesa adicionada.");
+                    console.warn("Offline mode - no Firebase or dev mode.");
+                    closeFormModal();
+                    return;
                 }
+                closeFormModal();
+                renderFolhaPagamentoSection();
             } catch (error) { console.error("Error saving expense:", error); showErrorMessage("Erro", "Falha ao salvar despesa."); }
         }
         async function deleteExpense(expenseId) {
