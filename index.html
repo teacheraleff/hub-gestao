@@ -3774,8 +3774,8 @@
                                         const sortOrder = window.expenseSortOrder || 'dueDate';
                                         const sortedExpenses = [...monthlyExpenses].sort((a, b) => {
                                             if (sortOrder === 'dueDate') {
-                                                const dateA = a.effectiveDueDate || '9999-12-31';
-                                                const dateB = b.effectiveDueDate || '9999-12-31';
+                                                const dateA = String(a.effectiveDueDate || '9999-12-31');
+                                                const dateB = String(b.effectiveDueDate || '9999-12-31');
                                                 return dateA.localeCompare(dateB);
                                             } else if (sortOrder === 'amountAsc') {
                                                 return Number(a.amount || 0) - Number(b.amount || 0);
