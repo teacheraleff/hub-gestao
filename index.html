@@ -3714,8 +3714,11 @@
             const monthName = months[currentMonth].name;
 
             // Filter expenses for selected month - include fixed expenses that apply to all months
+            const currentMonthKey = currentYear + '-' + String(currentMonth + 1).padStart(2, '0');
             const monthlyExpenses = expenses.map(exp => {
                 let dueDate;
+                const isFixed = exp.isFixedSalary || exp.tipo === 'fixo';
+                
                 if (exp.isFixedSalary && exp.dueDay) {
                     // Fixed salary expenses apply to all months
                     const day = parseInt(exp.dueDay, 10);
@@ -3729,7 +3732,15 @@
 
                 // For fixed salaries, always show in current selected month
                 if (exp.isFixedSalary && dueDate) {
-                    return { ...exp, effectiveDueDate: dueDate };
+                    // Para despesas fixas, verificar paidMonths do mês atual
+                    const monthPayment = exp.paidMonths && exp.paidMonths[currentMonthKey];
+                    return { 
+                        ...exp, 
+                        effectiveDueDate: dueDate,
+                        isPaid: monthPayment ? monthPayment.isPaid : false,
+                        paidAmount: monthPayment ? monthPayment.paidAmount : 0,
+                        paidAt: monthPayment ? monthPayment.paidAt : null
+                    };
                 }
 
                 // For variable expenses, only show if matches selected month/year
@@ -11108,9 +11119,13 @@
             }
         }
 
-        async function toggleExpensePaid(expenseId, isPaid) {
+        async function toggleExpensePaid(expenseId, isPaid, monthKey = null) {
             const expense = expenses.find(e => e.id === expenseId);
             if (!expense) return;
+
+            // Se for despesa fixa, usar paidMonths específico por mês
+            const isFixedExpense = expense.isFixedSalary || expense.tipo === 'fixo';
+            const currentMonthKey = monthKey || (selectedFolhaYear + '-' + String(selectedFolhaMonth + 1).padStart(2, '0'));
 
             if (isPaid) {
                 // Quando marcado como pago, abrir modal para inserir valor pago
@@ -11144,8 +11159,21 @@
                         // Modo desenvolvimento - atualizar localmente
                         const expenseIndex = expenses.findIndex(e => e.id === expenseId);
                         if (expenseIndex !== -1) {
-                            expenses[expenseIndex].isPaid = true;
-                            expenses[expenseIndex].paidAmount = Number(paidAmount);
+                            if (isFixedExpense) {
+                                // Para despesas fixas, salvar no paidMonths
+                                if (!expenses[expenseIndex].paidMonths) {
+                                    expenses[expenseIndex].paidMonths = {};
+                                }
+                                expenses[expenseIndex].paidMonths[currentMonthKey] = {
+                                    isPaid: true,
+                                    paidAmount: Number(paidAmount),
+                                    paidAt: new Date().toISOString()
+                                };
+                            } else {
+                                // Para despesas variáveis, manter comportamento antigo
+                                expenses[expenseIndex].isPaid = true;
+                                expenses[expenseIndex].paidAmount = Number(paidAmount);
+                            }
                         }
                         renderFolhaPagamentoSection();
                         document.getElementById('form-modal').classList.remove('visible');
@@ -11154,11 +11182,23 @@
 
                     try {
                         const expenseRef = doc(db, `artifacts/${appId}/public/data/expenses`, expenseId);
-                        await updateDoc(expenseRef, { 
-                            isPaid: true,
-                            paidAmount: Number(paidAmount),
-                            paidAt: new Date().toISOString()
-                        });
+                        if (isFixedExpense) {
+                            // Para despesas fixas, atualizar paidMonths
+                            const paidMonths = expense.paidMonths || {};
+                            paidMonths[currentMonthKey] = {
+                                isPaid: true,
+                                paidAmount: Number(paidAmount),
+                                paidAt: new Date().toISOString()
+                            };
+                            await updateDoc(expenseRef, { paidMonths: paidMonths });
+                        } else {
+                            // Para despesas variáveis, manter comportamento antigo
+                            await updateDoc(expenseRef, { 
+                                isPaid: true,
+                                paidAmount: Number(paidAmount),
+                                paidAt: new Date().toISOString()
+                            });
+                        }
                         document.getElementById('form-modal').classList.remove('visible');
                         showSuccessMessage("Pagamento Registrado", "Valor pago registrado com sucesso!");
                     } catch (error) {
@@ -11172,9 +11212,17 @@
                     // Modo desenvolvimento - atualizar localmente
                     const expenseIndex = expenses.findIndex(e => e.id === expenseId);
                     if (expenseIndex !== -1) {
-                        expenses[expenseIndex].isPaid = false;
-                        delete expenses[expenseIndex].paidAmount;
-                        delete expenses[expenseIndex].paidAt;
+                        if (isFixedExpense) {
+                            // Para despesas fixas, remover do paidMonths
+                            if (expenses[expenseIndex].paidMonths && expenses[expenseIndex].paidMonths[currentMonthKey]) {
+                                delete expenses[expenseIndex].paidMonths[currentMonthKey];
+                            }
+                        } else {
+                            // Para despesas variáveis, manter comportamento antigo
+                            expenses[expenseIndex].isPaid = false;
+                            delete expenses[expenseIndex].paidAmount;
+                            delete expenses[expenseIndex].paidAt;
+                        }
                     }
                     renderFolhaPagamentoSection();
                     return;
@@ -11182,11 +11230,19 @@
 
                 try {
                     const expenseRef = doc(db, `artifacts/${appId}/public/data/expenses`, expenseId);
-                    await updateDoc(expenseRef, { 
-                        isPaid: false,
-                        paidAmount: 0,
-                        paidAt: null
-                    });
+                    if (isFixedExpense) {
+                        // Para despesas fixas, remover do paidMonths
+                        const paidMonths = { ...(expense.paidMonths || {}) };
+                        delete paidMonths[currentMonthKey];
+                        await updateDoc(expenseRef, { paidMonths: paidMonths });
+                    } else {
+                        // Para despesas variáveis, manter comportamento antigo
+                        await updateDoc(expenseRef, { 
+                            isPaid: false,
+                            paidAmount: 0,
+                            paidAt: null
+                        });
+                    }
                 } catch (error) {
                     console.error("Error updating expense status:", error);
                 }
