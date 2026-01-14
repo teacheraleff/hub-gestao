@@ -7090,7 +7090,7 @@
             const paymentTypeOptions = ['Cartão', 'Boleto', 'Permuta', 'Bolsa', 'Assinatura'].map(p => `<option value="${p}" ${aluno?.paymentType === p ? 'selected' : ''}>${p}</option>`).join('');
 
             document.getElementById('form-modal-content-area').innerHTML = `
-                <form id="form-modal-body" class="space-y-4">
+                <form id="expense-form" class="space-y-4" onsubmit="saveExpense(event); return false;">
                     <input type="hidden" id="aluno-id" value="${alunoId || ''}">
 
                     <h4 class="text-lg font-semibold text-stone-700 border-b pb-2">Informações Básicas</h4>
@@ -8264,7 +8264,7 @@
                 `}).join('');
 
             document.getElementById('form-modal-content-area').innerHTML = `
-                <form id="form-modal-body" class="space-y-4">
+                <form id="expense-form" class="space-y-4" onsubmit="saveExpense(event); return false;">
                     <input type="hidden" id="turma-id" value="${turmaId || ''}">
                     <input type="hidden" id="turma-name" value="${turma?.name || ''}">
 
@@ -8602,7 +8602,7 @@
             });
 
             document.getElementById('form-modal-content-area').innerHTML = `
-                <form id="form-modal-body" class="space-y-4">
+                <form id="expense-form" class="space-y-4" onsubmit="saveExpense(event); return false;">
                     <input type="hidden" id="vip-id" value="${vipId || ''}">
                     <div>
                         <label class="font-medium text-sm">Aluno VIP <span class="text-red-500">*</span></label>
@@ -9571,7 +9571,7 @@
             ).join('');
 
             document.getElementById('form-modal-content-area').innerHTML = `
-                <form id="form-modal-body" class="space-y-4">
+                <form id="expense-form" class="space-y-4" onsubmit="saveExpense(event); return false;">
                     <input type="hidden" id="campanha-id" value="${campanhaId || ''}">
 
                     <h4 class="text-lg font-semibold text-stone-700 border-b pb-2">Informações Básicas</h4>
@@ -9814,7 +9814,7 @@
             }).join('');
 
             document.getElementById('form-modal-content-area').innerHTML = `
-                <form id="form-modal-body" class="space-y-4">
+                <form id="expense-form" class="space-y-4" onsubmit="saveExpense(event); return false;">
                     <input type="hidden" id="task-id" value="${taskId || ''}">
                     <div><label class="font-medium text-sm">Título da Tarefa</label><input type="text" id="task-title" class="form-input" required placeholder="Ex: Revisar material do nível A1" value="${task?.title || ''}"></div>
                     <div><label class="font-medium text-sm">Descrição</label><textarea id="task-description" rows="4" class="form-input" required placeholder="Detalhes sobre a tarefa...">${task?.description || ''}</textarea></div>
@@ -10058,7 +10058,7 @@
             }).join('');
 
             document.getElementById('form-modal-content-area').innerHTML = `
-                <form id="form-modal-body" class="space-y-4">
+                <form id="expense-form" class="space-y-4" onsubmit="saveExpense(event); return false;">
                     <input type="hidden" id="collaborator-id" value="${collaboratorId || ''}">
 
                     <div><label class="font-medium text-sm">Nome Completo <span class="text-red-500">*</span></label><input type="text" id="collaborator-name" class="form-input" required value="${collaborator?.name || ''}"></div>
@@ -10889,7 +10889,7 @@
             const expense = expenseId ? expenses.find(e => e.id === expenseId) : null;
             document.getElementById('form-modal-title').textContent = expense ? "Editar Despesa" : "Adicionar Nova Despesa";
             document.getElementById('form-modal-content-area').innerHTML = `
-                <form id="form-modal-body" class="space-y-4">
+                <form id="expense-form" class="space-y-4" onsubmit="saveExpense(event); return false;">
                     <input type="hidden" id="expense-id" value="${expenseId || ''}">
                     <div><label class="font-medium text-sm">Descrição</label><input type="text" id="expense-description" class="form-input" required value="${expense?.description || ''}"></div>
 
@@ -10942,7 +10942,7 @@
             isFixedSalaryCheckbox.onchange = updateFieldVisibility;
             tipoSelect.onchange = updateFieldVisibility;
 
-            document.getElementById('form-modal-body').onsubmit = saveExpense;
+            // Submit handler já está no atributo onsubmit do form
             document.getElementById('form-modal').classList.add('visible');
         }
         function addMonthsToDate(dateStr, months) {
@@ -10990,11 +10990,9 @@
             }
 
             try {
-                console.log('saveExpense called:', { tipo, isFixedSalary, data, expenseId });
                 // Check if this is a new variable expense with parcels
                 const parcelCount = parseInt(data.parcelas) || 0;
                 const shouldCreateParcels = !expenseId && tipo === 'variavel' && parcelCount > 1 && data.dueDate;
-                console.log('shouldCreateParcels:', shouldCreateParcels, 'parcelCount:', parcelCount);
                 const parcelGroupId = shouldCreateParcels ? 'parcel_group_' + Date.now() : null;
 
                 if (window.isDevelopmentMode) {
@@ -11179,7 +11177,7 @@
 
             document.getElementById('form-modal-title').textContent = cancelamento ? "Editar Cancelamento" : "Registrar Novo Cancelamento";
             document.getElementById('form-modal-content-area').innerHTML = `
-                <form id="form-modal-body" class="space-y-4">
+                <form id="expense-form" class="space-y-4" onsubmit="saveExpense(event); return false;">
                     <input type="hidden" id="cancelamento-id" value="${cancelamentoId || ''}">
                     ${studentFieldHtml}
                     <div><label class="font-medium text-sm">Data do Cancelamento</label><input type="date" id="cancelamento-date" class="form-input" required value="${cancelamento?.cancellationDate || ''}"></div>
@@ -11272,7 +11270,7 @@
             const competitor = competitorId ? dojoRanking.find(c => c.id === competitorId) : null;
             document.getElementById('form-modal-title').textContent = competitor ? 'Editar Competidor' : 'Adicionar Competidor';
             document.getElementById('form-modal-content-area').innerHTML = `
-                <form id="form-modal-body" class="space-y-4">
+                <form id="expense-form" class="space-y-4" onsubmit="saveExpense(event); return false;">
                     <input type="hidden" id="dojo-id" value="${competitorId || ''}">
                     <div><label class="font-medium text-sm">Nome do Competidor</label><input type="text" id="dojo-name" class="form-input" required value="${competitor?.name || ''}"></div>
                     <div><label class="font-medium text-sm">URL da Foto</label><input type="url" id="dojo-photo" class="form-input" required value="${competitor?.photo || ''}"></div>
@@ -11310,7 +11308,7 @@
             if (!competitor) return;
             document.getElementById('form-modal-title').textContent = `Editar Pontos de ${competitor.name}`;
             document.getElementById('form-modal-content-area').innerHTML = `
-                <form id="form-modal-body" class="space-y-4">
+                <form id="expense-form" class="space-y-4" onsubmit="saveExpense(event); return false;">
                     <input type="hidden" id="dojo-id" value="${competitorId}">
                     <div><label class="font-medium text-sm">Pontos</label><input type="number" id="dojo-points" class="form-input" required value="${competitor.points || 0}"></div>
                     <div class="text-right"><button type="submit" class="primary-btn w-auto">Salvar Pontos</button></div>
@@ -11341,7 +11339,7 @@
             clearModalHeaderButtons();
             document.getElementById('form-modal-title').textContent = 'Adicionar Nova Missão';
             document.getElementById('form-modal-content-area').innerHTML = `
-                <form id="form-modal-body" class="space-y-4">
+                <form id="expense-form" class="space-y-4" onsubmit="saveExpense(event); return false;">
                     <div><label class="font-medium text-sm">Descrição da Missão</label><input type="text" id="mission-description" class="form-input" required></div>
                     <div><label class="font-medium text-sm">Pontos</label><input type="number" id="mission-points" class="form-input" required value="0"></div>
                     <div class="text-right"><button type="submit" class="primary-btn w-auto">Salvar Missão</button></div>
@@ -19902,6 +19900,7 @@ function openAddChecklistForm() {
         window.openMonthlyHighlightForm = openMonthlyHighlightForm;
         window.openScheduleForm = openScheduleForm;
         window.openExpenseForm = openExpenseForm;
+        window.saveExpense = saveExpense;
         window.safeDeleteItem = safeDeleteItem;
         window.closeFormModal = closeFormModal;
         window.openDojoCompetitorForm = openDojoCompetitorForm;
