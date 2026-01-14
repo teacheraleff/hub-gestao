@@ -4531,14 +4531,13 @@
             const paginatedEntradas = sortedEntradas.slice(startIndex, endIndex);
 
             // Calculate totals (usando entradas filtradas) - com valores líquidos por parcela
-            // Cada entrada representa UMA parcela, então usamos liquidoPorParcela
+            // Cada entrada representa UMA parcela, então e.amount já é o valor da parcela
             const calculateNetTotal = (items) => {
                 return items.reduce((sum, e) => {
                     const student = e.studentId ? students.find(s => s.id === e.studentId) : null;
                     const pType = e.paymentType || (student ? student.paymentType : '') || '';
-                    const numParcelas = student && student.parcelas ? parseInt(student.parcelas) : 1;
-                    const calc = calcularValorLiquido(Number(e.amount || 0), pType, numParcelas);
-                    // Usar liquidoPorParcela pois cada entrada é uma parcela individual
+                    // e.amount já é o valor da parcela, então passamos parcelas=1
+                    const calc = calcularValorLiquido(Number(e.amount || 0), pType, 1);
                     return sum + (calc.temTaxa ? calc.liquidoPorParcela : Number(e.amount || 0));
                 }, 0);
             };
@@ -4703,8 +4702,8 @@
                                                     ${(() => {
                                                         const student = ent.studentId ? students.find(s => s.id === ent.studentId) : null;
                                                         const pType = ent.paymentType || (student ? student.paymentType : '') || '';
-                                                        const numParcelas = student && student.parcelas ? parseInt(student.parcelas) : 1;
-                                                        const calc = calcularValorLiquido(Number(ent.amount || 0), pType, numParcelas);
+                                                        // ent.amount já é o valor da parcela, então passamos parcelas=1
+                                                        const calc = calcularValorLiquido(Number(ent.amount || 0), pType, 1);
                                                         if (calc.temTaxa) {
                                                             const detalheTaxa = 'Taxa: 3,49% (R$ ' + calc.taxaPercentualParcela.toFixed(2).replace('.', ',') + ') + R$ 0,49 fixo';
                                                             return '<span class="text-green-700">' + calc.liquidoPorParcela.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) + '</span>' +
