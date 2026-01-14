@@ -3830,6 +3830,12 @@
                                         <path d="M21 21l-4.35-4.35"></path>
                                     </svg>
                                 </div>
+                                <button onclick="exportFolhaToExcel()" class="secondary-btn flex items-center gap-2">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                    </svg>
+                                    Exportar Excel
+                                </button>
                                 <button class="primary-btn w-auto" data-action="add-expense">+ Nova Despesa</button>
                             </div>
                         </div>
@@ -3976,6 +3982,96 @@
             folhaSearchQuery = query.toLowerCase().trim();
             folhaCurrentPage = 1;
             renderFolhaPagamentoSection();
+        };
+
+        window.exportFolhaToExcel = function() {
+            const months = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+            const monthName = months[selectedFolhaMonth];
+            const currentMonthKey = selectedFolhaYear + '-' + String(selectedFolhaMonth + 1).padStart(2, '0');
+            
+            // Filtrar despesas do mês selecionado
+            const monthlyExpenses = expenses.map(exp => {
+                let dueDate;
+                const isFixed = exp.isFixedSalary || exp.tipo === 'fixo';
+                
+                if (exp.isFixedSalary && exp.dueDay) {
+                    const day = parseInt(exp.dueDay, 10);
+                    if (day > 0 && day < 32) {
+                        dueDate = new Date(selectedFolhaYear, selectedFolhaMonth, day);
+                    }
+                } else if (exp.dueDate) {
+                    const parts = exp.dueDate.split('-');
+                    dueDate = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2]));
+                }
+
+                if (exp.isFixedSalary && dueDate) {
+                    const monthPayment = exp.paidMonths && exp.paidMonths[currentMonthKey];
+                    return { 
+                        ...exp, 
+                        effectiveDueDate: dueDate,
+                        isPaid: monthPayment ? monthPayment.isPaid : false,
+                        paidAmount: monthPayment ? monthPayment.paidAmount : 0
+                    };
+                }
+
+                if (dueDate && dueDate.getUTCMonth() === selectedFolhaMonth && dueDate.getUTCFullYear() === selectedFolhaYear) {
+                    return { ...exp, effectiveDueDate: dueDate };
+                }
+                return null;
+            }).filter(Boolean).sort((a, b) => a.effectiveDueDate - b.effectiveDueDate);
+
+            if (monthlyExpenses.length === 0) {
+                showErrorMessage('Aviso', 'Não há despesas para exportar neste mês.');
+                return;
+            }
+
+            // Criar dados para Excel
+            const headers = ['Descrição', 'Cargo/Tag', 'Tipo', 'Vencimento', 'Valor (R$)', 'Valor Pago (R$)', 'Status'];
+            
+            const rows = monthlyExpenses.map(exp => {
+                const isFixed = exp.isFixedSalary || exp.tipo === 'fixo';
+                const dueDateFormatted = exp.effectiveDueDate ? new Date(exp.effectiveDueDate).toLocaleDateString('pt-BR') : '-';
+                const status = exp.isPaid ? 'Pago' : 'Pendente';
+                
+                return [
+                    exp.description || '',
+                    exp.employeeRole || '',
+                    isFixed ? 'Fixo' : 'Variável',
+                    dueDateFormatted,
+                    Number(exp.amount || 0).toFixed(2).replace('.', ','),
+                    exp.isPaid ? Number(exp.paidAmount || exp.amount || 0).toFixed(2).replace('.', ',') : '-',
+                    status
+                ];
+            });
+
+            // Calcular totais
+            const totalAmount = monthlyExpenses.reduce((sum, exp) => sum + Number(exp.amount || 0), 0);
+            const totalPaid = monthlyExpenses.filter(e => e.isPaid).reduce((sum, exp) => sum + Number(exp.paidAmount || exp.amount || 0), 0);
+            const totalPending = monthlyExpenses.filter(e => !e.isPaid).reduce((sum, exp) => sum + Number(exp.amount || 0), 0);
+
+            // Adicionar linha de totais
+            rows.push(['', '', '', '', '', '', '']);
+            rows.push(['TOTAL DO MÊS', '', '', '', totalAmount.toFixed(2).replace('.', ','), totalPaid.toFixed(2).replace('.', ','), '']);
+            rows.push(['TOTAL PENDENTE', '', '', '', totalPending.toFixed(2).replace('.', ','), '', '']);
+
+            // Gerar CSV com BOM para UTF-8
+            const BOM = '\uFEFF';
+            const csvContent = BOM + [headers, ...rows].map(row => 
+                row.map(cell => '"' + String(cell).replace(/"/g, '""') + '"').join(';')
+            ).join('\n');
+
+            // Download do arquivo
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', 'Folha_Pagamento_' + monthName + '_' + selectedFolhaYear + '.csv');
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            showSuccessMessage('Exportado!', 'Arquivo Excel exportado com sucesso.');
         };
 
         function renderFolhaPagination(currentPage, totalPages, startIdx, endIdx, totalCount) {
