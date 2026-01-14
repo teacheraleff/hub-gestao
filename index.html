@@ -2422,8 +2422,8 @@
                                     <th>Nome do Aluno</th>
                                     <th>Status</th>
                                     <th>Ficha</th>
-                                    ${canViewFinancialInfo ? '<th>Valor Pago</th>' : ''}
-                                    ${canViewFinancialInfo ? '<th>Valor Recebido</th>' : '<th>Responsável</th>'}
+                                    ${canViewFinancialInfo ? '<th>Valor Total</th>' : ''}
+                                    ${canViewFinancialInfo ? '<th>Valor Parcela</th>' : '<th>Responsável</th>'}
                                 </tr>
                             </thead>
                             <tbody id="alunos-list"></tbody>
@@ -2532,7 +2532,7 @@
                 if (!student.paymentType) missing.push('Forma de Pagamento');
                 // Só exigir valor pago se NÃO for bolsista ou permuta
                 if (student.paymentType !== 'Bolsa' && student.paymentType !== 'Permuta' && (!student.amountPaid || parseFloat(student.amountPaid) === 0)) {
-                    missing.push('Valor Pago');
+                    missing.push('Valor Total');
                 }
             }
 
@@ -4593,7 +4593,7 @@
                     <!-- Info Note -->
                     <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 flex items-center gap-2">
                         <svg class="w-5 h-5 text-blue-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                        <p class="text-sm text-blue-700">As parcelas dos alunos ativos (com "Valor Recebido" preenchido) aparecem automaticamente. Use "Outra Entrada" para matrículas, eventos, etc.</p>
+                        <p class="text-sm text-blue-700">As parcelas dos alunos ativos (com "Valor Total" e "Parcelas" preenchidos) aparecem automaticamente. Use "Outra Entrada" para matrículas, eventos, etc.</p>
                     </div>
 
                     <!-- Entradas Table -->
@@ -7337,6 +7337,17 @@
             }
         }
 
+        function calcularValorParcela() {
+            const valorTotal = parseFloat(document.getElementById('aluno-amountPaid')?.value) || 0;
+            const parcelas = parseInt(document.getElementById('aluno-parcelas')?.value) || 1;
+            const valorParcela = valorTotal / Math.max(parcelas, 1);
+            const campoValorParcela = document.getElementById('aluno-amountReceived');
+            if (campoValorParcela) {
+                campoValorParcela.value = valorParcela.toFixed(2);
+            }
+        }
+        window.calcularValorParcela = calcularValorParcela;
+
         function openAlunoForm(alunoId = null) {
             clearModalHeaderButtons();
             const aluno = alunoId ? students.find(s => s.id === alunoId) : null;
@@ -7520,11 +7531,15 @@
                     <h4 class="text-lg font-semibold text-stone-700 border-b pb-2 pt-4">Informações Financeiras</h4>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div><label class="font-medium text-sm">Tipo de Pagamento</label><select id="aluno-paymentType" class="form-input">${paymentTypeOptions}</select></div>
-                        <div><label class="font-medium text-sm">Quantidade de Parcelas</label><input type="number" min="1" max="24" id="aluno-parcelas" class="form-input" placeholder="Ex: 12" value="${aluno?.parcelas || ''}"></div>
+                        <div><label class="font-medium text-sm">Quantidade de Parcelas</label><input type="number" min="1" max="24" id="aluno-parcelas" class="form-input" placeholder="Ex: 12" oninput="calcularValorParcela()" value="${aluno?.parcelas || ''}"></div>
                     </div>
                     <div id="aluno-amount-fields" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div><label class="font-medium text-sm">Valor Pago (R$)</label><input type="number" step="0.01" id="aluno-amountPaid" class="form-input" value="${aluno?.amountPaid || ''}"></div>
-                        <div><label class="font-medium text-sm">Valor Recebido (R$)</label><input type="number" step="0.01" id="aluno-amountReceived" class="form-input" value="${aluno?.amountReceived || ''}"></div>
+                        <div><label class="font-medium text-sm">Valor Total (R$)</label><input type="number" step="0.01" id="aluno-amountPaid" class="form-input" oninput="calcularValorParcela()" value="${aluno?.amountPaid || ''}"></div>
+                        <div>
+                            <label class="font-medium text-sm">Valor da Parcela (R$)</label>
+                            <input type="number" step="0.01" id="aluno-amountReceived" class="form-input bg-stone-100" readonly value="${aluno?.amountReceived || ''}">
+                            <p class="text-xs text-stone-500 mt-1">Calculado automaticamente (Valor Total ÷ Parcelas)</p>
+                        </div>
                     </div>
                     <div class="mt-4">
                         <label class="font-medium text-sm">Meses de Projeção das Parcelas</label>
@@ -7870,8 +7885,8 @@
                         ${canViewFinancialInfo ? `<p><strong>Pagamento:</strong> ${aluno.paymentType || 'N/A'}</p>` : ''}
                         ${canViewFinancialInfo ? `<p><strong>Parcelas:</strong> ${aluno.parcelas ? `${aluno.parcelas}x` : 'Não informado'}</p>` : ''}
                         <p><strong>Indicação:</strong> ${aluno.indicacao || 'Não informado'}</p>
-                        ${canViewFinancialInfo ? `<p><strong>Valor Pago:</strong> R$ ${parseFloat(aluno.amountPaid || 0).toFixed(2)}</p>` : ''}
-                        ${canViewFinancialInfo ? `<p><strong>Valor Recebido:</strong> R$ ${parseFloat(aluno.amountReceived || 0).toFixed(2)}</p>` : ''}
+                        ${canViewFinancialInfo ? `<p><strong>Valor Total:</strong> R$ ${parseFloat(aluno.amountPaid || 0).toFixed(2)}</p>` : ''}
+                        ${canViewFinancialInfo ? `<p><strong>Valor da Parcela:</strong> R$ ${parseFloat(aluno.amountReceived || 0).toFixed(2)}</p>` : ''}
                     </div>
 
                     <div class="pt-2">
@@ -20924,7 +20939,7 @@ function openAddChecklistForm() {
                                         <th>Status</th>
                                         <th>Modalidade</th>
                                         <th>Nível</th>
-                                        ${canViewFinancialInfo ? '<th>Valor Pago</th>' : ''}
+                                        ${canViewFinancialInfo ? '<th>Valor Total</th>' : ''}
                                         <th>Responsável</th>
                                         <th>Telefone</th>
                                         <th>Email</th>
