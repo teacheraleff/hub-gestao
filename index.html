@@ -10990,9 +10990,11 @@
             }
 
             try {
+                console.log('saveExpense called:', { tipo, isFixedSalary, data, expenseId });
                 // Check if this is a new variable expense with parcels
                 const parcelCount = parseInt(data.parcelas) || 0;
                 const shouldCreateParcels = !expenseId && tipo === 'variavel' && parcelCount > 1 && data.dueDate;
+                console.log('shouldCreateParcels:', shouldCreateParcels, 'parcelCount:', parcelCount);
                 const parcelGroupId = shouldCreateParcels ? 'parcel_group_' + Date.now() : null;
 
                 if (window.isDevelopmentMode) {
