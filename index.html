@@ -3687,6 +3687,9 @@
         // Global variable to track selected month for Folha de Pagamento
         let selectedFolhaMonth = new Date().getMonth();
         let selectedFolhaYear = new Date().getFullYear();
+        let folhaCurrentPage = 1;
+        const folhaPerPage = 15;
+        let folhaSearchQuery = '';
 
         function renderFolhaPagamentoSection() {
             document.getElementById('main-title').textContent = 'Folha de Pagamento';
@@ -3815,7 +3818,20 @@
                     <div class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
                         <div class="flex justify-between items-center mb-6 flex-wrap gap-4">
                             <h3 class="text-xl font-bold text-stone-800">Despesas de ${monthName}</h3>
-                            <button class="primary-btn w-auto" data-action="add-expense">+ Nova Despesa</button>
+                            <div class="flex items-center gap-3">
+                                <div class="relative">
+                                    <input type="text" 
+                                        placeholder="Pesquisar despesa..." 
+                                        oninput="setFolhaSearchQuery(this.value)"
+                                        value="${folhaSearchQuery}"
+                                        class="pl-10 pr-4 py-2 border border-stone-300 rounded-lg text-sm focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 w-64">
+                                    <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <circle cx="11" cy="11" r="8"></circle>
+                                        <path d="M21 21l-4.35-4.35"></path>
+                                    </svg>
+                                </div>
+                                <button class="primary-btn w-auto" data-action="add-expense">+ Nova Despesa</button>
+                            </div>
                         </div>
 
                         <div class="flex flex-wrap gap-4 mb-6 items-center justify-between">
@@ -3861,7 +3877,28 @@
                                             }
                                             return 0;
                                         });
-                                        return sortedExpenses.length > 0 ? sortedExpenses.map(exp => {
+                                        
+                                        // Aplicar filtro de pesquisa
+                                        let filteredExpenses = sortedExpenses;
+                                        if (folhaSearchQuery) {
+                                            filteredExpenses = sortedExpenses.filter(exp => {
+                                                const description = (exp.description || '').toLowerCase();
+                                                const role = (exp.employeeRole || '').toLowerCase();
+                                                return description.includes(folhaSearchQuery) || role.includes(folhaSearchQuery);
+                                            });
+                                        }
+                                        
+                                        // Aplicar paginação
+                                        const totalExpensesCount = filteredExpenses.length;
+                                        const totalPagesCalc = Math.ceil(totalExpensesCount / folhaPerPage);
+                                        if (folhaCurrentPage > totalPagesCalc && totalPagesCalc > 0) folhaCurrentPage = totalPagesCalc;
+                                        if (folhaCurrentPage < 1) folhaCurrentPage = 1;
+                                        const startIndex = (folhaCurrentPage - 1) * folhaPerPage;
+                                        const endIndex = Math.min(startIndex + folhaPerPage, totalExpensesCount);
+                                        const paginatedExpenses = filteredExpenses.slice(startIndex, endIndex);
+                                        window._folhaPaginationData = { currentPage: folhaCurrentPage, totalPages: totalPagesCalc, startIndex, endIndex, totalCount: totalExpensesCount };
+                                        
+                                        return paginatedExpenses.length > 0 ? paginatedExpenses.map(exp => {
                                         const isFixed = exp.isFixedSalary || exp.tipo === 'fixo';
                                         const typeLabel = isFixed ? '<span class="px-2 py-0.5 rounded-full text-xs bg-purple-100 text-purple-700">Fixo</span>' : '<span class="px-2 py-0.5 rounded-full text-xs bg-stone-100 text-stone-600">Variável</span>';
                                         const dueDateFormatted = exp.effectiveDueDate ? new Date(exp.effectiveDueDate).toLocaleDateString('pt-BR') : '-';
@@ -3912,6 +3949,9 @@
                                 </tbody>
                             </table>
                         </div>
+                        
+                        <!-- Pagination Controls -->
+                        ${window._folhaPaginationData && window._folhaPaginationData.totalPages > 1 ? renderFolhaPagination(window._folhaPaginationData.currentPage, window._folhaPaginationData.totalPages, window._folhaPaginationData.startIndex, window._folhaPaginationData.endIndex, window._folhaPaginationData.totalCount) : ''}
                     </div>
                 </div>
             `;
@@ -3921,9 +3961,43 @@
         function selectFolhaMonth(monthIndex, year = null) {
             selectedFolhaMonth = monthIndex;
             if (year) selectedFolhaYear = year;
+            folhaCurrentPage = 1;
             renderFolhaPagamentoSection();
         }
         window.selectFolhaMonth = selectFolhaMonth;
+
+        window.setFolhaPage = function(page) {
+            folhaCurrentPage = page;
+            renderFolhaPagamentoSection();
+            document.getElementById('folha-pagamento-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        };
+
+        window.setFolhaSearchQuery = function(query) {
+            folhaSearchQuery = query.toLowerCase().trim();
+            folhaCurrentPage = 1;
+            renderFolhaPagamentoSection();
+        };
+
+        function renderFolhaPagination(currentPage, totalPages, startIdx, endIdx, totalCount) {
+            const maxVisible = 5;
+            let start = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+            let end = Math.min(totalPages, start + maxVisible - 1);
+            if (end - start < maxVisible - 1) start = Math.max(1, end - maxVisible + 1);
+
+            let buttons = '';
+            if (currentPage > 1) {
+                buttons += '<button onclick="setFolhaPage(' + (currentPage - 1) + ')" class="px-3 py-1 rounded bg-stone-100 hover:bg-stone-200 text-stone-600">&laquo;</button>';
+            }
+            for (let i = start; i <= end; i++) {
+                const activeClass = i === currentPage ? 'bg-yellow-400 text-stone-800' : 'bg-stone-100 hover:bg-stone-200 text-stone-600';
+                buttons += '<button onclick="setFolhaPage(' + i + ')" class="px-3 py-1 rounded ' + activeClass + '">' + i + '</button>';
+            }
+            if (currentPage < totalPages) {
+                buttons += '<button onclick="setFolhaPage(' + (currentPage + 1) + ')" class="px-3 py-1 rounded bg-stone-100 hover:bg-stone-200 text-stone-600">&raquo;</button>';
+            }
+
+            return '<div class="flex items-center justify-between mt-4 px-4 py-3 bg-white border-t border-stone-200 rounded-b-xl"><span class="text-sm text-stone-600">Mostrando ' + (startIdx + 1) + '-' + endIdx + ' de ' + totalCount + ' despesas</span><div class="flex gap-1">' + buttons + '</div></div>';
+        }
 
         // Function to filter expenses by type
         function filterExpensesByType(type) {
@@ -10963,7 +11037,7 @@
                     </div>
 
                     <div class="flex items-center gap-2"><input type="checkbox" id="expense-isFixedSalary" class="h-4 w-4 rounded" ${expense?.isFixedSalary ? 'checked' : ''}><label for="expense-isFixedSalary" class="text-sm">É salário fixo?</label></div>
-                    <div id="employee-role-container" class="${expense?.isFixedSalary ? '' : 'hidden'}"><label class="font-medium text-sm">Cargo</label><input type="text" id="expense-employeeRole" class="form-input" value="${expense?.employeeRole || ''}"></div>
+                    <div id="employee-role-container" class="${expense?.isFixedSalary ? '' : 'hidden'}"><label class="font-medium text-sm">Cargo ou Tag</label><input type="text" id="expense-employeeRole" class="form-input" value="${expense?.employeeRole || ''}"></div>
                     <div class="pt-4 flex justify-end gap-2">${expenseId ? `<button type="button" class="danger-btn" data-action="delete-item" data-collection="expenses" data-id="${expenseId}">Apagar</button>` : ''}<button type="submit" class="primary-btn w-auto">Salvar</button></div>
                 </form>`;
 
