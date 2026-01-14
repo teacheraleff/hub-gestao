@@ -4135,69 +4135,44 @@
 
         // Função para calcular valor líquido (após taxas de cartão/assinatura)
         // Taxa: 3,49% + R$0,49 por parcela
-        // Função de cálculo de valor líquido - replica o simulador oficial do cartão
-        // REGRAS DO SIMULADOR OFICIAL:
-        // 1. Calcular taxas SOBRE O TOTAL (não por parcela)
-        // 2. Arredondar o TOTAL LÍQUIDO (não a parcela)
-        // 3. Depois dividir para obter a parcela líquida exibida
-        function calcularValorLiquido(valorBruto, paymentType, parcelas = 1) {
-            const tiposPagamentoComTaxa = ['Cartão', 'Cartao', 'Assinatura', 'Cartão de Crédito'];
-            const temTaxa = tiposPagamentoComTaxa.some(tipo => 
-                paymentType && paymentType.toLowerCase().includes(tipo.toLowerCase())
-            );
+        // Função de cálculo de valor líquido com TAXA MANUAL por parcela
+        // Regras:
+        // 1. Usar taxa informada pelo administrador (taxaParcela) - sem cálculo automático
+        // 2. valorLiquidoParcela = valorBrutoParcela - taxaParcela
+        // 3. totalLiquido = valorLiquidoParcela × numeroParcelas
+        // 4. Arredondar apenas valores finais para 2 casas decimais
+        function calcularValorLiquido(valorBrutoParcela, paymentType, taxaManualParcela = 0) {
+            // Converter para número e garantir precisão
+            const valorParcela = parseFloat(valorBrutoParcela) || 0;
+            const taxaParcela = parseFloat(taxaManualParcela) || 0;
             
-            const numParcelas = Math.max(parseInt(parcelas) || 1, 1);
-            const valorParcela = Math.round((valorBruto / numParcelas) * 100) / 100;
-            
-            if (!temTaxa) {
+            // Se não há taxa informada, retornar sem desconto
+            if (taxaParcela <= 0) {
                 return { 
-                    bruto: valorBruto, 
-                    liquido: valorBruto, 
+                    bruto: valorParcela, 
+                    liquido: valorParcela, 
                     taxa: 0, 
                     temTaxa: false,
                     valorParcela: valorParcela,
                     taxaPorParcela: 0,
-                    liquidoPorParcela: valorParcela,
-                    parcelas: numParcelas,
-                    taxaPercentualParcela: 0,
-                    taxaFixaParcela: 0,
-                    totalLiquido: valorBruto
+                    liquidoPorParcela: valorParcela
                 };
             }
             
-            // PASSO 1: Calcular taxas SOBRE O TOTAL (com lógica parcelada, sem arredondamento)
-            const taxaPercentual = 0.0349;
-            const taxaFixa = 0.49;
-            const taxaPercentualTotal = valorBruto * taxaPercentual;  // Ex: 855 × 0.0349 = 29.8395
-            const taxaFixaTotal = numParcelas * taxaFixa;              // Ex: 6 × 0.49 = 2.94
-            const taxaTotal = taxaPercentualTotal + taxaFixaTotal;    // Ex: 29.8395 + 2.94 = 32.7795
+            // Cálculo simples: valor líquido = valor bruto - taxa
+            const valorLiquidoParcela = valorParcela - taxaParcela;
             
-            // PASSO 2: Calcular o total líquido REAL (sem arredondar ainda)
-            const totalLiquidoReal = valorBruto - taxaTotal;          // Ex: 855 - 32.7795 = 822.2205
-            
-            // PASSO 3: Arredondar o TOTAL LÍQUIDO (ponto crítico do simulador)
-            const totalLiquidoExibido = Math.round(totalLiquidoReal * 100) / 100;  // Ex: 822.22
-            
-            // PASSO 4: Calcular a parcela líquida EXIBIDA (após arredondamento do total)
-            const valorParcelaLiquidaExibida = Math.round((totalLiquidoExibido / numParcelas) * 100) / 100;
-            
-            // PASSO 5: Calcular a taxa exibida por parcela (para informação)
-            const taxaTotalExibida = Math.round(taxaTotal * 100) / 100;
-            const taxaPorParcelaExibida = Math.round((taxaTotal / numParcelas) * 100) / 100;
-            const taxaPercentualPorParcela = Math.round((taxaPercentualTotal / numParcelas) * 100) / 100;
+            // Arredondar apenas no final para 2 casas decimais
+            const valorLiquidoFinal = Math.round(valorLiquidoParcela * 100) / 100;
             
             return { 
-                bruto: valorBruto,
-                liquido: totalLiquidoExibido,
-                taxa: taxaTotalExibida,
+                bruto: valorParcela,
+                liquido: valorLiquidoFinal,
+                taxa: taxaParcela,
                 temTaxa: true,
-                parcelas: numParcelas,
                 valorParcela: valorParcela,
-                taxaPercentualParcela: taxaPercentualPorParcela,
-                taxaFixaParcela: taxaFixa,
-                taxaPorParcela: taxaPorParcelaExibida,
-                liquidoPorParcela: valorParcelaLiquidaExibida,
-                totalLiquido: totalLiquidoExibido
+                taxaPorParcela: taxaParcela,
+                liquidoPorParcela: valorLiquidoFinal
             };
         }
 
@@ -4531,14 +4506,13 @@
             const paginatedEntradas = sortedEntradas.slice(startIndex, endIndex);
 
             // Calculate totals (usando entradas filtradas) - com valores líquidos por parcela
-            // Cada entrada representa UMA parcela, então e.amount já é o valor da parcela
+            // Cada entrada representa UMA parcela, usa taxa manual do aluno
             const calculateNetTotal = (items) => {
                 return items.reduce((sum, e) => {
                     const student = e.studentId ? students.find(s => s.id === e.studentId) : null;
-                    const pType = e.paymentType || (student ? student.paymentType : '') || '';
-                    // e.amount já é o valor da parcela, então passamos parcelas=1
-                    const calc = calcularValorLiquido(Number(e.amount || 0), pType, 1);
-                    return sum + (calc.temTaxa ? calc.liquidoPorParcela : Number(e.amount || 0));
+                    const taxaManual = student && student.taxaParcela ? parseFloat(student.taxaParcela) : 0;
+                    const calc = calcularValorLiquido(Number(e.amount || 0), '', taxaManual);
+                    return sum + calc.liquidoPorParcela;
                 }, 0);
             };
             
@@ -4701,13 +4675,11 @@
                                                 <td class="px-4 py-3 text-sm font-semibold">
                                                     ${(() => {
                                                         const student = ent.studentId ? students.find(s => s.id === ent.studentId) : null;
-                                                        const pType = ent.paymentType || (student ? student.paymentType : '') || '';
-                                                        // ent.amount já é o valor da parcela, então passamos parcelas=1
-                                                        const calc = calcularValorLiquido(Number(ent.amount || 0), pType, 1);
+                                                        const taxaManual = student && student.taxaParcela ? parseFloat(student.taxaParcela) : 0;
+                                                        const calc = calcularValorLiquido(Number(ent.amount || 0), '', taxaManual);
                                                         if (calc.temTaxa) {
-                                                            const detalheTaxa = 'Taxa: 3,49% (R$ ' + calc.taxaPercentualParcela.toFixed(2).replace('.', ',') + ') + R$ 0,49 fixo';
                                                             return '<span class="text-green-700">' + calc.liquidoPorParcela.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) + '</span>' +
-                                                                   '<span class="block text-xs text-red-500 cursor-help" title="' + detalheTaxa + '">-R$ ' + calc.taxaPorParcela.toFixed(2).replace('.', ',') + ' taxa</span>';
+                                                                   '<span class="block text-xs text-red-500">-R$ ' + calc.taxaPorParcela.toFixed(2).replace('.', ',') + ' taxa</span>';
                                                         }
                                                         return '<span class="text-green-700">' + Number(ent.amount || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) + '</span>';
                                                     })()}
@@ -7575,6 +7547,7 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div><label class="font-medium text-sm">Tipo de Pagamento</label><select id="aluno-paymentType" class="form-input">${paymentTypeOptions}</select></div>
                         <div><label class="font-medium text-sm">Quantidade de Parcelas</label><input type="number" min="1" max="24" id="aluno-parcelas" class="form-input" placeholder="Ex: 12" oninput="calcularValorParcela()" value="${aluno?.parcelas || ''}"></div>
+                        <div><label class="font-medium text-sm">Taxa por Parcela (R$)</label><input type="number" step="0.01" min="0" id="aluno-taxaParcela" class="form-input" placeholder="Ex: 5.05" value="${aluno?.taxaParcela || ''}"><p class="text-xs text-stone-500 mt-1">Valor exato da taxa a descontar de cada parcela</p></div>
                     </div>
                     <div id="aluno-amount-fields" class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div><label class="font-medium text-sm">Valor Total (R$)</label><input type="number" step="0.01" id="aluno-amountPaid" class="form-input" oninput="calcularValorParcela()" value="${aluno?.amountPaid || ''}"></div>
@@ -7805,6 +7778,7 @@
             if (canViewFinancialInfo) {
                 data.paymentType = document.getElementById('aluno-paymentType').value;
                 data.parcelas = document.getElementById('aluno-parcelas').value;
+                data.taxaParcela = document.getElementById('aluno-taxaParcela')?.value || '';
                 data.amountPaid = document.getElementById('aluno-amountPaid').value;
                 data.amountReceived = document.getElementById('aluno-amountReceived').value;
                 
