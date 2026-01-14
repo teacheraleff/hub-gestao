@@ -11073,11 +11073,13 @@
                         showSuccessMessage("Sucesso!", `${parcelCount} parcelas criadas.`);
                     } else {
                         data.createdAt = serverTimestamp();
-                        await addDoc(collection(db, `artifacts/${appId}/public/data/expenses`), data);
-                        showSuccessMessage("Sucesso!", "Nova despesa adicionada.");
+                        const docRef = await addDoc(collection(db, `artifacts/${appId}/public/data/expenses`), data);
+                        console.log('✅ Despesa salva no Firebase:', docRef.id);
+                        showSuccessMessage("Sucesso!", "Despesa adicionada e sincronizada!");
                     }
                 } else {
-                    console.warn("Offline mode - no Firebase or dev mode.");
+                    console.warn("⚠️ Modo offline - isDev:", window.isDevelopmentMode, "fbConnected:", window.firebaseConnected, "db:", !!db);
+                    showErrorMessage("Erro", "Não foi possível salvar. Faça login novamente.");
                     closeFormModal();
                     return;
                 }
