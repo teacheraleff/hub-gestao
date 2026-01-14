@@ -4135,18 +4135,19 @@
 
         // Função para calcular valor líquido (após taxas de cartão/assinatura)
         // Taxa: 3,49% + R$0,49 por parcela
-        // Função de cálculo de valor líquido com taxas aplicadas por parcela
-        // Regras:
-        // 1. Valor total ÷ parcelas = valor bruto por parcela
-        // 2. Taxa 3,49% aplicada sobre CADA parcela
-        // 3. Taxa fixa R$0,49 aplicada por CADA parcela  
-        // 4. Valor líquido = valor_parcela - (valor_parcela × 0,0349 + 0,49)
-        // 5. Precisão mantida internamente, arredondamento só no final
+        // Função de cálculo de valor líquido - replica o simulador oficial do cartão
+        // REGRAS DO SIMULADOR OFICIAL:
+        // 1. Calcular taxas SOBRE O TOTAL (não por parcela)
+        // 2. Arredondar o TOTAL LÍQUIDO (não a parcela)
+        // 3. Depois dividir para obter a parcela líquida exibida
         function calcularValorLiquido(valorBruto, paymentType, parcelas = 1) {
             const tiposPagamentoComTaxa = ['Cartão', 'Cartao', 'Assinatura', 'Cartão de Crédito'];
             const temTaxa = tiposPagamentoComTaxa.some(tipo => 
                 paymentType && paymentType.toLowerCase().includes(tipo.toLowerCase())
             );
+            
+            const numParcelas = Math.max(parseInt(parcelas) || 1, 1);
+            const valorParcela = Math.round((valorBruto / numParcelas) * 100) / 100;
             
             if (!temTaxa) {
                 return { 
@@ -4154,50 +4155,49 @@
                     liquido: valorBruto, 
                     taxa: 0, 
                     temTaxa: false,
-                    valorParcela: valorBruto,
+                    valorParcela: valorParcela,
                     taxaPorParcela: 0,
-                    liquidoPorParcela: valorBruto,
-                    parcelas: 1
+                    liquidoPorParcela: valorParcela,
+                    parcelas: numParcelas,
+                    taxaPercentualParcela: 0,
+                    taxaFixaParcela: 0,
+                    totalLiquido: valorBruto
                 };
             }
             
-            const numParcelas = Math.max(parseInt(parcelas) || 1, 1);
+            // PASSO 1: Calcular taxas SOBRE O TOTAL (com lógica parcelada, sem arredondamento)
+            const taxaPercentual = 0.0349;
+            const taxaFixa = 0.49;
+            const taxaPercentualTotal = valorBruto * taxaPercentual;  // Ex: 855 × 0.0349 = 29.8395
+            const taxaFixaTotal = numParcelas * taxaFixa;              // Ex: 6 × 0.49 = 2.94
+            const taxaTotal = taxaPercentualTotal + taxaFixaTotal;    // Ex: 29.8395 + 2.94 = 32.7795
             
-            // 1. Calcular valor bruto por parcela (mantendo precisão total)
-            const valorBrutoPorParcela = valorBruto / numParcelas;
+            // PASSO 2: Calcular o total líquido REAL (sem arredondar ainda)
+            const totalLiquidoReal = valorBruto - taxaTotal;          // Ex: 855 - 32.7795 = 822.2205
             
-            // 2. Calcular taxa por parcela (3,49% + R$0,49 por cada parcela)
-            const taxaPercentualPorParcela = valorBrutoPorParcela * 0.0349;
-            const taxaFixaPorParcela = 0.49;
-            const taxaTotalPorParcela = taxaPercentualPorParcela + taxaFixaPorParcela;
+            // PASSO 3: Arredondar o TOTAL LÍQUIDO (ponto crítico do simulador)
+            const totalLiquidoExibido = Math.round(totalLiquidoReal * 100) / 100;  // Ex: 822.22
             
-            // 3. Calcular valor líquido por parcela
-            const valorLiquidoPorParcela = valorBrutoPorParcela - taxaTotalPorParcela;
+            // PASSO 4: Calcular a parcela líquida EXIBIDA (após arredondamento do total)
+            const valorParcelaLiquidaExibida = Math.round((totalLiquidoExibido / numParcelas) * 100) / 100;
             
-            // 4. Calcular totais (mantendo precisão interna)
-            const taxaTotalExata = taxaTotalPorParcela * numParcelas;
-            const valorLiquidoTotalExato = valorLiquidoPorParcela * numParcelas;
-            
-            // 5. Arredondar apenas os valores finais para exibição
-            // Usar Math.round para evitar erros de ponto flutuante
-            const taxaTotalArredondada = Math.round(taxaTotalExata * 100) / 100;
-            const valorLiquidoArredondado = Math.round(valorLiquidoTotalExato * 100) / 100;
-            const valorBrutoPorParcelaArredondado = Math.round(valorBrutoPorParcela * 100) / 100;
-            const taxaPorParcelaArredondada = Math.round(taxaTotalPorParcela * 100) / 100;
-            const liquidoPorParcelaArredondado = Math.round(valorLiquidoPorParcela * 100) / 100;
+            // PASSO 5: Calcular a taxa exibida por parcela (para informação)
+            const taxaTotalExibida = Math.round(taxaTotal * 100) / 100;
+            const taxaPorParcelaExibida = Math.round((taxaTotal / numParcelas) * 100) / 100;
+            const taxaPercentualPorParcela = Math.round((taxaPercentualTotal / numParcelas) * 100) / 100;
             
             return { 
                 bruto: valorBruto,
-                liquido: valorLiquidoArredondado,
-                taxa: taxaTotalArredondada,
+                liquido: totalLiquidoExibido,
+                taxa: taxaTotalExibida,
                 temTaxa: true,
                 parcelas: numParcelas,
-                // Detalhes por parcela para transparência
-                valorParcela: valorBrutoPorParcelaArredondado,
-                taxaPercentualParcela: Math.round(taxaPercentualPorParcela * 100) / 100,
-                taxaFixaParcela: taxaFixaPorParcela,
-                taxaPorParcela: taxaPorParcelaArredondada,
-                liquidoPorParcela: liquidoPorParcelaArredondado
+                valorParcela: valorParcela,
+                taxaPercentualParcela: taxaPercentualPorParcela,
+                taxaFixaParcela: taxaFixa,
+                taxaPorParcela: taxaPorParcelaExibida,
+                liquidoPorParcela: valorParcelaLiquidaExibida,
+                totalLiquido: totalLiquidoExibido
             };
         }
 
