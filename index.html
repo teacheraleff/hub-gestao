@@ -1138,11 +1138,33 @@
 
 
         // --- DEVELOPMENT MODE FUNCTIONS ---
-        function startAppInDevelopmentMode() {
-            window.isDevelopmentMode = true;
-            window.firebaseConnected = false;
-            window.db = null;
-            // Set up basic user data for development
+        async function startAppInDevelopmentMode() {
+            // Tentar conectar ao Firebase mesmo sem autenticação
+            const firebaseConfig = window.firebaseConfig || {};
+            
+            if (firebaseConfig.apiKey) {
+                try {
+                    const app = initializeApp(firebaseConfig);
+                    db = getFirestore(app);
+                    auth = getAuth(app);
+                    storage = getStorage(app);
+                    window.firebaseConnected = true;
+                    window.db = db;
+                    window.isDevelopmentMode = false;
+                    console.log('✅ Firebase conectado no modo preview');
+                } catch (e) {
+                    console.warn('Firebase init failed, using local mode:', e);
+                    window.isDevelopmentMode = true;
+                    window.firebaseConnected = false;
+                    window.db = null;
+                }
+            } else {
+                window.isDevelopmentMode = true;
+                window.firebaseConnected = false;
+                window.db = null;
+            }
+            
+            // Set up basic user data for preview
             currentUserName = "Admin SLAP";
             currentUserRole = "admin";
             userId = "demo-user";
@@ -1251,6 +1273,13 @@
                 { id: "turma-student-7", name: "Gabriel Souza", email: "gabriel@email.com", phone: "(11) 98888-7777", modalidade: "Turma", turmaId: "demo-turma-2", status: "ativo", nivel: "B1 Intermediário", dataInicio: "2024-03-15" }
             );
             updateWelcomeMessages(currentUserName);
+            
+            // Configurar listeners do Firebase se conectado
+            if (window.firebaseConnected && db) {
+                setupFirestoreListeners();
+                console.log('✅ Firestore listeners configurados no modo preview');
+            }
+            
             showHubView();
             renderInicioSection();
             renderMenu();
