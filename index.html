@@ -3920,6 +3920,7 @@
         let entradasCurrentPage = 1;
         const entradasPerPage = 15;
         let entradasPaymentFilter = 'all';
+        let entradasSearchQuery = '';
 
         window.selectEntradasMonth = function(month, year) {
             selectedEntradasMonth = month;
@@ -3942,6 +3943,12 @@
 
         window.setEntradasPaymentFilter = function(filter) {
             entradasPaymentFilter = filter;
+            entradasCurrentPage = 1;
+            renderEntradasSection();
+        };
+
+        window.setEntradasSearchQuery = function(query) {
+            entradasSearchQuery = query.toLowerCase().trim();
             entradasCurrentPage = 1;
             renderEntradasSection();
         };
@@ -4160,20 +4167,12 @@
 
             const studentEntradas = activeStudentsWithPayment
                 .map(s => {
-                    // Se o aluno tem meses de projeção definidos, verificar se este mês está incluído
-                    if (s.projectionMonths && s.projectionMonths.length > 0) {
-                        if (!s.projectionMonths.includes(currentMonthKey)) {
-                            return null; // Este mês não está nos meses de projeção do aluno
-                        }
-                    } else {
-                        // Fallback: se não tem meses de projeção, usar lógica antiga (verificar data de início)
-                        if (s.startDate) {
-                            const startDate = new Date(s.startDate + 'T12:00:00');
-                            if (startDate.getFullYear() > currentYear || 
-                                (startDate.getFullYear() === currentYear && startDate.getMonth() > currentMonth)) {
-                                return null; // Student hasn't started yet
-                            }
-                        }
+                    // Aluno só aparece se tiver meses de projeção configurados E este mês estiver incluído
+                    if (!s.projectionMonths || s.projectionMonths.length === 0) {
+                        return null; // Aluno não tem meses de projeção configurados
+                    }
+                    if (!s.projectionMonths.includes(currentMonthKey)) {
+                        return null; // Este mês não está nos meses de projeção do aluno
                     }
 
                     // Check if there's already a manual entry for this student this month
@@ -4206,7 +4205,7 @@
             const allMonthlyEntradas = [...monthlyEntradas, ...studentEntradas];
 
             // Filtrar por tipo de pagamento
-            const filteredEntradas = entradasPaymentFilter === 'all' 
+            let filteredEntradas = entradasPaymentFilter === 'all' 
                 ? allMonthlyEntradas 
                 : allMonthlyEntradas.filter(ent => {
                     // Buscar paymentType do aluno se for entrada projetada
@@ -4217,6 +4216,19 @@
                     }
                     return ent.paymentType === entradasPaymentFilter;
                 });
+
+            // Filtrar por nome do aluno
+            if (entradasSearchQuery) {
+                filteredEntradas = filteredEntradas.filter(ent => {
+                    const description = (ent.description || '').toLowerCase();
+                    if (ent.studentId) {
+                        const student = students.find(s => s.id === ent.studentId);
+                        const studentName = student ? (student.name || '').toLowerCase() : '';
+                        return studentName.includes(entradasSearchQuery) || description.includes(entradasSearchQuery);
+                    }
+                    return description.includes(entradasSearchQuery);
+                });
+            }
 
             // Sort entradas
             const sortedEntradas = [...filteredEntradas].sort((a, b) => {
@@ -4314,6 +4326,13 @@
                                     <option value="Permuta" ${entradasPaymentFilter === 'Permuta' ? 'selected' : ''}>Permuta</option>
                                     <option value="Bolsa" ${entradasPaymentFilter === 'Bolsa' ? 'selected' : ''}>Bolsa</option>
                                 </select>
+                            <div class="flex items-center gap-2">
+                                <input type="text" 
+                                    placeholder="Buscar aluno..." 
+                                    value="${entradasSearchQuery}" 
+                                    oninput="setEntradasSearchQuery(this.value)"
+                                    class="px-3 py-1.5 rounded-lg border border-stone-300 text-sm w-40 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent">
+                            </div>
                             </div>
                         </div>
                         <button onclick="openAddEntradaModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors">
@@ -4390,12 +4409,18 @@
                                                 <td class="px-4 py-3"><span class="px-2 py-1 rounded-full text-xs font-medium ${statusClass}">${statusLabel}</span></td>
                                                 <td class="px-4 py-3 actions-col">
                                                     <div class="flex gap-2 actions-div">
-                                                        <button onclick="editEntrada('${ent.id}')" class="text-stone-500 hover:text-stone-700" title="Editar">
-                                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                                                        </button>
-                                                        <button onclick="deleteEntrada('${ent.id}')" class="text-red-500 hover:text-red-700" title="Excluir">
-                                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                                        </button>
+                                                        ${isProjected ? `
+                                                            <button onclick="confirmProjectedEntrada('${ent.studentId}', ${ent.amount}, '${ent.date}')" class="text-green-600 hover:text-green-800" title="Confirmar Pagamento">
+                                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                                            </button>
+                                                        ` : `
+                                                            <button onclick="editEntrada('${ent.id}')" class="text-stone-500 hover:text-stone-700" title="Editar">
+                                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                                            </button>
+                                                            <button onclick="deleteEntrada('${ent.id}')" class="text-red-500 hover:text-red-700" title="Excluir">
+                                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                                            </button>
+                                                        `}
                                                     </div>
                                                 </td>
                                             </tr>
@@ -10917,7 +10942,7 @@
             isFixedSalaryCheckbox.onchange = updateFieldVisibility;
             tipoSelect.onchange = updateFieldVisibility;
 
-            document.getElementById('form-modal-content-area').onsubmit = saveExpense;
+            document.getElementById('form-modal-body').onsubmit = saveExpense;
             document.getElementById('form-modal').classList.add('visible');
         }
         function addMonthsToDate(dateStr, months) {
