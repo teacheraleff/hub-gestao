@@ -4133,6 +4133,33 @@
         let entradasPaymentFilter = 'all';
         let entradasSearchQuery = '';
 
+        // Função para calcular valor líquido (após taxas de cartão/assinatura)
+        // Taxa: 3,49% + R$0,49 por parcela
+        function calcularValorLiquido(valorBruto, paymentType, parcelas = 1) {
+            const tiposPagamentoComTaxa = ['Cartão', 'Cartao', 'Assinatura', 'Cartão de Crédito'];
+            const temTaxa = tiposPagamentoComTaxa.some(tipo => 
+                paymentType && paymentType.toLowerCase().includes(tipo.toLowerCase())
+            );
+            
+            if (!temTaxa) {
+                return { bruto: valorBruto, liquido: valorBruto, taxa: 0, temTaxa: false };
+            }
+            
+            const numParcelas = parseInt(parcelas) || 1;
+            const taxaPercentual = valorBruto * 0.0349; // 3,49%
+            const taxaFixa = 0.49 * numParcelas; // R$0,49 por parcela
+            const taxaTotal = taxaPercentual + taxaFixa;
+            const valorLiquido = valorBruto - taxaTotal;
+            
+            return { 
+                bruto: valorBruto, 
+                liquido: valorLiquido, 
+                taxa: taxaTotal, 
+                temTaxa: true,
+                parcelas: numParcelas
+            };
+        }
+
         window.selectEntradasMonth = function(month, year) {
             selectedEntradasMonth = month;
             selectedEntradasYear = year;
@@ -4462,10 +4489,21 @@
             const endIndex = startIndex + entradasPerPage;
             const paginatedEntradas = sortedEntradas.slice(startIndex, endIndex);
 
-            // Calculate totals (usando entradas filtradas)
-            const totalEntradas = filteredEntradas.reduce((sum, e) => sum + Number(e.amount || 0), 0);
-            const receivedTotal = filteredEntradas.filter(e => e.status === 'received').reduce((sum, e) => sum + Number(e.amount || 0), 0);
-            const pendingTotal = filteredEntradas.filter(e => e.status === 'pending').reduce((sum, e) => sum + Number(e.amount || 0), 0);
+            // Calculate totals (usando entradas filtradas) - com valores líquidos
+            const calculateNetTotal = (items) => {
+                return items.reduce((sum, e) => {
+                    const student = e.studentId ? students.find(s => s.id === e.studentId) : null;
+                    const pType = e.paymentType || (student ? student.paymentType : '') || '';
+                    const numParcelas = student && student.parcelas ? parseInt(student.parcelas) : 1;
+                    const calc = calcularValorLiquido(Number(e.amount || 0), pType, numParcelas);
+                    return sum + calc.liquido;
+                }, 0);
+            };
+            
+            const totalEntradasBruto = filteredEntradas.reduce((sum, e) => sum + Number(e.amount || 0), 0);
+            const totalEntradas = calculateNetTotal(filteredEntradas);
+            const receivedTotal = calculateNetTotal(filteredEntradas.filter(e => e.status === 'received'));
+            const pendingTotal = calculateNetTotal(filteredEntradas.filter(e => e.status === 'pending'));
 
             const categoryLabels = {
                 'mensalidade': 'Parcela',
@@ -4567,7 +4605,8 @@
                                         <th class="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase">Data</th>
                                         <th class="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase">Descrição</th>
                                         <th class="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase">Categoria</th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase">Valor</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase">Valor Bruto</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase">Valor Líquido</th>
                                         <th class="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase">Status</th>
                                         <th class="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase">Ações</th>
                                     </tr>
@@ -4616,7 +4655,20 @@
                                                     </div>
                                                 </td>
                                                 <td class="px-4 py-3 text-sm text-stone-600">${categoryLabels[ent.category] || ent.category || '-'}</td>
-                                                <td class="px-4 py-3 text-sm font-semibold text-green-700">${Number(ent.amount || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                                                <td class="px-4 py-3 text-sm text-stone-600">${Number(ent.amount || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                                                <td class="px-4 py-3 text-sm font-semibold">
+                                                    ${(() => {
+                                                        const student = ent.studentId ? students.find(s => s.id === ent.studentId) : null;
+                                                        const pType = ent.paymentType || (student ? student.paymentType : '') || '';
+                                                        const numParcelas = student && student.parcelas ? parseInt(student.parcelas) : 1;
+                                                        const calc = calcularValorLiquido(Number(ent.amount || 0), pType, numParcelas);
+                                                        if (calc.temTaxa) {
+                                                            return '<span class="text-green-700">' + calc.liquido.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) + '</span>' +
+                                                                   '<span class="block text-xs text-red-500">-' + calc.taxa.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) + ' taxas</span>';
+                                                        }
+                                                        return '<span class="text-green-700">' + calc.liquido.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) + '</span>';
+                                                    })()}
+                                                </td>
                                                 <td class="px-4 py-3"><span class="px-2 py-1 rounded-full text-xs font-medium ${statusClass}">${statusLabel}</span></td>
                                                 <td class="px-4 py-3 actions-col">
                                                     <div class="flex gap-2 actions-div">
@@ -4638,7 +4690,7 @@
                                         `;
                                     }).join('') : `
                                         <tr>
-                                            <td colspan="6" class="px-4 py-8 text-center text-stone-500">
+                                            <td colspan="7" class="px-4 py-8 text-center text-stone-500">
                                                 Nenhuma entrada registrada para ${monthName} ${currentYear}.
                                             </td>
                                         </tr>
