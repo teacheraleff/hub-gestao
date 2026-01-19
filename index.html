@@ -9532,17 +9532,18 @@
                     `;
                 }).join('');
 
+                const isEvenLesson = i % 2 === 0;
                 lessonsHtml += `
                     <div class="border border-stone-200 rounded-lg p-2" id="lesson-row-${turmaId}-${i}" data-lesson-number="${i}">
                         <div class="flex items-center gap-2 mb-2 pb-1 border-b border-stone-100">
-                            <span class="font-bold text-stone-700 text-sm">Aula ${i}</span>
+                            <span class="font-bold text-stone-800 text-xs px-2 py-0.5 rounded" style="background-color: #F1D24B;">Aula ${i}</span>
                             <input type="date" class="form-input p-1 text-xs lesson-date flex-1" value="${lessonDate}" data-allowed-days="${allowedWeekdays.join(',')}">
                         </div>
                         <div class="grid grid-cols-2 gap-1 mb-2">
                             <input type="text" class="form-input p-1 text-xs lesson-topic" placeholder="Tema" value="${lessonData?.topic || ''}">
                             <div class="flex gap-1">
                                 <input type="text" class="form-input p-1 text-xs flex-1 lesson-notes" placeholder="Obs" value="${lessonData?.notes || ''}">
-                                <button type="button" class="px-1 py-1 bg-stone-100 hover:bg-stone-200 rounded border border-stone-300 quick-notes-btn" title="Mensagens prontas"><svg class="w-3 h-3 text-stone-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg></button>
+                                <button type="button" class="px-1 py-1 bg-stone-100 hover:bg-stone-200 rounded border border-stone-300" title="Mensagens prontas" onclick="showQuickNotesMenu(this.parentElement.querySelector('.lesson-notes'), this)"><svg class="w-3 h-3 text-stone-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg></button>
                             </div>
                         </div>
                         <div class="grid grid-cols-2 gap-1 text-xs">
@@ -9550,6 +9551,9 @@
                         </div>
                     </div>
                 `;
+                if (isEvenLesson && i < 40) {
+                    lessonsHtml += '<div class="col-span-2 border-b border-stone-200 my-1"></div>';
+                }
             }
 
             modalContentArea.innerHTML = `
@@ -9563,14 +9567,6 @@
 
             modal.classList.add('visible');
             
-            // Adicionar event listeners para botões de mensagens prontas
-            document.querySelectorAll('.quick-notes-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    const input = btn.closest('div').querySelector('.lesson-notes');
-                    showQuickNotesMenu(input, btn);
-                });
-            });
         }
 
         function openVipPefModal(vipId) {
@@ -9643,22 +9639,26 @@
                     </div>
                 `;
 
+                const isEvenLesson = i % 2 === 0;
                 lessonsHtml += `
                     <div class="border border-stone-200 rounded-lg p-2" id="lesson-row-${vipId}-${i}" data-lesson-number="${i}">
                         <div class="flex items-center gap-2 mb-2 pb-2 border-b border-stone-100">
-                            <span class="font-bold text-stone-700 text-sm">Aula ${i}</span>
+                            <span class="font-bold text-stone-800 text-xs px-2 py-0.5 rounded" style="background-color: #F1D24B;">Aula ${i}</span>
                             <input type="date" class="form-input p-1 text-xs lesson-date flex-1" value="${lessonDate}" data-allowed-days="${allowedWeekdays.join(',')}">
                         </div>
                         <div class="space-y-1">
                             <input type="text" class="form-input p-1 text-xs w-full lesson-topic" placeholder="Tema" value="${lessonTopic}">
                             <div class="flex gap-1">
                                 <input type="text" class="form-input p-1 text-xs flex-1 lesson-notes" placeholder="Obs" value="${lessonNotes}">
-                                <button type="button" class="px-1 py-1 bg-stone-100 hover:bg-stone-200 rounded border border-stone-300 quick-notes-btn" title="Mensagens prontas"><svg class="w-3 h-3 text-stone-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg></button>
+                                <button type="button" class="px-1 py-1 bg-stone-100 hover:bg-stone-200 rounded border border-stone-300" title="Mensagens prontas" onclick="showQuickNotesMenu(this.parentElement.querySelector('.lesson-notes'), this)"><svg class="w-3 h-3 text-stone-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg></button>
                             </div>
                             ${studentHtml}
                         </div>
                     </div>
                 `;
+                if (isEvenLesson && i < 40) {
+                    lessonsHtml += '<div class="col-span-2 border-b border-stone-200 my-1"></div>';
+                }
             }
 
             // Contar estatísticas
@@ -9694,14 +9694,6 @@
 
             modal.classList.add('visible');
             
-            // Adicionar event listeners para botões de mensagens prontas
-            document.querySelectorAll('.quick-notes-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    const input = btn.closest('div').querySelector('.lesson-notes');
-                    showQuickNotesMenu(input, btn);
-                });
-            });
         }
 
         function showQuickNotesMenu(inputElement, buttonElement) {
