@@ -132,7 +132,7 @@
         .modal-overlay.visible { opacity: 1; visibility: visible; }
         .modal-content { background-color: white; padding: 2rem; border-radius: 0.75rem; width: 90%; max-width: 800px; max-height: 90vh; overflow-y: auto; transform: scale(0.95); transition: transform 0.3s; }
         .modal-overlay.visible .modal-content { transform: scale(1); }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e7e5e4; padding-bottom: 1rem; margin-bottom: 1rem; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e7e5e4; padding-bottom: 1rem; margin-bottom: 1rem; position: sticky; top: 0; background: white; z-index: 10; padding-top: 0.5rem; }
         .modal-header h4 { font-size: 1.25rem; font-weight: 700; color: #44403c; }
         .modal-close-btn { 
             background: none; 
@@ -21318,47 +21318,47 @@ function openAddChecklistForm() {
             }
 
             document.getElementById('form-modal-content-area').innerHTML = `
-                <form id="notas-form" class="space-y-4">
+                <form id="notas-form" class="space-y-3">
                     <input type="hidden" id="vip-id" value="${vipId}">
 
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-2 gap-2">
                         <div>
-                            <label class="font-medium text-xs">Midterm (0-20)</label>
+                            <label class="font-medium text-xs">Midterm Test (0-20)</label>
                             <input type="number" id="midterm-test" class="form-input" min="0" max="20" step="any" value="${grades.midtermTest}">
                         </div>
                         <div>
-                            <label class="font-medium text-xs">Listening (0-20)</label>
+                            <label class="font-medium text-xs">Listening Test (0-20)</label>
                             <input type="number" id="listening-test" class="form-input" min="0" max="20" step="any" value="${grades.listeningTest}">
                         </div>
                         <div>
-                            <label class="font-medium text-xs">Grammar (0-20)</label>
+                            <label class="font-medium text-xs">Grammar Test (0-20)</label>
                             <input type="number" id="grammar-test" class="form-input" min="0" max="20" step="any" value="${grades.grammarTest}">
                         </div>
                         <div>
-                            <label class="font-medium text-xs">Oral (0-20)</label>
+                            <label class="font-medium text-xs">Oral Test (0-20)</label>
                             <input type="number" id="oral-test" class="form-input" min="0" max="20" step="any" value="${grades.oralTest}">
                         </div>
                         <div>
-                            <label class="font-medium text-xs">Partic. (0-10)</label>
+                            <label class="font-medium text-xs">Participação (0-10)</label>
                             <input type="number" id="participacao" class="form-input" min="0" max="10" step="any" value="${grades.participacao}">
                         </div>
                         <div>
-                            <label class="font-medium text-xs">Assim. (0-10) - Auto</label>
+                            <label class="font-medium text-xs">Assiduidade (0-10) - Auto</label>
                             <input type="number" id="assiduidade" class="form-input bg-gray-100" min="0" max="10" step="any" value="${grades.assiduidade}" readonly
                                    title="Calculado automaticamente baseado nas presenças registradas no PEF. Não pode ser editado manualmente.">
                         </div>
                     </div>
 
-                    <div class="mt-4">
-                        <label class="font-medium text-sm">Observações do Professor</label>
-                        <textarea id="observacoes" class="form-input w-full h-24 resize-none" placeholder="Escreva uma observação sobre o desempenho do aluno...">${grades.observacao || ''}</textarea>
+                    <div class="mt-2">
+                        <label class="font-medium text-xs">Observações</label>
+                        <textarea id="observacoes" class="form-input w-full h-16 resize-none text-sm" placeholder="Escreva uma observação sobre o desempenho do aluno...">${grades.observacao || ''}</textarea>
                         <p class="text-xs text-stone-500 mt-1">Esta observação aparecerá no Report Card do aluno.</p>
                     </div>
 
-                    <div class="mt-6 p-4 bg-stone-50 rounded-lg">
+                    <div class="mt-3 p-2 bg-stone-50 rounded-lg">
                         <div class="flex justify-between items-center">
-                            <span class="font-semibold">Total:</span>
-                            <span id="total-score" class="text-xl font-bold">0</span>
+                            <span class="font-semibold text-sm">Total:</span>
+                            <span id="total-score" class="text-lg font-bold">0</span>
                         </div>
                         <div class="mt-2">
                             <span id="approval-status" class="font-medium"></span>
@@ -21474,11 +21474,11 @@ function openAddChecklistForm() {
             }, 100);
 
             document.getElementById('form-modal-content-area').innerHTML = `
-                <div class="space-y-3 max-h-96 overflow-y-auto">
-                    <input type="hidden" id="turma-id" value="${turmaId}">
+                <div class="grid grid-cols-2 gap-3 max-h-96 overflow-y-auto">
+                    <input type="hidden" id="turma-id" value="${turmaId}" class="col-span-2">
 
                     ${turmaStudents.length === 0 ? `
-                        <div class="text-center py-8 text-stone-500">
+                        <div class="text-center py-8 text-stone-500 col-span-2">
                             Nenhum aluno encontrado nesta turma.
                         </div>
                     ` : turmaStudents.map(student => {
@@ -21503,29 +21503,29 @@ function openAddChecklistForm() {
                         <div class="border border-stone-200 rounded-lg p-2">
                             <h4 class="font-semibold text-sm mb-2">${student.name}</h4>
 
-                            <div class="grid grid-cols-3 gap-2 mb-2">
+                            <div class="grid grid-cols-2 gap-2 mb-2">
                                 <div>
-                                    <label class="font-medium text-xs">Midterm (0-20)</label>
+                                    <label class="font-medium text-xs">Midterm Test (0-20)</label>
                                     <input type="number" id="midterm-${student.id}" class="form-input student-grade" min="0" max="20" step="any" value="${grades.midtermTest}" data-student="${student.id}">
                                 </div>
                                 <div>
-                                    <label class="font-medium text-xs">Listening (0-20)</label>
+                                    <label class="font-medium text-xs">Listening Test (0-20)</label>
                                     <input type="number" id="listening-${student.id}" class="form-input student-grade" min="0" max="20" step="any" value="${grades.listeningTest}" data-student="${student.id}">
                                 </div>
                                 <div>
-                                    <label class="font-medium text-xs">Grammar (0-20)</label>
+                                    <label class="font-medium text-xs">Grammar Test (0-20)</label>
                                     <input type="number" id="grammar-${student.id}" class="form-input student-grade" min="0" max="20" step="any" value="${grades.grammarTest}" data-student="${student.id}">
                                 </div>
                                 <div>
-                                    <label class="font-medium text-xs">Oral (0-20)</label>
+                                    <label class="font-medium text-xs">Oral Test (0-20)</label>
                                     <input type="number" id="oral-${student.id}" class="form-input student-grade" min="0" max="20" step="any" value="${grades.oralTest}" data-student="${student.id}">
                                 </div>
                                 <div>
-                                    <label class="font-medium text-xs">Partic. (0-10)</label>
+                                    <label class="font-medium text-xs">Participação (0-10)</label>
                                     <input type="number" id="participacao-${student.id}" class="form-input student-grade" min="0" max="10" step="any" value="${grades.participacao}" data-student="${student.id}">
                                 </div>
                                 <div>
-                                    <label class="font-medium text-xs">Assim. (0-10) - Auto</label>
+                                    <label class="font-medium text-xs">Assiduidade (0-10) - Auto</label>
                                     <input type="number" id="assiduidade-${student.id}" class="form-input student-grade bg-gray-100" min="0" max="10" step="any" value="${grades.assiduidade}" data-student="${student.id}" readonly
                                            title="Calculado automaticamente baseado nas presenças registradas no PEF. Não pode ser editado manualmente.">
                                 </div>
