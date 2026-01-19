@@ -2721,6 +2721,7 @@
         }
 
         function updateTurmasList() {
+            currentTurmaPage = 1;
             const filteredTurmas = getFilteredTurmas();
             const turmasGrid = document.getElementById('turmas-grid');
 
@@ -2799,6 +2800,8 @@
 
         let currentVipPage = 1;
         let vipsPerPage = 8;
+        let turmasPerPage = 8;
+        let currentTurmaPage = 1;
 
         function updateVipsList() {
             const allFilteredVips = getFilteredVips();
@@ -3027,6 +3030,14 @@
 
             const canManage = ['admin', 'coord', 'superv', 'estagiario', 'comercial'].includes(currentUserRole);
             let itemsToDisplay = getFilteredTurmas();
+            
+            // Paginação de turmas
+            const totalTurmas = itemsToDisplay.length;
+            const totalTurmaPages = Math.ceil(totalTurmas / turmasPerPage);
+            if (currentTurmaPage > totalTurmaPages && totalTurmaPages > 0) currentTurmaPage = totalTurmaPages;
+            const turmaStartIndex = (currentTurmaPage - 1) * turmasPerPage;
+            const turmaEndIndex = turmaStartIndex + turmasPerPage;
+            const paginatedTurmas = itemsToDisplay.slice(turmaStartIndex, turmaEndIndex);
 
 
             contentArea.innerHTML = `
@@ -3062,7 +3073,7 @@
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" id="turmas-grid">
-                        ${itemsToDisplay.map(t => {
+                        ${paginatedTurmas.map(t => {
                             // Count only TURMA modality students in the class
                             const turmaStudents = students.filter(s => 
                                 (t.studentIds || []).includes(s.id) && s.modalidade === 'TURMA'
@@ -3095,7 +3106,26 @@
                                     ${(() => {
                                         const lastPefDate = getLastPefDate(t.id);
                                         if (lastPefDate) {
-                                            return `<div class="mt-2"><span class="status-tag" style="background-color: ${isFinalizada ? '#D1D5DB' : '#DBEAFE'}; color: ${isFinalizada ? '#4B5563' : '#1E40AF'}; font-weight: 500;">Última PEF: ${formatDateBR(lastPefDate)}</span></div>`;
+                                            return `<div class="mt-2"><span class="status-tag" style="background-color: ${isFinalizada ? '#D1D5DB' : '#DBEAFE'}; color: ${isFinalizada ? '#4B5563' : '#1E40AF'}; font-weight: 500;">Última PEF: ${formatDateBR(lastPefDate)}</span>
+                    \${totalTurmaPages > 1 ? \`
+                    <div class="flex items-center justify-between mt-6 pt-4 border-t border-stone-200">
+                        <p class="text-sm text-stone-500">
+                            Mostrando \${turmaStartIndex + 1}-\${Math.min(turmaEndIndex, totalTurmas)} de \${totalTurmas} turmas
+                        </p>
+                        <div class="flex gap-2">
+                            <button onclick="changeTurmaPage(-1)" \${currentTurmaPage === 1 ? 'disabled' : ''} 
+                                class="px-3 py-1.5 rounded-lg text-sm font-medium transition-all \${currentTurmaPage === 1 ? 'bg-stone-100 text-stone-400 cursor-not-allowed' : 'bg-stone-200 text-stone-700 hover:bg-stone-300'}">
+                                Anterior
+                            </button>
+                            <span class="px-3 py-1.5 text-sm text-stone-600">Página \${currentTurmaPage} de \${totalTurmaPages}</span>
+                            <button onclick="changeTurmaPage(1)" \${currentTurmaPage === totalTurmaPages ? 'disabled' : ''} 
+                                class="px-3 py-1.5 rounded-lg text-sm font-medium transition-all \${currentTurmaPage === totalTurmaPages ? 'bg-stone-100 text-stone-400 cursor-not-allowed' : 'bg-stone-200 text-stone-700 hover:bg-stone-300'}">
+                                Próxima
+                            </button>
+                        </div>
+                    </div>
+                    \` : ''}
+                </div>`;
                                         }
                                         return '';
                                     })()}
@@ -13632,7 +13662,7 @@
                     <div class="bg-white rounded-xl shadow-sm border border-stone-200 p-6">
                         <div class="flex items-center justify-between mb-6">
                             <h3 class="text-xl font-bold text-stone-800">
-                                🎂 Aniversariantes de ${monthNames[selectedMonth]}
+                                Aniversariantes de ${monthNames[selectedMonth]}
                             </h3>
                             <span class="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-medium">
                                 ${selectedStudents.length} aluno(s)
@@ -13649,6 +13679,12 @@
             renderAniversariantesSection();
         }
         window.selectAniversariantesMonth = selectAniversariantesMonth;
+
+        function changeTurmaPage(delta) {
+            currentTurmaPage += delta;
+            renderTurmasSection();
+        }
+        window.changeTurmaPage = changeTurmaPage;
 
         function searchAniversariantes(query) {
             aniversariantesSearchQuery = query;
