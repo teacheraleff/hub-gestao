@@ -13461,21 +13461,9 @@
 
             function parseBirthDate(bd) { if (!bd) return null; if (bd.toDate) return bd.toDate(); if (bd.seconds) return new Date(bd.seconds * 1000); return new Date(bd); }
             
-            // Debug para verificar dados dos alunos
-            console.log('🎂 DEBUG Aniversariantes:', {
-                totalStudentsInArray: students.length,
-                sampleStudents: students.slice(0, 5).map(s => ({
-                    name: s.name,
-                    status: s.status,
-                    birthDate: s.birthDate,
-                    dataNascimento: s.dataNascimento,
-                    data_nascimento: s.data_nascimento
-                }))
-            });
-            
             // Estatísticas de alunos
-            const totalActiveStudents = students.filter(s => s.status === 'ativo').length;
-            const activeStudents = students.filter(s => s.status === 'ativo' && s.birthDate);
+            const totalActiveStudents = students.filter(s => (s.status || '').toLowerCase() === 'ativo').length;
+            const activeStudents = students.filter(s => (s.status || '').toLowerCase() === 'ativo' && s.birthDate);
             const studentsWithoutBirthdate = totalActiveStudents - activeStudents.length;
 
             const studentsByMonth = {};
