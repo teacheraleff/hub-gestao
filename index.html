@@ -254,7 +254,7 @@
 
         /* --- PEF Styles (Integrated) --- */
         .pef-student-attendance-row { display: flex; align-items: center; justify-content: space-between; padding: 0.5rem; border: 1px solid #e5e7eb; border-radius: 0.375rem; background-color: #f9fafb; }
-        .pef-status-btn-group button { width: 2.5rem; height: 2.5rem; border-radius: 0.375rem; border: 1px solid #d1d5db; font-size: 0.875rem; font-weight: 600; cursor: pointer; transition: all 0.2s; background-color: #f9fafb; }
+        .pef-status-btn-group button { width: 2rem; height: 2rem; border-radius: 0.375rem; border: 1px solid #d1d5db; font-size: 0.875rem; font-weight: 600; cursor: pointer; transition: all 0.2s; background-color: #f9fafb; }
         .pef-status-btn-group button:hover { border-color: #a8a29e; }
         .pef-status-btn-group button.active.P { background-color: #10B981; color: white; border-color: #10B981; }
         .pef-status-btn-group button.active.F { background-color: #EF4444; color: white; border-color: #EF4444; }
@@ -3106,26 +3106,7 @@
                                     ${(() => {
                                         const lastPefDate = getLastPefDate(t.id);
                                         if (lastPefDate) {
-                                            return `<div class="mt-2"><span class="status-tag" style="background-color: ${isFinalizada ? '#D1D5DB' : '#DBEAFE'}; color: ${isFinalizada ? '#4B5563' : '#1E40AF'}; font-weight: 500;">Última PEF: ${formatDateBR(lastPefDate)}</span>
-                    \${totalTurmaPages > 1 ? \`
-                    <div class="flex items-center justify-between mt-6 pt-4 border-t border-stone-200">
-                        <p class="text-sm text-stone-500">
-                            Mostrando \${turmaStartIndex + 1}-\${Math.min(turmaEndIndex, totalTurmas)} de \${totalTurmas} turmas
-                        </p>
-                        <div class="flex gap-2">
-                            <button onclick="changeTurmaPage(-1)" \${currentTurmaPage === 1 ? 'disabled' : ''} 
-                                class="px-3 py-1.5 rounded-lg text-sm font-medium transition-all \${currentTurmaPage === 1 ? 'bg-stone-100 text-stone-400 cursor-not-allowed' : 'bg-stone-200 text-stone-700 hover:bg-stone-300'}">
-                                Anterior
-                            </button>
-                            <span class="px-3 py-1.5 text-sm text-stone-600">Página \${currentTurmaPage} de \${totalTurmaPages}</span>
-                            <button onclick="changeTurmaPage(1)" \${currentTurmaPage === totalTurmaPages ? 'disabled' : ''} 
-                                class="px-3 py-1.5 rounded-lg text-sm font-medium transition-all \${currentTurmaPage === totalTurmaPages ? 'bg-stone-100 text-stone-400 cursor-not-allowed' : 'bg-stone-200 text-stone-700 hover:bg-stone-300'}">
-                                Próxima
-                            </button>
-                        </div>
-                    </div>
-                    \` : ''}
-                </div>`;
+                                            return `<div class="mt-2"><span class="status-tag" style="background-color: ${isFinalizada ? '#D1D5DB' : '#DBEAFE'}; color: ${isFinalizada ? '#4B5563' : '#1E40AF'}; font-weight: 500;">Última PEF: ${formatDateBR(lastPefDate)}</span></div>`;
                                         }
                                         return '';
                                     })()}
@@ -9543,7 +9524,14 @@
                             <input type="text" class="form-input p-1 text-xs lesson-topic" placeholder="Tema" value="${lessonData?.topic || ''}">
                             <div class="flex gap-1">
                                 <input type="text" class="form-input p-1 text-xs flex-1 lesson-notes" placeholder="Obs" value="${lessonData?.notes || ''}">
-                                <button type="button" class="px-1 py-1 bg-stone-100 hover:bg-stone-200 rounded border border-stone-300" title="Mensagens prontas" onclick="showQuickNotesMenu(this.parentElement.querySelector('.lesson-notes'), this)"><svg class="w-3 h-3 text-stone-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg></button>
+                                <select class="form-input p-1 text-xs bg-stone-100 border-stone-300 rounded" onchange="applyQuickNote(this)" style="width: 28px; padding-right: 2px;">
+                                    <option value="">...</option>
+                                    <option value="O aluno não compareceu à aula previamente agendada.">Não compareceu</option>
+                                    <option value="O aluno informou ausência na aula por motivo de saúde.">Motivo de saúde</option>
+                                    <option value="O aluno informou ausência na aula por motivo de força maior, devidamente comunicada.">Força maior</option>
+                                    <option value="O aluno solicitou o cancelamento da aula próximo ao horário de início.">Cancelou em cima</option>
+                                    <option value="O aluno solicitou o cancelamento da aula com antecedência, permitindo a reorganização da agenda.">Cancelou antecipado</option>
+                                </select>
                             </div>
                         </div>
                         <div class="grid grid-cols-2 gap-1 text-xs">
@@ -9648,10 +9636,7 @@
                         </div>
                         <div class="space-y-1">
                             <input type="text" class="form-input p-1 text-xs w-full lesson-topic" placeholder="Tema" value="${lessonTopic}">
-                            <div class="flex gap-1">
-                                <input type="text" class="form-input p-1 text-xs flex-1 lesson-notes" placeholder="Obs" value="${lessonNotes}">
-                                <button type="button" class="px-1 py-1 bg-stone-100 hover:bg-stone-200 rounded border border-stone-300" title="Mensagens prontas" onclick="showQuickNotesMenu(this.parentElement.querySelector('.lesson-notes'), this)"><svg class="w-3 h-3 text-stone-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg></button>
-                            </div>
+                            <input type="text" class="form-input p-1 text-xs w-full lesson-notes" placeholder="Obs" value="${lessonNotes}">
                             ${studentHtml}
                         </div>
                     </div>
@@ -9672,7 +9657,7 @@
             }
 
             modalContentArea.innerHTML = `
-                <div class="bg-stone-50 rounded-lg p-3 mb-3 border border-stone-200">
+                <div class="bg-stone-50 rounded-lg p-3 mb-6 border border-stone-200">
                     <div class="flex items-center justify-between mb-2">
                         <span class="text-xs font-medium text-stone-600 uppercase">Visão Geral das Aulas</span>
                         <div class="flex gap-3 text-xs">
@@ -9696,55 +9681,14 @@
             
         }
 
-        function showQuickNotesMenu(inputElement, buttonElement) {
-            // Remover menu existente se houver
-            const existingMenu = document.querySelector('.quick-notes-menu');
-            if (existingMenu) existingMenu.remove();
-
-            const messages = [
-                'O aluno não compareceu à aula previamente agendada.',
-                'O aluno informou ausência na aula por motivo de saúde.',
-                'O aluno informou ausência na aula por motivo de força maior, devidamente comunicada.',
-                'O aluno solicitou o cancelamento da aula próximo ao horário de início.',
-                'O aluno solicitou o cancelamento da aula com antecedência, permitindo a reorganização da agenda.'
-            ];
-
-            const menu = document.createElement('div');
-            menu.className = 'quick-notes-menu absolute z-50 bg-white border border-stone-300 rounded-lg shadow-lg p-2 w-80';
-            menu.innerHTML = `
-                <div class="text-xs font-semibold text-stone-600 mb-2 pb-1 border-b">Mensagens Prontas</div>
-                ${messages.map(msg => `
-                    <button type="button" class="w-full text-left text-xs p-2 hover:bg-stone-100 rounded transition-colors quick-note-option">
-                        ${msg}
-                    </button>
-                `).join('')}
-            `;
-
-            // Posicionar o menu
-            const rect = buttonElement.getBoundingClientRect();
-            menu.style.position = 'fixed';
-            menu.style.top = (rect.bottom + 5) + 'px';
-            menu.style.left = Math.max(10, rect.left - 250) + 'px';
-
-            document.body.appendChild(menu);
-
-            // Adicionar event listeners para as opções
-            menu.querySelectorAll('.quick-note-option').forEach(option => {
-                option.addEventListener('click', () => {
-                    inputElement.value = option.textContent.trim();
-                    menu.remove();
-                });
-            });
-
-            // Fechar ao clicar fora
-            setTimeout(() => {
-                document.addEventListener('click', function closeMenu(e) {
-                    if (!menu.contains(e.target) && e.target !== buttonElement) {
-                        menu.remove();
-                        document.removeEventListener('click', closeMenu);
-                    }
-                });
-            }, 100);
+        function applyQuickNote(selectElement) {
+            const value = selectElement.value;
+            if (!value) return;
+            const notesInput = selectElement.parentElement.querySelector('.lesson-notes');
+            if (notesInput) {
+                notesInput.value = value;
+            }
+            selectElement.value = ''; // Reset select
         }
 
         async function saveAllPefLessons(unitId, pefType) {
