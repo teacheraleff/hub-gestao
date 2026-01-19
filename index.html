@@ -206,7 +206,7 @@
         .schedule-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; }
         .day-column { background-color: #f9fafb; border-radius: 0.75rem; padding: 1rem; border: 1px solid #f3f4f6; }
         .day-column-header { font-weight: 700; color: #44403c; font-size: 1.25rem; padding-bottom: 0.75rem; margin-bottom: 0.75rem; border-bottom: 2px solid #F1D24B; }
-        .class-entry { background-color: #ffffff; border-radius: 0.5rem; padding: 0.75rem; margin-bottom: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; }
+        .class-entry { background-color: #ffffff; border-radius: 0.375rem; padding: 0.5rem; margin-bottom: 0.375rem; box-shadow: 0 1px 2px rgba(0,0,0,0.04); transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; font-size: 0.8rem; }
         .class-entry:hover { transform: translateY(-2px); box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
         .class-tag { font-size: 0.625rem; font-weight: 700; padding: 2px 8px; border-radius: 9999px; color: white; margin-bottom: 4px; display: inline-block; text-transform: uppercase; }
         .tag-turma { background-color: #FF5C3D; }
@@ -3633,8 +3633,8 @@
 
                         const teacherName = teacherFilter === 'all' ? `<p class="text-xs text-stone-500"><em>(${c.teacher})</em></p>` : '';
                         const studentInfo = (c.type === 'break' || c.type === 'vaga') ? 
-                            `<p class="font-bold text-stone-600">${c.type === 'break' ? 'Intervalo' : 'Vaga Disponível'}</p>` : 
-                            `<p class="font-bold text-stone-800">${c.student}</p><p class="text-sm text-stone-700">${c.level}</p>`;
+                            `<p class="text-sm font-semibold text-stone-600">${c.type === 'break' ? 'Intervalo' : 'Vaga Disponível'}</p>` : 
+                            `<p class="text-sm font-semibold text-stone-800 leading-tight">${c.student}</p><p class="text-xs text-stone-600">${c.level}</p>`;
 
                         gridHtml += `
                             <div class="class-entry" data-action="view-schedule" data-id="${c.id}">
