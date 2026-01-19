@@ -3344,9 +3344,13 @@
 
             const isTeacher = currentUserRole === 'teacher' || currentUserRole === 'teachertn';
             let filterHtml = '';
+            
+            // Definir professores ativos e primeiro professor para uso em todo o escopo
+            const activeTeachers = professores.filter(p => p.status === 'ativo');
+            const firstTeacher = activeTeachers.length > 0 ? activeTeachers[0].name : null;
 
             if (!isTeacher) {
-                const teacherOptions = professores.filter(p => p.status === 'ativo').map(p => `<option value="${p.name}">${p.name}</option>`).join('');
+                const teacherOptions = activeTeachers.map((p, idx) => `<option value="${p.name}" ${idx === 0 ? 'selected' : ''}>${p.name}</option>`).join('');
                 filterHtml = `
                     <div class="grade-select-container flex-grow">
                         <label for="teacher-filter" class="block text-sm font-medium text-stone-700 mb-1">Filtrar por professor:</label>
@@ -3438,9 +3442,19 @@
                 renderScheduleGrid(teacherNameToFilter);
             } else {
                 const teacherFilter = document.getElementById('teacher-filter');
+                const defaultTeacher = firstTeacher || 'all';
+                
+                // Selecionar o primeiro professor por padrão
+                if (teacherFilter && firstTeacher) {
+                    teacherFilter.value = firstTeacher;
+                }
+                
                 if (teacherFilter) {
                     teacherFilter.addEventListener('change', () => renderScheduleGrid(teacherFilter.value));
                 }
+                
+                // Renderizar com o primeiro professor como padrão
+                renderScheduleGrid(defaultTeacher);
 
                 const showVagasOnly = document.getElementById('show-vagas-only');
                 if (showVagasOnly) {
@@ -3613,10 +3627,10 @@
             if (teacherFilter !== 'all' && hoursContainer) {
                 const weeklyHours = calculateWeeklyHours(teacherFilter);
                 hoursContainer.innerHTML = `
-                    <div class="rounded-lg p-4 text-center border" style="background-color: #F1D24B20; border-color: #F1D24B40;">
-                        <div class="text-sm font-medium uppercase tracking-wide text-stone-700">Carga Horária Semanal</div>
-                        <div class="text-3xl font-bold mt-1 text-stone-800">${weeklyHours} horas</div>
-                        <div class="text-xs mt-1 text-stone-600">${teacherFilter}</div>
+                    <div class="rounded-lg p-2 px-4 text-center border inline-flex items-center gap-3" style="background-color: #F1D24B20; border-color: #F1D24B40;">
+                        <div class="text-xs font-medium uppercase tracking-wide text-stone-600">Carga Semanal:</div>
+                        <div class="text-lg font-bold text-stone-800">${weeklyHours}h</div>
+                        <div class="text-xs text-stone-500">(${teacherFilter})</div>
                     </div>
                 `;
             } else if (teacherFilter === 'all' && canViewAllHours && hoursContainer) {
@@ -3631,20 +3645,19 @@
                 const totalHours = Object.values(teacherHours).reduce((sum, hours) => sum + hours, 0);
 
                 hoursContainer.innerHTML = `
-                    <div class="rounded-lg p-4 border" style="background-color: #F1D24B20; border-color: #F1D24B40;">
-                        <div class="text-sm font-medium text-stone-700 uppercase tracking-wide mb-3 text-center">Resumo da Carga Horária Semanal</div>
-                        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mb-3">
+                    <div class="rounded-lg p-3 border" style="background-color: #F1D24B20; border-color: #F1D24B40;">
+                        <div class="text-xs font-medium text-stone-600 uppercase tracking-wide mb-2 text-center">Carga Horária Semanal</div>
+                        <div class="flex flex-wrap gap-2 justify-center mb-2">
                             ${Object.entries(teacherHours).map(([name, hours]) => `
-                                <div class="rounded-lg p-3 text-center border" style="background-color: #F1D24B20; border-color: #F1D24B40;">
-                                    <div class="text-sm font-medium uppercase tracking-wide text-stone-700">Carga Semanal</div>
-                                    <div class="text-2xl font-bold mt-1 text-stone-800">${hours} horas</div>
-                                    <div class="text-xs mt-1 text-stone-600">${name}</div>
+                                <div class="rounded px-2 py-1 text-center border text-xs" style="background-color: #F1D24B30; border-color: #F1D24B50;">
+                                    <span class="font-medium text-stone-700">${name}:</span>
+                                    <span class="font-bold text-stone-800">${hours}h</span>
                                 </div>
                             `).join('')}
                         </div>
-                        <div class="text-center pt-3" style="border-top: 1px solid #F1D24B40;">
-                            <div class="text-sm text-stone-700">Total Geral</div>
-                            <div class="text-2xl font-bold text-stone-800">${totalHours} horas</div>
+                        <div class="text-center pt-2 text-xs" style="border-top: 1px solid #F1D24B40;">
+                            <span class="text-stone-600">Total:</span>
+                            <span class="font-bold text-stone-800">${totalHours}h</span>
                         </div>
                     </div>
                 `;
@@ -6110,57 +6123,57 @@
             contentArea.innerHTML = `
                 <section id="kpis-section" class="base-card">
                     <!-- Cards de Estatísticas Rápidas -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
                         <!-- Alunos em Turmas -->
-                        <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-6 rounded-lg border border-stone-200 transition-all hover:border-[#F1D24B]">
+                        <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-3 rounded-lg border border-stone-200 transition-all hover:border-[#F1D24B]">
                             <div class="flex items-center justify-between mb-2">
                                 <h3 class="text-sm font-medium text-stone-700 uppercase tracking-wide">Alunos em Turmas</h3>
-                                <svg class="w-8 h-8 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg class="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
                                 </svg>
                             </div>
-                            <p class="text-4xl font-bold text-stone-800">${studentsInTurmas}</p>
+                            <p class="text-xl font-bold text-stone-800">${studentsInTurmas}</p>
                             <p class="text-xs text-stone-600 mt-1">Alunos ativos</p>
                         </div>
 
                         <!-- Alunos VIP -->
-                        <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-6 rounded-lg border border-stone-200 transition-all hover:border-[#F1D24B]">
+                        <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-3 rounded-lg border border-stone-200 transition-all hover:border-[#F1D24B]">
                             <div class="flex items-center justify-between mb-2">
                                 <h3 class="text-sm font-medium text-stone-700 uppercase tracking-wide">Alunos VIP</h3>
-                                <svg class="w-8 h-8 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
                                 </svg>
                             </div>
-                            <p class="text-4xl font-bold text-stone-800">${studentsInVIP}</p>
+                            <p class="text-xl font-bold text-stone-800">${studentsInVIP}</p>
                             <p class="text-xs text-stone-600 mt-1">Alunos ativos</p>
                         </div>
 
                         <!-- Total de Turmas -->
-                        <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-6 rounded-lg border border-stone-200 transition-all hover:border-[#F1D24B]">
+                        <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-3 rounded-lg border border-stone-200 transition-all hover:border-[#F1D24B]">
                             <div class="flex items-center justify-between mb-2">
                                 <h3 class="text-sm font-medium text-stone-700 uppercase tracking-wide">Total de Turmas</h3>
-                                <svg class="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
                                 </svg>
                             </div>
-                            <p class="text-4xl font-bold text-stone-800">${totalTurmas}</p>
+                            <p class="text-xl font-bold text-stone-800">${totalTurmas}</p>
                             <p class="text-xs text-stone-600 mt-1">Turmas cadastradas</p>
                         </div>
 
                         <!-- Idade Média dos Alunos -->
-                        <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-6 rounded-lg border border-stone-200 transition-all hover:border-[#F1D24B]">
+                        <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-3 rounded-lg border border-stone-200 transition-all hover:border-[#F1D24B]">
                             <div class="flex items-center justify-between mb-2">
                                 <h3 class="text-sm font-medium text-stone-700 uppercase tracking-wide">Idade Média</h3>
                                 <svg class="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                                 </svg>
                             </div>
-                            <p class="text-4xl font-bold text-stone-800">${averageAge > 0 ? averageAge.toFixed(1) : '0'}</p>
+                            <p class="text-xl font-bold text-stone-800">${averageAge > 0 ? averageAge.toFixed(1) : '0'}</p>
                             <p class="text-xs text-stone-600 mt-1">Anos (média dos alunos)</p>
                         </div>
 
                         <!-- Distribuição por Gênero -->
-                        <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-6 rounded-lg border border-stone-200 transition-all hover:border-[#F1D24B]">
+                        <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-3 rounded-lg border border-stone-200 transition-all hover:border-[#F1D24B]">
                             <div class="flex items-center justify-between mb-2">
                                 <h3 class="text-sm font-medium text-stone-700 uppercase tracking-wide">Distribuição por Gênero</h3>
                                 <svg class="w-8 h-8 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -6192,14 +6205,14 @@
                         </div>
 
                         <!-- Assiduidade Média Geral -->
-                        <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-6 rounded-lg border border-stone-200 transition-all hover:border-[#F1D24B]">
+                        <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-3 rounded-lg border border-stone-200 transition-all hover:border-[#F1D24B]">
                             <div class="flex items-center justify-between mb-2">
                                 <h3 class="text-sm font-medium text-stone-700 uppercase tracking-wide">Assiduidade Média Geral</h3>
-                                <svg class="w-8 h-8 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg class="w-5 h-5 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                 </svg>
                             </div>
-                            <p class="text-4xl font-bold text-stone-800">${avgAttendance.toFixed(1)}%</p>
+                            <p class="text-xl font-bold text-stone-800">${avgAttendance.toFixed(1)}%</p>
                             <p class="text-xs text-stone-600 mt-1">VIPs + Turmas</p>
                             ${totalLessonsGlobal > 0 ? `<div class="mt-2 w-full bg-stone-200 rounded-full h-2">
                                 <div class="bg-teal-500 h-2 rounded-full" style="width: ${Math.min(100, avgAttendance)}%"></div>
@@ -9520,24 +9533,19 @@
                 }).join('');
 
                 lessonsHtml += `
-                    <div class="border border-stone-200 rounded-lg p-4 mb-4" id="lesson-row-${turmaId}-${i}" data-lesson-number="${i}">
-                        <!-- Cabeçalho da aula: Número e Data em linha -->
-                        <div class="flex items-center gap-4 mb-3 pb-3 border-b border-stone-200">
-                            <span class="font-bold text-stone-700 text-lg">Aula ${i}</span>
-                            <div class="flex-1">
-                                <input type="date" class="form-input p-2 text-sm lesson-date w-full" value="${lessonDate}" data-allowed-days="${allowedWeekdays.join(',')}">
-                                ${allowedWeekdays.length > 0 ? `<p class="text-xs text-stone-500 mt-1">Dias da turma: ${allowedDayNames}</p>` : ''}
+                    <div class="border border-stone-200 rounded-lg p-2" id="lesson-row-${turmaId}-${i}" data-lesson-number="${i}">
+                        <div class="flex items-center gap-2 mb-2 pb-1 border-b border-stone-100">
+                            <span class="font-bold text-stone-700 text-sm">Aula ${i}</span>
+                            <input type="date" class="form-input p-1 text-xs lesson-date flex-1" value="${lessonDate}" data-allowed-days="${allowedWeekdays.join(',')}">
+                        </div>
+                        <div class="grid grid-cols-2 gap-1 mb-2">
+                            <input type="text" class="form-input p-1 text-xs lesson-topic" placeholder="Tema" value="${lessonData?.topic || ''}">
+                            <div class="flex gap-1">
+                                <input type="text" class="form-input p-1 text-xs flex-1 lesson-notes" placeholder="Obs" value="${lessonData?.notes || ''}">
+                                <button type="button" class="px-1 py-1 bg-stone-100 hover:bg-stone-200 rounded border border-stone-300 quick-notes-btn" title="Mensagens prontas"><svg class="w-3 h-3 text-stone-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg></button>
                             </div>
                         </div>
-
-                        <!-- Tema e Observações lado a lado -->
-                        <div class="grid grid-cols-2 gap-3 mb-3">
-                            <textarea class="form-input p-2 text-sm lesson-topic" placeholder="Tema da aula" rows="2">${lessonData?.topic || ''}</textarea>
-                            <textarea class="form-input p-2 text-sm lesson-notes" placeholder="Observações da aula" rows="2">${lessonData?.notes || ''}</textarea>
-                        </div>
-
-                        <!-- Alunos em grid compacto -->
-                        <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
+                        <div class="grid grid-cols-2 gap-1 text-xs">
                             ${studentsHtml}
                         </div>
                     </div>
@@ -9545,9 +9553,9 @@
             }
 
             modalContentArea.innerHTML = `
-                <div>${lessonsHtml}</div>
-                <div class="sticky bottom-0 left-0 right-0 bg-white border-t-2 border-yellow-400 p-4 mt-4 shadow-lg z-10">
-                    <button class="primary-btn w-full text-lg" data-action="save-all-pef-lessons" data-unit-id="${turmaId}" data-pef-type="turma">
+                <div class="grid grid-cols-2 gap-2">${lessonsHtml}</div>
+                <div class="sticky bottom-0 left-0 right-0 bg-white border-t-2 border-yellow-400 p-3 mt-3 shadow-lg z-10">
+                    <button class="primary-btn w-full" data-action="save-all-pef-lessons" data-unit-id="${turmaId}" data-pef-type="turma">
                         💾 Salvar Todas as Aulas
                     </button>
                 </div>
@@ -9594,6 +9602,19 @@
             const dayNames = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
             const allowedDayNames = allowedWeekdays.length > 0 ? allowedWeekdays.map(d => dayNames[d]).join(', ') : 'todos os dias';
 
+            // Gerar overview de 40 caixinhas coloridas
+            let overviewHtml = '';
+            for (let i = 1; i <= 40; i++) {
+                const lessonData = unitAttendance?.lessons?.[i];
+                const status = lessonData?.students?.[student.id] || '';
+                let bgColor = 'bg-stone-200'; // Cinza - não dada
+                let title = `Aula ${i}: Não registrada`;
+                if (status === 'P') { bgColor = 'bg-green-500'; title = `Aula ${i}: Presente`; }
+                else if (status === 'F') { bgColor = 'bg-red-500'; title = `Aula ${i}: Falta`; }
+                else if (status === 'PP') { bgColor = 'bg-amber-400'; title = `Aula ${i}: Presença Parcial`; }
+                overviewHtml += `<div class="w-5 h-5 ${bgColor} rounded cursor-pointer hover:scale-110 transition-transform" title="${title}" onclick="document.getElementById('lesson-row-${vipId}-${i}').scrollIntoView({behavior:'smooth',block:'center'})"><span class="text-[8px] text-white font-bold flex items-center justify-center h-full">${i}</span></div>`;
+            }
+
             let lessonsHtml = '';
             for (let i = 1; i <= 40; i++) {
                 const lessonData = unitAttendance?.lessons?.[i];
@@ -9614,27 +9635,49 @@
                 `;
 
                 lessonsHtml += `
-                    <div class="border border-stone-200 rounded-lg p-4 mb-4" id="lesson-row-${vipId}-${i}" data-lesson-number="${i}">
-                        <div class="flex items-center gap-4 mb-3 pb-3 border-b border-stone-200">
-                            <span class="font-bold text-stone-700 text-lg">Aula ${i}</span>
-                            <div class="flex-1">
-                                <input type="date" class="form-input p-2 text-sm lesson-date w-full" value="${lessonDate}" data-allowed-days="${allowedWeekdays.join(',')}">
-                                ${allowedWeekdays.length > 0 ? `<p class="text-xs text-stone-500 mt-1">Dias do VIP: ${allowedDayNames}</p>` : ''}
-                            </div>
+                    <div class="border border-stone-200 rounded-lg p-2" id="lesson-row-${vipId}-${i}" data-lesson-number="${i}">
+                        <div class="flex items-center gap-2 mb-2 pb-2 border-b border-stone-100">
+                            <span class="font-bold text-stone-700 text-sm">Aula ${i}</span>
+                            <input type="date" class="form-input p-1 text-xs lesson-date flex-1" value="${lessonDate}" data-allowed-days="${allowedWeekdays.join(',')}">
                         </div>
-                        <div class="space-y-3">
-                            <textarea class="form-input p-2 text-sm w-full lesson-topic" placeholder="Tema da aula" rows="2">${lessonTopic}</textarea>
-                            <textarea class="form-input p-2 text-sm w-full lesson-notes" placeholder="Observações da aula" rows="2">${lessonNotes}</textarea>
+                        <div class="space-y-1">
+                            <input type="text" class="form-input p-1 text-xs w-full lesson-topic" placeholder="Tema" value="${lessonTopic}">
+                            <div class="flex gap-1">
+                                <input type="text" class="form-input p-1 text-xs flex-1 lesson-notes" placeholder="Obs" value="${lessonNotes}">
+                                <button type="button" class="px-1 py-1 bg-stone-100 hover:bg-stone-200 rounded border border-stone-300 quick-notes-btn" title="Mensagens prontas"><svg class="w-3 h-3 text-stone-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg></button>
+                            </div>
                             ${studentHtml}
                         </div>
                     </div>
                 `;
             }
 
+            // Contar estatísticas
+            let presencas = 0, faltas = 0, parciais = 0, pendentes = 0;
+            for (let i = 1; i <= 40; i++) {
+                const status = unitAttendance?.lessons?.[i]?.students?.[student.id] || '';
+                if (status === 'P') presencas++;
+                else if (status === 'F') faltas++;
+                else if (status === 'PP') parciais++;
+                else pendentes++;
+            }
+
             modalContentArea.innerHTML = `
-                <div>${lessonsHtml}</div>
-                <div class="sticky bottom-0 left-0 right-0 bg-white border-t-2 border-yellow-400 p-4 mt-4 shadow-lg z-10">
-                    <button class="primary-btn w-full text-lg" data-action="save-all-pef-lessons" data-unit-id="${vipId}" data-pef-type="vip">
+                <div class="bg-stone-50 rounded-lg p-3 mb-3 border border-stone-200">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-medium text-stone-600 uppercase">Visão Geral das Aulas</span>
+                        <div class="flex gap-3 text-xs">
+                            <span class="flex items-center gap-1"><span class="w-3 h-3 bg-green-500 rounded"></span> ${presencas}P</span>
+                            <span class="flex items-center gap-1"><span class="w-3 h-3 bg-red-500 rounded"></span> ${faltas}F</span>
+                            <span class="flex items-center gap-1"><span class="w-3 h-3 bg-amber-400 rounded"></span> ${parciais}PP</span>
+                            <span class="flex items-center gap-1"><span class="w-3 h-3 bg-stone-200 rounded"></span> ${pendentes}</span>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap gap-1">${overviewHtml}</div>
+                </div>
+                <div class="grid grid-cols-2 gap-2">${lessonsHtml}</div>
+                <div class="sticky bottom-0 left-0 right-0 bg-white border-t-2 border-yellow-400 p-3 mt-3 shadow-lg z-10">
+                    <button class="primary-btn w-full" data-action="save-all-pef-lessons" data-unit-id="${vipId}" data-pef-type="vip">
                         💾 Salvar Todas as Aulas
                     </button>
                 </div>
@@ -9643,7 +9686,67 @@
             modal.classList.add('visible');
         }
 
+        function showQuickNotesMenu(inputElement, buttonElement) {
+            // Remover menu existente se houver
+            const existingMenu = document.querySelector('.quick-notes-menu');
+            if (existingMenu) existingMenu.remove();
+
+            const messages = [
+                'O aluno não compareceu à aula previamente agendada.',
+                'O aluno informou ausência na aula por motivo de saúde.',
+                'O aluno informou ausência na aula por motivo de força maior, devidamente comunicada.',
+                'O aluno solicitou o cancelamento da aula próximo ao horário de início.',
+                'O aluno solicitou o cancelamento da aula com antecedência, permitindo a reorganização da agenda.'
+            ];
+
+            const menu = document.createElement('div');
+            menu.className = 'quick-notes-menu absolute z-50 bg-white border border-stone-300 rounded-lg shadow-lg p-2 w-80';
+            menu.innerHTML = `
+                <div class="text-xs font-semibold text-stone-600 mb-2 pb-1 border-b">Mensagens Prontas</div>
+                ${messages.map(msg => `
+                    <button type="button" class="w-full text-left text-xs p-2 hover:bg-stone-100 rounded transition-colors quick-note-option">
+                        ${msg}
+                    </button>
+                `).join('')}
+            `;
+
+            // Posicionar o menu
+            const rect = buttonElement.getBoundingClientRect();
+            menu.style.position = 'fixed';
+            menu.style.top = (rect.bottom + 5) + 'px';
+            menu.style.left = Math.max(10, rect.left - 250) + 'px';
+
+            document.body.appendChild(menu);
+
+            // Adicionar event listeners para as opções
+            menu.querySelectorAll('.quick-note-option').forEach(option => {
+                option.addEventListener('click', () => {
+                    inputElement.value = option.textContent.trim();
+                    menu.remove();
+                });
+            });
+
+            // Fechar ao clicar fora
+            setTimeout(() => {
+                document.addEventListener('click', function closeMenu(e) {
+                    if (!menu.contains(e.target) && e.target !== buttonElement) {
+                        menu.remove();
+                        document.removeEventListener('click', closeMenu);
+                    }
+                });
+            }, 100);
+        }
+
         async function saveAllPefLessons(unitId, pefType) {
+            // Adicionar event listeners para botões de mensagens prontas
+            document.querySelectorAll('.quick-notes-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const input = btn.closest('div').querySelector('.lesson-notes');
+                    showQuickNotesMenu(input, btn);
+                });
+            });
+
             const saveButton = document.querySelector('[data-action="save-all-pef-lessons"]');
             const originalButtonText = saveButton ? saveButton.innerHTML : '';
 
@@ -20303,23 +20406,27 @@ function openAddChecklistForm() {
                 const clickAction = canEdit ? `data-action="edit-fixed-card" data-card-id="${card.id}"` : '';
 
                 return `
-                    <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-6 rounded-lg border border-stone-200 ${hoverClass} transition-shadow" ${clickAction}>
-                        <div class="flex items-center gap-3 mb-3">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-orange-500" fill="currentColor" viewBox="0 0 24 24">
+                    <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-3 rounded-lg border border-stone-200 ${hoverClass} transition-shadow" ${clickAction}>
+                        <div class="flex items-center gap-2 mb-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-orange-500" fill="currentColor" viewBox="0 0 24 24">
                                 <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/>
                                 <circle cx="12" cy="14" r="1.5"/>
                             </svg>
-                            <h3 class="text-sm font-medium text-stone-700 uppercase tracking-wide">${card.title || 'Período'}</h3>
+                            <h3 class="text-xs font-medium text-stone-700 uppercase tracking-wide">${card.title || 'Período'}</h3>
                         </div>
                         ${hasData ? `
-                            <div class="space-y-1">
-                                <p class="text-2xl font-bold text-stone-800">${formatDateBR(card.startDate)}</p>
-                                <p class="text-xs text-stone-600 mt-1">Início</p>
-                                <p class="text-2xl font-bold text-stone-800 mt-3">${formatDateBR(card.endDate)}</p>
-                                <p class="text-xs text-stone-600 mt-1">Finalização</p>
+                            <div class="flex gap-4">
+                                <div>
+                                    <p class="text-sm font-bold text-stone-800">${formatDateBR(card.startDate)}</p>
+                                    <p class="text-xs text-stone-500">Início</p>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-bold text-stone-800">${formatDateBR(card.endDate)}</p>
+                                    <p class="text-xs text-stone-500">Fim</p>
+                                </div>
                             </div>
                         ` : `
-                            <p class="text-lg text-stone-400 italic mt-2">Clique para configurar</p>
+                            <p class="text-sm text-stone-400 italic">Clique para configurar</p>
                         `}
                     </div>
                 `;
