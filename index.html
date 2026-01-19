@@ -21323,27 +21323,27 @@ function openAddChecklistForm() {
 
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="font-medium text-sm">Midterm Test (0-20)</label>
+                            <label class="font-medium text-xs">Midterm (0-20)</label>
                             <input type="number" id="midterm-test" class="form-input" min="0" max="20" step="any" value="${grades.midtermTest}">
                         </div>
                         <div>
-                            <label class="font-medium text-sm">Listening Test (0-20)</label>
+                            <label class="font-medium text-xs">Listening (0-20)</label>
                             <input type="number" id="listening-test" class="form-input" min="0" max="20" step="any" value="${grades.listeningTest}">
                         </div>
                         <div>
-                            <label class="font-medium text-sm">Grammar Test (0-20)</label>
+                            <label class="font-medium text-xs">Grammar (0-20)</label>
                             <input type="number" id="grammar-test" class="form-input" min="0" max="20" step="any" value="${grades.grammarTest}">
                         </div>
                         <div>
-                            <label class="font-medium text-sm">Oral Test (0-20)</label>
+                            <label class="font-medium text-xs">Oral (0-20)</label>
                             <input type="number" id="oral-test" class="form-input" min="0" max="20" step="any" value="${grades.oralTest}">
                         </div>
                         <div>
-                            <label class="font-medium text-sm">Participação (0-10)</label>
+                            <label class="font-medium text-xs">Partic. (0-10)</label>
                             <input type="number" id="participacao" class="form-input" min="0" max="10" step="any" value="${grades.participacao}">
                         </div>
                         <div>
-                            <label class="font-medium text-sm">Assiduidade (0-10) - Automático</label>
+                            <label class="font-medium text-xs">Assim. (0-10) - Auto</label>
                             <input type="number" id="assiduidade" class="form-input bg-gray-100" min="0" max="10" step="any" value="${grades.assiduidade}" readonly
                                    title="Calculado automaticamente baseado nas presenças registradas no PEF. Não pode ser editado manualmente.">
                         </div>
@@ -21474,7 +21474,7 @@ function openAddChecklistForm() {
             }, 100);
 
             document.getElementById('form-modal-content-area').innerHTML = `
-                <div class="space-y-6 max-h-96 overflow-y-auto">
+                <div class="space-y-3 max-h-96 overflow-y-auto">
                     <input type="hidden" id="turma-id" value="${turmaId}">
 
                     ${turmaStudents.length === 0 ? `
@@ -21500,48 +21500,48 @@ function openAddChecklistForm() {
                         }
 
                         return `
-                        <div class="border border-stone-200 rounded-lg p-4">
-                            <h4 class="font-semibold text-lg mb-4">${student.name}</h4>
+                        <div class="border border-stone-200 rounded-lg p-2">
+                            <h4 class="font-semibold text-sm mb-2">${student.name}</h4>
 
-                            <div class="grid grid-cols-2 gap-4 mb-4">
+                            <div class="grid grid-cols-3 gap-2 mb-2">
                                 <div>
-                                    <label class="font-medium text-sm">Midterm Test (0-20)</label>
+                                    <label class="font-medium text-xs">Midterm (0-20)</label>
                                     <input type="number" id="midterm-${student.id}" class="form-input student-grade" min="0" max="20" step="any" value="${grades.midtermTest}" data-student="${student.id}">
                                 </div>
                                 <div>
-                                    <label class="font-medium text-sm">Listening Test (0-20)</label>
+                                    <label class="font-medium text-xs">Listening (0-20)</label>
                                     <input type="number" id="listening-${student.id}" class="form-input student-grade" min="0" max="20" step="any" value="${grades.listeningTest}" data-student="${student.id}">
                                 </div>
                                 <div>
-                                    <label class="font-medium text-sm">Grammar Test (0-20)</label>
+                                    <label class="font-medium text-xs">Grammar (0-20)</label>
                                     <input type="number" id="grammar-${student.id}" class="form-input student-grade" min="0" max="20" step="any" value="${grades.grammarTest}" data-student="${student.id}">
                                 </div>
                                 <div>
-                                    <label class="font-medium text-sm">Oral Test (0-20)</label>
+                                    <label class="font-medium text-xs">Oral (0-20)</label>
                                     <input type="number" id="oral-${student.id}" class="form-input student-grade" min="0" max="20" step="any" value="${grades.oralTest}" data-student="${student.id}">
                                 </div>
                                 <div>
-                                    <label class="font-medium text-sm">Participação (0-10)</label>
+                                    <label class="font-medium text-xs">Partic. (0-10)</label>
                                     <input type="number" id="participacao-${student.id}" class="form-input student-grade" min="0" max="10" step="any" value="${grades.participacao}" data-student="${student.id}">
                                 </div>
                                 <div>
-                                    <label class="font-medium text-sm">Assiduidade (0-10) - Automático</label>
+                                    <label class="font-medium text-xs">Assim. (0-10) - Auto</label>
                                     <input type="number" id="assiduidade-${student.id}" class="form-input student-grade bg-gray-100" min="0" max="10" step="any" value="${grades.assiduidade}" data-student="${student.id}" readonly
                                            title="Calculado automaticamente baseado nas presenças registradas no PEF. Não pode ser editado manualmente.">
                                 </div>
                             </div>
 
 
-                            <div class="mt-4">
-                                <label class="font-medium text-sm">Observações (para Report Card)</label>
-                                <textarea id="observacao-${student.id}" class="form-input student-observation mt-1" rows="2" 
+                            <div class="mt-2">
+                                <label class="font-medium text-xs">Observações</label>
+                                <textarea id="observacao-${student.id}" class="form-input student-observation mt-1 text-xs" rows="1" 
                                     placeholder="Comentários sobre o desempenho do aluno..." 
                                     data-student="${student.id}">${grades.observacao || ""}</textarea>
                             </div>
-                            <div class="p-3 bg-stone-50 rounded-lg">
+                            <div class="p-2 bg-stone-50 rounded-lg mt-2">
                                 <div class="flex justify-between items-center">
-                                    <span class="font-semibold">Total:</span>
-                                    <span id="total-${student.id}" class="text-xl font-bold">0</span>
+                                    <span class="font-semibold text-sm">Total:</span>
+                                    <span id="total-${student.id}" class="text-lg font-bold">0</span>
                                 </div>
                                 <div class="mt-1">
                                     <span id="status-${student.id}" class="font-medium"></span>
