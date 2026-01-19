@@ -9553,7 +9553,7 @@
             }
 
             modalContentArea.innerHTML = `
-                <div class="grid grid-cols-2 gap-2">${lessonsHtml}</div>
+                <div class="grid grid-cols-2 gap-4">${lessonsHtml}</div>
                 <div class="sticky bottom-0 left-0 right-0 bg-white border-t-2 border-yellow-400 p-3 mt-3 shadow-lg z-10">
                     <button class="primary-btn w-full" data-action="save-all-pef-lessons" data-unit-id="${turmaId}" data-pef-type="turma">
                         💾 Salvar Todas as Aulas
@@ -9562,6 +9562,15 @@
             `;
 
             modal.classList.add('visible');
+            
+            // Adicionar event listeners para botões de mensagens prontas
+            document.querySelectorAll('.quick-notes-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const input = btn.closest('div').querySelector('.lesson-notes');
+                    showQuickNotesMenu(input, btn);
+                });
+            });
         }
 
         function openVipPefModal(vipId) {
@@ -9612,7 +9621,7 @@
                 if (status === 'P') { bgColor = 'bg-green-500'; title = `Aula ${i}: Presente`; }
                 else if (status === 'F') { bgColor = 'bg-red-500'; title = `Aula ${i}: Falta`; }
                 else if (status === 'PP') { bgColor = 'bg-amber-400'; title = `Aula ${i}: Presença Parcial`; }
-                overviewHtml += `<div class="w-5 h-5 ${bgColor} rounded cursor-pointer hover:scale-110 transition-transform" title="${title}" onclick="document.getElementById('lesson-row-${vipId}-${i}').scrollIntoView({behavior:'smooth',block:'center'})"><span class="text-[8px] text-white font-bold flex items-center justify-center h-full">${i}</span></div>`;
+                overviewHtml += `<div class="w-7 h-7 ${bgColor} rounded cursor-pointer hover:scale-110 transition-transform" title="${title}" onclick="document.getElementById('lesson-row-${vipId}-${i}').scrollIntoView({behavior:'smooth',block:'center'})"><span class="text-[10px] text-white font-bold flex items-center justify-center h-full">${i}</span></div>`;
             }
 
             let lessonsHtml = '';
@@ -9673,9 +9682,9 @@
                             <span class="flex items-center gap-1"><span class="w-3 h-3 bg-stone-200 rounded"></span> ${pendentes}</span>
                         </div>
                     </div>
-                    <div class="flex flex-wrap gap-1">${overviewHtml}</div>
+                    <div class="grid grid-cols-20 gap-1" style="grid-template-columns: repeat(20, 1fr);">${overviewHtml}</div>
                 </div>
-                <div class="grid grid-cols-2 gap-2">${lessonsHtml}</div>
+                <div class="grid grid-cols-2 gap-4">${lessonsHtml}</div>
                 <div class="sticky bottom-0 left-0 right-0 bg-white border-t-2 border-yellow-400 p-3 mt-3 shadow-lg z-10">
                     <button class="primary-btn w-full" data-action="save-all-pef-lessons" data-unit-id="${vipId}" data-pef-type="vip">
                         💾 Salvar Todas as Aulas
@@ -9684,6 +9693,15 @@
             `;
 
             modal.classList.add('visible');
+            
+            // Adicionar event listeners para botões de mensagens prontas
+            document.querySelectorAll('.quick-notes-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const input = btn.closest('div').querySelector('.lesson-notes');
+                    showQuickNotesMenu(input, btn);
+                });
+            });
         }
 
         function showQuickNotesMenu(inputElement, buttonElement) {
@@ -9738,15 +9756,6 @@
         }
 
         async function saveAllPefLessons(unitId, pefType) {
-            // Adicionar event listeners para botões de mensagens prontas
-            document.querySelectorAll('.quick-notes-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    const input = btn.closest('div').querySelector('.lesson-notes');
-                    showQuickNotesMenu(input, btn);
-                });
-            });
-
             const saveButton = document.querySelector('[data-action="save-all-pef-lessons"]');
             const originalButtonText = saveButton ? saveButton.innerHTML : '';
 
