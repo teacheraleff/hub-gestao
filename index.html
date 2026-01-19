@@ -68,8 +68,10 @@
         .nav-submenu {
             max-height: 0;
             overflow: hidden;
-            transition: max-height 0.3s ease, opacity 0.3s ease;
+            transition: max-height 0.3s ease, opacity 0.3s ease, visibility 0s 0.3s;
             opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
             margin-left: 1.5rem;
             padding-left: 0.5rem;
             border-left: 2px solid rgb(229 231 235);
@@ -78,6 +80,9 @@
         .nav-submenu.expanded {
             max-height: 1000px;
             opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+            transition: max-height 0.3s ease, opacity 0.3s ease, visibility 0s 0s;
         }
 
         .nav-category.expanded {
@@ -2386,19 +2391,22 @@
                             ${canAdd ? `<button class="primary-btn w-auto" data-action="add-aluno">+ Adicionar Aluno</button>` : ''}
                         </div>
                     </div>
-                    <div class="overflow-x-auto">
-                        <table class="data-table" id="alunos-table">
-                            <thead>
-                                <tr>
-                                    <th>Nome do Aluno</th>
-                                    <th>Status</th>
-                                    <th>Ficha</th>
-                                    ${canViewFinancialInfo ? '<th>Valor Total</th>' : ''}
-                                    ${canViewFinancialInfo ? '<th>Valor Parcela</th>' : '<th>Responsável</th>'}
-                                </tr>
-                            </thead>
-                            <tbody id="alunos-list"></tbody>
-                        </table>
+                    <div class="bg-white rounded-xl border border-stone-200 shadow-sm overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-stone-200" id="alunos-table">
+                                <thead class="bg-stone-50">
+                                    <tr>
+                                        <th class="px-3 py-2 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Nome do Aluno</th>
+                                        <th class="px-3 py-2 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Status</th>
+                                        <th class="px-3 py-2 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Ficha</th>
+                                        ${canViewFinancialInfo ? '<th class="px-3 py-2 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Valor Total</th>' : ''}
+                                        ${canViewFinancialInfo ? '<th class="px-3 py-2 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Valor Parcela</th>' : '<th class="px-3 py-2 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Responsável</th>'}
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-stone-100" id="alunos-list"></tbody>
+                            </table>
+                        </div>
+                        </div>
                     </div>
 
                     <!-- Controles de Paginação -->
@@ -2926,7 +2934,7 @@
 
             if (filteredStudents.length === 0) {
                 const colspanCount = canViewFinancialInfo ? 5 : 4;
-                listBody.innerHTML = `<tr><td colspan="${colspanCount}" class="text-center py-10 text-stone-500">Nenhum aluno encontrado.</td></tr>`;
+                listBody.innerHTML = `<tr><td colspan="${colspanCount}" class="px-3 py-8 text-center text-sm text-stone-500">Nenhum aluno encontrado.</td></tr>`;
                 updatePaginationControls(0, 0, 0);
                 return;
             }
@@ -2947,21 +2955,17 @@
                        </div>`;
 
                 return `
-                <tr id="student-row-${student.id}" class="cursor-pointer">
-                    <td class="font-medium" data-action="view-aluno" data-id="${student.id}">
-                        <div class="flex items-center">
-                            <div class="flex flex-col flex-1">
-                                <div>${student.name}</div>
-                                <div class="mt-1">
-                                    <span class="status-tag status-${(student.modalidade || 'turma').toLowerCase()} text-xs">${student.modalidade || 'TURMA'}</span>
-                                </div>
-                            </div>
+                <tr id="student-row-${student.id}" class="cursor-pointer hover:bg-stone-50 transition-colors">
+                    <td class="px-3 py-2 text-sm font-medium text-stone-800" data-action="view-aluno" data-id="${student.id}">
+                        <div class="flex items-center gap-2">
+                            <span>${student.name}</span>
+                            <span class="status-tag status-${(student.modalidade || 'turma').toLowerCase()} text-xs">${student.modalidade || 'TURMA'}</span>
                         </div>
                     </td>
-                    <td data-action="view-aluno" data-id="${student.id}"><span class="status-tag status-${(student.status || 'pendente').toLowerCase()}">${student.status || 'Pendente'}</span></td>
-                    <td>${fichaStatus}</td>
-                    ${canViewFinancialInfo ? `<td class="font-mono" data-action="view-aluno" data-id="${student.id}">R$ ${parseFloat(student.amountPaid || 0).toFixed(2)}</td>` : ''}
-                    ${canViewFinancialInfo ? `<td class="font-mono" data-action="view-aluno" data-id="${student.id}">R$ ${parseFloat(student.amountReceived || student.amountPaid || 0).toFixed(2)}</td>` : `<td data-action="view-aluno" data-id="${student.id}">${student.responsibleName || 'N/A'}</td>`}
+                    <td class="px-3 py-2" data-action="view-aluno" data-id="${student.id}"><span class="status-tag status-${(student.status || 'pendente').toLowerCase()} text-xs">${student.status || 'Pendente'}</span></td>
+                    <td class="px-3 py-2">${fichaStatus}</td>
+                    ${canViewFinancialInfo ? `<td class="px-3 py-2 text-sm font-mono text-stone-600" data-action="view-aluno" data-id="${student.id}">R$ ${parseFloat(student.amountPaid || 0).toFixed(2)}</td>` : ''}
+                    ${canViewFinancialInfo ? `<td class="px-3 py-2 text-sm font-mono text-stone-600" data-action="view-aluno" data-id="${student.id}">R$ ${parseFloat(student.amountReceived || student.amountPaid || 0).toFixed(2)}</td>` : `<td class="px-3 py-2 text-sm text-stone-600" data-action="view-aluno" data-id="${student.id}">${student.responsibleName || 'N/A'}</td>`}
                 </tr>
                 `;
             }).join('');
@@ -3867,17 +3871,18 @@
                             </div>
                         </div>
 
-                        <div class="overflow-x-auto">
-                            <table class="data-table w-full">
-                                <thead>
+                        <div class="bg-white rounded-xl border border-stone-200 shadow-sm overflow-hidden">
+                            <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-stone-200">
+                                <thead class="bg-stone-50">
                                     <tr>
-                                        <th class="text-center">Pago</th>
-                                        <th>Descrição</th>
-                                        <th>Tipo</th>
-                                        <th>Vencimento</th>
-                                        <th class="text-right">Valor (R$)</th>
-                                        <th class="text-right">Valor Pago (R$)</th>
-                                        <th class="text-center">Ações</th>
+                                        <th class="px-3 py-2 text-center text-xs font-semibold text-stone-600 uppercase tracking-wider">Pago</th>
+                                        <th class="px-3 py-2 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Descrição</th>
+                                        <th class="px-3 py-2 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Tipo</th>
+                                        <th class="px-3 py-2 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Vencimento</th>
+                                        <th class="px-3 py-2 text-right text-xs font-semibold text-stone-600 uppercase tracking-wider">Valor (R$)</th>
+                                        <th class="px-3 py-2 text-right text-xs font-semibold text-stone-600 uppercase tracking-wider">Valor Pago (R$)</th>
+                                        <th class="px-3 py-2 text-center text-xs font-semibold text-stone-600 uppercase tracking-wider">Ações</th>
                                     </tr>
                                 </thead>
                                 <tbody id="expenses-list">
@@ -3945,29 +3950,29 @@
                                         const typeLabel = isFixed ? '<span class="px-2 py-0.5 rounded-full text-xs bg-purple-100 text-purple-700">Fixo</span>' : '<span class="px-2 py-0.5 rounded-full text-xs bg-stone-100 text-stone-600">Variável</span>';
                                         const dueDateFormatted = exp.effectiveDueDate ? new Date(exp.effectiveDueDate).toLocaleDateString('pt-BR') : '-';
                                         return `
-                                            <tr class="expense-row ${exp.isPaid ? 'opacity-60' : ''}" data-expense-type="${isFixed ? 'fixo' : 'variavel'}">
-                                                <td class="text-center">
+                                            <tr class="expense-row hover:bg-stone-50 transition-colors ${exp.isPaid ? 'opacity-60' : ''}" data-expense-type="${isFixed ? 'fixo' : 'variavel'}">
+                                                <td class="px-3 py-2 text-center">
                                                     <button onclick="openPaymentModal('${exp.id}', '${currentMonthKey}')" 
-                                                        class="text-xs px-3 py-1.5 rounded-full font-semibold transition-colors ${exp.isPaid ? 'bg-green-100 text-green-700 hover:bg-green-200' : (Number(exp.paidAmount || 0) > 0 ? 'bg-amber-100 text-amber-700 hover:bg-amber-200' : 'bg-stone-100 text-stone-600 hover:bg-stone-200')}">
+                                                        class="text-xs px-2 py-1 rounded-full font-medium transition-colors ${exp.isPaid ? 'bg-green-100 text-green-700 hover:bg-green-200' : (Number(exp.paidAmount || 0) > 0 ? 'bg-amber-100 text-amber-700 hover:bg-amber-200' : 'bg-stone-100 text-stone-600 hover:bg-stone-200')}">
                                                         ${exp.isPaid ? 'Pago' : (Number(exp.paidAmount || 0) > 0 ? 'Parcial' : 'Pagar')}
                                                     </button>
                                                 </td>
-                                                <td class="font-medium ${exp.isPaid ? 'line-through text-stone-400' : ''}">
+                                                <td class="px-3 py-2 text-sm font-medium text-stone-800 ${exp.isPaid ? 'line-through text-stone-400' : ''}">
                                                     ${exp.description}
-                                                    ${exp.isFixedSalary && exp.employeeRole ? `<span class="ml-2 px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-700">${exp.employeeRole}</span>` : ''}
+                                                    ${exp.isFixedSalary && exp.employeeRole ? `<span class="ml-1 px-1.5 py-0.5 text-xs rounded bg-blue-100 text-blue-700">${exp.employeeRole}</span>` : ''}
                                                 </td>
-                                                <td>${typeLabel}</td>
-                                                <td class="text-sm text-stone-600">${dueDateFormatted}</td>
-                                                <td class="text-right font-medium">${Number(exp.amount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
-                                                <td class="text-right font-medium ${exp.isPaid ? 'text-green-600' : (Number(exp.paidAmount || 0) > 0 ? 'text-amber-600' : 'text-stone-400')}">${Number(exp.paidAmount || 0) > 0 ? Number(exp.paidAmount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : '-'}</td>
-                                                <td class="text-center">
-                                                    <div class="flex items-center justify-center gap-2">
-                                                        <button data-action="edit-expense" data-id="${exp.id}" class="text-blue-600 hover:text-blue-800" title="Editar">
+                                                <td class="px-3 py-2 text-sm">${typeLabel}</td>
+                                                <td class="px-3 py-2 text-sm text-stone-600">${dueDateFormatted}</td>
+                                                <td class="px-3 py-2 text-sm text-right font-medium text-stone-700">${Number(exp.amount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                                                <td class="px-3 py-2 text-sm text-right font-medium ${exp.isPaid ? 'text-green-600' : (Number(exp.paidAmount || 0) > 0 ? 'text-amber-600' : 'text-stone-400')}">${Number(exp.paidAmount || 0) > 0 ? Number(exp.paidAmount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : '-'}</td>
+                                                <td class="px-3 py-2 text-center">
+                                                    <div class="flex items-center justify-center gap-1">
+                                                        <button data-action="edit-expense" data-id="${exp.id}" class="text-stone-500 hover:text-blue-600 p-1 rounded hover:bg-stone-100" title="Editar">
                                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                                                             </svg>
                                                         </button>
-                                                        <button data-action="delete-expense" data-id="${exp.id}" class="text-red-600 hover:text-red-800" title="Excluir">
+                                                        <button data-action="delete-expense" data-id="${exp.id}" class="text-stone-500 hover:text-red-600 p-1 rounded hover:bg-red-50" title="Excluir">
                                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                                                             </svg>
@@ -3978,13 +3983,13 @@
                                         `;
                                     }).join('') : `
                                         <tr>
-                                            <td colspan="7" class="text-center py-8 text-stone-500">
-                                                <svg class="w-12 h-12 mx-auto text-stone-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <td colspan="7" class="px-3 py-6 text-center text-sm text-stone-500">
+                                                <svg class="w-10 h-10 mx-auto text-stone-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <rect x="2" y="4" width="20" height="16" rx="2"/>
                                                     <path d="M7 15h0M2 9.5h20"/>
                                                 </svg>
-                                                <p>Nenhuma despesa cadastrada para ${monthName}</p>
-                                                <p class="text-sm mt-1">Clique em "+ Nova Despesa" para adicionar</p>
+                                                <p class="font-medium">Nenhuma despesa cadastrada para ${monthName}</p>
+                                                <p class="text-xs mt-1">Clique em "+ Nova Despesa" para adicionar</p>
                                             </td>
                                         </tr>
                                     `;
@@ -5839,7 +5844,17 @@
             const totalProfessors = uniqueProfessors.length;
 
             // Calcular alunos por professor USANDO A GRADE como fonte da verdade
+            // Inicializar com todos os professores ativos cadastrados
             const teachersMap = new Map();
+            const activeProfessores = professores.filter(p => p.status === 'ativo');
+            activeProfessores.forEach(prof => {
+                teachersMap.set(prof.name, { 
+                    vipStudents: new Set(), 
+                    turmaStudents: new Set(),
+                    vipCount: 0,
+                    turmaCount: 0
+                });
+            });
 
             // Percorrer todos os horários da grade (exceto breaks)
             schedules.forEach(schedule => {
@@ -6143,7 +6158,7 @@
                         <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-3 rounded-lg border border-stone-200 transition-all hover:border-[#F1D24B]">
                             <div class="flex items-center justify-between mb-2">
                                 <h3 class="text-sm font-medium text-stone-700 uppercase tracking-wide">Idade Média</h3>
-                                <svg class="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                                 </svg>
                             </div>
@@ -6154,33 +6169,28 @@
                         <!-- Distribuição por Gênero -->
                         <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-3 rounded-lg border border-stone-200 transition-all hover:border-[#F1D24B]">
                             <div class="flex items-center justify-between mb-2">
-                                <h3 class="text-sm font-medium text-stone-700 uppercase tracking-wide">Distribuição por Gênero</h3>
-                                <svg class="w-8 h-8 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <h3 class="text-sm font-medium text-stone-700 uppercase tracking-wide">Gênero</h3>
+                                <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
                                 </svg>
                             </div>
-                            <div class="flex items-center justify-between mt-4">
-                                <div>
-                                    <div class="flex items-center gap-2 mb-1">
-                                        <div class="w-3 h-3 rounded-full bg-blue-500"></div>
-                                        <span class="text-xs text-stone-600">Masculino</span>
-                                    </div>
-                                    <p class="text-2xl font-bold text-stone-800">${activeStudents.length > 0 ? (maleCount / activeStudents.length * 100).toFixed(1) : 0}%</p>
-                                    <p class="text-xs text-stone-500 mt-1">${maleCount} ${maleCount === 1 ? 'aluno' : 'alunos'}</p>
+                            <div class="flex items-center gap-3 mt-1">
+                                <div class="flex items-center gap-1">
+                                    <div class="w-2 h-2 rounded-full bg-blue-500"></div>
+                                    <span class="text-xs text-stone-600">M:</span>
+                                    <span class="text-sm font-bold text-stone-800">${maleCount}</span>
                                 </div>
-                                <div>
-                                    <div class="flex items-center gap-2 mb-1">
-                                        <div class="w-3 h-3 rounded-full bg-pink-500"></div>
-                                        <span class="text-xs text-stone-600">Feminino</span>
-                                    </div>
-                                    <p class="text-2xl font-bold text-stone-800">${activeStudents.length > 0 ? (femaleCount / activeStudents.length * 100).toFixed(1) : 0}%</p>
-                                    <p class="text-xs text-stone-500 mt-1">${femaleCount} ${femaleCount === 1 ? 'aluna' : 'alunas'}</p>
+                                <div class="flex items-center gap-1">
+                                    <div class="w-2 h-2 rounded-full bg-pink-500"></div>
+                                    <span class="text-xs text-stone-600">F:</span>
+                                    <span class="text-sm font-bold text-stone-800">${femaleCount}</span>
                                 </div>
                             </div>
-                            <div class="mt-3 flex gap-2">
-                                <div class="flex-1 bg-blue-500 h-2 rounded-full" style="width: ${activeStudents.length > 0 ? (maleCount / activeStudents.length * 100).toFixed(1) : 0}%"></div>
-                                <div class="flex-1 bg-pink-500 h-2 rounded-full" style="width: ${activeStudents.length > 0 ? (femaleCount / activeStudents.length * 100).toFixed(1) : 0}%"></div>
+                            <div class="mt-2 flex gap-1 h-1.5 rounded-full overflow-hidden bg-stone-200">
+                                <div class="bg-blue-500" style="width: ${activeStudents.length > 0 ? (maleCount / activeStudents.length * 100).toFixed(1) : 50}%"></div>
+                                <div class="bg-pink-500" style="width: ${activeStudents.length > 0 ? (femaleCount / activeStudents.length * 100).toFixed(1) : 50}%"></div>
                             </div>
+                            <p class="text-xs text-stone-500 mt-1">${activeStudents.length} alunos ativos</p>
                         </div>
 
                         <!-- Assiduidade Média Geral -->
@@ -6338,10 +6348,10 @@
                     </div>
 
                     <!-- Grid com Níveis e Horários -->
-                    <div class="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
                         <!-- Alunos por Nível -->
-                        <div class="bg-white p-6 rounded-lg border border-stone-200">
-                            <h3 class="text-lg font-semibold text-stone-800 mb-4">Alunos Cursando por Nível</h3>
+                        <div class="bg-white p-3 rounded-lg border border-stone-200">
+                            <h3 class="text-sm font-semibold text-stone-800 mb-2">Alunos Cursando por Nível</h3>
                             ${(() => {
                                 const levelDistribution = {};
                                 let totalStudents = 0;
@@ -6360,8 +6370,8 @@
                                 });
 
                                 return `
-                                    <div style="max-height: 400px; overflow-y: auto;">
-                                        <div class="grid grid-cols-2 gap-2">
+                                    <div style="max-height: 280px; overflow-y: auto;">
+                                        <div class="grid grid-cols-2 gap-1">
                                             ${STANDARD_LEVELS.map(level => {
                                                 const count = levelDistribution[level];
                                                 const percentage = totalStudents > 0 ? (count / totalStudents) * 100 : 0;
@@ -6381,30 +6391,29 @@
                                                 const barColor = colors[level] || 'bg-gray-500';
 
                                                 return `
-                                                    <div class="p-3 bg-gradient-to-br from-stone-50 to-stone-100 rounded-lg border border-stone-200 transition-all hover:border-[#F1D24B]">
-                                                        <p class="text-xs font-medium text-stone-700 uppercase tracking-wide mb-1">${level}</p>
-                                                        <div class="flex items-baseline gap-2 mb-1">
-                                                            <p class="text-2xl font-bold text-stone-800">${count}</p>
-                                                            <p class="text-xs font-medium text-stone-600">(${percentage.toFixed(1)}%)</p>
+                                                    <div class="p-2 bg-gradient-to-br from-stone-50 to-stone-100 rounded border border-stone-200 transition-all hover:border-[#F1D24B]">
+                                                        <div class="flex items-center justify-between mb-1">
+                                                            <p class="text-xs font-medium text-stone-700">${level}</p>
+                                                            <p class="text-sm font-bold text-stone-800">${count}</p>
                                                         </div>
-                                                        <div class="w-full bg-stone-200 rounded-full h-1.5 overflow-hidden">
-                                                            <div class="${barColor} h-1.5 rounded-full transition-all duration-300" style="width: ${Math.min(100, percentage)}%"></div>
+                                                        <div class="w-full bg-stone-200 rounded-full h-1 overflow-hidden">
+                                                            <div class="${barColor} h-1 rounded-full" style="width: ${Math.min(100, percentage)}%"></div>
                                                         </div>
                                                     </div>
                                                 `;
                                             }).join('')}
                                         </div>
                                     </div>
-                                    <div class="mt-4 text-center">
-                                        <p class="text-sm font-semibold text-stone-700">Total: <span class="text-xl ${totalStudents === 0 ? 'text-stone-500' : 'text-stone-900'}">${totalStudents}</span> ${totalStudents === 1 ? 'aluno' : 'alunos'}</p>
+                                    <div class="mt-2 text-center">
+                                        <p class="text-xs font-semibold text-stone-700">Total: <span class="text-sm ${totalStudents === 0 ? 'text-stone-500' : 'text-stone-900'}">${totalStudents}</span> ${totalStudents === 1 ? 'aluno' : 'alunos'}</p>
                                     </div>
                                 `;
                             })()}
                         </div>
 
                         <!-- Horários Mais Ocupados -->
-                        <div class="bg-white p-6 rounded-lg border border-stone-200">
-                            <h3 class="text-lg font-semibold text-stone-800 mb-4">Horários Mais Ocupados</h3>
+                        <div class="bg-white p-3 rounded-lg border border-stone-200">
+                            <h3 class="text-sm font-semibold text-stone-800 mb-2">Horários Mais Ocupados</h3>
                             ${(() => {
                                 const hourStudents = {}; // Mapeia hora -> Set de IDs únicos de alunos
                                 const uniqueVips = new Set(); // Rastreia alunos VIP únicos
@@ -6455,8 +6464,8 @@
                                     .slice(0, 8);
 
                                 return sortedHours.length > 0 ? `
-                                    <div style="max-height: 400px; overflow-y: auto;">
-                                        <div class="grid grid-cols-2 gap-2">
+                                    <div style="max-height: 280px; overflow-y: auto;">
+                                        <div class="grid grid-cols-2 gap-1">
                                             ${sortedHours.map(([hour, count]) => {
                                                 const percentage = totalStudents > 0 ? (count / totalStudents) * 100 : 0;
                                                 return `
@@ -6490,38 +6499,34 @@
                     </div>
 
                     <!-- Grid com Alunos por Professor e Médias de Testes -->
-                    <div class="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
                         <!-- Alunos por Professor -->
-                        <div class="bg-white p-6 rounded-lg border border-stone-200">
-                            <h3 class="text-lg font-semibold text-stone-800 mb-4">Alunos por Professor</h3>
+                        <div class="bg-white p-3 rounded-lg border border-stone-200">
+                            <h3 class="text-sm font-semibold text-stone-800 mb-2">Alunos por Professor</h3>
                             ${teacherStats.length > 0 ? `
-                                <div style="max-height: 400px; overflow-y: auto;">
-                                    <div class="space-y-2">
+                                <div style="max-height: 250px; overflow-y: auto;">
+                                    <div class="space-y-1">
                                         ${teacherStats.map((teacher, index) => {
                                             const vipPercentage = teacher.total > 0 ? (teacher.vipStudents / teacher.total) * 100 : 0;
                                             const turmaPercentage = teacher.total > 0 ? (teacher.turmaStudents / teacher.total) * 100 : 0;
                                             const isTopTeacher = index < 3;
 
                                             return `
-                                                <div class="p-3 bg-stone-50 rounded-lg border border-stone-200 transition-all hover:border-[#F1D24B]">
-                                                    <div class="flex items-center justify-between mb-2">
-                                                        <div class="flex items-center gap-2">
-                                                            ${isTopTeacher ? `
-                                                                <svg class="w-4 h-4 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
-                                                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                                                                </svg>
-                                                            ` : ''}
-                                                            <span class="text-sm font-medium text-stone-700">${teacher.name}</span>
+                                                <div class="p-2 bg-stone-50 rounded border border-stone-200 transition-all hover:border-[#F1D24B]">
+                                                    <div class="flex items-center justify-between">
+                                                        <div class="flex items-center gap-1">
+                                                            ${isTopTeacher ? `<svg class="w-3 h-3 text-yellow-500" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>` : ''}
+                                                            <span class="text-xs font-medium text-stone-700">${teacher.name}</span>
                                                         </div>
-                                                        <div class="flex items-center gap-2">
-                                                            ${teacher.vipCount > 0 ? `<span class="px-2 py-1 bg-amber-100 text-amber-700 rounded text-xs font-bold" title="${teacher.vipStudents} ${teacher.vipStudents === 1 ? 'aluno' : 'alunos'}">${teacher.vipCount} VIP${teacher.vipCount > 1 ? 's' : ''}</span>` : ''}
-                                                            ${teacher.turmaCount > 0 ? `<span class="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs font-bold" title="${teacher.turmaStudents} ${teacher.turmaStudents === 1 ? 'aluno' : 'alunos'}">${teacher.turmaCount} Turma${teacher.turmaCount > 1 ? 's' : ''}</span>` : ''}
-                                                            <span class="px-2 py-1 bg-stone-200 text-stone-800 rounded text-xs font-bold" title="Total de alunos">${teacher.total} al.</span>
+                                                        <div class="flex items-center gap-1">
+                                                            ${teacher.vipCount > 0 ? `<span class="px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded text-xs font-bold">${teacher.vipCount}V</span>` : ''}
+                                                            ${teacher.turmaCount > 0 ? `<span class="px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded text-xs font-bold">${teacher.turmaCount}T</span>` : ''}
+                                                            <span class="px-1.5 py-0.5 bg-stone-200 text-stone-800 rounded text-xs font-bold">${teacher.total}</span>
                                                         </div>
                                                     </div>
-                                                    <div class="w-full bg-stone-200 rounded-full h-2 overflow-hidden flex">
-                                                        ${teacher.vipStudents > 0 ? `<div class="bg-amber-500 h-2" style="width: ${vipPercentage}%" title="VIPs: ${vipPercentage.toFixed(1)}%"></div>` : ''}
-                                                        ${teacher.turmaStudents > 0 ? `<div class="bg-purple-500 h-2" style="width: ${turmaPercentage}%" title="Turmas: ${turmaPercentage.toFixed(1)}%"></div>` : ''}
+                                                    <div class="w-full bg-stone-200 rounded-full h-1 overflow-hidden flex mt-1">
+                                                        ${teacher.vipStudents > 0 ? `<div class="bg-amber-500 h-1" style="width: ${vipPercentage}%"></div>` : ''}
+                                                        ${teacher.turmaStudents > 0 ? `<div class="bg-purple-500 h-1" style="width: ${turmaPercentage}%"></div>` : ''}
                                                     </div>
                                                 </div>
                                             `;
@@ -14615,58 +14620,56 @@
             }
 
             container.innerHTML = `
-                <div class="overflow-x-auto">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Nome</th>
-                                <th>Data</th>
-                                <th>Horário</th>
-                                <th>Avaliador</th>
-                                <th class="text-center">Tráfego</th>
-                                <th class="text-center">Matrícula</th>
-                                <th>Nível</th>
-                                <th>Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${paginatedTNs.map(tn => {
-                                const avaliador = (avaliadores || []).find(a => a.id === tn.evaluatorId) || collaborators.find(c => c.id === tn.evaluatorId);
-                                return `
-                                    <tr class="${tn.convertedToMatricula ? 'bg-green-50' : ''}">
-                                        <td class="font-semibold">${tn.candidateName}</td>
-                                        <td>${formatDateBR(tn.date)}</td>
-                                        <td>${tn.time || '-'}</td>
-                                        <td>${avaliador?.name || 'Não especificado'}</td>
-                                        <td class="text-center">
-                                            <button class="px-4 py-1 text-sm rounded font-semibold transition-all w-14 ${tn.fromTrafego ? 'bg-purple-500 text-white hover:bg-purple-600' : 'bg-stone-200 text-stone-600 hover:bg-stone-300'}" 
-                                                    onclick='toggleTNTrafego("${tn.id}")' 
-                                                    title="${tn.fromTrafego ? 'Clique para desmarcar' : 'Clique para marcar como vindo de tráfego'}">
-                                                ${tn.fromTrafego ? 'Sim' : 'Não'}
-                                            </button>
-                                        </td>
-                                        <td class="text-center">
-                                            <button class="px-4 py-1 text-sm rounded font-semibold transition-all w-14 ${tn.convertedToMatricula ? 'bg-green-500 text-white hover:bg-green-600' : 'bg-stone-200 text-stone-600 hover:bg-stone-300'}" 
-                                                    onclick='toggleTNMatricula("${tn.id}")' 
-                                                    title="${tn.convertedToMatricula ? 'Clique para desmarcar' : 'Clique para marcar como convertido'}">
-                                                ${tn.convertedToMatricula ? 'Sim' : 'Não'}
-                                            </button>
-                                        </td>
-                                        <td>
-                                            <span class="inline-block px-2 py-1 text-xs rounded bg-blue-100 text-blue-700 font-semibold">
-                                                ${tn.level}
-                                            </span>
-                                        </td>
-                                        <td class="whitespace-nowrap">
-                                            <button class="secondary-btn w-auto text-sm" onclick='viewTN("${tn.id}")'>Ver</button>
-                                            <button class="secondary-btn w-auto text-sm ml-2" onclick='editTN("${tn.id}")'>Editar</button>
-                                            <button class="danger-btn w-auto text-sm ml-2" onclick='deleteTN("${tn.id}")'>Excluir</button>
-                                        </td>
-                                    </tr>
-                                `;
-                            }).join('')}
-                        </tbody>
-                    </table>
+                <div class="bg-white rounded-xl border border-stone-200 shadow-sm overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-stone-200">
+                            <thead class="bg-stone-50">
+                                <tr>
+                                    <th class="px-3 py-2 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Nome</th>
+                                    <th class="px-3 py-2 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Data</th>
+                                    <th class="px-3 py-2 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Horário</th>
+                                    <th class="px-3 py-2 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Avaliador</th>
+                                    <th class="px-3 py-2 text-center text-xs font-semibold text-stone-600 uppercase tracking-wider">Tráfego</th>
+                                    <th class="px-3 py-2 text-center text-xs font-semibold text-stone-600 uppercase tracking-wider">Matrícula</th>
+                                    <th class="px-3 py-2 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Nível</th>
+                                    <th class="px-3 py-2 text-center text-xs font-semibold text-stone-600 uppercase tracking-wider">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-stone-100">
+                                ${paginatedTNs.map(tn => {
+                                    const avaliador = (avaliadores || []).find(a => a.id === tn.evaluatorId) || collaborators.find(c => c.id === tn.evaluatorId);
+                                    return `
+                                        <tr class="hover:bg-stone-50 transition-colors ${tn.convertedToMatricula ? 'bg-green-50' : ''}">
+                                            <td class="px-3 py-2 text-sm font-medium text-stone-800">${tn.candidateName}</td>
+                                            <td class="px-3 py-2 text-sm text-stone-600">${formatDateBR(tn.date)}</td>
+                                            <td class="px-3 py-2 text-sm text-stone-600">${tn.time || '-'}</td>
+                                            <td class="px-3 py-2 text-sm text-stone-600">${avaliador?.name || '-'}</td>
+                                            <td class="px-3 py-2 text-center">
+                                                <button class="px-2 py-0.5 text-xs rounded font-semibold transition-all ${tn.fromTrafego ? 'bg-purple-500 text-white hover:bg-purple-600' : 'bg-stone-200 text-stone-600 hover:bg-stone-300'}" 
+                                                        onclick='toggleTNTrafego("${tn.id}")'>
+                                                    ${tn.fromTrafego ? 'Sim' : 'Não'}
+                                                </button>
+                                            </td>
+                                            <td class="px-3 py-2 text-center">
+                                                <button class="px-2 py-0.5 text-xs rounded font-semibold transition-all ${tn.convertedToMatricula ? 'bg-green-500 text-white hover:bg-green-600' : 'bg-stone-200 text-stone-600 hover:bg-stone-300'}" 
+                                                        onclick='toggleTNMatricula("${tn.id}")'>
+                                                    ${tn.convertedToMatricula ? 'Sim' : 'Não'}
+                                                </button>
+                                            </td>
+                                            <td class="px-3 py-2">
+                                                <span class="px-1.5 py-0.5 text-xs rounded bg-blue-100 text-blue-700 font-medium">${tn.level}</span>
+                                            </td>
+                                            <td class="px-3 py-2 text-center whitespace-nowrap">
+                                                <button class="text-xs text-stone-600 hover:text-stone-800 px-2 py-1 rounded hover:bg-stone-100" onclick='viewTN("${tn.id}")'>Ver</button>
+                                                <button class="text-xs text-stone-600 hover:text-stone-800 px-2 py-1 rounded hover:bg-stone-100" onclick='editTN("${tn.id}")'>Editar</button>
+                                                <button class="text-xs text-red-600 hover:text-red-800 px-2 py-1 rounded hover:bg-red-50" onclick='deleteTN("${tn.id}")'>Excluir</button>
+                                            </td>
+                                        </tr>
+                                    `;
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
                 ${totalPages > 1 ? `
                     <div class="flex items-center justify-between mt-4 px-2">
