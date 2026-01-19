@@ -1428,12 +1428,14 @@
                 }
                 if (contentArea.firstElementChild?.id === 'turmas-section') renderTurmasSection();
                 if (contentArea.firstElementChild?.id === 'vips-section') renderVipsSection();
+                if (contentArea.firstElementChild?.id === 'aniversariantes-section') renderAniversariantesSection();
             });
             getCollectionListener('turmas', turmas, () => {
                 if (contentArea.firstElementChild?.id === 'turmas-section') renderTurmasSection();
             });
             getCollectionListener('vips', vips, () => {
                 if (contentArea.firstElementChild?.id === 'vips-section') renderVipsSection();
+                if (contentArea.firstElementChild?.id === 'aniversariantes-section') renderAniversariantesSection();
             });
             getCollectionListener('attendance', attendance, () => {
                 const activeModal = document.querySelector('.modal-overlay.visible');
@@ -3332,6 +3334,10 @@
                         <input type="checkbox" id="show-vagas-only" class="rounded border-stone-300 text-emerald-600 focus:ring-emerald-500">
                         <label for="show-vagas-only" class="text-sm font-medium text-stone-700">Mostrar apenas vagas</label>
                     </div>
+                    <div class="flex items-center gap-2 ml-4">
+                        <input type="checkbox" id="show-breaks-only" class="rounded border-stone-300 text-amber-600 focus:ring-amber-500">
+                        <label for="show-breaks-only" class="text-sm font-medium text-stone-700">Mostrar apenas breaks</label>
+                    </div>
                 `;
             }
 
@@ -3414,6 +3420,16 @@
                 const showVagasOnly = document.getElementById('show-vagas-only');
                 if (showVagasOnly) {
                     showVagasOnly.addEventListener('change', () => {
+                        document.getElementById('show-breaks-only').checked = false;
+                        const currentTeacherFilter = teacherFilter ? teacherFilter.value : 'all';
+                        renderScheduleGrid(currentTeacherFilter);
+                    });
+                }
+
+                const showBreaksOnly = document.getElementById('show-breaks-only');
+                if (showBreaksOnly) {
+                    showBreaksOnly.addEventListener('change', () => {
+                        document.getElementById('show-vagas-only').checked = false;
                         const currentTeacherFilter = teacherFilter ? teacherFilter.value : 'all';
                         renderScheduleGrid(currentTeacherFilter);
                     });
@@ -3546,6 +3562,12 @@
             const showVagasOnly = document.getElementById('show-vagas-only');
             if (showVagasOnly && showVagasOnly.checked) {
                 filteredSchedules = filteredSchedules.filter(s => s.type === 'vaga');
+            }
+
+            // Filter by breaks checkbox if checked
+            const showBreaksOnly = document.getElementById('show-breaks-only');
+            if (showBreaksOnly && showBreaksOnly.checked) {
+                filteredSchedules = filteredSchedules.filter(s => s.type === 'break');
             }
 
             // Debug log for teachers to help identify mapping issues
@@ -4887,9 +4909,9 @@
                         <table class="data-table">
                             <thead>
                                 <tr>
-                                    <th>Nome</th>
-                                    <th>Status</th>
-                                    <th class="text-center">Ações</th>
+                                    <th class="w-1/2">Nome</th>
+                                    <th class="w-1/4 text-center">Status</th>
+                                    <th class="w-1/4 text-center">Ações</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -4899,7 +4921,7 @@
                                     return `
                                     <tr>
                                         <td class="font-medium">${p.name}</td>
-                                        <td><span class="px-2 py-1 rounded-full text-xs font-semibold ${statusClass}">${statusLabel}</span></td>
+                                        <td class="text-center"><span class="px-2 py-1 rounded-full text-xs font-semibold ${statusClass}">${statusLabel}</span></td>
                                         <td class="text-center">
                                             <div class="flex gap-2 justify-center">
                                                 <button class="secondary-btn" data-action="edit-professor" data-id="${p.id}">Editar</button>
