@@ -6196,7 +6196,7 @@
                         <!-- Assiduidade Média Geral -->
                         <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-3 rounded-lg border border-stone-200 transition-all hover:border-[#F1D24B]">
                             <div class="flex items-center justify-between mb-2">
-                                <h3 class="text-sm font-medium text-stone-700 uppercase tracking-wide">Assiduidade Média Geral</h3>
+                                <h3 class="text-sm font-medium text-stone-700 uppercase tracking-wide">Assiduidade</h3>
                                 <svg class="w-5 h-5 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                 </svg>
@@ -6469,14 +6469,14 @@
                                             ${sortedHours.map(([hour, count]) => {
                                                 const percentage = totalStudents > 0 ? (count / totalStudents) * 100 : 0;
                                                 return `
-                                                    <div class="p-3 bg-gradient-to-br from-stone-50 to-stone-100 rounded-lg border border-stone-200 transition-all hover:border-[#F1D24B]">
+                                                    <div class="p-2 bg-gradient-to-br from-stone-50 to-stone-100 rounded border border-stone-200 transition-all hover:border-[#F1D24B]">
                                                         <p class="text-xs font-medium text-stone-700 uppercase tracking-wide mb-1">${hour}</p>
                                                         <div class="flex items-baseline gap-2 mb-1">
                                                             <p class="text-2xl font-bold text-stone-800">${count}</p>
                                                             <p class="text-xs font-medium text-stone-600">(${percentage.toFixed(1)}%)</p>
                                                         </div>
                                                         <div class="w-full bg-stone-200 rounded-full h-1.5 overflow-hidden">
-                                                            <div class="bg-indigo-500 h-1.5 rounded-full transition-all duration-300" style="width: ${Math.min(100, percentage)}%"></div>
+                                                            <div class="bg-indigo-500 h-1 rounded-full transition-all duration-300" style="width: ${Math.min(100, percentage)}%"></div>
                                                         </div>
                                                     </div>
                                                 `;
@@ -6537,70 +6537,54 @@
                         </div>
 
                         <!-- Médias de Notas dos Testes -->
-                        <div class="bg-white p-6 rounded-lg border border-stone-200">
-                            <h3 class="text-lg font-semibold text-stone-800 mb-6">Médias de Desempenho nos Testes</h3>
-                            <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-white p-3 rounded-lg border border-stone-200">
+                            <h3 class="text-sm font-semibold text-stone-800 mb-2">Médias de Desempenho nos Testes</h3>
+                            <div class="grid grid-cols-2 gap-2">
                                 <!-- Midterm Test -->
-                                <div class="p-6 bg-stone-100 rounded-lg border border-stone-200">
-                                    <div class="flex items-center justify-between mb-4">
-                                        <p class="text-xs font-bold text-stone-700 uppercase tracking-wider">Midterm Test</p>
-                                        <svg class="w-6 h-6 text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                        </svg>
+                                <div class="p-2 bg-gradient-to-br from-stone-50 to-stone-100 rounded border border-stone-200 transition-all hover:border-[#F1D24B]">
+                                    <div class="flex items-center justify-between mb-1">
+                                        <p class="text-xs font-medium text-stone-700">Midterm</p>
+                                        <p class="text-sm font-bold text-stone-800">${avgMidterm.toFixed(1)}</p>
                                     </div>
-                                    <p class="text-4xl font-black text-stone-800 mb-1">${avgMidterm.toFixed(1)}</p>
-                                    <p class="text-sm font-medium text-stone-600 mb-4">de 20.0 pontos</p>
-                                    <div class="w-full bg-stone-200 rounded-full h-3 overflow-hidden">
-                                        <div class="bg-indigo-600 h-3 rounded-full transition-all duration-500" style="width: ${Math.min(100, (avgMidterm / 20) * 100)}%"></div>
+                                    <div class="w-full bg-stone-200 rounded-full h-1 overflow-hidden">
+                                        <div class="bg-indigo-500 h-1 rounded-full" style="width: ${Math.min(100, (avgMidterm / 20) * 100)}%"></div>
                                     </div>
                                 </div>
 
                                 <!-- Listening Test -->
-                                <div class="p-6 bg-stone-100 rounded-lg border border-stone-200">
-                                    <div class="flex items-center justify-between mb-4">
-                                        <p class="text-xs font-bold text-stone-700 uppercase tracking-wider">Listening Test</p>
-                                        <svg class="w-6 h-6 text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/>
-                                        </svg>
+                                <div class="p-2 bg-gradient-to-br from-stone-50 to-stone-100 rounded border border-stone-200 transition-all hover:border-[#F1D24B]">
+                                    <div class="flex items-center justify-between mb-1">
+                                        <p class="text-xs font-medium text-stone-700">Listening</p>
+                                        <p class="text-sm font-bold text-stone-800">${avgListening.toFixed(1)}</p>
                                     </div>
-                                    <p class="text-4xl font-black text-stone-800 mb-1">${avgListening.toFixed(1)}</p>
-                                    <p class="text-sm font-medium text-stone-600 mb-4">de 20.0 pontos</p>
-                                    <div class="w-full bg-stone-200 rounded-full h-3 overflow-hidden">
-                                        <div class="bg-sky-600 h-3 rounded-full transition-all duration-500" style="width: ${Math.min(100, (avgListening / 20) * 100)}%"></div>
+                                    <div class="w-full bg-stone-200 rounded-full h-1 overflow-hidden">
+                                        <div class="bg-sky-500 h-1 rounded-full" style="width: ${Math.min(100, (avgListening / 20) * 100)}%"></div>
                                     </div>
                                 </div>
 
                                 <!-- Grammar Test -->
-                                <div class="p-6 bg-stone-100 rounded-lg border border-stone-200">
-                                    <div class="flex items-center justify-between mb-4">
-                                        <p class="text-xs font-bold text-stone-700 uppercase tracking-wider">Grammar Test</p>
-                                        <svg class="w-6 h-6 text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
-                                        </svg>
+                                <div class="p-2 bg-gradient-to-br from-stone-50 to-stone-100 rounded border border-stone-200 transition-all hover:border-[#F1D24B]">
+                                    <div class="flex items-center justify-between mb-1">
+                                        <p class="text-xs font-medium text-stone-700">Grammar</p>
+                                        <p class="text-sm font-bold text-stone-800">${avgGrammar.toFixed(1)}</p>
                                     </div>
-                                    <p class="text-4xl font-black text-stone-800 mb-1">${avgGrammar.toFixed(1)}</p>
-                                    <p class="text-sm font-medium text-stone-600 mb-4">de 20.0 pontos</p>
-                                    <div class="w-full bg-stone-200 rounded-full h-3 overflow-hidden">
-                                        <div class="bg-teal-600 h-3 rounded-full transition-all duration-500" style="width: ${Math.min(100, (avgGrammar / 20) * 100)}%"></div>
+                                    <div class="w-full bg-stone-200 rounded-full h-1 overflow-hidden">
+                                        <div class="bg-teal-500 h-1 rounded-full" style="width: ${Math.min(100, (avgGrammar / 20) * 100)}%"></div>
                                     </div>
                                 </div>
 
                                 <!-- Oral Test -->
-                                <div class="p-6 bg-stone-100 rounded-lg border border-stone-200">
-                                    <div class="flex items-center justify-between mb-4">
-                                        <p class="text-xs font-bold text-stone-700 uppercase tracking-wider">Oral Test</p>
-                                        <svg class="w-6 h-6 text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
-                                        </svg>
+                                <div class="p-2 bg-gradient-to-br from-stone-50 to-stone-100 rounded border border-stone-200 transition-all hover:border-[#F1D24B]">
+                                    <div class="flex items-center justify-between mb-1">
+                                        <p class="text-xs font-medium text-stone-700">Oral</p>
+                                        <p class="text-sm font-bold text-stone-800">${avgOral.toFixed(1)}</p>
                                     </div>
-                                    <p class="text-4xl font-black text-stone-800 mb-1">${avgOral.toFixed(1)}</p>
-                                    <p class="text-sm font-medium text-stone-600 mb-4">de 20.0 pontos</p>
-                                    <div class="w-full bg-stone-200 rounded-full h-3 overflow-hidden">
-                                        <div class="bg-pink-600 h-3 rounded-full transition-all duration-500" style="width: ${Math.min(100, (avgOral / 20) * 100)}%"></div>
+                                    <div class="w-full bg-stone-200 rounded-full h-1 overflow-hidden">
+                                        <div class="bg-pink-500 h-1 rounded-full" style="width: ${Math.min(100, (avgOral / 20) * 100)}%"></div>
                                     </div>
                                 </div>
                             </div>
-                            ${allGrades.length === 0 ? '<div class="text-center py-6 mt-6 text-stone-500 text-sm bg-stone-50 rounded-lg">Nenhuma nota registrada ainda</div>' : ''}
+                            ${allGrades.length === 0 ? '<div class="text-center py-3 mt-2 text-stone-500 text-xs bg-stone-50 rounded">Nenhuma nota registrada</div>' : ''}
                         </div>
                     </div>
                 </section>
