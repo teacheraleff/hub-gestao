@@ -656,7 +656,7 @@
         const pendingView = document.getElementById('pending-view');
 
         let db, auth, storage, userId, currentUserName, currentUserRole;
-        let usersData = [], students = [], turmas = [], vips = [], attendance = [], tasks = [], events = [], collaborators = [], schedules = [], expenses = [], dojoRanking = [], dojoMissions = [], activityLogs = [], rechamadas = [], linksUteis = [], processos = [], avaliadores = [], entradas = [];
+        let usersData = [], students = [], turmas = [], vips = [], attendance = [], tasks = [], events = [], collaborators = [], schedules = [], expenses = [],  activityLogs = [], rechamadas = [], linksUteis = [], processos = [], avaliadores = [], entradas = [], professores = [];
         let userProfiles = {};
         let monthlyHighlight = {
             name: 'João Silva',
@@ -688,16 +688,7 @@
                         'edit_employee_month': { label: 'Pode editar funcionário do mês', default: false }
                     }
                 },
-                'dojo': {
-                    label: 'Dojo',
-                    actions: {
-                        'view_only': { label: 'Apenas visualizar (teacher view)', default: false },
-                        'add_competitor': { label: 'Pode adicionar competidor', default: false },
-                        'edit_points': { label: 'Pode editar pontos', default: false },
-                        'delete_competitor': { label: 'Pode excluir competidor', default: false },
-                        'add_active_mission': { label: 'Pode adicionar missão ativa', default: false }
-                    }
-                },
+
                 'alunos': {
                     label: 'Alunos',
                     actions: {
@@ -818,9 +809,7 @@
                 'teacher': {
                     label: 'Professor',
                     description: 'Acesso às suas próprias turmas, VIPs e grade',
-                    permissions: {
-                        'dojo.view_only': true,
-                        'alunos.access_no_financials': true,
+                    permissions: {                        'alunos.access_no_financials': true,
                         'turmas.teacher_view_only': true,
                         'vips.teacher_view_only': true,
                         'grade.teacher_own_only': true,
@@ -836,12 +825,7 @@
                     label: 'PEDAGÓGICO',
                     description: 'Acesso total pedagógico sem informações financeiras',
                     permissions: {
-                        'inicio.edit_employee_month': true,
-                        'dojo.add_competitor': true,
-                        'dojo.edit_points': true,
-                        'dojo.delete_competitor': true,
-                        'dojo.add_active_mission': true,
-                        'alunos.access_no_financials': true,
+                        'inicio.edit_employee_month': true,                        'alunos.access_no_financials': true,
                         'turmas.full_access': true,
                         'vips.full_access': true,
                         'grade.full_access': true,
@@ -921,9 +905,7 @@
                 'am': {
                     label: 'Assistente de Marketing',
                     description: 'Acesso a eventos, calendário e marketing',
-                    permissions: {
-                        'dojo.view_only': true,
-                        'calendario.edit_fixed_periods': true,
+                    permissions: {                        'calendario.edit_fixed_periods': true,
                         'calendario.add_event': true,
                         'calendario.edit_event': true,
                         'calendario.delete_event': true,
@@ -938,12 +920,7 @@
                     description: 'Acesso total ao sistema igual ao Admin',
                     permissions: {
                         'financeiro.full_access': true,
-                        'inicio.edit_employee_month': true,
-                        'dojo.add_competitor': true,
-                        'dojo.edit_points': true,
-                        'dojo.delete_competitor': true,
-                        'dojo.add_active_mission': true,
-                        'alunos.full_access': true,
+                        'inicio.edit_employee_month': true,                        'alunos.full_access': true,
                         'turmas.full_access': true,
                         'vips.full_access': true,
                         'grade.full_access': true,
@@ -980,12 +957,7 @@
                     label: 'Coordenador',
                     description: 'Acesso total ao sistema igual ao Admin',
                     permissions: {
-                        'inicio.edit_employee_month': true,
-                        'dojo.add_competitor': true,
-                        'dojo.edit_points': true,
-                        'dojo.delete_competitor': true,
-                        'dojo.add_active_mission': true,
-                        'alunos.full_access': true,
+                        'inicio.edit_employee_month': true,                        'alunos.full_access': true,
                         'turmas.full_access': true,
                         'vips.full_access': true,
                         'grade.full_access': true,
@@ -1020,12 +992,7 @@
                 'estagiario': {
                     label: 'Estagiário',
                     description: 'Estagiário com acesso ao DOJO e seções pedagógicas',
-                    permissions: {
-                        'dojo.add_competitor': true,
-                        'dojo.edit_points': true,
-                        'dojo.delete_competitor': true,
-                        'dojo.add_active_mission': true,
-                        'alunos.access_no_financials': true,
+                    permissions: {                        'alunos.access_no_financials': true,
                         'turmas.full_access': true,
                         'vips.full_access': true,
                         'grade.full_access': true,
@@ -1509,12 +1476,18 @@
                 if (activePageId === 'entradas-section') renderEntradasSection();
             });
 
+            getCollectionListener('professores', professores, () => {
+                const activePageId = contentArea.firstElementChild?.id;
+                if (activePageId === 'professores-section') renderProfessoresSection();
+                if (activePageId === 'turmas-section') renderTurmasSection();
+                if (activePageId === 'vips-section') renderVipsSection();
+                if (activePageId === 'grade-section') renderGradeSection();
+            });
 
 
 
-            getCollectionListener('dojo_ranking', dojoRanking, renderDojoSection);
-            getCollectionListener('dojo_missions', dojoMissions, renderDojoSection, (ref) => query(ref, orderBy("points", "desc")));
 
+            
             // Activity logs listener (últimos 5 dias)
             getCollectionListener('activity-logs', activityLogs, null, (ref) => {
                 const fiveDaysAgo = new Date();
@@ -1962,7 +1935,7 @@
 
             contentArea.innerHTML = `
                 <div id="inicio-section" class="space-y-6">
-                    <!-- Employee Highlight and Top 3 Dojo Section -->
+                    <!-- Employee Highlight Section -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <!-- Fortune Cookie Section - Compact -->
                         <div class="bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-600">
@@ -2224,10 +2197,6 @@
 
         function getTotalTeachingHours() {
             return schedules.filter(s => s.type !== 'break').length;
-        }
-
-        function getTop3DojoRanking() {
-            return dojoRanking.sort((a, b) => b.points - a.points).slice(0, 3);
         }
 
         function getCurrentMonthName() {
@@ -3350,7 +3319,7 @@
             let filterHtml = '';
 
             if (!isTeacher) {
-                const teacherOptions = collaborators.filter(c => c.role === 'teacher').map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+                const teacherOptions = professores.filter(p => p.status === 'ativo').map(p => `<option value="${p.name}">${p.name}</option>`).join('');
                 filterHtml = `
                     <div class="grade-select-container flex-grow">
                         <label for="teacher-filter" class="block text-sm font-medium text-stone-700 mb-1">Filtrar por professor:</label>
@@ -3872,6 +3841,14 @@
                                         // Apply sorting
                                         const sortOrder = window.expenseSortOrder || 'dueDate';
                                         const sortedExpenses = [...monthlyExpenses].sort((a, b) => {
+                                            // PRIORIDADE: Não pagas aparecem primeiro
+                                            const aIsPaid = a.isPaid ? 1 : 0;
+                                            const bIsPaid = b.isPaid ? 1 : 0;
+                                            if (aIsPaid !== bIsPaid) {
+                                                return aIsPaid - bIsPaid; // Não pagas (0) vêm antes de pagas (1)
+                                            }
+                                            
+                                            // Depois aplica ordenação secundária
                                             if (sortOrder === 'dueDate') {
                                                 const dateA = String(a.effectiveDueDate || '9999-12-31');
                                                 const dateB = String(b.effectiveDueDate || '9999-12-31');
@@ -3911,9 +3888,10 @@
                                         return `
                                             <tr class="expense-row ${exp.isPaid ? 'opacity-60' : ''}" data-expense-type="${isFixed ? 'fixo' : 'variavel'}">
                                                 <td class="text-center">
-                                                    <input type="checkbox" data-action="toggle-expense" data-id="${exp.id}" 
-                                                        class="h-5 w-5 rounded border-gray-300 text-yellow-500 focus:ring-yellow-400 cursor-pointer" 
-                                                        ${exp.isPaid ? 'checked' : ''}>
+                                                    <button onclick="openPaymentModal('${exp.id}', '${currentMonthKey}')" 
+                                                        class="text-xs px-3 py-1.5 rounded-full font-semibold transition-colors ${exp.isPaid ? 'bg-green-100 text-green-700 hover:bg-green-200' : (Number(exp.paidAmount || 0) > 0 ? 'bg-amber-100 text-amber-700 hover:bg-amber-200' : 'bg-stone-100 text-stone-600 hover:bg-stone-200')}">
+                                                        ${exp.isPaid ? 'Pago' : (Number(exp.paidAmount || 0) > 0 ? 'Parcial' : 'Pagar')}
+                                                    </button>
                                                 </td>
                                                 <td class="font-medium ${exp.isPaid ? 'line-through text-stone-400' : ''}">
                                                     ${exp.description}
@@ -3922,7 +3900,7 @@
                                                 <td>${typeLabel}</td>
                                                 <td class="text-sm text-stone-600">${dueDateFormatted}</td>
                                                 <td class="text-right font-medium">${Number(exp.amount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
-                                                <td class="text-right font-medium text-green-600">${exp.isPaid ? Number(exp.paidAmount || exp.amount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : '-'}</td>
+                                                <td class="text-right font-medium ${exp.isPaid ? 'text-green-600' : (Number(exp.paidAmount || 0) > 0 ? 'text-amber-600' : 'text-stone-400')}">${Number(exp.paidAmount || 0) > 0 ? Number(exp.paidAmount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : '-'}</td>
                                                 <td class="text-center">
                                                     <div class="flex items-center justify-center gap-2">
                                                         <button data-action="edit-expense" data-id="${exp.id}" class="text-blue-600 hover:text-blue-800" title="Editar">
@@ -3982,6 +3960,11 @@
             folhaSearchQuery = query.toLowerCase().trim();
             folhaCurrentPage = 1;
             renderFolhaPagamentoSection();
+            const searchInput = document.querySelector('#folha-pagamento-section input[type="text"]');
+            if (searchInput) {
+                searchInput.focus();
+                searchInput.setSelectionRange(query.length, query.length);
+            }
         };
 
         window.exportFolhaToExcel = function() {
@@ -4797,7 +4780,7 @@
 
             // Ordenar colaboradores alfabeticamente por nome (com proteção para nomes undefined)
             const sortedCollaborators = [...collaborators]
-                .filter(c => c && c.name)
+                .filter(c => c && c.name && c.role !== 'teacher' && c.role !== 'teachertn')
                 .sort((a, b) => 
                     (a.name || '').localeCompare(b.name || '', 'pt-BR', { sensitivity: 'base' })
                 );
@@ -4866,157 +4849,131 @@
 
 
 
-        function renderDojoSection() {
-            document.getElementById('main-title').textContent = 'SLAP Dojo';
-            document.getElementById('main-description').textContent = 'Gerencie a pontuação dos competidores e as missões ativas.';
-            const canAddCompetitor = can('dojo.add_competitor');
-            const canEditPoints = can('dojo.edit_points');
-            const canDeleteCompetitor = can('dojo.delete_competitor');
-            const canAddMission = can('dojo.add_active_mission');
-            const canEdit = canAddCompetitor || canEditPoints || canDeleteCompetitor || canAddMission;
-            const addCompetitorBtn = canAddCompetitor ? `<button class="primary-btn w-auto" data-action="add-dojo-competitor">+ Adicionar Competidor</button>` : '';
-            const addMissionBtn = canAddMission ? `<button class="primary-btn w-auto" data-action="add-dojo-mission">+ Adicionar Missão</button>` : '';
+        function renderProfessoresSection() {
+            document.getElementById('main-title').textContent = 'Central de Professores';
+            document.getElementById('main-description').textContent = 'Cadastre e gerencie os professores que aparecem nas turmas, VIPs e na grade.';
 
-            const sortedRanking = [...dojoRanking].sort((a, b) => b.points - a.points);
+            const sortedProfessores = [...professores]
+                .filter(p => p && p.name)
+                .sort((a, b) => (a.name || '').localeCompare(b.name || '', 'pt-BR', { sensitivity: 'base' }));
 
             contentArea.innerHTML = `
-                <section id="dojo-section" class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
-                    <div class="flex justify-between items-center mb-8">
-                        <h3 class="text-xl font-bold text-stone-800">Ranking de Competidores</h3>
-                        <div class="flex gap-3">
-                            ${addCompetitorBtn}
+                <section id="professores-section" class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
+                    <div class="flex justify-between items-center mb-6">
+                        <div class="flex items-center gap-4">
+                            <span class="text-sm text-stone-600">${sortedProfessores.length} professor${sortedProfessores.length !== 1 ? 'es' : ''} cadastrado${sortedProfessores.length !== 1 ? 's' : ''}</span>
                         </div>
+                        <button class="primary-btn" data-action="add-professor">
+                            <svg class="inline-block w-4 h-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                            </svg>
+                            Adicionar Professor
+                        </button>
                     </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10 text-center">
-                        <div class="p-4 rounded-lg border-2 border-stone-300 bg-stone-50 order-2 md:order-1 flex flex-col items-center justify-center">
-                            <h4 class="font-bold text-lg text-amber-500 flex items-center justify-center gap-2 mb-2">
-                                <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <circle cx="12" cy="8" r="6" fill="#C0C0C0" stroke="#A8A8A8" stroke-width="2"/>
-                                    <rect x="10" y="14" width="4" height="8" fill="#A8A8A8"/>
-                                    <text x="12" y="10" text-anchor="middle" fill="#666666" font-size="8" font-weight="bold">2</text>
-                                </svg>
-                                2º Lugar
-                            </h4>
-                            <p class="text-stone-600 text-center">Alexa Echo Dot</p>
-                        </div>
-                        <div class="p-4 rounded-lg border-2 border-yellow-400 bg-yellow-50 transform md:scale-110 order-1 md:order-2 flex flex-col items-center justify-center">
-                            <h4 class="font-bold text-lg text-yellow-500 flex items-center justify-center gap-2 mb-2">
-                                <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <circle cx="12" cy="8" r="6" fill="#FFD700" stroke="#DAA520" stroke-width="2"/>
-                                    <rect x="10" y="14" width="4" height="8" fill="#DAA520"/>
-                                    <text x="12" y="10" text-anchor="middle" fill="#DAA520" font-size="8" font-weight="bold">1</text>
-                                </svg>
-                                1º Lugar
-                            </h4>
-                            <p class="text-stone-700 font-semibold text-center">R$1.000,00</p>
-                        </div>
-                        <div class="p-4 rounded-lg border-2 border-amber-600 bg-stone-50 order-3 md:order-3 flex flex-col items-center justify-center">
-                            <h4 class="font-bold text-lg text-amber-700 flex items-center justify-center gap-2 mb-2">
-                                <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <circle cx="12" cy="8" r="6" fill="#CD7F32" stroke="#8B4513" stroke-width="2"/>
-                                    <rect x="10" y="14" width="4" height="8" fill="#8B4513"/>
-                                    <text x="12" y="10" text-anchor="middle" fill="#654321" font-size="8" font-weight="bold">3</text>
-                                </svg>
-                                3º Lugar
-                            </h4>
-                            <p class="text-stone-600 text-center">R$250,00</p>
-                        </div>
-                    </div>
-
                     <div class="overflow-x-auto">
                         <table class="data-table">
                             <thead>
                                 <tr>
-                                    <th>Pos.</th>
-                                    <th>Competidor</th>
-                                    <th class="text-right">Pontos</th>
-                                    ${canEdit ? '<th class="text-center">Ações</th>' : ''}
+                                    <th>Nome</th>
+                                    <th>Tipo</th>
+                                    <th>Status</th>
+                                    <th class="text-center">Ações</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                ${sortedRanking.map((c, index) => {
-                                    const medals = [
-                                        `<svg class="inline-block w-4 h-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                            <circle cx="12" cy="8" r="6" fill="#FFD700" stroke="#DAA520" stroke-width="2"/>
-                                            <rect x="10" y="14" width="4" height="8" fill="#DAA520"/>
-                                            <text x="12" y="10" text-anchor="middle" fill="#DAA520" font-size="8" font-weight="bold">1</text>
-                                        </svg>`,
-                                        `<svg class="inline-block w-4 h-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                            <circle cx="12" cy="8" r="6" fill="#C0C0C0" stroke="#A8A8A8" stroke-width="2"/>
-                                            <rect x="10" y="14" width="4" height="8" fill="#A8A8A8"/>
-                                            <text x="12" y="10" text-anchor="middle" fill="#666666" font-size="8" font-weight="bold">2</text>
-                                        </svg>`,
-                                        `<svg class="inline-block w-4 h-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                            <circle cx="12" cy="8" r="6" fill="#CD7F32" stroke="#8B4513" stroke-width="2"/>
-                                            <rect x="10" y="14" width="4" height="8" fill="#8B4513"/>
-                                            <text x="12" y="10" text-anchor="middle" fill="#654321" font-size="8" font-weight="bold">3</text>
-                                        </svg>`
-                                    ];
-                                    const medal = index < 3 ? `<span class="text-xl ml-2">${medals[index]}</span>` : '';
+                                ${sortedProfessores.length > 0 ? sortedProfessores.map(p => {
+                                    const tipoLabel = p.tipo === 'tn' ? 'TN' : 'Regular';
+                                    const tipoClass = p.tipo === 'tn' ? 'bg-teal-100 text-teal-800' : 'bg-blue-100 text-blue-800';
+                                    const statusLabel = p.status === 'ativo' ? 'Ativo' : 'Inativo';
+                                    const statusClass = p.status === 'ativo' ? 'bg-green-100 text-green-800' : 'bg-stone-100 text-stone-800';
                                     return `
                                     <tr>
-                                        <td class="font-bold text-stone-500 text-lg">#${index + 1}</td>
-                                        <td class="flex items-center gap-3">
-                                            <img src="${c.photo}" alt="${c.name}" class="w-10 h-10 rounded-full object-cover">
-                                            <span class="font-medium">${c.name}</span>
-                                            ${medal}
-                                        </td>
-                                        <td>
-                                        </td>
-                                        <td class="text-right font-mono font-semibold">${c.points || 0}</td>
-                                        ${canEdit ? `
+                                        <td class="font-medium">${p.name}</td>
+                                        <td><span class="px-2 py-1 rounded-full text-xs font-semibold ${tipoClass}">${tipoLabel}</span></td>
+                                        <td><span class="px-2 py-1 rounded-full text-xs font-semibold ${statusClass}">${statusLabel}</span></td>
                                         <td class="text-center">
-                                            <button class="secondary-btn" data-action="edit-dojo-competitor" data-id="${c.id}">Editar</button>
-                                            <button class="danger-btn ml-2" data-action="delete-item" data-collection="dojo_ranking" data-id="${c.id}">X</button>
+                                            <div class="flex gap-2 justify-center">
+                                                <button class="secondary-btn" data-action="edit-professor" data-id="${p.id}">Editar</button>
+                                                <button class="danger-btn" data-action="delete-item" data-collection="professores" data-id="${p.id}" onclick="event.stopPropagation()">Excluir</button>
+                                            </div>
                                         </td>
-                                        ` : ''}
                                     </tr>
-                                `}).join('') || '<tr><td colspan="5" class="text-center py-10 text-stone-500">Nenhum competidor no Dojo.</td></tr>'}
+                                `}).join('') : '<tr><td colspan="4" class="text-center py-10 text-stone-500">Nenhum professor cadastrado.</td></tr>'}
                             </tbody>
                         </table>
-                    </div>
-
-                    <!-- Missões Ativas Section -->
-                    <div class="mt-12 pt-8 border-t border-stone-200">
-                        <div class="flex justify-between items-center mb-6">
-                            <h3 class="text-xl font-bold text-stone-800">Missões Ativas</h3>
-                            ${addMissionBtn}
-                        </div>
-                        <div id="dojo-missions-list" class="space-y-3">
-                            ${dojoMissions.length > 0 ? dojoMissions.map(mission => `
-                                <div class="base-card !p-4 flex justify-between items-center">
-                                    <p class="font-medium text-stone-700 flex-1 pr-4">${mission.description}</p>
-                                    <div class="flex items-center gap-4">
-                                        <span class="font-bold text-lg text-yellow-500 whitespace-nowrap">${mission.points} pts</span>
-                                        ${canEdit ? `<button class="danger-btn !text-xs !py-1 !px-2" data-action="delete-item" data-collection="dojo_missions" data-id="${mission.id}">Excluir</button>` : ''}
-                                    </div>
-                                </div>
-                            `).join('') : '<div class="text-center p-8 bg-stone-50 rounded-lg"><p class="text-stone-500">Nenhuma missão ativa no momento.</p></div>'}
-                        </div>
                     </div>
                 </section>
             `;
         }
 
-        // --- RECHAMADA SECTION ---
-        window.currentRechamadaTeacherFilter = 'todos';
-        window.currentRechamadaPage = 1;
-        window.cachedRechamadaData = null; // Cache for rechamada calculations
-        const RECHAMADA_ITEMS_PER_PAGE = 10;
-
-        // Helper: Verificar se rechamada está expirada (>6 meses da data de contato)
-        function isRechamadaExpired(contactDate) {
-            if (!contactDate) return false;
-
-            const contact = new Date(contactDate);
-            const today = new Date();
-            const sixMonthsAgo = new Date(today);
-            sixMonthsAgo.setMonth(today.getMonth() - 6);
-
-            // Se a data de contato foi antes de 6 meses atrás, está expirada
-            return contact < sixMonthsAgo;
+        function openProfessorForm(professorId = null) {
+            clearModalHeaderButtons();
+            const professor = professorId ? professores.find(p => p.id === professorId) : null;
+            document.getElementById('form-modal-title').textContent = professor ? 'Editar Professor' : 'Adicionar Professor';
+            document.getElementById('form-modal-content-area').innerHTML = `
+                <form id="professor-form" class="space-y-4">
+                    <input type="hidden" id="professor-id" value="${professorId || ''}">
+                    <div>
+                        <label class="font-medium text-sm">Nome do Professor <span class="text-red-500">*</span></label>
+                        <input type="text" id="professor-name" class="form-input" required value="${professor?.name || ''}">
+                    </div>
+                    <div>
+                        <label class="font-medium text-sm">Tipo</label>
+                        <select id="professor-tipo" class="form-input">
+                            <option value="regular" ${!professor?.tipo || professor?.tipo === 'regular' ? 'selected' : ''}>Regular</option>
+                            <option value="tn" ${professor?.tipo === 'tn' ? 'selected' : ''}>TN (Transição de Nível)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="font-medium text-sm">Status</label>
+                        <select id="professor-status" class="form-input">
+                            <option value="ativo" ${!professor?.status || professor?.status === 'ativo' ? 'selected' : ''}>Ativo</option>
+                            <option value="inativo" ${professor?.status === 'inativo' ? 'selected' : ''}>Inativo</option>
+                        </select>
+                    </div>
+                    <div class="text-right pt-4">
+                        <button type="submit" class="primary-btn w-auto">Salvar Professor</button>
+                    </div>
+                </form>
+            `;
+            document.getElementById('form-modal-content-area').onsubmit = saveProfessor;
+            document.getElementById('form-modal').classList.add('visible');
         }
+
+        async function saveProfessor(event) {
+            event.preventDefault();
+            const professorId = document.getElementById('professor-id').value;
+            const name = document.getElementById('professor-name').value.trim();
+            const tipo = document.getElementById('professor-tipo').value;
+            const status = document.getElementById('professor-status').value;
+
+            if (!name) {
+                showErrorMessage("Erro", "O nome do professor é obrigatório.");
+                return;
+            }
+
+            const data = { name, tipo, status, updatedAt: new Date() };
+
+            try {
+                if (professorId) {
+                    await updateDoc(doc(db, `artifacts/${appId}/public/data/professores`, professorId), data);
+                    await logActivity('editar', 'professor', name, { tipo, status });
+                    showSuccessMessage("Sucesso", "Professor atualizado.");
+                } else {
+                    data.createdAt = new Date();
+                    await addDoc(collection(db, `artifacts/${appId}/public/data/professores`), data);
+                    await logActivity('adicionar', 'professor', name, { tipo, status });
+                    showSuccessMessage("Sucesso", "Professor adicionado.");
+                }
+                document.getElementById('form-modal').classList.remove('visible');
+            } catch (e) {
+                console.error(e);
+                showErrorMessage("Erro", "Não foi possível salvar o professor.");
+            }
+        }
+
+        window.openProfessorForm = openProfessorForm;
+
 
         function renderRechamadaSection() {
             document.getElementById('main-title').textContent = 'Rechamada';
@@ -6729,7 +6686,7 @@
                 'medium': '<span class="px-2 py-0.5 text-xs font-semibold rounded" style="background-color: #fef3c7; color: #92400e;">MÉDIA PRIORIDADE</span>',
                 'urgent': '<span class="px-2 py-0.5 text-xs font-semibold rounded" style="background-color: #fecaca; color: #991b1b;">URGENTE</span>',
                 'max': '<span class="px-2 py-0.5 text-xs font-semibold rounded" style="background-color: #7c3aed; color: white;">PRIORIDADE MÁXIMA</span>',
-                'dojo': '<span class="px-2 py-0.5 text-xs font-semibold rounded" style="background-color: #fcd34d; color: #78350f;">SLAP DOJO</span>'
+                
             };
 
             return tags[urgency] || '';
@@ -8531,7 +8488,7 @@
             const turma = turmaId ? turmas.find(t => t.id === turmaId) : null;
             document.getElementById('form-modal-title').textContent = turma ? "Editar Turma" : "Adicionar Nova Turma";
 
-            const teacherOptions = collaborators.filter(c => c.sectors?.includes('professor')).map(c => `<option value="${c.id}" data-name="${c.name}" ${turma?.teacherId === c.id ? 'selected' : ''}>${c.name}</option>`).join('');
+            const teacherOptions = professores.filter(p => p.status === 'ativo').map(p => `<option value="${p.id}" data-name="${p.name}" ${turma?.teacherId === p.id ? 'selected' : ''}>${p.name}</option>`).join('');
             const levelOptions = STANDARD_LEVELS.map(level => `<option value="${level}" ${turma?.level === level ? 'selected' : ''}>${level}</option>`).join('') + `<option value="outro">Outro (especificar)</option>`;
 
             // Get students already allocated to other classes (excluding current class if editing)
@@ -8885,7 +8842,7 @@
             const vip = vipId ? vips.find(v => v.id === vipId) : null;
             document.getElementById('form-modal-title').textContent = vip ? "Editar VIP" : "Adicionar Novo VIP";
 
-            const teacherOptions = collaborators.filter(c => c.sectors?.includes('professor')).map(c => `<option value="${c.id}" data-name="${c.name}" ${vip?.teacherId === c.id ? 'selected' : ''}>${c.name}</option>`).join('');
+            const teacherOptions = professores.filter(p => p.status === 'ativo').map(p => `<option value="${p.id}" data-name="${p.name}" ${vip?.teacherId === p.id ? 'selected' : ''}>${p.name}</option>`).join('');
             const levelOptions = STANDARD_LEVELS.map(level => `<option value="${level}" ${vip?.level === level ? 'selected' : ''}>${level}</option>`).join('') + `<option value="outro">Outro (especificar)</option>`;
 
             // Available VIP students (modalidade VIP and not already registered as ACTIVE VIP, or current VIP being edited)
@@ -10325,7 +10282,6 @@
             // Páginas disponíveis para seleção de permissões
             const pages = [
                 { key: 'inicio', label: 'Dashboard' },
-                { key: 'dojo', label: 'Dojo' },
                 { key: 'alunos', label: 'Alunos' },
                 { key: 'turmas', label: 'Turmas' },
                 { key: 'vips', label: 'VIPs' },
@@ -10597,7 +10553,7 @@
             document.getElementById('form-modal-title').textContent = schedule ? "Detalhes da Aula" : "Adicionar Nova Aula";
             const isTeacher = currentUserRole === 'teacher' || currentUserRole === 'teachertn';
 
-            const teacherOptions = collaborators.filter(c => c.role === 'teacher').map(c => `<option value="${c.name}" ${schedule?.teacher === c.name ? 'selected' : ''}>${c.name}</option>`).join('');
+            const teacherOptions = professores.filter(p => p.status === 'ativo').map(p => `<option value="${p.name}" ${schedule?.teacher === p.name ? 'selected' : ''}>${p.name}</option>`).join('');
             const dayOptions = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"].map(d => `<option value="${d}" ${schedule?.day === d ? 'selected' : ''}>${d}</option>`).join('');
             const typeOptions = ["vip", "turma", "break", "vaga"].map(t => {
                 let displayName = t.toUpperCase();
@@ -11502,6 +11458,228 @@
                 }
             }
         }
+        window.openPaymentModal = function(expenseId, monthKey) {
+            const expense = expenses.find(e => e.id === expenseId);
+            if (!expense) return;
+
+            const isFixedExpense = expense.isFixedSalary || expense.tipo === 'fixo';
+            const currentMonthKey = monthKey || (selectedFolhaYear + '-' + String(selectedFolhaMonth + 1).padStart(2, '0'));
+            
+            // Obter dados de pagamento
+            let paidAmount = 0;
+            let payments = [];
+            
+            if (isFixedExpense && expense.paidMonths && expense.paidMonths[currentMonthKey]) {
+                paidAmount = Number(expense.paidMonths[currentMonthKey].paidAmount || 0);
+                payments = expense.paidMonths[currentMonthKey].payments || [];
+                if (payments.length === 0 && paidAmount > 0) {
+                    payments = [{ amount: paidAmount, date: expense.paidMonths[currentMonthKey].paidAt }];
+                }
+            } else if (!isFixedExpense) {
+                paidAmount = Number(expense.paidAmount || 0);
+                payments = expense.payments || [];
+                if (payments.length === 0 && paidAmount > 0) {
+                    payments = [{ amount: paidAmount, date: expense.paidAt }];
+                }
+            }
+
+            const totalAmount = Number(expense.amount || 0);
+            const remainingAmount = Math.max(0, totalAmount - paidAmount);
+            const isPaid = paidAmount >= totalAmount;
+
+            clearModalHeaderButtons();
+            const modalTitle = document.getElementById('form-modal-title');
+            const modalContentArea = document.getElementById('form-modal-content-area');
+
+            const paymentsHistoryHtml = payments.length > 0 ? `
+                <div class="mb-4">
+                    <label class="font-medium text-sm text-stone-700">Histórico de Pagamentos:</label>
+                    <div class="mt-2 space-y-2 max-h-32 overflow-y-auto">
+                        ${payments.map((p, idx) => `
+                            <div class="flex justify-between items-center bg-green-50 px-3 py-2 rounded-lg text-sm">
+                                <span class="text-green-700">${new Date(p.date).toLocaleDateString('pt-BR')} - ${Number(p.amount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                                <button type="button" onclick="removePayment('${expenseId}', ${idx}, '${currentMonthKey}')" class="text-red-500 hover:text-red-700 text-xs">Remover</button>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            ` : '';
+
+            modalTitle.textContent = isPaid ? "Pagamento Completo" : "Registrar Pagamento";
+            modalContentArea.innerHTML = `
+                <form id="payment-form" class="space-y-4">
+                    <div class="bg-stone-50 p-4 rounded-lg">
+                        <p class="text-stone-600 text-sm">Despesa: <strong>${expense.description}</strong></p>
+                        <div class="grid grid-cols-3 gap-4 mt-3">
+                            <div class="text-center">
+                                <p class="text-xs text-stone-500">Total</p>
+                                <p class="font-bold text-stone-800">${totalAmount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                            </div>
+                            <div class="text-center">
+                                <p class="text-xs text-stone-500">Pago</p>
+                                <p class="font-bold text-green-600">${paidAmount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                            </div>
+                            <div class="text-center">
+                                <p class="text-xs text-stone-500">Restante</p>
+                                <p class="font-bold ${remainingAmount > 0 ? 'text-amber-600' : 'text-green-600'}">${remainingAmount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                            </div>
+                        </div>
+                    </div>
+                    ${paymentsHistoryHtml}
+                    ${!isPaid ? `
+                        <div>
+                            <label class="font-medium text-sm">Valor do Pagamento (R$)</label>
+                            <input type="number" step="0.01" min="0.01" max="${remainingAmount.toFixed(2)}" id="payment-amount" class="form-input" placeholder="0,00" value="${remainingAmount.toFixed(2)}" required>
+                            <p class="text-xs text-stone-500 mt-1">Máximo: ${remainingAmount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                        </div>
+                    ` : ''}
+                    <div class="flex justify-between pt-2">
+                        ${paidAmount > 0 && !isPaid ? `<button type="button" onclick="clearAllPayments('${expenseId}', '${currentMonthKey}')" class="text-red-600 hover:text-red-800 text-sm">Limpar Pagamentos</button>` : '<div></div>'}
+                        <div class="flex gap-2">
+                            <button type="button" class="secondary-btn" data-action="close-modal">Fechar</button>
+                            ${!isPaid ? `<button type="submit" class="primary-btn w-auto">Registrar Pagamento</button>` : ''}
+                        </div>
+                    </div>
+                </form>
+            `;
+
+            document.getElementById('form-modal').classList.add('visible');
+            
+            if (!isPaid) {
+                document.getElementById('payment-form').addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const paymentAmount = Number(document.getElementById('payment-amount').value);
+                    
+                    if (paymentAmount <= 0) {
+                        showErrorMessage("Erro", "O valor do pagamento deve ser maior que zero.");
+                        return;
+                    }
+                    
+                    if (paymentAmount > remainingAmount + 0.01) {
+                        showErrorMessage("Erro", "O valor do pagamento não pode ser maior que o saldo restante.");
+                        return;
+                    }
+
+                    const newPayment = { amount: paymentAmount, date: new Date().toISOString() };
+                    const newTotalPaid = paidAmount + paymentAmount;
+                    const nowFullyPaid = newTotalPaid >= totalAmount;
+                    const newPayments = [...payments, newPayment];
+
+                    try {
+                        const expenseRef = doc(db, `artifacts/${appId}/public/data/expenses`, expenseId);
+                        
+                        if (isFixedExpense) {
+                            const paidMonths = { ...(expense.paidMonths || {}) };
+                            paidMonths[currentMonthKey] = {
+                                isPaid: nowFullyPaid,
+                                paidAmount: newTotalPaid,
+                                payments: newPayments,
+                                paidAt: new Date().toISOString()
+                            };
+                            await updateDoc(expenseRef, { paidMonths: paidMonths });
+                        } else {
+                            await updateDoc(expenseRef, { 
+                                isPaid: nowFullyPaid,
+                                paidAmount: newTotalPaid,
+                                payments: newPayments,
+                                paidAt: new Date().toISOString()
+                            });
+                        }
+                        
+                        document.getElementById('form-modal').classList.remove('visible');
+                        showSuccessMessage("Pagamento Registrado", nowFullyPaid ? "Despesa paga integralmente!" : `Pagamento de ${paymentAmount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} registrado. Restam ${(remainingAmount - paymentAmount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}.`);
+                    } catch (error) {
+                        console.error("Error registering payment:", error);
+                        showErrorMessage("Erro", "Erro ao registrar pagamento: " + error.message);
+                    }
+                });
+            }
+        };
+
+        window.removePayment = async function(expenseId, paymentIndex, monthKey) {
+            const expense = expenses.find(e => e.id === expenseId);
+            if (!expense) return;
+
+            const isFixedExpense = expense.isFixedSalary || expense.tipo === 'fixo';
+            let payments = [];
+            
+            if (isFixedExpense && expense.paidMonths && expense.paidMonths[monthKey]) {
+                payments = [...(expense.paidMonths[monthKey].payments || [])];
+            } else {
+                payments = [...(expense.payments || [])];
+            }
+
+            if (paymentIndex < 0 || paymentIndex >= payments.length) return;
+
+            payments.splice(paymentIndex, 1);
+            const newTotalPaid = payments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
+            const totalAmount = Number(expense.amount || 0);
+            const nowFullyPaid = newTotalPaid >= totalAmount;
+
+            try {
+                const expenseRef = doc(db, `artifacts/${appId}/public/data/expenses`, expenseId);
+                
+                if (isFixedExpense) {
+                    const paidMonths = { ...(expense.paidMonths || {}) };
+                    if (payments.length === 0) {
+                        delete paidMonths[monthKey];
+                    } else {
+                        paidMonths[monthKey] = {
+                            isPaid: nowFullyPaid,
+                            paidAmount: newTotalPaid,
+                            payments: payments,
+                            paidAt: new Date().toISOString()
+                        };
+                    }
+                    await updateDoc(expenseRef, { paidMonths: paidMonths });
+                } else {
+                    await updateDoc(expenseRef, { 
+                        isPaid: nowFullyPaid,
+                        paidAmount: newTotalPaid,
+                        payments: payments,
+                        paidAt: payments.length > 0 ? new Date().toISOString() : null
+                    });
+                }
+                
+                document.getElementById('form-modal').classList.remove('visible');
+                showSuccessMessage("Sucesso", "Pagamento removido.");
+            } catch (error) {
+                console.error("Error removing payment:", error);
+                showErrorMessage("Erro", "Erro ao remover pagamento.");
+            }
+        };
+
+        window.clearAllPayments = async function(expenseId, monthKey) {
+            const expense = expenses.find(e => e.id === expenseId);
+            if (!expense) return;
+
+            const isFixedExpense = expense.isFixedSalary || expense.tipo === 'fixo';
+
+            try {
+                const expenseRef = doc(db, `artifacts/${appId}/public/data/expenses`, expenseId);
+                
+                if (isFixedExpense) {
+                    const paidMonths = { ...(expense.paidMonths || {}) };
+                    delete paidMonths[monthKey];
+                    await updateDoc(expenseRef, { paidMonths: paidMonths });
+                } else {
+                    await updateDoc(expenseRef, { 
+                        isPaid: false,
+                        paidAmount: 0,
+                        payments: [],
+                        paidAt: null
+                    });
+                }
+                
+                document.getElementById('form-modal').classList.remove('visible');
+                showSuccessMessage("Sucesso", "Todos os pagamentos foram removidos.");
+            } catch (error) {
+                console.error("Error clearing payments:", error);
+                showErrorMessage("Erro", "Erro ao limpar pagamentos.");
+            }
+        };
+
+
 
         function openCancelamentoForm(cancelamentoId = null) {
             clearModalHeaderButtons();
@@ -11600,109 +11778,6 @@
         }
 
 
-
-
-
-
-        // Dojo Functions
-
-
-        function openDojoCompetitorForm(competitorId = null) {
-            clearModalHeaderButtons();
-            const competitor = competitorId ? dojoRanking.find(c => c.id === competitorId) : null;
-            document.getElementById('form-modal-title').textContent = competitor ? 'Editar Competidor' : 'Adicionar Competidor';
-            document.getElementById('form-modal-content-area').innerHTML = `
-                <form id="expense-form" class="space-y-4" onsubmit="saveExpense(event); return false;">
-                    <input type="hidden" id="dojo-id" value="${competitorId || ''}">
-                    <div><label class="font-medium text-sm">Nome do Competidor</label><input type="text" id="dojo-name" class="form-input" required value="${competitor?.name || ''}"></div>
-                    <div><label class="font-medium text-sm">URL da Foto</label><input type="url" id="dojo-photo" class="form-input" required value="${competitor?.photo || ''}"></div>
-                    <div><label class="font-medium text-sm">Pontos</label><input type="number" id="dojo-points" class="form-input" required value="${competitor?.points || 0}"></div>
-                    <div class="text-right"><button type="submit" class="primary-btn w-auto">Salvar</button></div>
-                </form>
-            `;
-            document.getElementById('form-modal-content-area').onsubmit = saveDojoCompetitor;
-            document.getElementById('form-modal').classList.add('visible');
-        }
-
-        async function saveDojoCompetitor(event) {
-            event.preventDefault();
-            const competitorId = document.getElementById('dojo-id').value;
-            const data = {
-                name: document.getElementById('dojo-name').value,
-                photo: document.getElementById('dojo-photo').value,
-                points: Number(document.getElementById('dojo-points').value)
-            };
-            if (!data.name || !data.photo) { showErrorMessage("Erro", "Nome e foto são obrigatórios."); return; }
-            try {
-                if (competitorId) {
-                    await updateDoc(doc(db, `artifacts/${appId}/public/data/dojo_ranking`, competitorId), data);
-                } else {
-                    await addDoc(collection(db, `artifacts/${appId}/public/data/dojo_ranking`), data);
-                }
-                document.getElementById('form-modal').classList.remove('visible');
-                showSuccessMessage("Sucesso", "Competidor do Dojo salvo.");
-            } catch (e) { console.error(e); showErrorMessage("Erro", "Não foi possível salvar o competidor."); }
-        }
-
-        function openDojoPointsForm(competitorId) {
-            clearModalHeaderButtons();
-            const competitor = dojoRanking.find(c => c.id === competitorId);
-            if (!competitor) return;
-            document.getElementById('form-modal-title').textContent = `Editar Pontos de ${competitor.name}`;
-            document.getElementById('form-modal-content-area').innerHTML = `
-                <form id="expense-form" class="space-y-4" onsubmit="saveExpense(event); return false;">
-                    <input type="hidden" id="dojo-id" value="${competitorId}">
-                    <div><label class="font-medium text-sm">Pontos</label><input type="number" id="dojo-points" class="form-input" required value="${competitor.points || 0}"></div>
-                    <div class="text-right"><button type="submit" class="primary-btn w-auto">Salvar Pontos</button></div>
-                </form>
-            `;
-            document.getElementById('form-modal-content-area').onsubmit = saveDojoPoints;
-            document.getElementById('form-modal').classList.add('visible');
-        }
-
-        async function saveDojoPoints(event) {
-            event.preventDefault();
-            const competitorId = document.getElementById('dojo-id').value;
-            const points = Number(document.getElementById('dojo-points').value);
-            const competitor = dojoRanking.find(c => c.id === competitorId);
-            try {
-                await updateDoc(doc(db, `artifacts/${appId}/public/data/dojo_ranking`, competitorId), { points });
-
-                // Log activity
-                if (competitor) {
-                    await logActivity('editar', 'dojo', competitor.name, { points });
-                }
-
-                showSuccessMessage("Sucesso", "Pontuação atualizada.");
-            } catch (e) { console.error(e); showErrorMessage("Erro", "Não foi possível atualizar a pontuação."); }
-        }
-
-        function openDojoMissionForm() {
-            clearModalHeaderButtons();
-            document.getElementById('form-modal-title').textContent = 'Adicionar Nova Missão';
-            document.getElementById('form-modal-content-area').innerHTML = `
-                <form id="expense-form" class="space-y-4" onsubmit="saveExpense(event); return false;">
-                    <div><label class="font-medium text-sm">Descrição da Missão</label><input type="text" id="mission-description" class="form-input" required></div>
-                    <div><label class="font-medium text-sm">Pontos</label><input type="number" id="mission-points" class="form-input" required value="0"></div>
-                    <div class="text-right"><button type="submit" class="primary-btn w-auto">Salvar Missão</button></div>
-                </form>
-            `;
-            document.getElementById('form-modal-content-area').onsubmit = saveDojoMission;
-            document.getElementById('form-modal').classList.add('visible');
-        }
-
-        async function saveDojoMission(event) {
-            event.preventDefault();
-            const data = {
-                description: document.getElementById('mission-description').value,
-                points: Number(document.getElementById('mission-points').value)
-            };
-            if (!data.description) { showErrorMessage("Erro", "A descrição é obrigatória."); return; }
-            try {
-                await addDoc(collection(db, `artifacts/${appId}/public/data/dojo_missions`), data);
-                showSuccessMessage("Sucesso", "Nova missão do Dojo adicionada.");
-            } catch (e) { console.error(e); showErrorMessage("Erro", "Não foi possível salvar a missão."); }
-        }
 
 
         // Função para usuário marcar task como feita (todos podem usar)
@@ -16982,7 +17057,7 @@
                                         <option value="medium">Média Prioridade</option>
                                         <option value="urgent">Urgente</option>
                                         <option value="max">Prioridade Máxima</option>
-                                        <option value="dojo">SLAP DOJO</option>
+                                        
                                     </select>
                                 </div>
                             </div>
@@ -17037,7 +17112,7 @@
                                         <option value="medium">Média Prioridade</option>
                                         <option value="urgent">Urgente</option>
                                         <option value="max">Prioridade Máxima</option>
-                                        <option value="dojo">SLAP DOJO</option>
+                                        
                                     </select>
                                 </div>
 
@@ -17117,7 +17192,7 @@
                                         <option value="medium">Média Prioridade</option>
                                         <option value="urgent">Urgente</option>
                                         <option value="max">Prioridade Máxima</option>
-                                        <option value="dojo">SLAP DOJO</option>
+                                        
                                     </select>
                                 </div>
 
@@ -17168,7 +17243,7 @@
                                         <option value="medium">Média Prioridade</option>
                                         <option value="urgent">Urgente</option>
                                         <option value="max">Prioridade Máxima</option>
-                                        <option value="dojo">SLAP DOJO</option>
+                                        
                                     </select>
                                 </div>
                             </div>
@@ -17293,8 +17368,7 @@
                                                 <option value="medium">Média Prioridade</option>
                                                 <option value="urgent">Urgente</option>
                                                 <option value="max">Prioridade Máxima</option>
-                                                <option value="dojo">SLAP DOJO</option>
-                                            </select>
+                                                    </select>
                                         </div>
                                     </div>
                                 </div>
@@ -20258,9 +20332,6 @@ function openAddChecklistForm() {
         window.saveExpense = saveExpense;
         window.safeDeleteItem = safeDeleteItem;
         window.closeFormModal = closeFormModal;
-        window.openDojoCompetitorForm = openDojoCompetitorForm;
-        window.openDojoPointsForm = openDojoPointsForm;
-        window.openDojoMissionForm = openDojoMissionForm;
         window.exportVipPef = exportVipPef;
         window.exportTurmaPef = exportTurmaPef;
         window.exportStudentPef = exportStudentPef;
@@ -23015,7 +23086,6 @@ function openAddChecklistForm() {
                     label: 'Pedagógico',
                     icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c3 3 9 3 12 0v-5"></path></svg>',
                     items: [
-                        { key: 'dojo', label: 'Dojo', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>', roles: ['admin', 'teacher', 'teachertn', 'coord', 'superv', 'estagiario'] },
                         { key: 'turmas', label: 'Turmas', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>', roles: ['admin', 'teacher', 'teachertn', 'coord', 'superv', 'estagiario', 'comercial'] },
                         { key: 'vips', label: 'VIPs', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20a6 6 0 0 0-12 0"/><circle cx="12" cy="10" r="4"/><circle cx="12" cy="12" r="10"/></svg>', roles: ['admin', 'teacher', 'teachertn', 'coord', 'superv', 'estagiario', 'comercial'] },
                         { key: 'grade', label: 'Grade', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" x2="16" y1="2" y2="6"></line><line x1="8" x2="8" y1="2" y2="6"></line><line x1="3" x2="21" y1="10" y2="10"></line></svg>', roles: ['admin', 'teacher', 'teachertn', 'coord', 'superv', 'estagiario', 'comercial'] },
@@ -23038,6 +23108,7 @@ function openAddChecklistForm() {
                     icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>',
                     items: [
                         { key: 'colaboradores', label: 'Colaboradores', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="5"/><path d="M3 21v-2a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4v2"/></svg>', roles: ['admin'] },
+                        { key: 'professores', label: 'Professores', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>', roles: ['admin', 'coord', 'superv'] },
                         { key: 'entradas', label: 'Entradas', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>', roles: ['admin', 'superv'] },
                         { key: 'folha-pagamento', label: 'Folha de Pagamento', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M7 15h0M2 9.5h20"/></svg>', roles: ['admin', 'superv'] }
                     ]
@@ -23390,10 +23461,7 @@ function openAddChecklistForm() {
                 editPedagogical: ['admin', 'coord', 'superv', 'estagiario'],
                 editFull: ['admin', 'coord', 'superv', 'comercial'],
             },
-            dojo: {
-                view: ['admin', 'teacher', 'teachertn', 'coord', 'superv', 'estagiario'],
-                manage: ['admin', 'estagiario'],
-            },
+            
             turmas: {
                 view: ['admin', 'coord', 'superv', 'estagiario', 'comercial'],
                 create: ['admin', 'coord', 'superv', 'estagiario', 'comercial'],
@@ -23500,8 +23568,7 @@ function openAddChecklistForm() {
                 'alunos': ['admin', 'coord', 'superv', 'estagiario', 'comercial'],
                 'aniversariantes': ['admin', 'coord', 'superv', 'estagiario', 'comercial'],
                 'logs-atividades': ['admin', 'superv'],
-                'dojo': ['admin', 'teacher', 'teachertn', 'coord', 'superv', 'estagiario'],
-                'turmas': ['admin', 'teacher', 'teachertn', 'coord', 'superv', 'estagiario', 'comercial'],
+                                'turmas': ['admin', 'teacher', 'teachertn', 'coord', 'superv', 'estagiario', 'comercial'],
                 'vips': ['admin', 'teacher', 'teachertn', 'coord', 'superv', 'estagiario', 'comercial'],
                 'grade': ['admin', 'teacher', 'teachertn', 'coord', 'superv', 'estagiario', 'comercial'],
                 'calendario': ['admin', 'teacher', 'teachertn', 'coord', 'superv', 'estagiario', 'comercial'],
@@ -23511,6 +23578,7 @@ function openAddChecklistForm() {
                 'gestao-tns': ['admin', 'teachertn', 'coord', 'superv', 'estagiario', 'comercial'],
                 'gestao-influencia': ['admin', 'coord', 'superv', 'comercial'],
                 'colaboradores': ['admin'],
+                'professores': ['admin', 'coord', 'superv'],
                 'folha-pagamento': ['admin', 'superv'],
                 'entradas': ['admin', 'superv']
             };
@@ -23519,7 +23587,7 @@ function openAddChecklistForm() {
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            const pageRenderers = { 'inicio': renderInicioSection, 'alunos': renderAlunosSection, 'aniversariantes': renderAniversariantesSection, 'turmas': renderTurmasSection, 'vips': renderVipsSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection, 'entradas': renderEntradasSection, 'colaboradores': renderColaboradoresSection, 'dojo': renderDojoSection, 'calendario': renderCalendarioSection, 'links-uteis': renderLinksUteisSection, 'processos': renderProcessosSection, 'tasks-prazos': renderTasksPrazosSection, 'agendamentos-tns': renderAgendamentosTNsSection, 'gestao-tns': renderGestaoTNsSection, 'gestao-influencia': renderInfluencerManagementSection, 'rechamada': renderRechamadaSection, 'kpis-pedagogico': renderKPIsPedagogicoSection, 'logs-atividades': renderLogsAtividadesSection  };
+            const pageRenderers = { 'inicio': renderInicioSection, 'alunos': renderAlunosSection, 'aniversariantes': renderAniversariantesSection, 'turmas': renderTurmasSection, 'vips': renderVipsSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection, 'entradas': renderEntradasSection, 'colaboradores': renderColaboradoresSection, 'professores': renderProfessoresSection, 'calendario': renderCalendarioSection, 'links-uteis': renderLinksUteisSection, 'processos': renderProcessosSection, 'tasks-prazos': renderTasksPrazosSection, 'agendamentos-tns': renderAgendamentosTNsSection, 'gestao-tns': renderGestaoTNsSection, 'gestao-influencia': renderInfluencerManagementSection, 'rechamada': renderRechamadaSection, 'kpis-pedagogico': renderKPIsPedagogicoSection, 'logs-atividades': renderLogsAtividadesSection  };
 
             document.body.addEventListener('click', (event) => {
                 // Close modals when clicking overlay or close button
@@ -23637,6 +23705,8 @@ function openAddChecklistForm() {
 
                         'add-collaborator': () => openCollaboratorForm(),
                         'edit-collaborator': () => openCollaboratorForm(id),
+                        'add-professor': () => openProfessorForm(),
+                        'edit-professor': () => openProfessorForm(id),
                         'edit-monthly-highlight': openMonthlyHighlightForm,
 
 
@@ -23657,10 +23727,6 @@ function openAddChecklistForm() {
                         'close-modal': closeFormModal,
 
 
-                        'add-dojo-competitor': () => openDojoCompetitorForm(),
-                        'edit-dojo-points': () => openDojoPointsForm(id),
-                        'edit-dojo-competitor': () => openDojoCompetitorForm(id),
-                        'add-dojo-mission': openDojoMissionForm,
                         'export-alunos-doc': exportAlunosDoc,
                         'export-vip-pef': () => exportVipPef(id),
                         'export-turma-pef': () => exportTurmaPef(id),
