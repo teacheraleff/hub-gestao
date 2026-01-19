@@ -2876,12 +2876,7 @@
                             ${vipRecord ? `<p class="text-sm ${textColorLight}"><strong>Nível:</strong> ${vipRecord.level || 'N/A'}</p>` : ''}
                             ${vipRecord && vipRecord.endDate ? `<p class="text-sm ${textColorLight}"><strong>Finaliza em:</strong> ${formatDateBR(vipRecord.endDate)}</p>` : ''}
                             ${student.indicacao ? `<p class="text-sm ${textColorLight}"><strong>Indicação:</strong> ${student.indicacao}</p>` : ''}
-                            ${vipRecord && vipRecord.observacoes ? `
-                                <div class="mt-3 pt-2 border-t ${borderColor}">
-                                    <p class="text-sm ${textColorLight}"><strong>Observações:</strong></p>
-                                    <p class="text-sm text-stone-500 mt-1 italic">${vipRecord.observacoes}</p>
-                                </div>
-                            ` : ''}
+                            
                             ${vipRecord ? (() => {
                                 const lastPefDate = getLastPefDate(vipRecord.id);
                                 if (lastPefDate) {
