@@ -3619,7 +3619,7 @@
             } else if (teacherFilter === 'all' && canViewAllHours && hoursContainer) {
                 // Show summary of all teachers' hours
                 const teacherHours = {};
-                const teachers = collaborators.filter(c => c.role === 'teacher');
+                const teachers = professores.filter(p => p.status === 'ativo');
 
                 teachers.forEach(teacher => {
                     teacherHours[teacher.name] = calculateWeeklyHours(teacher.name);
