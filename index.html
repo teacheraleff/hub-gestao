@@ -3059,7 +3059,7 @@
                                 <select id="turma-teacher-filter" class="form-input" onchange="updateTurmasList()">
                                     <option value="">Todos os professores</option>
                                     ${[...new Set(turmas.map(t => t.teacherName))].sort().map(teacher => 
-                                        `<option value="${teacher}">${teacher}</option>`
+                                        `<option value="${p.name}">${p.name}</option>`
                                     ).join('')}
                                 </select>
                             </div>
@@ -3162,8 +3162,8 @@
                             <div class="min-w-48">
                                 <select id="vip-teacher-filter" class="form-input" onchange="updateVipsList()">
                                     <option value="">Todos os professores</option>
-                                    ${[...new Set(vips.map(v => v.teacherName).filter(name => name))].sort().map(teacher => 
-                                        `<option value="${teacher}">${teacher}</option>`
+                                    ${professores.filter(p => p.status === 'ativo').sort((a, b) => a.name.localeCompare(b.name)).map(p => 
+                                        `<option value="${p.name}">${p.name}</option>`
                                     ).join('')}
                                 </select>
                             </div>
