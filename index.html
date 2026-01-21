@@ -9094,9 +9094,10 @@
                     `).join('');
                 }
 
-                // Add click listeners to results
+                // Add mousedown listeners to results (mousedown fires before blur)
                 resultsContainer.querySelectorAll('[data-student-id]').forEach(item => {
-                    item.addEventListener('click', () => {
+                    item.addEventListener('mousedown', (e) => {
+                        e.preventDefault(); // Prevent blur from firing
                         const studentId = item.getAttribute('data-student-id');
                         const studentName = item.getAttribute('data-student-name');
                         selectStudent(studentId, studentName);
