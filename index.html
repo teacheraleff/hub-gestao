@@ -10418,7 +10418,7 @@
                                 <input type="checkbox" ${task.completedByUser ? 'checked' : ''} 
                                        class="h-4 w-4 rounded"
                                        style="accent-color: #10b981;"
-                                       onchange="toggleUserCompletion('${task.id}', this.checked)">
+                                       onchange="toggleReminderRead('${task.id}', this.checked)">
                                 <span class="text-sm font-medium text-green-700">Lido</span>
                             </label>
                             ${currentUserRole === 'admin' ? `
@@ -18542,7 +18542,7 @@
                                             <label class="flex items-center gap-1.5 cursor-pointer" title="Marcar como lido">
                                                 <input type="checkbox" 
                                                        ${task.completedByUser ? 'checked' : ''}
-                                                       onchange="toggleUserCompletion('${task.id}', this.checked)"
+                                                       onchange="toggleReminderRead('${task.id}', this.checked)"
                                                        class="h-4 w-4 rounded border-gray-300"
                                                        style="accent-color: #10b981;">
                                                 <span class="text-xs font-medium text-green-700">Lido</span>
@@ -18689,7 +18689,7 @@
                                         <label class="flex items-center gap-1.5 cursor-pointer" title="Marcar como feito">
                                             <input type="checkbox" 
                                                    ${task.completedByUser ? 'checked' : ''}
-                                                   onchange="toggleUserCompletion('${task.id}', this.checked)"
+                                                   onchange="toggleReminderRead('${task.id}', this.checked)"
                                                    class="h-4 w-4 rounded border-gray-300"
                                                    style="accent-color: #10b981;">
                                             <span class="text-xs font-medium text-green-700">Feito</span>
@@ -19285,11 +19285,15 @@ function openAddChecklistForm() {
                 // Reload tasks manually to reflect changes
                 await loadTasksManually();
                 renderTasksList();
+                restoreExpandedChecklists();
             } catch (error) {
                 console.error('Error toggling checklist item user completion:', error);
                 showErrorMessage('Erro', 'Erro ao atualizar item da checklist.');
             }
         }
+
+        // Track which checklists are expanded
+        window.expandedChecklists = new Set();
 
         // Função para admin aprovar checklist item
         function toggleChecklistExpand(taskId) {
@@ -19300,10 +19304,24 @@ function openAddChecklistForm() {
                 itemsContainer.classList.toggle('hidden');
                 if (itemsContainer.classList.contains('hidden')) {
                     arrow.style.transform = 'rotate(0deg)';
+                    window.expandedChecklists.delete(taskId);
                 } else {
                     arrow.style.transform = 'rotate(90deg)';
+                    window.expandedChecklists.add(taskId);
                 }
             }
+        }
+
+        // Restore expanded checklists after render
+        function restoreExpandedChecklists() {
+            window.expandedChecklists.forEach(taskId => {
+                const itemsContainer = document.getElementById('checklist-items-' + taskId);
+                const arrow = document.getElementById('checklist-arrow-' + taskId);
+                if (itemsContainer && arrow) {
+                    itemsContainer.classList.remove('hidden');
+                    arrow.style.transform = 'rotate(90deg)';
+                }
+            });
         }
 
                 async function toggleChecklistAdminApproval(taskId, itemIndex) {
@@ -19341,6 +19359,7 @@ function openAddChecklistForm() {
                 // Reload tasks manually to reflect changes
                 await loadTasksManually();
                 renderTasksList();
+                restoreExpandedChecklists();
             } catch (error) {
                 console.error('Error toggling checklist admin approval:', error);
                 showErrorMessage('Erro', 'Erro ao atualizar aprovação do item.');
@@ -19382,6 +19401,7 @@ function openAddChecklistForm() {
                 // Reload tasks manually to reflect changes
                 await loadTasksManually();
                 renderTasksList();
+                restoreExpandedChecklists();
             } catch (error) {
                 console.error('Error toggling checklist item failed:', error);
                 showErrorMessage('Erro', 'Erro ao atualizar item da checklist.');
@@ -19619,6 +19639,7 @@ function openAddChecklistForm() {
 
                 await logActivity(newValue ? 'Marcou item do lembrete como lido' : 'Desmarcou item do lembrete', 'reminder', task.title);
                 renderTasksList();
+                restoreExpandedChecklists();
             } catch (error) {
                 console.error('Error toggling reminder item read:', error);
                 showErrorMessage('Erro', 'Erro ao atualizar status do item.');
