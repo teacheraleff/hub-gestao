@@ -2664,17 +2664,27 @@
                 });
             }
 
-            // Apply status filter for "A Finalizar" - VIPs with 30 days or less to end
+            // Apply status filter for "A Finalizar" - VIPs with 30 days or less to end OR 8 or fewer lessons remaining
             if (statusFilter === 'a-finalizar') {
                 const today = new Date();
                 const thirtyDaysFromNow = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
 
                 filteredVips = filteredVips.filter(student => {
                     const vipRecord = vips.find(v => v.studentId === student.id);
-                    if (!vipRecord || !vipRecord.endDate || vipRecord.finalizado === true) return false;
-
-                    const endDate = new Date(vipRecord.endDate);
-                    return endDate <= thirtyDaysFromNow && endDate >= today;
+                    if (!vipRecord || vipRecord.finalizado === true) return false;
+                    
+                    // Check if contract is ending within 30 days
+                    let endingSoon = false;
+                    if (vipRecord.endDate) {
+                        const endDate = new Date(vipRecord.endDate);
+                        endingSoon = endDate <= thirtyDaysFromNow && endDate >= today;
+                    }
+                    
+                    // Check if 8 or fewer lessons remaining (completed lesson 32 or higher)
+                    const completedLessons = countVipLessons(vipRecord.id);
+                    const fewLessonsLeft = completedLessons >= 32;
+                    
+                    return endingSoon || fewLessonsLeft;
                 });
             }
 
@@ -2785,25 +2795,61 @@
                 </div>`}).join('') || '<p class="col-span-full text-center py-10 text-stone-500">Nenhuma turma encontrada.</p>';
         }
 
-        // Function to calculate VIP status tags based on contract dates
+        // Function to count completed lessons for a VIP
+        function countVipLessons(vipId) {
+            const attendanceRecord = attendance.find(a => a.id === vipId);
+            if (!attendanceRecord || !attendanceRecord.lessons) return 0;
+            
+            // Count lessons that have been filled (have at least one student with status)
+            let lessonCount = 0;
+            Object.keys(attendanceRecord.lessons).forEach(lessonKey => {
+                const lessonData = attendanceRecord.lessons[lessonKey];
+                if (lessonData && typeof lessonData === 'object') {
+                    // Check if any student has attendance recorded
+                    const hasAttendance = Object.values(lessonData).some(status => 
+                        status === 'P' || status === 'F' || status === 'R' || status === true || status === false
+                    );
+                    if (hasAttendance) lessonCount++;
+                }
+            });
+            return lessonCount;
+        }
+
+        // Function to calculate VIP status tags based on contract dates AND lessons
         function getVipStatusTag(vipRecord) {
-            if (!vipRecord || !vipRecord.endDate) return '';
+            if (!vipRecord) return '';
+            
+            let tags = [];
+            const totalLessons = 40; // VIP contracts have 40 lessons
+            const warningThreshold = 8; // Warn when 8 or fewer lessons remain
+            
+            // Check lessons remaining
+            const completedLessons = countVipLessons(vipRecord.id);
+            const remainingLessons = totalLessons - completedLessons;
+            
+            if (completedLessons >= 32 && remainingLessons > 0 && vipRecord.finalizado !== true) {
+                // 8 or fewer lessons remaining (lesson 32 or higher completed)
+                tags.push(`<span class="status-tag" style="background-color: #DBEAFE; color: #1E40AF; font-weight: 600;">${remainingLessons} aula${remainingLessons !== 1 ? 's' : ''} restante${remainingLessons !== 1 ? 's' : ''}</span>`);
+            }
+            
+            // Check contract end date
+            if (vipRecord.endDate) {
+                const today = new Date();
+                const endDate = new Date(vipRecord.endDate);
+                const diffTime = endDate.getTime() - today.getTime();
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-            const today = new Date();
-            const endDate = new Date(vipRecord.endDate);
-            const diffTime = endDate.getTime() - today.getTime();
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-            if (diffDays < 0) {
-                // Contract expired
-                const expiredDays = Math.abs(diffDays);
-                return `<div class="mt-2"><span class="status-tag" style="background-color: #FEE2E2; color: #991B1B; font-weight: 600;">Contrato expirado há ${expiredDays} dia${expiredDays !== 1 ? 's' : ''}</span></div>`;
-            } else if (diffDays <= 30) {
-                // Contract ending within 30 days
-                return `<div class="mt-2"><span class="status-tag" style="background-color: #FEF3C7; color: #92400E; font-weight: 600;">${diffDays} dia${diffDays !== 1 ? 's' : ''} para finalizar</span></div>`;
+                if (diffDays < 0) {
+                    // Contract expired
+                    const expiredDays = Math.abs(diffDays);
+                    tags.push(`<span class="status-tag" style="background-color: #FEE2E2; color: #991B1B; font-weight: 600;">Contrato expirado há ${expiredDays} dia${expiredDays !== 1 ? 's' : ''}</span>`);
+                } else if (diffDays <= 30) {
+                    // Contract ending within 30 days
+                    tags.push(`<span class="status-tag" style="background-color: #FEF3C7; color: #92400E; font-weight: 600;">${diffDays} dia${diffDays !== 1 ? 's' : ''} para finalizar</span>`);
+                }
             }
 
-            return '';
+            return tags.length > 0 ? `<div class="mt-2 flex flex-wrap gap-1">${tags.join('')}</div>` : '';
         }
 
         let currentVipPage = 1;
@@ -14930,6 +14976,35 @@
 
             // Ordenar por data (mais recente primeiro)
             const sortedTNs = [...filteredTNs].sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            // Gerar CSV
+            const csvHeader = ['Candidato', 'Celular', 'Data', 'Horário', 'Avaliador', 'Nível', 'Tráfego', 'Matrícula'];
+            const csvRows = sortedTNs.map(tn => {
+                const avaliador = (avaliadores || []).find(a => a.id === tn.evaluatorId) || collaborators.find(c => c.id === tn.evaluatorId);
+                return [
+                    tn.candidateName || '',
+                    tn.phone || '',
+                    formatDateBR(tn.date) || '',
+                    tn.time || '',
+                    avaliador?.name || '',
+                    tn.level || '',
+                    tn.fromTrafego ? 'Sim' : 'Não',
+                    tn.convertedToMatricula ? 'Sim' : 'Não'
+                ].map(field => `"${String(field).replace(/"/g, '""')}"`).join(';');
+            });
+            
+            const csvContent = [csvHeader.join(';'), ...csvRows].join('\n');
+            const BOM = '\uFEFF';
+            const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.setAttribute('href', url);
+            link.setAttribute('download', `gestao-tns-${new Date().toISOString().split('T')[0]}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            return;
 
             // Estatísticas
             const totalTNs = sortedTNs.length;
@@ -18892,7 +18967,8 @@
                 completedByUser: existingTaskData?.completedByUser || false,
                 approved: existingTaskData?.approved || false,
                 createdAt: existingTaskData?.createdAt || new Date().toISOString(),
-                createdBy: existingTaskData?.createdBy || currentUserName || 'Admin'
+                createdBy: existingTaskData?.createdBy || currentUserName || 'Admin',
+                createdByEmail: existingTaskData?.createdByEmail || window.currentCollaborator?.email || ''
             };
 
             try {
@@ -19083,7 +19159,8 @@ function openAddChecklistForm() {
                 checklistItems: checklistItems,
                 status: originalTask?.status || 'pending',
                 createdAt: originalTask?.createdAt || new Date().toISOString(),
-                createdBy: originalTask?.createdBy || currentUserName || 'Admin'
+                createdBy: originalTask?.createdBy || currentUserName || 'Admin',
+                createdByEmail: originalTask?.createdByEmail || window.currentCollaborator?.email || ''
             };
 
             try {
@@ -19414,17 +19491,16 @@ function openAddChecklistForm() {
             const task = tasks.find(t => t.id === taskId);
             if (!task) return;
 
-            // Atualizar localmente primeiro
+            // Atualizar localmente primeiro - lembretes lidos NÃO vão para Concluídas
             task.completedByUser = isRead;
-            task.approved = isRead;  // Auto-aprovar quando marcado como lido
             task.read = isRead;
+            // NÃO definir approved = true para manter o lembrete visível
 
             // Atualizar no Firebase se conectado
             if (db) {
                 try {
                     await updateDoc(doc(db, `artifacts/${appId}/public/data/tasks`, taskId), {
                         completedByUser: isRead,
-                        approved: isRead,
                         read: isRead
                     });
                 } catch (error) {
@@ -19552,6 +19628,34 @@ function openAddChecklistForm() {
                 return;
             }
 
+            // Auto-select own person if not selected (for users who can only add to themselves)
+            let targetPersonId = selectedPersonForTasks;
+            if (!targetPersonId) {
+                const currentCollaborator = window.currentCollaborator;
+                if (currentCollaborator && currentCollaborator.email) {
+                    const ownPerson = taskPeople.find(p => 
+                        p.email && p.email.toLowerCase().trim() === currentCollaborator.email.toLowerCase().trim()
+                    );
+                    if (ownPerson) {
+                        targetPersonId = ownPerson.id;
+                    }
+                }
+                // Fallback: try by name
+                if (!targetPersonId && currentUserName) {
+                    const ownPerson = taskPeople.find(p => 
+                        p.name && p.name.toLowerCase().trim() === currentUserName.toLowerCase().trim()
+                    );
+                    if (ownPerson) {
+                        targetPersonId = ownPerson.id;
+                    }
+                }
+            }
+            
+            if (!targetPersonId) {
+                showErrorMessage('Erro', 'Selecione um colaborador primeiro ou verifique se você tem um cartão cadastrado.');
+                return;
+            }
+
             // Preservar dados ao editar
             const existingTask = editingTaskId ? tasks.find(t => t.id === editingTaskId) : null;
 
@@ -19561,7 +19665,7 @@ function openAddChecklistForm() {
                 dueDate,
                 links: links,
                 urgency: urgency,
-                personId: selectedPersonForTasks,
+                personId: targetPersonId,
                 type: 'reminder',
                 reminderMode: reminderMode,
                 status: existingTask?.status || 'pending',
@@ -19569,7 +19673,8 @@ function openAddChecklistForm() {
                 approved: existingTask?.approved || false,
                 failed: existingTask?.failed || false,
                 createdAt: existingTask?.createdAt || new Date().toISOString(),
-                createdBy: existingTask?.createdBy || currentUserName || 'Admin'
+                createdBy: existingTask?.createdBy || currentUserName || 'Admin',
+                createdByEmail: existingTask?.createdByEmail || window.currentCollaborator?.email || ''
             };
 
             // Se for checklist de lembretes, coletar os itens
