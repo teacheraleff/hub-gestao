@@ -23835,8 +23835,10 @@ function openAddChecklistForm() {
                 }
 
                 const navTarget = event.target.closest('.nav-item');
+                console.log('🔍 Nav click:', { navTarget, disabled: navTarget?.disabled, key: navTarget?.dataset?.target });
                 if (navTarget && !navTarget.disabled && !event.target.closest('[data-action]')) {
                     const pageKey = navTarget.dataset.target;
+                    console.log('📄 Navigating to:', pageKey);
 
                     if (pageKey && pageRenderers[pageKey]) {
                         // CRITICAL SECURITY: Check role-based access before allowing navigation
