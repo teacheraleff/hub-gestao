@@ -5087,6 +5087,14 @@
         window.openProfessorForm = openProfessorForm;
 
 
+        // Function to check if a rechamada is expired (older than 6 months)
+        function isRechamadaExpired(contactDate) {
+            if (!contactDate) return false;
+            const sixMonthsAgo = new Date();
+            sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+            return new Date(contactDate) < sixMonthsAgo;
+        }
+
         function renderRechamadaSection() {
             document.getElementById('main-title').textContent = 'Rechamada';
             document.getElementById('main-description').textContent = 'Alunos com faltas consecutivas desde 01/10/2025 - Entre em contato para apoio.';
@@ -5248,8 +5256,11 @@
             // Ordenar por data da primeira falta (mais recente primeiro)
             filteredStudents.sort((a, b) => new Date(b.firstDate) - new Date(a.firstDate));
 
-            // Lista única de professores
-            const uniqueTeachers = [...new Set(studentsWithConsecutiveAbsences.map(s => s.teacher))].filter(t => t && t !== 'Não especificado').sort();
+            // Lista de professores ativos cadastrados na seção Professores
+            const uniqueTeachers = professores
+                .filter(p => p.status === 'ativo' && p.name)
+                .map(p => p.name)
+                .sort();
 
             // Paginação
             const totalItems = filteredStudents.length;
