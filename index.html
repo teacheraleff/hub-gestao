@@ -5487,6 +5487,75 @@
                         </div>
                         ` : ''}
                     `}
+
+                    <!-- Historical Rechamadas Section -->
+                    ${rechamadas.length > 0 ? `
+                        <div class="mt-10 pt-6 border-t-2 border-stone-200">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-lg font-bold text-stone-800 flex items-center gap-2">
+                                    <svg class="w-5 h-5 text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                    Histórico de Rechamadas Registradas
+                                </h3>
+                                <span class="text-sm text-stone-500">${rechamadas.length} registro${rechamadas.length !== 1 ? 's' : ''}</span>
+                            </div>
+                            <p class="text-sm text-stone-500 mb-4">Todas as rechamadas cadastradas no sistema, incluindo de VIPs/turmas finalizados ou excluídos.</p>
+                            <div class="overflow-x-auto">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Aluno</th>
+                                            <th>Professor</th>
+                                            <th>Aulas</th>
+                                            <th>Data Contato</th>
+                                            <th>Resultado</th>
+                                            <th>Ações</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${rechamadas.sort((a, b) => new Date(b.contactDate) - new Date(a.contactDate)).map(r => {
+                                            const student = students.find(s => s.id === r.studentId);
+                                            const studentName = student?.name || r.studentName || 'Aluno não encontrado';
+                                            const isExpired = isRechamadaExpired(r.contactDate);
+                                            return `
+                                            <tr class="${isExpired ? 'opacity-50' : ''}">
+                                                <td class="font-semibold">${studentName}</td>
+                                                <td>${r.teacherName || 'N/A'}</td>
+                                                <td class="text-center">
+                                                    <span class="font-semibold text-red-600">Aula ${r.lessons?.replace('+', ' + ') || 'N/A'}</span>
+                                                </td>
+                                                <td>${formatDateBR(r.contactDate)}</td>
+                                                <td>
+                                                    <span class="inline-block px-2 py-1 text-xs rounded font-semibold ${
+                                                        r.result === 'sucesso' ? 'bg-green-100 text-green-700' :
+                                                        r.result === 'nao_atendeu' ? 'bg-yellow-100 text-yellow-700' :
+                                                        r.result === 'desistencia' ? 'bg-red-100 text-red-700' :
+                                                        'bg-stone-100 text-stone-700'
+                                                    }">
+                                                        ${r.result === 'sucesso' ? 'Sucesso' :
+                                                          r.result === 'nao_atendeu' ? 'Não Atendeu' :
+                                                          r.result === 'desistencia' ? 'Desistência' :
+                                                          r.result || 'N/A'}
+                                                    </span>
+                                                    ${isExpired ? '<span class="ml-2 text-xs text-stone-400">(expirado)</span>' : ''}
+                                                </td>
+                                                <td>
+                                                    <button 
+                                                        data-action="ver-detalhes-rechamada"
+                                                        data-rechamada-id="${r.id}"
+                                                        class="text-blue-600 hover:text-blue-800 text-sm underline"
+                                                    >
+                                                        Ver/Editar
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        `}).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    ` : ''}
                 </section>
 
 
