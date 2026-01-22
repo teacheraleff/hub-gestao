@@ -3105,7 +3105,7 @@
                                 <select id="turma-teacher-filter" class="form-input" onchange="updateTurmasList()">
                                     <option value="">Todos os professores</option>
                                     ${[...new Set(turmas.map(t => t.teacherName))].sort().map(teacher => 
-                                        `<option value="${p.name}">${p.name}</option>`
+                                        `<option value="${teacher}">${teacher}</option>`
                                     ).join('')}
                                 </select>
                             </div>
@@ -23835,10 +23835,8 @@ function openAddChecklistForm() {
                 }
 
                 const navTarget = event.target.closest('.nav-item');
-                console.log('🔍 Nav click:', { navTarget, disabled: navTarget?.disabled, key: navTarget?.dataset?.target });
                 if (navTarget && !navTarget.disabled && !event.target.closest('[data-action]')) {
                     const pageKey = navTarget.dataset.target;
-                    console.log('📄 Navigating to:', pageKey);
 
                     if (pageKey && pageRenderers[pageKey]) {
                         // CRITICAL SECURITY: Check role-based access before allowing navigation
