@@ -3824,8 +3824,23 @@
                 return sum;
             }, 0);
             const totalToPay = totalExpensesBase - totalPaidValues;
-            const totalPending = monthlyExpenses.filter(exp => !exp.isPaid).reduce((sum, exp) => sum + Number(exp.amount || 0), 0);
-            const totalPaid = monthlyExpenses.filter(exp => exp.isPaid).reduce((sum, exp) => sum + Number(exp.paidAmount || exp.amount), 0);
+            // Total pendente desconta pagamentos parciais já feitos
+            const totalPending = monthlyExpenses.filter(exp => !exp.isPaid).reduce((sum, exp) => {
+                const amount = Number(exp.amount || 0);
+                const paidAmount = Number(exp.paidAmount || 0);
+                return sum + (amount - paidAmount);
+            }, 0);
+            // Total pago inclui pagamentos parciais e totais
+            const totalPaid = monthlyExpenses.reduce((sum, exp) => {
+                if (exp.isPaid) {
+                    // Despesa totalmente paga
+                    return sum + Number(exp.paidAmount || exp.amount || 0);
+                } else if (exp.paidAmount && exp.paidAmount > 0) {
+                    // Pagamento parcial
+                    return sum + Number(exp.paidAmount);
+                }
+                return sum;
+            }, 0);
 
             // Count fixed vs variable
             const fixedCount = monthlyExpenses.filter(exp => exp.isFixedSalary || exp.tipo === 'fixo').length;
