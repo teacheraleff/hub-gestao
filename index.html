@@ -2775,7 +2775,7 @@
                 <div class="base-card flex flex-col ${cardBg} ${opacity} border ${isFinalizada ? 'border-stone-300' : ''}">
                     <div class="flex-1">
                         <div class="flex justify-between items-start mb-3">
-                            <h3 class="text-xl font-bold ${textColor}">${t.name}</h3>
+                            <h3 class="text-lg font-bold ${textColor}">${t.name}</h3>
                             ${isFinalizada ? `<span class="px-2 py-1 text-xs font-semibold bg-stone-300 text-stone-700 rounded">FINALIZADA</span>` : ''}
                         </div>
                         <div class="space-y-2 mb-3">
@@ -2936,7 +2936,7 @@
                 <div class="base-card flex flex-col ${cardBg} ${opacity} ${borderStyle}" id="vip-card-${student.id}">
                     <div class="flex-1">
                         <div class="mb-2 flex justify-between items-start">
-                            <h3 class="text-xl font-bold ${textColor}">${student.name}</h3>
+                            <h3 class="text-lg font-bold ${textColor}">${student.name}</h3>
                             ${isCancelado ? `<span class="px-2 py-1 text-xs font-semibold bg-red-500 text-white rounded">CANCELADO</span>` : ''}
                             ${isFinalizado && !isCancelado ? `<span class="px-2 py-1 text-xs font-semibold bg-stone-300 text-stone-700 rounded">FINALIZADO</span>` : ''}
                         </div>
@@ -3156,7 +3156,7 @@
                         <div class="base-card flex flex-col ${cardBg} ${opacity} border ${isFinalizada ? 'border-stone-300' : ''}">
                             <div class="flex-1">
                                 <div class="flex justify-between items-start mb-3">
-                                    <h3 class="text-xl font-bold ${textColor}">${t.name}</h3>
+                                    <h3 class="text-lg font-bold ${textColor}">${t.name}</h3>
                                     ${isFinalizada ? `<span class="px-2 py-1 text-xs font-semibold bg-stone-300 text-stone-700 rounded">FINALIZADA</span>` : ''}
                                 </div>
                                 <div class="space-y-2 mb-3">
@@ -14693,12 +14693,12 @@
                     <!-- Linha 1: Busca, Filtros e Botão Adicionar -->
                     <div class="mb-4 flex flex-wrap justify-between items-center gap-4">
                         <div class="flex flex-wrap gap-3 flex-grow">
-                            <input type="text" id="tn-search" class="form-input !w-auto min-w-[200px] flex-grow" placeholder="Buscar por nome do prospect...">
-                            <select id="tn-evaluator-filter" class="form-input !w-auto">
+                            <input type="text" id="tn-search" class="form-input !w-auto min-w-[200px] flex-grow text-sm py-1.5" placeholder="Buscar por nome do prospect...">
+                            <select id="tn-evaluator-filter" class="form-input !w-auto text-sm py-1.5">
                                 <option value="">Todos os avaliadores</option>
                                 ${evaluatorOptions}
                             </select>
-                            <select id="tn-month-filter" class="form-input !w-auto">
+                            <select id="tn-month-filter" class="form-input !w-auto text-sm py-1.5">
                                 <option value="">Todos os meses</option>
                                 ${(() => {
                                     const months = [];
@@ -14713,8 +14713,8 @@
                                 })()}
                             </select>
                         </div>
-                        <button class="primary-btn w-auto flex items-center" data-action="add-tn">
-                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <button class="primary-btn w-auto flex items-center text-sm py-1.5 px-3" data-action="add-tn">
+                            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
                             </svg>
                             Adicionar TN
@@ -14796,7 +14796,7 @@
             const rateBg = conversionRate >= 70 ? 'from-green-50 to-green-100 border-green-200' : conversionRate >= 40 ? 'from-yellow-50 to-yellow-100 border-yellow-200' : 'from-stone-50 to-stone-100 border-stone-200';
 
             container.innerHTML = `
-                <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-5 rounded-xl border border-blue-200 shadow-sm">
+                <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-xl border border-blue-200 shadow-sm">
                     <div class="flex items-center gap-3 mb-2">
                         <div class="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center">
                             <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -14811,7 +14811,7 @@
                     <p class="text-xs text-blue-500">Testes de nível realizados</p>
                 </div>
 
-                <div class="bg-gradient-to-br from-green-50 to-green-100 p-5 rounded-xl border border-green-200 shadow-sm">
+                <div class="bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-xl border border-green-200 shadow-sm">
                     <div class="flex items-center gap-3 mb-2">
                         <div class="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center">
                             <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -14826,7 +14826,7 @@
                     <p class="text-xs text-green-500">Matriculados após o TN</p>
                 </div>
 
-                <div class="bg-gradient-to-br ${rateBg} p-5 rounded-xl border shadow-sm">
+                <div class="bg-gradient-to-br ${rateBg} p-4 rounded-xl border shadow-sm">
                     <div class="flex items-center gap-3 mb-2">
                         <div class="w-10 h-10 rounded-full ${conversionRate >= 70 ? 'bg-green-500' : conversionRate >= 40 ? 'bg-yellow-500' : 'bg-stone-500'} flex items-center justify-center">
                             <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -15751,7 +15751,7 @@
                                 ${collaborators.map(c => `<option value="${c.id}">${c.name}</option>`).join('')}
                             </select>
                             <button class="primary-btn w-auto" data-action="add-calendar-event">
-                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
                                 </svg>
                                 Adicionar Evento
@@ -15904,7 +15904,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="bg-gradient-to-br from-green-50 to-green-100 p-5 rounded-xl border border-green-200 shadow-sm">
+                        <div class="bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-xl border border-green-200 shadow-sm">
                             <div class="flex items-center gap-3 mb-2">
                                 <div class="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center">
                                     <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -15917,7 +15917,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-5 rounded-xl border border-blue-200 shadow-sm">
+                        <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-xl border border-blue-200 shadow-sm">
                             <div class="flex items-center gap-3 mb-2">
                                 <div class="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center">
                                     <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -15930,7 +15930,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-5 rounded-xl border border-blue-200 shadow-sm">
+                        <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-xl border border-blue-200 shadow-sm">
                             <div class="flex items-center gap-3 mb-2">
                                 <div class="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center">
                                     <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -16038,7 +16038,7 @@
                     ${canAddLink ? `
                     <div class="mb-6 flex justify-end">
                         <button class="primary-btn" onclick="openLinkUtilModal()">
-                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
                             </svg>
                             Adicionar Link
@@ -16684,7 +16684,7 @@
                         <p class="text-xs text-stone-500 mt-1">Adicione pelo menos 1 passo para este processo</p>
 
                         <!-- Sticky Add Buttons -->
-                        <div class="sticky bottom-4 mt-4 flex justify-center gap-3">
+                        <div class="sticky bottom-4 mt-4 flex justify-center gap-3 bg-white/95 backdrop-blur-sm py-3 px-4 rounded-lg shadow-lg border border-stone-200">
                             <button type="button" class="primary-btn shadow-lg flex items-center gap-2" onclick="addStepToForm('passo')">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
@@ -16697,13 +16697,12 @@
                                 </svg>
                                 Adicionar Instrução
                             </button>
+                            <div class="border-l border-stone-300 h-8 mx-2"></div>
+                            <button type="button" class="secondary-btn shadow-lg" data-action="close-modal">Cancelar</button>
+                            <button type="submit" class="primary-btn shadow-lg">Salvar Processo</button>
                         </div>
                     </div>
 
-                    <div class="flex justify-end gap-2 pt-4">
-                        <button type="button" class="secondary-btn" data-action="close-modal">Cancelar</button>
-                        <button type="submit" class="primary-btn">Salvar Processo</button>
-                    </div>
                 </form>
             `;
 
@@ -17489,30 +17488,31 @@
                             <div class="mb-6 flex justify-center gap-3 flex-wrap">
                                 ${can('tasks-prazos.add_task') ? `
                                 <button class="primary-btn" style="background-color: #F1D24B;" onmouseover="this.style.backgroundColor='#E0C03D'" onmouseout="this.style.backgroundColor='#F1D24B'" onclick="openAddTaskForm()">
-                                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
                                     </svg>
                                     Task
                                 </button>
                                 <button class="primary-btn" style="background-color: #8671D1; color: white;" onmouseover="this.style.backgroundColor='#7360C0'" onmouseout="this.style.backgroundColor='#8671D1'" onclick="openAddChecklistForm()">
-                                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
                                     </svg>
                                     Checklist
                                 </button>
                                 ` : ''}
                                 <button class="primary-btn" style="background-color: #F97316; color: white;" onmouseover="this.style.backgroundColor='#FF8C00'" onmouseout="this.style.backgroundColor='#FFA500'" onclick="openAddReminderForm()">
-                                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
                                     </svg>
                                     Lembrete
                                 </button>
                                 <button class="primary-btn" style="background-color: #3B82F6; color: white;" onmouseover="this.style.backgroundColor='#2563EB'" onmouseout="this.style.backgroundColor='#3B82F6'" onclick="openAddAvisoForm()">
-                                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"/>
                                     </svg>
                                     Aviso
                                 </button>
+                                ${currentUserRole === 'admin' ? `<button class="primary-btn" style="background-color: #DC2626; color: white;" onmouseover="this.style.backgroundColor='#B91C1C'" onmouseout="this.style.backgroundColor='#DC2626'" onclick="openAddBombaForm()"><svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="14" r="6" stroke-width="2"/><path stroke-linecap="round" stroke-width="2" d="M12 8V5M14 6l2-2"/></svg>BOMBA</button>` : ''}
                             </div>
                             ` : ''}
 
@@ -17765,6 +17765,35 @@
                     </div>
                 </div>
 
+                <!-- BOMBA Form Modal -->
+                <div id="bomba-form-modal" class="modal-overlay">
+                    <div class="modal-content max-w-md" style="border: 3px solid #DC2626;">
+                        <div class="modal-header" style="background-color: #fee2e2;">
+                            <h4 id="bomba-form-title" style="color: #DC2626;">Nova BOMBA</h4>
+                            <button onclick="closeBombaFormModal()" class="modal-close-btn">&times;</button>
+                        </div>
+                        <form id="bomba-form">
+                            <div class="grid gap-4 p-4">
+                                <div>
+                                    <label class="font-medium text-sm">Título da BOMBA <span class="text-red-500">*</span></label>
+                                    <input type="text" id="bomba-title" class="form-input mt-1" required placeholder="Título urgente...">
+                                </div>
+                                <div>
+                                    <label class="font-medium text-sm">Descrição</label>
+                                    <textarea id="bomba-description" class="form-input mt-1" rows="3" placeholder="Detalhes da urgência..."></textarea>
+                                </div>
+                                <div>
+                                    <label class="font-medium text-sm">Prazo</label>
+                                    <input type="date" id="bomba-deadline" class="form-input mt-1">
+                                </div>
+                            </div>
+                            <div class="modal-footer flex gap-2 justify-end">
+                                <button type="button" class="secondary-btn" onclick="closeBombaFormModal()">Cancelar</button>
+                                <button type="button" class="primary-btn" style="background-color: #DC2626; color: white;" onmouseover="this.style.backgroundColor='#B91C1C'" onmouseout="this.style.backgroundColor='#DC2626'" onclick="handleSubmitBomba()">Criar BOMBA</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
 
 
 
@@ -17825,7 +17854,7 @@
                                         ${currentUserRole === 'admin' ? `
                                         <label class="flex items-center cursor-pointer">
                                             <input type="radio" name="multiple-task-type" value="bomba" class="mr-2" onchange="toggleMultipleTaskType()">
-                                            <span class="text-sm font-bold" style="color: #DC2626;">💣 BOMBA</span>
+                                            <span class="text-sm font-bold flex items-center gap-1" style="color: #DC2626;"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="14" r="6" stroke-width="2"/><path stroke-linecap="round" stroke-width="2" d="M12 8V5M14 6l2-2"/></svg> BOMBA</span>
                                         </label>
                                         ` : ''}
                                     </div>
@@ -18817,7 +18846,7 @@
                                 <div class="flex-1">
                                     <div class="flex items-center gap-2 flex-wrap mb-2">
                                         <span class="text-white text-sm px-3 py-1 rounded font-bold flex items-center gap-1" style="background-color: #DC2626;">
-                                            💣 BOMBA 💣
+                                            <svg class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="14" r="6" stroke-width="2"/><path stroke-linecap="round" stroke-width="2" d="M12 8V5M14 6l2-2"/></svg> BOMBA <svg class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="14" r="6" stroke-width="2"/><path stroke-linecap="round" stroke-width="2" d="M12 8V5M14 6l2-2"/></svg>
                                         </span>
                                         ${task.approved ? '<span class="px-2 py-0.5 text-xs font-semibold rounded" style="background-color: #d1fae5; color: #065f46;">CONCLUÍDA</span>' : ''}
                                         ${isOverdue && !task.approved ? '<span class="px-2 py-0.5 text-xs font-semibold rounded bg-red-100 text-red-800">ATRASADA</span>' : ''}
@@ -19775,6 +19804,49 @@ function openAddChecklistForm() {
         }
 
         // Aviso Functions
+        function openAddBombaForm() {
+            editingTaskId = null;
+            document.getElementById('bomba-form-title').textContent = 'Nova BOMBA';
+            document.getElementById('bomba-form').reset();
+            document.getElementById('bomba-form-modal').classList.add('visible');
+        }
+
+        function closeBombaFormModal() {
+            document.getElementById('bomba-form-modal').classList.remove('visible');
+            editingTaskId = null;
+        }
+
+        async function handleSubmitBomba() {
+            const title = document.getElementById('bomba-title').value.trim();
+            const description = document.getElementById('bomba-description').value.trim();
+            const deadline = document.getElementById('bomba-deadline').value;
+
+            if (!title) {
+                alert('Por favor, insira um título para a BOMBA.');
+                return;
+            }
+
+            const taskData = {
+                assignedTo: selectedCollaboratorId,
+                title,
+                description,
+                deadline: deadline || null,
+                type: 'bomba',
+                status: 'pendente',
+                createdBy: currentUserEmail,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+
+            if (db) {
+                await addDoc(collection(db, `artifacts/${appId}/public/data/tasks`), taskData);
+            }
+
+            await logActivity('Criou BOMBA', 'task', `${title} para ${getCollaboratorName(selectedCollaboratorId)}`);
+            closeBombaFormModal();
+            showSuccessMessage('Sucesso!', 'BOMBA criada com sucesso!');
+        }
+
         function openAddAvisoForm() {
             editingTaskId = null;
             document.getElementById('aviso-form-title').textContent = 'Novo Aviso';
