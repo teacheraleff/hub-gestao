@@ -10,11 +10,11 @@
     <script src="/firebase-config.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=TASA+Orbiter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- Palette: SLAP Brand Colors: #F1D24B (Yellow), #FF5C3D (Orange), #84C7DF (Blue), #8671D1 (Purple) -->
     <style>
         body {
-            font-family: 'TASA Orbiter', sans-serif;
+            font-family: 'DM Sans', sans-serif;
             line-height: 1.25;
         }
         html, body { overflow-x: hidden !important; max-width: 100vw; width: 100%; }
@@ -189,10 +189,10 @@
             background-color: transparent;
         }
 
-        .task-card { background-color: #ffffff; border-radius: 0.75rem; padding: 1.25rem; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid #e7e5e4; transition: all 0.2s ease; }
+        .task-card { background-color: #ffffff; border-radius: 0.5rem; padding: 0.75rem; box-shadow: 0 1px 4px rgba(0,0,0,0.04); border: 1px solid #e7e5e4; transition: all 0.2s ease; }
         .task-card.completed { background-color: #f9fafb; border-color: #e5e7eb; }
         .task-card.completed p { text-decoration: line-through; color: #9ca3af; }
-        .task-card:hover { border-color: #F1D24B; box-shadow: 0 4px 12px rgba(0,0,0,0.1); transform: translateY(-2px); }
+        .task-card:hover { border-color: #F1D24B; box-shadow: 0 2px 8px rgba(0,0,0,0.08); transform: translateY(-1px); }
         .user-tag { display: inline-flex; align-items: center; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; }
         .tag-admin { background-color: #E5E7EB; color: #374151; }
         .tag-break { background-color: #374151; color: #FFFFFF; }
@@ -242,7 +242,7 @@
         .primary-btn { background-color: #F1D24B; color: #44403c; padding: 0.75rem 1.5rem; border-radius: 0.375rem; font-weight: 600; transition: background-color 0.2s; border: none; cursor: pointer; display: inline-flex; align-items: center; white-space: nowrap; }
         .primary-btn:hover { background-color: #eab308; }
         .primary-btn.full-width { width: 100%; justify-content: center; }
-        .secondary-btn { background-color: #f3f4f6; color: #4b5563; border: 1px solid #d1d5db; padding: 0.5rem 1rem; border-radius: 0.375rem; font-weight: 600; transition: all 0.2s; }
+        .secondary-btn { background-color: #f3f4f6; color: #4b5563; border: 1px solid #d1d5db; padding: 0.375rem 0.625rem; border-radius: 0.375rem; font-weight: 500; font-size: 0.875rem; transition: all 0.2s; }
         .secondary-btn:hover { background-color: #e5e7eb; }
         .secondary-btn.active { background-color: #F1D24B; color: #44403c; border-color: #F1D24B;}
         .secondary-btn.filter-btn[data-filter="cancelados"].active { background-color: #EF4444; color: white; border-color: #EF4444; }
@@ -1114,7 +1114,7 @@
         async function startAppInDevelopmentMode() {
             // Tentar conectar ao Firebase mesmo sem autenticação
             const firebaseConfig = window.firebaseConfig || {};
-            
+
             if (firebaseConfig.apiKey) {
                 try {
                     const app = initializeApp(firebaseConfig);
@@ -1136,7 +1136,7 @@
                 window.firebaseConnected = false;
                 window.db = null;
             }
-            
+
             // Set up basic user data for preview
             currentUserName = "Admin SLAP";
             currentUserRole = "admin";
@@ -1246,13 +1246,13 @@
                 { id: "turma-student-7", name: "Gabriel Souza", email: "gabriel@email.com", phone: "(11) 98888-7777", modalidade: "Turma", turmaId: "demo-turma-2", status: "ativo", nivel: "B1 Intermediário", dataInicio: "2024-03-15", birthDate: "1996-12-05" }
             );
             updateWelcomeMessages(currentUserName);
-            
+
             // Configurar listeners do Firebase se conectado
             if (window.firebaseConnected && db) {
                 setupFirestoreListeners();
                 console.log('✅ Firestore listeners configurados no modo preview');
             }
-            
+
             showHubView();
             renderInicioSection();
             renderMenu();
@@ -1494,7 +1494,7 @@
 
 
 
-            
+
             // Activity logs listener (últimos 5 dias)
             getCollectionListener('activity-logs', activityLogs, null, (ref) => {
                 const fiveDaysAgo = new Date();
@@ -2282,7 +2282,7 @@
             contentArea.innerHTML = `
                 <section id="alunos-section" class="bg-white p-6 rounded-lg shadow-sm border border-stone-200">
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-6">
-                        <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-6 rounded-lg border border-stone-200" id="stat-card-total-alunos">
+                        <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-4 rounded-lg border border-stone-200" id="stat-card-total-alunos">
                             <div class="flex items-center justify-between mb-2">
                                 <h3 class="text-sm font-medium text-stone-700 uppercase tracking-wide">Total de Alunos</h3>
                                 <div class="flex gap-2 items-center">
@@ -2303,7 +2303,7 @@
                             <p class="text-4xl font-bold text-stone-800 card-content">${totalCount}</p>
                             <p class="text-xs text-stone-600 mt-1">Total cadastrado</p>
                         </div>
-                        <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-6 rounded-lg border border-stone-200" id="stat-card-alunos-ativos">
+                        <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-4 rounded-lg border border-stone-200" id="stat-card-alunos-ativos">
                             <div class="flex items-center justify-between mb-2">
                                 <h3 class="text-sm font-medium text-stone-700 uppercase tracking-wide">Alunos Ativos</h3>
                                 <div class="flex gap-2 items-center">
@@ -2324,7 +2324,7 @@
                             <p class="text-4xl font-bold text-stone-800 card-content">${activeCount}</p>
                             <p class="text-xs text-stone-600 mt-1">Estudando atualmente</p>
                         </div>
-                        <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-6 rounded-lg border border-stone-200" id="stat-card-alunos-pendentes">
+                        <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-4 rounded-lg border border-stone-200" id="stat-card-alunos-pendentes">
                             <div class="flex items-center justify-between mb-2">
                                 <h3 class="text-sm font-medium text-stone-700 uppercase tracking-wide">Alunos Pendentes</h3>
                                 <div class="flex gap-2 items-center">
@@ -2345,7 +2345,7 @@
                             <p class="text-4xl font-bold text-stone-800 card-content">${pendingCount}</p>
                             <p class="text-xs text-stone-600 mt-1">Aguardando início</p>
                         </div>
-                        <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-6 rounded-lg border border-stone-200" id="stat-card-alunos-cancelados">
+                        <div class="bg-gradient-to-br from-stone-50 to-stone-100 p-4 rounded-lg border border-stone-200" id="stat-card-alunos-cancelados">
                             <div class="flex items-center justify-between mb-2">
                                 <h3 class="text-sm font-medium text-stone-700 uppercase tracking-wide">Alunos Cancelados</h3>
                                 <div class="flex gap-2 items-center">
@@ -2374,10 +2374,10 @@
                         </div>
                         <div class="flex gap-2 items-center">
                             <label class="text-sm font-medium text-stone-600">Data de Início:</label>
-                            <select id="aluno-filter-month" class="form-input w-auto" onchange="applyStartDateFilter()">
+                            <select id="aluno-filter-month" class="form-input w-auto text-sm py-1.5 px-2" onchange="applyStartDateFilter()">
                                 <option value="">Todos os meses</option><option value="1">Janeiro</option><option value="2">Fevereiro</option><option value="3">Março</option><option value="4">Abril</option><option value="5">Maio</option><option value="6">Junho</option><option value="7">Julho</option><option value="8">Agosto</option><option value="9">Setembro</option><option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option>
                             </select>
-                            <select id="aluno-filter-year" class="form-input w-auto" onchange="applyStartDateFilter()">
+                            <select id="aluno-filter-year" class="form-input w-auto text-sm py-1.5 px-2" onchange="applyStartDateFilter()">
                                 <option value="">Todos os anos</option><option value="2020">2020</option><option value="2021">2021</option><option value="2022">2022</option><option value="2023">2023</option><option value="2024">2024</option><option value="2025">2025</option><option value="2026">2026</option><option value="2027">2027</option><option value="2028">2028</option><option value="2029">2029</option><option value="2030">2030</option>
                             </select>
                             <button type="button" onclick="clearStartDateFilter()" class="text-sm text-stone-500 hover:text-stone-700 underline">Limpar</button>
@@ -2387,11 +2387,11 @@
                     <div class="flex justify-between items-center mb-6 flex-wrap gap-4">
                         <div class="flex gap-2 flex-wrap" id="alunos-filter-buttons">
                             <button class="secondary-btn filter-btn active" data-filter="todos">Todos</button>
-                            <button class="secondary-btn filter-btn" data-filter="ativo">Ativos</button>
-                            <button class="secondary-btn filter-btn" data-filter="pendente">Pendentes</button>
-                            <button class="secondary-btn filter-btn" data-filter="cancelado">Cancelados</button>
-                            <button class="secondary-btn filter-btn" data-filter="nao-renovado">Não Renovados</button>
-                            <button class="secondary-btn filter-btn" data-filter="ficha-incompleta" style="background-color: #FEF3C7; color: #92400E; font-weight: 600;">
+                            <button class="secondary-btn filter-btn text-sm py-1.5 px-2.5" data-filter="ativo">Ativos</button>
+                            <button class="secondary-btn filter-btn text-sm py-1.5 px-2.5" data-filter="pendente">Pendentes</button>
+                            <button class="secondary-btn filter-btn text-sm py-1.5 px-2.5" data-filter="cancelado">Cancelados</button>
+                            <button class="secondary-btn filter-btn text-sm py-1.5 px-2.5" data-filter="nao-renovado">Não Renovados</button>
+                            <button class="secondary-btn filter-btn text-sm py-1.5 px-2.5" data-filter="ficha-incompleta" style="background-color: #FEF3C7; color: #92400E; font-weight: 600;">
                                 <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                                 </svg>
@@ -2399,8 +2399,8 @@
                             </button>
                         </div>
                         <div class="flex gap-2 actions-div">
-                            <button class="secondary-btn w-auto" data-action="export-alunos-doc">Exportar Documento</button>
-                            ${canAdd ? `<button class="primary-btn w-auto" data-action="add-aluno">+ Adicionar Aluno</button>` : ''}
+                            <button class="secondary-btn text-sm py-2 px-3" data-action="export-alunos-doc">Exportar Documento</button>
+                            ${canAdd ? `<button class="primary-btn text-sm py-2 px-3" data-action="add-aluno">+ Adicionar Aluno</button>` : ''}
                         </div>
                     </div>
                     <div class="bg-white rounded-xl border border-stone-200 shadow-sm overflow-hidden">
@@ -2684,18 +2684,18 @@
                 filteredVips = filteredVips.filter(student => {
                     const vipRecord = vips.find(v => v.studentId === student.id);
                     if (!vipRecord || vipRecord.finalizado === true) return false;
-                    
+
                     // Check if contract is ending within 30 days
                     let endingSoon = false;
                     if (vipRecord.endDate) {
                         const endDate = new Date(vipRecord.endDate);
                         endingSoon = endDate <= thirtyDaysFromNow && endDate >= today;
                     }
-                    
+
                     // Check if 8 or fewer lessons remaining (completed lesson 32 or higher)
                     const completedLessons = countVipLessons(vipRecord.id);
                     const fewLessonsLeft = completedLessons >= 32;
-                    
+
                     return endingSoon || fewLessonsLeft;
                 });
             }
@@ -2811,7 +2811,7 @@
         function countVipLessons(vipId) {
             const attendanceRecord = attendance.find(a => a.id === vipId);
             if (!attendanceRecord || !attendanceRecord.lessons) return 0;
-            
+
             // Count lessons that have been filled (have at least one student with status)
             let lessonCount = 0;
             Object.keys(attendanceRecord.lessons).forEach(lessonKey => {
@@ -2830,20 +2830,20 @@
         // Function to calculate VIP status tags based on contract dates AND lessons
         function getVipStatusTag(vipRecord) {
             if (!vipRecord) return '';
-            
+
             let tags = [];
             const totalLessons = 40; // VIP contracts have 40 lessons
             const warningThreshold = 8; // Warn when 8 or fewer lessons remain
-            
+
             // Check lessons remaining
             const completedLessons = countVipLessons(vipRecord.id);
             const remainingLessons = totalLessons - completedLessons;
-            
+
             if (completedLessons >= 32 && remainingLessons > 0 && vipRecord.finalizado !== true) {
                 // 8 or fewer lessons remaining (lesson 32 or higher completed)
                 tags.push(`<span class="status-tag" style="background-color: #DBEAFE; color: #1E40AF; font-weight: 600;">${remainingLessons} aula${remainingLessons !== 1 ? 's' : ''} restante${remainingLessons !== 1 ? 's' : ''}</span>`);
             }
-            
+
             // Check contract end date
             if (vipRecord.endDate) {
                 const today = new Date();
@@ -2946,7 +2946,7 @@
                             ${vipRecord ? `<p class="text-sm ${textColorLight}"><strong>Nível:</strong> ${vipRecord.level || 'N/A'}</p>` : ''}
                             ${vipRecord && vipRecord.endDate ? `<p class="text-sm ${textColorLight}"><strong>Finaliza em:</strong> ${formatDateBR(vipRecord.endDate)}</p>` : ''}
                             ${student.indicacao ? `<p class="text-sm ${textColorLight}"><strong>Indicação:</strong> ${student.indicacao}</p>` : ''}
-                            
+
                             ${vipRecord ? (() => {
                                 const lastPefDate = getLastPefDate(vipRecord.id);
                                 if (lastPefDate) {
@@ -3097,7 +3097,7 @@
 
             const canManage = ['admin', 'coord', 'superv', 'estagiario', 'comercial'].includes(currentUserRole);
             let itemsToDisplay = getFilteredTurmas();
-            
+
             // Paginação de turmas
             const totalTurmas = itemsToDisplay.length;
             const totalTurmaPages = Math.ceil(totalTurmas / turmasPerPage);
@@ -3115,11 +3115,11 @@
                                 <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                                 </svg>
-                                <input type="text" id="turma-search" placeholder="Pesquisar turmas..." class="form-input pl-10" oninput="updateTurmasList()">
+                                <input type="text" id="turma-search" placeholder="Pesquisar turmas..." class="form-input pl-10 text-sm py-1.5" oninput="updateTurmasList()">
                             </div>
                             ${(currentUserRole !== 'teacher' && currentUserRole !== 'teachertn') ? `
                             <div class="min-w-48">
-                                <select id="turma-teacher-filter" class="form-input" onchange="updateTurmasList()">
+                                <select id="turma-teacher-filter" class="form-input text-sm py-1.5 px-2" onchange="updateTurmasList()">
                                     <option value="">Todos os professores</option>
                                     ${[...new Set(turmas.map(t => t.teacherName))].sort().map(teacher => 
                                         `<option value="${teacher}">${teacher}</option>`
@@ -3129,14 +3129,14 @@
                             ` : ''}
                         </div>
                         <div class="text-right">
-                            ${canManage ? `<button class="primary-btn w-auto" data-action="add-turma">+ Adicionar Turma</button>` : ''}
+                            ${canManage ? `<button class="primary-btn text-sm py-2 px-3" data-action="add-turma">+ Adicionar Turma</button>` : ''}
                         </div>
                     </div>
 
                     <div class="flex gap-2 mb-6" id="turmas-filter-buttons">
-                        <button class="secondary-btn filter-btn ${currentTurmasFilter === 'todos' ? 'active' : ''}" data-filter="todos">Todos</button>
-                        <button class="secondary-btn filter-btn ${currentTurmasFilter === 'ativas' ? 'active' : ''}" data-filter="ativas">Ativas</button>
-                        <button class="secondary-btn filter-btn ${currentTurmasFilter === 'finalizadas' ? 'active' : ''}" data-filter="finalizadas">Finalizadas</button>
+                        <button class="secondary-btn filter-btn text-sm py-1.5 px-2.5 ${currentTurmasFilter === 'todos' ? 'active' : ''}" data-filter="todos">Todos</button>
+                        <button class="secondary-btn filter-btn text-sm py-1.5 px-2.5 ${currentTurmasFilter === 'ativas' ? 'active' : ''}" data-filter="ativas">Ativas</button>
+                        <button class="secondary-btn filter-btn text-sm py-1.5 px-2.5 ${currentTurmasFilter === 'finalizadas' ? 'active' : ''}" data-filter="finalizadas">Finalizadas</button>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" id="turmas-grid">
@@ -3219,11 +3219,11 @@
                                 <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                                 </svg>
-                                <input type="text" id="vip-search" placeholder="Pesquisar VIPs..." class="form-input pl-10" oninput="updateVipsList()">
+                                <input type="text" id="vip-search" placeholder="Pesquisar VIPs..." class="form-input pl-10 text-sm py-1.5" oninput="updateVipsList()">
                             </div>
                             ${(currentUserRole !== 'teacher' && currentUserRole !== 'teachertn') ? `
                             <div class="min-w-48">
-                                <select id="vip-teacher-filter" class="form-input" onchange="updateVipsList()">
+                                <select id="vip-teacher-filter" class="form-input text-sm py-1.5 px-2" onchange="updateVipsList()">
                                     <option value="">Todos os professores</option>
                                     ${professores.filter(p => p.status === 'ativo').sort((a, b) => a.name.localeCompare(b.name)).map(p => 
                                         `<option value="${p.name}">${p.name}</option>`
@@ -3233,18 +3233,18 @@
                             ` : ''}
                         </div>
                         <div class="text-right">
-                            ${canManage ? `<button class="primary-btn w-auto" data-action="add-vip">+ Adicionar VIP</button>` : ''}
+                            ${canManage ? `<button class="primary-btn text-sm py-2 px-3" data-action="add-vip">+ Adicionar VIP</button>` : ''}
                         </div>
                     </div>
 
                     ${canManage || currentUserRole === 'teacher' ? `
                     <div class="flex gap-2 mb-6" id="vips-filter-buttons">
-                        <button class="secondary-btn filter-btn ${currentVipsFilter === 'todos' ? 'active' : ''}" data-filter="todos">Todos</button>
-                        <button class="secondary-btn filter-btn ${currentVipsFilter === 'ativos' ? 'active' : ''}" data-filter="ativos">Ativos</button>
-                        <button class="secondary-btn filter-btn ${currentVipsFilter === 'a-finalizar' ? 'active' : ''}" data-filter="a-finalizar">A Finalizar</button>
-                        <button class="secondary-btn filter-btn ${currentVipsFilter === 'expirados' ? 'active' : ''}" data-filter="expirados">Expirados</button>
-                        <button class="secondary-btn filter-btn ${currentVipsFilter === 'finalizados' ? 'active' : ''}" data-filter="finalizados">Finalizados</button>
-                        <button class="secondary-btn filter-btn text-red-500 border-red-500 hover:bg-red-50 ${currentVipsFilter === 'cancelados' ? 'active !bg-red-500 !text-white !border-red-500' : ''}" data-filter="cancelados">Cancelados</button>
+                        <button class="secondary-btn filter-btn text-sm py-1.5 px-2.5 ${currentVipsFilter === 'todos' ? 'active' : ''}" data-filter="todos">Todos</button>
+                        <button class="secondary-btn filter-btn text-sm py-1.5 px-2.5 ${currentVipsFilter === 'ativos' ? 'active' : ''}" data-filter="ativos">Ativos</button>
+                        <button class="secondary-btn filter-btn text-sm py-1.5 px-2.5 ${currentVipsFilter === 'a-finalizar' ? 'active' : ''}" data-filter="a-finalizar">A Finalizar</button>
+                        <button class="secondary-btn filter-btn text-sm py-1.5 px-2.5 ${currentVipsFilter === 'expirados' ? 'active' : ''}" data-filter="expirados">Expirados</button>
+                        <button class="secondary-btn filter-btn text-sm py-1.5 px-2.5 ${currentVipsFilter === 'finalizados' ? 'active' : ''}" data-filter="finalizados">Finalizados</button>
+                        <button class="secondary-btn filter-btn text-sm py-1.5 px-2.5 text-red-500 border-red-500 hover:bg-red-50 ${currentVipsFilter === 'cancelados' ? 'active !bg-red-500 !text-white !border-red-500' : ''}" data-filter="cancelados">Cancelados</button>
                     </div>
                     ` : ''}
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" id="vips-grid">
@@ -3392,7 +3392,7 @@
 
             const isTeacher = currentUserRole === 'teacher' || currentUserRole === 'teachertn';
             let filterHtml = '';
-            
+
             // Definir professores ativos e primeiro professor para uso em todo o escopo
             const activeTeachers = professores.filter(p => p.status === 'ativo');
             const firstTeacher = activeTeachers.length > 0 ? activeTeachers[0].name : null;
@@ -3402,7 +3402,7 @@
                 filterHtml = `
                     <div class="grade-select-container flex-grow">
                         <label for="teacher-filter" class="block text-sm font-medium text-stone-700 mb-1">Filtrar por professor:</label>
-                        <select id="teacher-filter" class="grade-select">
+                        <select id="teacher-filter" class="grade-select text-sm py-1.5 px-2">
                             <option value="all">Todos</option>
                             ${teacherOptions}
                         </select>
@@ -3419,11 +3419,11 @@
             }
 
             const addAulaButton = ['admin', 'coord', 'superv', 'estagiario', 'comercial'].includes(currentUserRole)
-                ? `<button class="primary-btn w-auto" data-action="add-schedule">+ Adicionar Aula</button>`
+                ? `<button class="primary-btn text-sm py-2 px-3" data-action="add-schedule">+ Adicionar Aula</button>`
                 : '';
 
             const addVagaButton = ['admin', 'coord', 'superv', 'estagiario', 'comercial'].includes(currentUserRole)
-                ? `<button class="primary-btn w-auto" style="background-color: #10b981; border-color: #10b981;" onmouseover="this.style.backgroundColor='#059669'" onmouseout="this.style.backgroundColor='#10b981'" data-action="add-vaga">+ Adicionar Vaga</button>`
+                ? `<button class="primary-btn text-sm py-2 px-3" style="background-color: #10b981; border-color: #10b981;" onmouseover="this.style.backgroundColor='#059669'" onmouseout="this.style.backgroundColor='#10b981'" data-action="add-vaga">+ Adicionar Vaga</button>`
                 : '';
 
             contentArea.innerHTML = `
@@ -3491,16 +3491,16 @@
             } else {
                 const teacherFilter = document.getElementById('teacher-filter');
                 const defaultTeacher = firstTeacher || 'all';
-                
+
                 // Selecionar o primeiro professor por padrão
                 if (teacherFilter && firstTeacher) {
                     teacherFilter.value = firstTeacher;
                 }
-                
+
                 if (teacherFilter) {
                     teacherFilter.addEventListener('change', () => renderScheduleGrid(teacherFilter.value));
                 }
-                
+
                 // Renderizar com o primeiro professor como padrão
                 renderScheduleGrid(defaultTeacher);
 
@@ -3799,7 +3799,7 @@
             const monthlyExpenses = expenses.map(exp => {
                 let dueDate;
                 const isFixed = exp.isFixedSalary || exp.tipo === 'fixo';
-                
+
                 if (exp.isFixedSalary && exp.dueDay) {
                     // Fixed salary expenses apply to all months
                     const day = parseInt(exp.dueDay, 10);
@@ -3936,8 +3936,8 @@
                         <div class="flex flex-wrap gap-4 mb-6 items-center justify-between">
                             <div class="flex gap-2" id="expenses-filter-buttons">
                                 <button class="secondary-btn filter-btn active" data-filter="todos" onclick="filterExpensesByType('todos')">Todos</button>
-                                <button class="secondary-btn filter-btn" data-filter="fixo" onclick="filterExpensesByType('fixo')">Fixos</button>
-                                <button class="secondary-btn filter-btn" data-filter="variavel" onclick="filterExpensesByType('variavel')">Variáveis</button>
+                                <button class="secondary-btn filter-btn text-sm py-1.5 px-2.5" data-filter="fixo" onclick="filterExpensesByType('fixo')">Fixos</button>
+                                <button class="secondary-btn filter-btn text-sm py-1.5 px-2.5" data-filter="variavel" onclick="filterExpensesByType('variavel')">Variáveis</button>
                             </div>
                             <div class="flex gap-2 items-center">
                                 <span class="text-sm text-stone-500">Ordenar:</span>
@@ -3970,7 +3970,7 @@
                                         const sortedExpenses = [...monthlyExpenses].sort((a, b) => {
                                             const aIsPaid = a.isPaid ? 1 : 0;
                                             const bIsPaid = b.isPaid ? 1 : 0;
-                                            
+
                                             // Se ordenar por Pagos/Não Pagos especificamente
                                             if (sortOrder === 'paidFirst') {
                                                 if (aIsPaid !== bIsPaid) return bIsPaid - aIsPaid; // Pagos primeiro
@@ -3984,12 +3984,12 @@
                                                 const dateB = String(b.effectiveDueDate || '9999-12-31');
                                                 return dateA.localeCompare(dateB);
                                             }
-                                            
+
                                             // PRIORIDADE padrão: Não pagas aparecem primeiro
                                             if (aIsPaid !== bIsPaid) {
                                                 return aIsPaid - bIsPaid;
                                             }
-                                            
+
                                             // Ordenação secundária
                                             if (sortOrder === 'dueDate') {
                                                 const dateA = String(a.effectiveDueDate || '9999-12-31');
@@ -4002,7 +4002,7 @@
                                             }
                                             return 0;
                                         });
-                                        
+
                                         // Aplicar filtro de pesquisa
                                         let filteredExpenses = sortedExpenses;
                                         if (folhaSearchQuery) {
@@ -4012,7 +4012,7 @@
                                                 return description.includes(folhaSearchQuery) || role.includes(folhaSearchQuery);
                                             });
                                         }
-                                        
+
                                         // Aplicar paginação
                                         const totalExpensesCount = filteredExpenses.length;
                                         const totalPagesCalc = Math.ceil(totalExpensesCount / folhaPerPage);
@@ -4022,7 +4022,7 @@
                                         const endIndex = Math.min(startIndex + folhaPerPage, totalExpensesCount);
                                         const paginatedExpenses = filteredExpenses.slice(startIndex, endIndex);
                                         window._folhaPaginationData = { currentPage: folhaCurrentPage, totalPages: totalPagesCalc, startIndex, endIndex, totalCount: totalExpensesCount };
-                                        
+
                                         return paginatedExpenses.length > 0 ? paginatedExpenses.map(exp => {
                                         const isFixed = exp.isFixedSalary || exp.tipo === 'fixo';
                                         const typeLabel = isFixed ? '<span class="px-2 py-0.5 rounded-full text-xs bg-purple-100 text-purple-700">Fixo</span>' : '<span class="px-2 py-0.5 rounded-full text-xs bg-stone-100 text-stone-600">Variável</span>';
@@ -4075,7 +4075,7 @@
                                 </tbody>
                             </table>
                         </div>
-                        
+
                         <!-- Pagination Controls -->
                         ${window._folhaPaginationData && window._folhaPaginationData.totalPages > 1 ? renderFolhaPagination(window._folhaPaginationData.currentPage, window._folhaPaginationData.totalPages, window._folhaPaginationData.startIndex, window._folhaPaginationData.endIndex, window._folhaPaginationData.totalCount) : ''}
                     </div>
@@ -4101,15 +4101,15 @@
         window.setFolhaSearchQuery = function(query) {
             folhaSearchQuery = query.toLowerCase().trim();
             folhaCurrentPage = 1;
-            
+
             if (folhaSearchDebounceTimer) {
                 clearTimeout(folhaSearchDebounceTimer);
             }
-            
+
             folhaSearchDebounceTimer = setTimeout(() => {
                 const cursorPosition = document.activeElement?.selectionStart;
                 renderFolhaPagamentoSection();
-                
+
                 setTimeout(() => {
                     const searchInput = document.querySelector('#folha-pagamento-section input[placeholder="Pesquisar despesa..."]');
                     if (searchInput) {
@@ -4125,12 +4125,12 @@
             const months = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
             const monthName = months[selectedFolhaMonth];
             const currentMonthKey = selectedFolhaYear + '-' + String(selectedFolhaMonth + 1).padStart(2, '0');
-            
+
             // Filtrar despesas do mês selecionado
             const monthlyExpenses = expenses.map(exp => {
                 let dueDate;
                 const isFixed = exp.isFixedSalary || exp.tipo === 'fixo';
-                
+
                 if (exp.isFixedSalary && exp.dueDay) {
                     const day = parseInt(exp.dueDay, 10);
                     if (day > 0 && day < 32) {
@@ -4164,12 +4164,12 @@
 
             // Criar dados para Excel
             const headers = ['Descrição', 'Cargo/Tag', 'Tipo', 'Vencimento', 'Valor (R$)', 'Valor Pago (R$)', 'Status'];
-            
+
             const rows = monthlyExpenses.map(exp => {
                 const isFixed = exp.isFixedSalary || exp.tipo === 'fixo';
                 const dueDateFormatted = exp.effectiveDueDate ? new Date(exp.effectiveDueDate).toLocaleDateString('pt-BR') : '-';
                 const status = exp.isPaid ? 'Pago' : 'Pendente';
-                
+
                 return [
                     exp.description || '',
                     exp.employeeRole || '',
@@ -4207,7 +4207,7 @@
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-            
+
             showSuccessMessage('Exportado!', 'Arquivo Excel exportado com sucesso.');
         };
 
@@ -4282,7 +4282,7 @@
             // Converter para número e garantir precisão
             const valorParcela = parseFloat(valorBrutoParcela) || 0;
             const taxaParcela = parseFloat(taxaManualParcela) || 0;
-            
+
             // Se não há taxa informada, retornar sem desconto
             if (taxaParcela <= 0) {
                 return { 
@@ -4295,13 +4295,13 @@
                     liquidoPorParcela: valorParcela
                 };
             }
-            
+
             // Cálculo simples: valor líquido = valor bruto - taxa
             const valorLiquidoParcela = valorParcela - taxaParcela;
-            
+
             // Arredondar apenas no final para 2 casas decimais
             const valorLiquidoFinal = Math.round(valorLiquidoParcela * 100) / 100;
-            
+
             return { 
                 bruto: valorParcela,
                 liquido: valorLiquidoFinal,
@@ -4351,7 +4351,7 @@
             if (end - start + 1 < maxVisible) {
                 start = Math.max(1, end - maxVisible + 1);
             }
-            
+
             let pagesHtml = '';
             if (start > 1) {
                 pagesHtml += '<span class="px-2 py-1 text-stone-400">...</span>';
@@ -4363,7 +4363,7 @@
             if (end < totalPages) {
                 pagesHtml += '<span class="px-2 py-1 text-stone-400">...</span>';
             }
-            
+
             return '<div class="flex items-center justify-between mt-4 pt-4 border-t border-stone-200">' +
                 '<div class="text-sm text-stone-600">Mostrando ' + (startIdx + 1) + '-' + Math.min(endIdx, totalCount) + ' de ' + totalCount + ' entradas</div>' +
                 '<div class="flex items-center gap-1">' +
@@ -4652,7 +4652,7 @@
                     return sum + calc.liquidoPorParcela;
                 }, 0);
             };
-            
+
             const totalEntradasBruto = filteredEntradas.reduce((sum, e) => sum + Number(e.amount || 0), 0);
             const totalEntradas = calculateNetTotal(filteredEntradas);
             const receivedTotal = calculateNetTotal(filteredEntradas.filter(e => e.status === 'received'));
@@ -4770,12 +4770,12 @@
                                         const isProjected = ent.isProjected || false;
                                         const statusClass = ent.status === 'received' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800';
                                         const statusLabel = ent.status === 'received' ? 'Recebido' : 'Pendente';
-                                        
+
                                         // Buscar dados do aluno se for entrada de aluno
                                         const student = ent.studentId ? students.find(s => s.id === ent.studentId) : null;
                                         const modalidade = ent.modalidade || (student ? student.modalidade : '') || '';
                                         const paymentType = ent.paymentType || (student ? student.paymentType : '') || '';
-                                        
+
                                         // Tags de modalidade
                                         const modalidadeTag = modalidade ? (
                                             modalidade.toUpperCase() === 'VIP' || modalidade.toUpperCase() === 'DUPLA' 
@@ -4784,7 +4784,7 @@
                                                     ? '<span class="ml-1 px-1.5 py-0.5 text-xs bg-blue-100 text-blue-700 rounded font-medium">Turma</span>'
                                                     : ''
                                         ) : '';
-                                        
+
                                         // Tags de pagamento
                                         const paymentLabels = {
                                             'Cartão de Crédito': { label: 'Cartão', class: 'bg-indigo-100 text-indigo-700' },
@@ -4795,7 +4795,7 @@
                                         };
                                         const paymentInfo = paymentLabels[paymentType] || null;
                                         const paymentTag = paymentInfo ? '<span class="ml-1 px-1.5 py-0.5 text-xs ' + paymentInfo.class + ' rounded font-medium">' + paymentInfo.label + '</span>' : '';
-                                        
+
                                         return `
                                             <tr class="hover:bg-stone-50">
                                                 <td class="px-4 py-3 text-sm text-stone-600">${date}</td>
@@ -4850,7 +4850,7 @@
                                 </tbody>
                             </table>
                         </div>
-                        
+
                         <!-- Pagination Controls -->
                         ${totalPages > 1 ? renderEntradasPagination(entradasCurrentPage, totalPages, startIndex, endIndex, totalEntradasCount) : ''}
                     </div>
@@ -5002,7 +5002,7 @@
         async function deleteCollaboratorSimple(collaboratorId) {
             const collab = collaborators.find(c => c.id === collaboratorId);
             if (!collab) return;
-            
+
             showConfirmationModal(
                 "Confirmar Exclusão",
                 `Tem certeza que deseja excluir o colaborador "${collab.name}"? Esta ação não pode ser desfeita.`,
@@ -5012,7 +5012,7 @@
                             await deleteDoc(doc(db, `artifacts/${appId}/public/data/collaborators`, collaboratorId));
                             await logActivity('deletar', 'colaborador', collab.name);
                         }
-                        
+
                         // Remove from local array
                         const index = collaborators.findIndex(c => c.id === collaboratorId);
                         if (index !== -1) {
@@ -5021,7 +5021,7 @@
                                 localStorage.setItem('collaborators', JSON.stringify(collaborators));
                             }
                         }
-                        
+
                         showSuccessMessage("Sucesso", `Colaborador "${collab.name}" excluído com sucesso!`);
                         renderColaboradoresSection();
                     } catch (error) {
@@ -7063,7 +7063,7 @@
                 'medium': '<span class="px-2 py-0.5 text-xs font-semibold rounded" style="background-color: #fef3c7; color: #92400e;">MÉDIA PRIORIDADE</span>',
                 'urgent': '<span class="px-2 py-0.5 text-xs font-semibold rounded" style="background-color: #fecaca; color: #991b1b;">URGENTE</span>',
                 'max': '<span class="px-2 py-0.5 text-xs font-semibold rounded" style="background-color: #7c3aed; color: white;">PRIORIDADE MÁXIMA</span>',
-                
+
             };
 
             return tags[urgency] || '';
@@ -8115,7 +8115,7 @@
                 data.taxaParcela = document.getElementById('aluno-taxaParcela')?.value || '';
                 data.amountPaid = document.getElementById('aluno-amountPaid').value;
                 data.amountReceived = document.getElementById('aluno-amountReceived').value;
-                
+
                 // Coletar meses de projeção selecionados
                 const projectionMonthCheckboxes = document.querySelectorAll('input[name="projection-month"]:checked');
                 data.projectionMonths = Array.from(projectionMonthCheckboxes).map(cb => cb.value);
@@ -8193,7 +8193,7 @@
                 { value: '2027-05', label: 'Mai/27' },
                 { value: '2027-06', label: 'Jun/27' }
             ];
-            
+
             return months.map(m => {
                 const isChecked = selectedMonths.includes(m.value);
                 return '<label class="flex items-center gap-1.5 p-2 rounded border ' + (isChecked ? 'border-green-500 bg-green-50' : 'border-stone-200 hover:bg-stone-50') + ' cursor-pointer">' +
@@ -9870,7 +9870,7 @@
             `;
 
             modal.classList.add('visible');
-            
+
         }
 
         function openVipPefModal(vipId) {
@@ -9994,7 +9994,7 @@
             `;
 
             modal.classList.add('visible');
-            
+
         }
 
         function applyQuickNote(selectElement) {
@@ -11927,11 +11927,11 @@
 
             const isFixedExpense = expense.isFixedSalary || expense.tipo === 'fixo';
             const currentMonthKey = monthKey || (selectedFolhaYear + '-' + String(selectedFolhaMonth + 1).padStart(2, '0'));
-            
+
             // Obter dados de pagamento
             let paidAmount = 0;
             let payments = [];
-            
+
             if (isFixedExpense && expense.paidMonths && expense.paidMonths[currentMonthKey]) {
                 paidAmount = Number(expense.paidMonths[currentMonthKey].paidAmount || 0);
                 payments = expense.paidMonths[currentMonthKey].payments || [];
@@ -12007,17 +12007,17 @@
             `;
 
             document.getElementById('form-modal').classList.add('visible');
-            
+
             if (!isPaid) {
                 document.getElementById('payment-form').addEventListener('submit', async (e) => {
                     e.preventDefault();
                     const paymentAmount = Number(document.getElementById('payment-amount').value);
-                    
+
                     if (paymentAmount <= 0) {
                         showErrorMessage("Erro", "O valor do pagamento deve ser maior que zero.");
                         return;
                     }
-                    
+
                     if (paymentAmount > remainingAmount + 0.01) {
                         showErrorMessage("Erro", "O valor do pagamento não pode ser maior que o saldo restante.");
                         return;
@@ -12030,7 +12030,7 @@
 
                     try {
                         const expenseRef = doc(db, `artifacts/${appId}/public/data/expenses`, expenseId);
-                        
+
                         if (isFixedExpense) {
                             const paidMonths = { ...(expense.paidMonths || {}) };
                             paidMonths[currentMonthKey] = {
@@ -12048,7 +12048,7 @@
                                 paidAt: new Date().toISOString()
                             });
                         }
-                        
+
                         document.getElementById('form-modal').classList.remove('visible');
                         showSuccessMessage("Pagamento Registrado", nowFullyPaid ? "Despesa paga integralmente!" : `Pagamento de ${paymentAmount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} registrado. Restam ${(remainingAmount - paymentAmount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}.`);
                     } catch (error) {
@@ -12065,7 +12065,7 @@
 
             const isFixedExpense = expense.isFixedSalary || expense.tipo === 'fixo';
             let payments = [];
-            
+
             if (isFixedExpense && expense.paidMonths && expense.paidMonths[monthKey]) {
                 payments = [...(expense.paidMonths[monthKey].payments || [])];
             } else {
@@ -12081,7 +12081,7 @@
 
             try {
                 const expenseRef = doc(db, `artifacts/${appId}/public/data/expenses`, expenseId);
-                
+
                 if (isFixedExpense) {
                     const paidMonths = { ...(expense.paidMonths || {}) };
                     if (payments.length === 0) {
@@ -12103,7 +12103,7 @@
                         paidAt: payments.length > 0 ? new Date().toISOString() : null
                     });
                 }
-                
+
                 document.getElementById('form-modal').classList.remove('visible');
                 showSuccessMessage("Sucesso", "Pagamento removido.");
             } catch (error) {
@@ -12120,7 +12120,7 @@
 
             try {
                 const expenseRef = doc(db, `artifacts/${appId}/public/data/expenses`, expenseId);
-                
+
                 if (isFixedExpense) {
                     const paidMonths = { ...(expense.paidMonths || {}) };
                     delete paidMonths[monthKey];
@@ -12133,7 +12133,7 @@
                         paidAt: null
                     });
                 }
-                
+
                 document.getElementById('form-modal').classList.remove('visible');
                 showSuccessMessage("Sucesso", "Todos os pagamentos foram removidos.");
             } catch (error) {
@@ -12838,12 +12838,12 @@
                     <meta charset="UTF-8">
                     <meta name="viewport" content="width=device-width, initial-scale=1.0">
                     <title>PEF - ${turma.name}</title>
-                    <link href="https://fonts.googleapis.com/css2?family=TASA+Orbiter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+                    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
                     <style>
                         * { margin: 0; padding: 0; box-sizing: border-box; }
 
                         body { 
-                            font-family: 'TASA Orbiter', Arial, sans-serif; 
+                            font-family: 'DM Sans', Arial, sans-serif; 
                             line-height: 1.6; 
                             color: #2d3748; 
                             background: #f7fafc;
@@ -13331,12 +13331,12 @@
                     <meta charset="UTF-8">
                     <meta name="viewport" content="width=device-width, initial-scale=1.0">
                     <title>PEF Individual - ${student.name}</title>
-                    <link href="https://fonts.googleapis.com/css2?family=TASA+Orbiter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+                    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
                     <style>
                         * { margin: 0; padding: 0; box-sizing: border-box; }
 
                         body { 
-                            font-family: 'TASA Orbiter', Arial, sans-serif; 
+                            font-family: 'DM Sans', Arial, sans-serif; 
                             line-height: 1.6; 
                             color: #2d3748; 
                             background: #f7fafc;
@@ -13905,7 +13905,7 @@
             const monthShort = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 
             function parseBirthDate(bd) { if (!bd) return null; if (bd.toDate) return bd.toDate(); if (bd.seconds) return new Date(bd.seconds * 1000); return new Date(bd); }
-            
+
             const totalActiveStudents = students.filter(s => (s.status || '').toLowerCase() === 'ativo').length;
             const activeStudents = students.filter(s => (s.status || '').toLowerCase() === 'ativo' && s.birthDate);
             const studentsWithoutBirthdate = totalActiveStudents - activeStudents.length;
@@ -14029,7 +14029,7 @@
             contentArea.innerHTML = `
                 <div class="space-y-6">
                     ${warningMessage}
-                    
+
                     <!-- Month Selector -->
                     <div class="bg-white rounded-xl shadow-sm border border-stone-200 p-4">
                         <div class="flex items-center justify-between gap-4 mb-3 flex-wrap">
@@ -14087,7 +14087,7 @@
         }
         window.searchAniversariantes = searchAniversariantes;
 
-        
+
         function toggleBirthdayMonth(monthIndex) {
             const content = document.getElementById(`birthday-month-${monthIndex}`);
             const chevron = document.getElementById(`birthday-chevron-${monthIndex}`);
@@ -15289,7 +15289,7 @@
 
             // Ordenar por data (mais recente primeiro)
             const sortedTNs = [...filteredTNs].sort((a, b) => new Date(b.date) - new Date(a.date));
-            
+
             // Gerar CSV
             const csvHeader = ['Candidato', 'Celular', 'Data', 'Horário', 'Avaliador', 'Nível', 'Tráfego', 'Matrícula'];
             const csvRows = sortedTNs.map(tn => {
@@ -15305,7 +15305,7 @@
                     tn.convertedToMatricula ? 'Sim' : 'Não'
                 ].map(field => `"${String(field).replace(/"/g, '""')}"`).join(';');
             });
-            
+
             const csvContent = [csvHeader.join(';'), ...csvRows].join('\n');
             const BOM = '\uFEFF';
             const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -17410,15 +17410,15 @@
 
 
                     ${can('tasks-prazos.add_person') ? `
-                    <div class="mb-6 flex justify-between">
-                        <button class="primary-btn" style="background-color: #84C7DF;" onmouseover="this.style.backgroundColor='#6DB5CD'" onmouseout="this.style.backgroundColor='#84C7DF'" onclick="openMultipleTaskModal()">
-                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="mb-6 flex justify-end gap-3">
+                        <button class="primary-btn text-sm py-2 px-3" style="background-color: #84C7DF;" onmouseover="this.style.backgroundColor='#6DB5CD'" onmouseout="this.style.backgroundColor='#84C7DF'" onclick="openMultipleTaskModal()">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
                             </svg>
                             Task para Múltiplos
                         </button>
-                        <button class="primary-btn" onclick="openAddPersonModal()">
-                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <button class="primary-btn text-sm py-2 px-3" onclick="openAddPersonModal()">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
                             </svg>
                             Adicionar Colaborador
@@ -17478,12 +17478,12 @@
                         <div class="p-6">
                             <!-- Filter buttons -->
                             <div class="mb-4 flex flex-wrap gap-2 justify-center" id="tasks-filter-buttons">
-                                <button class="secondary-btn filter-btn" data-filter="todas" onclick="setTasksFilter('todas')">Todas</button>
-                                <button class="secondary-btn filter-btn" data-filter="urgentes" onclick="setTasksFilter('urgentes')">Urgentes</button>
-                                <button class="secondary-btn filter-btn" data-filter="atrasadas" onclick="setTasksFilter('atrasadas')">Atrasadas</button>
-                                <button class="secondary-btn filter-btn" data-filter="hoje" onclick="setTasksFilter('hoje')">Hoje</button>
-                                <button class="secondary-btn filter-btn" data-filter="proximas" onclick="setTasksFilter('proximas')">Mais Proximas</button>
-                                <button class="secondary-btn filter-btn" data-filter="antigas" onclick="setTasksFilter('antigas')">Mais Antigas</button>
+                                <button class="secondary-btn filter-btn text-sm py-1.5 px-2.5" data-filter="todas" onclick="setTasksFilter('todas')">Todas</button>
+                                <button class="secondary-btn filter-btn text-sm py-1.5 px-2.5" data-filter="urgentes" onclick="setTasksFilter('urgentes')">Urgentes</button>
+                                <button class="secondary-btn filter-btn text-sm py-1.5 px-2.5" data-filter="atrasadas" onclick="setTasksFilter('atrasadas')">Atrasadas</button>
+                                <button class="secondary-btn filter-btn text-sm py-1.5 px-2.5" data-filter="hoje" onclick="setTasksFilter('hoje')">Hoje</button>
+                                <button class="secondary-btn filter-btn text-sm py-1.5 px-2.5" data-filter="proximas" onclick="setTasksFilter('proximas')">Mais Proximas</button>
+                                <button class="secondary-btn filter-btn text-sm py-1.5 px-2.5" data-filter="antigas" onclick="setTasksFilter('antigas')">Mais Antigas</button>
                             </div>
                             ${(can('tasks-prazos.add_task') || can('tasks-prazos.add_reminder')) ? `
                             <div class="mb-6 flex justify-center gap-3 flex-wrap">
@@ -17565,7 +17565,7 @@
                                         <option value="medium">Média Prioridade</option>
                                         <option value="urgent">Urgente</option>
                                         <option value="max">Prioridade Máxima</option>
-                                        
+
                                     </select>
                                 </div>
                             </div>
@@ -17620,7 +17620,7 @@
                                         <option value="medium">Média Prioridade</option>
                                         <option value="urgent">Urgente</option>
                                         <option value="max">Prioridade Máxima</option>
-                                        
+
                                     </select>
                                 </div>
 
@@ -17700,7 +17700,7 @@
                                         <option value="medium">Média Prioridade</option>
                                         <option value="urgent">Urgente</option>
                                         <option value="max">Prioridade Máxima</option>
-                                        
+
                                     </select>
                                 </div>
 
@@ -17751,7 +17751,7 @@
                                         <option value="medium">Média Prioridade</option>
                                         <option value="urgent">Urgente</option>
                                         <option value="max">Prioridade Máxima</option>
-                                        
+
                                     </select>
                                 </div>
                             </div>
@@ -18562,7 +18562,7 @@
                                                            style="accent-color: #F1D24B;">
                                                     <span class="text-xs font-medium" style="color: #F1D24B;">Aprovado</span>
                                                 </label>
-                                                
+
                                                 ` : ''}
                                             </div>
                                             <div class="flex-1">
@@ -18681,7 +18681,7 @@
                                                                style="accent-color: #FFA500;">
                                                         <span class="text-xs font-medium" style="color: #FFA500;">Aprovado</span>
                                                     </label>
-                                                    
+
                                                     ` : ''}
                                                 </div>
                                                 <div class="flex-1">
@@ -18780,7 +18780,7 @@
                                                        style="accent-color: #FFA500;">
                                                 <span class="text-xs font-medium" style="color: #FFA500;">Aprovado</span>
                                             </label>
-                                            
+
                                             ` : ''}
                                         </div>
                                     </div>
@@ -18995,7 +18995,7 @@
                                                    style="accent-color: #F1D24B;">
                                             <span class="text-xs font-medium" style="color: #F1D24B;">Aprovado</span>
                                         </label>
-                                        
+
                                         ` : ''}
                                     </div>
                                 </div>
@@ -20037,7 +20037,7 @@ function openAddChecklistForm() {
                     }
                 }
             }
-            
+
             if (!targetPersonId) {
                 showErrorMessage('Erro', 'Selecione um colaborador primeiro ou verifique se você tem um cartão cadastrado.');
                 return;
@@ -20534,6 +20534,28 @@ function openAddChecklistForm() {
 
                     await logActivity('Criou aviso para múltiplos colaboradores', 'task', `${title} (${tasksCreated} pessoas)`);
                     showSuccessMessage('Sucesso!', `Aviso criado para ${tasksCreated} colaborador(es).`);
+                } else if (taskType === 'bomba') {
+                    // Create BOMBA task for each selected person (admin only)
+                    for (const personId of selectedPeopleIds) {
+                        const bombaData = {
+                            title,
+                            description,
+                            dueDate,
+                            links: links,
+                            personId: personId,
+                            type: 'bomba',
+                            status: 'pending',
+                            createdAt: new Date().toISOString(),
+                            createdBy: currentUser?.displayName || 'Admin',
+                            createdByEmail: currentUser?.email || ''
+                        };
+
+                        await addDoc(collection(db, `artifacts/${appId}/public/data/tasks`), bombaData);
+                        tasksCreated++;
+                    }
+
+                    await logActivity('Criou BOMBA para múltiplos colaboradores', 'task', `${title} (${tasksCreated} pessoas)`);
+                    showSuccessMessage('Sucesso!', `BOMBA criada para ${tasksCreated} colaborador(es).`);
                 }
 
                 closeMultipleTaskModal();
@@ -21447,12 +21469,12 @@ function openAddChecklistForm() {
             const yearSelect = document.getElementById('aluno-filter-year');
             const selectedMonth = monthSelect?.value;
             const selectedYear = yearSelect?.value;
-            
+
             window.alunoStartDateFilter = { month: selectedMonth, year: selectedYear };
             filterAlunosTable();
         }
         window.applyStartDateFilter = applyStartDateFilter;
-        
+
         function clearStartDateFilter() {
             const monthSelect = document.getElementById('aluno-filter-month');
             const yearSelect = document.getElementById('aluno-filter-year');
@@ -21462,22 +21484,22 @@ function openAddChecklistForm() {
             filterAlunosTable();
         }
         window.clearStartDateFilter = clearStartDateFilter;
-        
+
         function filterAlunosTable() {
             const searchInput = document.getElementById('aluno-search');
             const searchTerm = searchInput?.value?.toLowerCase() || '';
             const statusFilter = document.querySelector('#alunos-filter-buttons .filter-btn.active')?.dataset.filter || 'todos';
             const monthFilter = window.alunoStartDateFilter?.month || '';
             const yearFilter = window.alunoStartDateFilter?.year || '';
-            
+
             const rows = document.querySelectorAll('#alunos-table tbody tr[data-student-id]');
-            
+
             rows.forEach(row => {
                 const name = row.querySelector('td:first-child')?.textContent?.toLowerCase() || '';
                 const status = row.dataset.status?.toLowerCase() || '';
                 const startDate = row.dataset.startDate || '';
                 const hasIncompleteProfile = row.dataset.incompleteProfile === 'true';
-                
+
                 // Parse start date
                 let matchesDate = true;
                 if (startDate && (monthFilter || yearFilter)) {
@@ -21491,22 +21513,22 @@ function openAddChecklistForm() {
                 } else if (!startDate && (monthFilter || yearFilter)) {
                     matchesDate = false;
                 }
-                
+
                 // Apply all filters
                 const matchesSearch = name.includes(searchTerm);
                 let matchesStatus = statusFilter === 'todos';
-                
+
                 if (statusFilter === 'ativo') matchesStatus = status === 'ativo';
                 else if (statusFilter === 'pendente') matchesStatus = status === 'pendente';
                 else if (statusFilter === 'cancelado') matchesStatus = status === 'cancelado';
                 else if (statusFilter === 'nao-renovado') matchesStatus = status === 'não renovado';
                 else if (statusFilter === 'ficha-incompleta') matchesStatus = hasIncompleteProfile;
-                
+
                 row.style.display = (matchesSearch && matchesStatus && matchesDate) ? '' : 'none';
             });
         }
         window.filterAlunosTable = filterAlunosTable;
-        
+
         function exportAlunosDoc() {
             const canViewFinancialInfo = canViewStudentFinancials();
             const allStudents = students.sort((a, b) => a.name.localeCompare(b.name));
@@ -23011,7 +23033,7 @@ function openAddChecklistForm() {
                     <title>Report Card - ${turma.name}</title>
                     <style>
                         * { margin: 0; padding: 0; box-sizing: border-box; }
-                        body { font-family: 'TASA Orbiter', 'Arial', sans-serif; line-height: 1.5; color: #2d3748; background: #ffffff; }
+                        body { font-family: 'DM Sans', 'Arial', sans-serif; line-height: 1.5; color: #2d3748; background: #ffffff; }
                         .container { max-width: 1200px; margin: 0 auto; background: white; }
                         .header { background: #F1D24B; padding: 40px 40px 30px 40px; position: relative; }
                         .logo-section { display: flex; align-items: center; justify-content: center; margin-bottom: 20px; }
@@ -23214,7 +23236,7 @@ function openAddChecklistForm() {
                     <title>Report Card - ${student.name}</title>
                     <style>
                         * { margin: 0; padding: 0; box-sizing: border-box; }
-                        body { font-family: 'TASA Orbiter', 'Arial', sans-serif; line-height: 1.5; color: #2d3748; background: #ffffff; }
+                        body { font-family: 'DM Sans', 'Arial', sans-serif; line-height: 1.5; color: #2d3748; background: #ffffff; }
                         .container { max-width: 800px; margin: 0 auto; background: white; }
                         .header { background: #F1D24B; padding: 40px 40px 30px 40px; position: relative; }
                         .logo-section { display: flex; align-items: center; justify-content: center; margin-bottom: 20px; }
@@ -24141,7 +24163,7 @@ function openAddChecklistForm() {
                 editPedagogical: ['admin', 'coord', 'superv', 'estagiario'],
                 editFull: ['admin', 'coord', 'superv', 'comercial'],
             },
-            
+
             turmas: {
                 view: ['admin', 'coord', 'superv', 'estagiario', 'comercial'],
                 create: ['admin', 'coord', 'superv', 'estagiario', 'comercial'],
