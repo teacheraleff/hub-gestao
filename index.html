@@ -1895,6 +1895,11 @@
         async function handleSignUp(event) { event.preventDefault(); const name = event.target.name.value; const email = event.target.email.value; const password = event.target.password.value; try { const cred = await createUserWithEmailAndPassword(auth, email, password); await updateProfile(cred.user, { displayName: name }); await setDoc(doc(db, "users", cred.user.uid), { name, email, role: "pending", createdAt: serverTimestamp() }); await signOut(auth); showSuccessMessage("Cadastro Concluído!", "Sua conta foi criada. Aguarde aprovação de um administrador para acessar."); } catch (error) { showErrorMessage("Erro", "Erro ao criar conta. Verifique o e-mail e a senha."); } }
         async function handleLogout() { 
             await signOut(auth);
+            currentUser = null;
+            currentUserRole = null;
+            currentUserName = null;
+            currentUserPermissions = [];
+            showLoginView();
         }
 
         // --- LOCATION TOGGLE FUNCTION ---
@@ -17512,7 +17517,6 @@
                                     </svg>
                                     Aviso
                                 </button>
-                                ${currentUserRole === 'admin' ? `<button class="primary-btn" style="background-color: #DC2626; color: white;" onmouseover="this.style.backgroundColor='#B91C1C'" onmouseout="this.style.backgroundColor='#DC2626'" onclick="openAddBombaForm()"><svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="14" r="6" stroke-width="2"/><path stroke-linecap="round" stroke-width="2" d="M12 8V5M14 6l2-2"/></svg>BOMBA</button>` : ''}
                             </div>
                             ` : ''}
 
@@ -17765,42 +17769,6 @@
                     </div>
                 </div>
 
-                <!-- BOMBA Form Modal -->
-                <div id="bomba-form-modal" class="modal-overlay">
-                    <div class="modal-content max-w-md" style="border: 3px solid #DC2626;">
-                        <div class="modal-header" style="background-color: #fee2e2;">
-                            <h4 id="bomba-form-title" style="color: #DC2626;">Nova BOMBA</h4>
-                            <button onclick="closeBombaFormModal()" class="modal-close-btn">&times;</button>
-                        </div>
-                        <form id="bomba-form">
-                            <div class="grid gap-4 p-4">
-                                <div>
-                                    <label class="font-medium text-sm">Colaborador <span class="text-red-500">*</span></label>
-                                    <select id="bomba-person" class="form-input mt-1" required>
-                                        <option value="">Selecione um colaborador...</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label class="font-medium text-sm">Título da BOMBA <span class="text-red-500">*</span></label>
-                                    <input type="text" id="bomba-title" class="form-input mt-1" required placeholder="Título urgente...">
-                                </div>
-                                <div>
-                                    <label class="font-medium text-sm">Descrição</label>
-                                    <textarea id="bomba-description" class="form-input mt-1" rows="3" placeholder="Detalhes da urgência..."></textarea>
-                                </div>
-                                <div>
-                                    <label class="font-medium text-sm">Prazo</label>
-                                    <input type="date" id="bomba-deadline" class="form-input mt-1">
-                                </div>
-                            </div>
-                            <div class="modal-footer flex gap-2 justify-end">
-                                <button type="button" class="secondary-btn" onclick="closeBombaFormModal()">Cancelar</button>
-                                <button type="button" class="primary-btn" style="background-color: #DC2626; color: white;" onmouseover="this.style.backgroundColor='#B91C1C'" onmouseout="this.style.backgroundColor='#DC2626'" onclick="handleSubmitBomba()">Criar BOMBA</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-
 
 
 
@@ -17857,12 +17825,6 @@
                                             <input type="radio" name="multiple-task-type" value="aviso" class="mr-2" onchange="toggleMultipleTaskType()">
                                             <span class="text-sm font-medium" style="color: #3B82F6;">Aviso</span>
                                         </label>
-                                        ${currentUserRole === 'admin' ? `
-                                        <label class="flex items-center cursor-pointer">
-                                            <input type="radio" name="multiple-task-type" value="bomba" class="mr-2" onchange="toggleMultipleTaskType()">
-                                            <span class="text-sm font-bold flex items-center gap-1" style="color: #DC2626;"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="14" r="6" stroke-width="2"/><path stroke-linecap="round" stroke-width="2" d="M12 8V5M14 6l2-2"/></svg> BOMBA</span>
-                                        </label>
-                                        ` : ''}
                                     </div>
                                 </div>
 
@@ -18844,81 +18806,6 @@
 
                 }
 
-                // BOMBA rendering (super important task)
-                if (task.type === 'bomba') {
-                    return `
-                        <div class="mb-4 p-4 rounded-lg border-4 animate-pulse" style="${task.approved ? 'background-color: #d6d3d1; border-color: #a8a29e; opacity: 0.7; animation: none;' : isOverdue ? 'background-color: #fef2f2; border-color: #DC2626;' : isToday ? 'background-color: #fefce8; border-color: #DC2626;' : 'background-color: #fee2e2; border-color: #DC2626;'}">
-                            <div class="flex items-start justify-between">
-                                <div class="flex-1">
-                                    <div class="flex items-center gap-2 flex-wrap mb-2">
-                                        <span class="text-white text-sm px-3 py-1 rounded font-bold flex items-center gap-1" style="background-color: #DC2626;">
-                                            <svg class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="14" r="6" stroke-width="2"/><path stroke-linecap="round" stroke-width="2" d="M12 8V5M14 6l2-2"/></svg> BOMBA <svg class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="14" r="6" stroke-width="2"/><path stroke-linecap="round" stroke-width="2" d="M12 8V5M14 6l2-2"/></svg>
-                                        </span>
-                                        ${task.approved ? '<span class="px-2 py-0.5 text-xs font-semibold rounded" style="background-color: #d1fae5; color: #065f46;">CONCLUÍDA</span>' : ''}
-                                        ${isOverdue && !task.approved ? '<span class="px-2 py-0.5 text-xs font-semibold rounded bg-red-100 text-red-800">ATRASADA</span>' : ''}
-                                        ${isToday && !task.approved ? '<span class="px-2 py-0.5 text-xs font-semibold rounded bg-yellow-100 text-yellow-800">HOJE</span>' : ''}
-                                    </div>
-                                    <h4 class="font-bold text-lg text-red-800 ${task.approved ? 'line-through text-stone-500' : ''} mb-2">
-                                        ${task.title}
-                                    </h4>
-                                    ${task.description ? `<p class="text-sm text-red-700 ${task.approved ? 'text-stone-400' : ''}">${task.description}</p>` : ''}
-                                    ${renderTaskLinks(task)}
-                                    <div class="flex items-center gap-4 mt-3 text-xs text-stone-600 border-t border-red-200 pt-3">
-                                        <span class="flex items-center gap-1 font-semibold">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                                            </svg>
-                                            ${formatDateBR(task.dueDate)}
-                                        </span>
-                                        ${task.createdBy ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200">
-                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-                                            Criado por ${getFirstAndLastName(task.createdBy)}
-                                        </span>` : ''}
-                                        <div class="flex items-center gap-3 ml-auto">
-                                            <label class="flex items-center gap-2 cursor-pointer">
-                                                <input type="checkbox" 
-                                                       ${task.completedByUser ? 'checked' : ''}
-                                                       onchange="toggleUserCompletion('${task.id}', this.checked)"
-                                                       class="h-4 w-4 rounded border-gray-300"
-                                                       style="accent-color: #10b981;">
-                                                <span class="text-xs font-medium text-green-700">Feito</span>
-                                            </label>
-                                            ${canManage ? `
-                                            <label class="flex items-center gap-1.5 cursor-pointer">
-                                                <input type="checkbox" 
-                                                       ${task.approved ? 'checked' : ''}
-                                                       onchange="toggleAdminApproval('${task.id}', this.checked)"
-                                                       class="h-4 w-4 rounded border-gray-300"
-                                                       style="accent-color: #F1D24B;">
-                                                <span class="text-xs font-medium" style="color: #F1D24B;">Aprovado</span>
-                                            </label>
-                                            ` : ''}
-                                        </div>
-                                    </div>
-                                </div>
-                                ${canManage ? `
-                                <div class="flex gap-2 ml-4">
-                                    <button onclick="event.stopPropagation(); editTask('${task.id}')" 
-                                            class="p-2 text-stone-400 hover:text-blue-600 transition-colors"
-                                            title="Editar">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                                        </svg>
-                                    </button>
-                                    <button onclick="event.stopPropagation(); deleteTask('${task.id}')" 
-                                            class="p-2 text-stone-400 hover:text-red-600 transition-colors"
-                                            title="Excluir">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                                        </svg>
-                                    </button>
-                                </div>
-                                ` : ''}
-                            </div>
-                        </div>
-                    `;
-                }
-
                 // Aviso rendering
                 if (task.type === 'aviso') {
                     const isRead = task.read || false;
@@ -19809,84 +19696,6 @@ function openAddChecklistForm() {
             reminderItemCounter = 0;
         }
 
-        // Aviso Functions
-        function openAddBombaForm() {
-            editingTaskId = null;
-            document.getElementById('bomba-form-title').textContent = 'Nova BOMBA';
-            document.getElementById('bomba-form').reset();
-            
-            // Populate collaborator select
-            const select = document.getElementById('bomba-person');
-            select.innerHTML = '<option value="">Selecione um colaborador...</option>';
-            taskPeople.forEach(p => {
-                const selected = selectedPersonForTasks === p.id ? 'selected' : '';
-                select.innerHTML += '<option value="' + p.id + '" ' + selected + '>' + p.name + '</option>';
-            });
-            
-            // If already viewing a collaborator's tasks, pre-select and disable
-            if (selectedPersonForTasks) {
-                select.value = selectedPersonForTasks;
-                select.disabled = true;
-                select.style.backgroundColor = '#f5f5f4';
-            } else {
-                select.disabled = false;
-                select.style.backgroundColor = '';
-            }
-            
-            document.getElementById('bomba-form-modal').classList.add('visible');
-        }
-
-        function closeBombaFormModal() {
-            document.getElementById('bomba-form-modal').classList.remove('visible');
-            document.getElementById('bomba-person').disabled = false;
-            document.getElementById('bomba-person').style.backgroundColor = '';
-            editingTaskId = null;
-        }
-        async function handleSubmitBomba() {
-            const personId = document.getElementById('bomba-person').value;
-            const title = document.getElementById('bomba-title').value.trim();
-            const description = document.getElementById('bomba-description').value.trim();
-            const deadline = document.getElementById('bomba-deadline').value;
-
-            if (!personId) {
-                showErrorMessage('Erro', 'Selecione um colaborador.');
-                return;
-            }
-
-            if (!title) {
-                showErrorMessage('Erro', 'Insira um título para a BOMBA.');
-                return;
-            }
-
-            const taskData = {
-                personId: personId,
-                title,
-                description,
-                dueDate: deadline || null,
-                type: 'bomba',
-                approved: false,
-                failed: false,
-                createdBy: currentUserEmail,
-                createdAt: new Date().toISOString()
-            };
-
-            try {
-                if (db) {
-                    await addDoc(collection(db, `artifacts/${appId}/public/data/tasks`), taskData);
-                    await loadTasksManually();
-                }
-
-                const personName = taskPeople.find(p => p.id === personId)?.name || 'Desconhecido';
-                await logActivity('Criou BOMBA', 'task', `${title} para ${personName}`);
-                closeBombaFormModal();
-                renderTasksList();
-                renderPeopleTasksCards();
-                showSuccessMessage('Sucesso!', 'BOMBA criada com sucesso!');
-            } catch (error) {
-                console.error('Error creating BOMBA:', error);
-                showErrorMessage('Erro', 'Não foi possível criar a BOMBA.');
-            }
-        }
         function openAddAvisoForm() {
             editingTaskId = null;
             document.getElementById('aviso-form-title').textContent = 'Novo Aviso';
@@ -20645,28 +20454,6 @@ function openAddChecklistForm() {
 
                     await logActivity('Criou aviso para múltiplos colaboradores', 'task', `${title} (${tasksCreated} pessoas)`);
                     showSuccessMessage('Sucesso!', `Aviso criado para ${tasksCreated} colaborador(es).`);
-                } else if (taskType === 'bomba') {
-                    // Create BOMBA task for each selected person (admin only)
-                    for (const personId of selectedPeopleIds) {
-                        const bombaData = {
-                            title,
-                            description,
-                            dueDate,
-                            links: links,
-                            personId: personId,
-                            type: 'bomba',
-                            status: 'pending',
-                            createdAt: new Date().toISOString(),
-                            createdBy: currentUser?.displayName || 'Admin',
-                            createdByEmail: currentUser?.email || ''
-                        };
-
-                        await addDoc(collection(db, `artifacts/${appId}/public/data/tasks`), bombaData);
-                        tasksCreated++;
-                    }
-
-                    await logActivity('Criou BOMBA para múltiplos colaboradores', 'task', `${title} (${tasksCreated} pessoas)`);
-                    showSuccessMessage('Sucesso!', `BOMBA criada para ${tasksCreated} colaborador(es).`);
                 }
 
                 closeMultipleTaskModal();
@@ -20708,9 +20495,6 @@ function openAddChecklistForm() {
         window.closeReminderFormModal = closeReminderFormModal;
         window.openAddAvisoForm = openAddAvisoForm;
         window.closeAvisoFormModal = closeAvisoFormModal;
-        window.openAddBombaForm = openAddBombaForm;
-        window.closeBombaFormModal = closeBombaFormModal;
-        window.handleSubmitBomba = handleSubmitBomba;
         window.handleSubmitAviso = handleSubmitAviso;
         window.toggleAvisoRead = toggleAvisoRead;
         window.toggleReminderRead = toggleReminderRead;
