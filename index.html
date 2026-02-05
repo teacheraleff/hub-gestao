@@ -17822,7 +17822,7 @@
                                             <input type="radio" name="multiple-task-type" value="aviso" class="mr-2" onchange="toggleMultipleTaskType()">
                                             <span class="text-sm font-medium" style="color: #3B82F6;">Aviso</span>
                                         </label>
-                                        ${currentUser && currentUser.role === 'admin' ? `
+                                        ${currentUserRole === 'admin' ? `
                                         <label class="flex items-center cursor-pointer">
                                             <input type="radio" name="multiple-task-type" value="bomba" class="mr-2" onchange="toggleMultipleTaskType()">
                                             <span class="text-sm font-bold" style="color: #DC2626;">💣 BOMBA</span>
@@ -24510,7 +24510,7 @@ function openAddChecklistForm() {
             observeNewElements();
 
             // Force development mode - show hub without login
-            window.FORCE_DEV_MODE = false; // Using Firebase
+            window.FORCE_DEV_MODE = true; // Using Firebase
 
             initializeFirebase();
         });
