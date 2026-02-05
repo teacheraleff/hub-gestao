@@ -19872,12 +19872,12 @@ function openAddChecklistForm() {
 
             try {
                 if (db) {
-                    await addDoc(collection(db, `artifacts/\${appId}/public/data/tasks`), taskData);
+                    await addDoc(collection(db, `artifacts/${appId}/public/data/tasks`), taskData);
                     await loadTasksManually();
                 }
 
                 const personName = taskPeople.find(p => p.id === personId)?.name || 'Desconhecido';
-                await logActivity('Criou BOMBA', 'task', `\${title} para \${personName}`);
+                await logActivity('Criou BOMBA', 'task', `${title} para ${personName}`);
                 closeBombaFormModal();
                 renderTasksList();
                 renderPeopleTasksCards();
