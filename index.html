@@ -17775,6 +17775,12 @@
                         <form id="bomba-form">
                             <div class="grid gap-4 p-4">
                                 <div>
+                                    <label class="font-medium text-sm">Colaborador <span class="text-red-500">*</span></label>
+                                    <select id="bomba-person" class="form-input mt-1" required>
+                                        <option value="">Selecione um colaborador...</option>
+                                    </select>
+                                </div>
+                                <div>
                                     <label class="font-medium text-sm">Título da BOMBA <span class="text-red-500">*</span></label>
                                     <input type="text" id="bomba-title" class="form-input mt-1" required placeholder="Título urgente...">
                                 </div>
@@ -19808,6 +19814,15 @@ function openAddChecklistForm() {
             editingTaskId = null;
             document.getElementById('bomba-form-title').textContent = 'Nova BOMBA';
             document.getElementById('bomba-form').reset();
+            
+            // Populate collaborator select
+            const select = document.getElementById('bomba-person');
+            select.innerHTML = '<option value="">Selecione um colaborador...</option>';
+            taskPeople.forEach(p => {
+                const selected = selectedPersonForTasks === p.id ? 'selected' : '';
+                select.innerHTML += `<option value="\${p.id}" \${selected}>\${p.name}</option>`;
+            });
+            
             document.getElementById('bomba-form-modal').classList.add('visible');
         }
 
@@ -19817,36 +19832,50 @@ function openAddChecklistForm() {
         }
 
         async function handleSubmitBomba() {
+            const personId = document.getElementById('bomba-person').value;
             const title = document.getElementById('bomba-title').value.trim();
             const description = document.getElementById('bomba-description').value.trim();
             const deadline = document.getElementById('bomba-deadline').value;
 
+            if (!personId) {
+                showErrorMessage('Erro', 'Selecione um colaborador.');
+                return;
+            }
+
             if (!title) {
-                alert('Por favor, insira um título para a BOMBA.');
+                showErrorMessage('Erro', 'Insira um título para a BOMBA.');
                 return;
             }
 
             const taskData = {
-                assignedTo: selectedCollaboratorId,
+                personId: personId,
                 title,
                 description,
-                deadline: deadline || null,
+                dueDate: deadline || null,
                 type: 'bomba',
-                status: 'pendente',
+                approved: false,
+                failed: false,
                 createdBy: currentUserEmail,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString()
+                createdAt: new Date().toISOString()
             };
 
-            if (db) {
-                await addDoc(collection(db, `artifacts/${appId}/public/data/tasks`), taskData);
+            try {
+                if (db) {
+                    await addDoc(collection(db, `artifacts/\${appId}/public/data/tasks`), taskData);
+                    await loadTasksManually();
+                }
+
+                const personName = taskPeople.find(p => p.id === personId)?.name || 'Desconhecido';
+                await logActivity('Criou BOMBA', 'task', `\${title} para \${personName}`);
+                closeBombaFormModal();
+                renderTasksList();
+                renderPeopleTasksCards();
+                showSuccessMessage('Sucesso!', 'BOMBA criada com sucesso!');
+            } catch (error) {
+                console.error('Error creating BOMBA:', error);
+                showErrorMessage('Erro', 'Não foi possível criar a BOMBA.');
             }
-
-            await logActivity('Criou BOMBA', 'task', `${title} para ${getCollaboratorName(selectedCollaboratorId)}`);
-            closeBombaFormModal();
-            showSuccessMessage('Sucesso!', 'BOMBA criada com sucesso!');
         }
-
         function openAddAvisoForm() {
             editingTaskId = null;
             document.getElementById('aviso-form-title').textContent = 'Novo Aviso';
@@ -19984,13 +20013,12 @@ function openAddChecklistForm() {
                 // Verificar se todos os itens estão lidos
                 const allRead = task.checklistItems.every(item => item.completedByUser);
                 task.completedByUser = allRead;
-                task.approved = allRead;
+                // NÃO definir task.approved = allRead - manter lembrete visível até admin aprovar
 
                 if (db) {
                     await updateDoc(doc(db, `artifacts/${appId}/public/data/tasks`, taskId), {
                         checklistItems: task.checklistItems,
-                        completedByUser: allRead,
-                        approved: allRead
+                        completedByUser: allRead
                     });
                 }
 
@@ -20669,6 +20697,9 @@ function openAddChecklistForm() {
         window.closeReminderFormModal = closeReminderFormModal;
         window.openAddAvisoForm = openAddAvisoForm;
         window.closeAvisoFormModal = closeAvisoFormModal;
+        window.openAddBombaForm = openAddBombaForm;
+        window.closeBombaFormModal = closeBombaFormModal;
+        window.handleSubmitBomba = handleSubmitBomba;
         window.handleSubmitAviso = handleSubmitAviso;
         window.toggleAvisoRead = toggleAvisoRead;
         window.toggleReminderRead = toggleReminderRead;
