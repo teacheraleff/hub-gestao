@@ -2374,8 +2374,8 @@
                     </div>
 
                     <div class="mb-6 flex flex-wrap gap-4 items-end">
-                        <div class="flex-1 min-w-[200px]">
-                            <input type="search" id="aluno-search" placeholder="Pesquisar por nome..." class="form-input w-full">
+                        <div class="flex-1 min-w-[200px] max-w-xs">
+                            <input type="search" id="aluno-search" placeholder="Pesquisar por nome..." class="form-input w-full text-sm py-1.5">
                         </div>
                         <div class="flex gap-2 items-center">
                             <label class="text-sm font-medium text-stone-600">Data de Início:</label>
@@ -2435,8 +2435,7 @@
                                 <option value="20" selected>20</option>
                                 <option value="50">50</option>
                                 <option value="100">100</option>
-                            </select>
-                        </div>
+                            
 
                         <div id="pagination-info" class="text-sm text-stone-600"></div>
 
@@ -2547,20 +2546,30 @@
         function getFilteredStudents() {
             const filter = document.querySelector('#alunos-filter-buttons .filter-btn.active')?.dataset.filter || 'todos';
             const searchTerm = document.getElementById('aluno-search')?.value.toLowerCase() || '';
+            const monthFilter = window.alunoStartDateFilter?.month || '';
+            const yearFilter = window.alunoStartDateFilter?.year || '';
 
             let filteredStudents = students;
             if (filter === 'ficha-incompleta') {
-                // Filtrar apenas alunos com ficha incompleta
                 filteredStudents = students.filter(s => !checkStudentProfileCompleteness(s).isComplete);
             } else if (filter === 'nao-renovado') {
-                // Filter for "Não Renovado" status
                 filteredStudents = students.filter(s => s.status === 'Não Renovado');
             } else if (filter !== 'todos') {
-                filteredStudents = students.filter(s => s.status && s.status.toLowerCase() === filter);
+                filteredStudents = filteredStudents.filter(s => s.status && s.status.toLowerCase() === filter);
             }
 
             if (searchTerm) {
                 filteredStudents = filteredStudents.filter(s => s.name.toLowerCase().includes(searchTerm));
+            }
+
+            if (monthFilter || yearFilter) {
+                filteredStudents = filteredStudents.filter(s => {
+                    if (!s.startDate) return false;
+                    const date = new Date(s.startDate + 'T00:00:00');
+                    if (monthFilter && (date.getMonth() + 1) !== parseInt(monthFilter)) return false;
+                    if (yearFilter && date.getFullYear() !== parseInt(yearFilter)) return false;
+                    return true;
+                });
             }
 
             return filteredStudents.sort((a, b) => a.name.localeCompare(b.name));
@@ -2804,10 +2813,10 @@
                         </div>
                     </div>
                     <div class="mt-auto pt-4 border-t ${isFinalizada ? 'border-stone-200' : 'border-stone-100'} flex flex-wrap gap-2">
-                        ${canManage ? `<button class="secondary-btn !text-sm flex-1 ${isFinalizada ? 'opacity-50 cursor-not-allowed' : ''}" data-action="${isFinalizada ? 'turma-finalizada' : 'edit-turma'}" data-id="${t.id}" ${isFinalizada ? 'disabled' : ''}>Editar</button>` : ''}
-                        <button class="primary-btn !text-sm flex-1 flex items-center justify-center ${isFinalizada ? 'opacity-50' : ''}" data-action="${isFinalizada ? 'turma-finalizada' : 'open-turma-pef'}" data-id="${t.id}">PEF</button>
-                        <button class="secondary-btn !text-sm flex-1 flex items-center justify-center ${isFinalizada ? 'opacity-50' : ''}" data-action="${isFinalizada ? 'turma-finalizada' : 'open-turma-notas'}" data-id="${t.id}">Notas</button>
-                        ${isFinalizada && canManage ? `<button class="secondary-btn !text-sm flex-1 min-w-[120px]" style="background-color: #10B981; color: white;" data-action="reativar-turma" data-id="${t.id}">Reativar</button>` : ''}
+                        ${canManage ? `<button class="secondary-btn !text-xs !py-1 !px-2 flex-1 ${isFinalizada ? 'opacity-50 cursor-not-allowed' : ''}" data-action="${isFinalizada ? 'turma-finalizada' : 'edit-turma'}" data-id="${t.id}" ${isFinalizada ? 'disabled' : ''}>Editar</button>` : ''}
+                        <button class="primary-btn !text-xs !py-1 !px-2 flex-1 flex items-center justify-center ${isFinalizada ? 'opacity-50' : ''}" data-action="${isFinalizada ? 'turma-finalizada' : 'open-turma-pef'}" data-id="${t.id}">PEF</button>
+                        <button class="secondary-btn !text-xs !py-1 !px-2 flex-1 flex items-center justify-center ${isFinalizada ? 'opacity-50' : ''}" data-action="${isFinalizada ? 'turma-finalizada' : 'open-turma-notas'}" data-id="${t.id}">Notas</button>
+                        ${isFinalizada && canManage ? `<button class="secondary-btn !text-xs !py-1 !px-2 flex-1 min-w-[100px]" style="background-color: #10B981; color: white;" data-action="reativar-turma" data-id="${t.id}">Reativar</button>` : ''}
                     </div>
                 </div>`}).join('') || '<p class="col-span-full text-center py-10 text-stone-500">Nenhuma turma encontrada.</p>';
         }
@@ -2964,10 +2973,10 @@
                     </div>
                     <div class="mt-auto pt-4 border-t ${borderColor} flex flex-wrap gap-2">
                         ${vipRecord ? `
-                            <button class="primary-btn !text-sm flex-1 flex items-center justify-center ${isFinalizado && !isCancelado ? 'opacity-50' : ''}" data-action="${isFinalizado ? 'vip-finalizado' : 'open-vip-pef'}" data-id="${vipRecord.id}">PEF</button>
-                            <button class="secondary-btn !text-sm flex-1 flex items-center justify-center ${isFinalizado ? 'opacity-50' : ''}" data-action="${isFinalizado ? 'vip-finalizado' : 'open-vip-notas'}" data-id="${vipRecord.id}">Notas</button>
-                            ${(currentUserRole !== 'teacher' && currentUserRole !== 'teachertn') ? `<button class="secondary-btn !text-sm flex-1 ${isFinalizado ? 'opacity-50 cursor-not-allowed' : ''}" data-action="${isFinalizado ? 'vip-finalizado' : 'edit-vip'}" data-id="${vipRecord.id}" ${isFinalizado ? 'disabled' : ''}>Configurar</button>` : ''}
-                            ${isFinalizado && (currentUserRole !== 'teacher' && currentUserRole !== 'teachertn') ? `<button class="secondary-btn !text-sm flex-1 min-w-[120px]" style="background-color: #10B981; color: white;" data-action="reativar-vip" data-id="${vipRecord.id}">Reativar</button>` : ''}
+                            <button class="primary-btn !text-xs !py-1 !px-2 flex-1 flex items-center justify-center ${isFinalizado && !isCancelado ? 'opacity-50' : ''}" data-action="${isFinalizado ? 'vip-finalizado' : 'open-vip-pef'}" data-id="${vipRecord.id}">PEF</button>
+                            <button class="secondary-btn !text-xs !py-1 !px-2 flex-1 flex items-center justify-center ${isFinalizado ? 'opacity-50' : ''}" data-action="${isFinalizado ? 'vip-finalizado' : 'open-vip-notas'}" data-id="${vipRecord.id}">Notas</button>
+                            ${(currentUserRole !== 'teacher' && currentUserRole !== 'teachertn') ? `<button class="secondary-btn !text-xs !py-1 !px-2 flex-1 ${isFinalizado ? 'opacity-50 cursor-not-allowed' : ''}" data-action="${isFinalizado ? 'vip-finalizado' : 'edit-vip'}" data-id="${vipRecord.id}" ${isFinalizado ? 'disabled' : ''}>Configurar</button>` : ''}
+                            ${isFinalizado && (currentUserRole !== 'teacher' && currentUserRole !== 'teachertn') ? `<button class="secondary-btn !text-xs !py-1 !px-2 flex-1 min-w-[100px]" style="background-color: #10B981; color: white;" data-action="reativar-vip" data-id="${vipRecord.id}">Reativar</button>` : ''}
                         ` : ''}
                     </div>
                 </div>`}).join('') || '<p class="col-span-full text-center py-10 text-stone-500">Nenhum aluno VIP encontrado.</p>';
@@ -3129,8 +3138,7 @@
                                     ${[...new Set(turmas.map(t => t.teacherName))].sort().map(teacher => 
                                         `<option value="${teacher}">${teacher}</option>`
                                     ).join('')}
-                                </select>
-                            </div>
+                                
                             ` : ''}
                         </div>
                         <div class="text-right">
@@ -3185,10 +3193,10 @@
                                 </div>
                             </div>
                             <div class="mt-auto pt-4 border-t ${isFinalizada ? 'border-stone-200' : 'border-stone-100'} flex flex-wrap gap-2">
-                                ${canManage ? `<button class="secondary-btn !text-sm flex-1 ${isFinalizada ? 'opacity-50 cursor-not-allowed' : ''}" data-action="${isFinalizada ? 'turma-finalizada' : 'edit-turma'}" data-id="${t.id}" ${isFinalizada ? 'disabled' : ''}>Editar</button>` : ''}
-                                <button class="primary-btn !text-sm flex-1 flex items-center justify-center ${isFinalizada ? 'opacity-50' : ''}" data-action="${isFinalizada ? 'turma-finalizada' : 'open-turma-pef'}" data-id="${t.id}">PEF</button>
-                                <button class="secondary-btn !text-sm flex-1 flex items-center justify-center ${isFinalizada ? 'opacity-50' : ''}" data-action="${isFinalizada ? 'turma-finalizada' : 'open-turma-notas'}" data-id="${t.id}">Notas</button>
-                                ${isFinalizada && canManage ? `<button class="secondary-btn !text-sm flex-1 min-w-[120px]" style="background-color: #10B981; color: white;" data-action="reativar-turma" data-id="${t.id}">Reativar</button>` : ''}
+                                ${canManage ? `<button class="secondary-btn !text-xs !py-1 !px-2 flex-1 ${isFinalizada ? 'opacity-50 cursor-not-allowed' : ''}" data-action="${isFinalizada ? 'turma-finalizada' : 'edit-turma'}" data-id="${t.id}" ${isFinalizada ? 'disabled' : ''}>Editar</button>` : ''}
+                                <button class="primary-btn !text-xs !py-1 !px-2 flex-1 flex items-center justify-center ${isFinalizada ? 'opacity-50' : ''}" data-action="${isFinalizada ? 'turma-finalizada' : 'open-turma-pef'}" data-id="${t.id}">PEF</button>
+                                <button class="secondary-btn !text-xs !py-1 !px-2 flex-1 flex items-center justify-center ${isFinalizada ? 'opacity-50' : ''}" data-action="${isFinalizada ? 'turma-finalizada' : 'open-turma-notas'}" data-id="${t.id}">Notas</button>
+                                ${isFinalizada && canManage ? `<button class="secondary-btn !text-xs !py-1 !px-2 flex-1 min-w-[100px]" style="background-color: #10B981; color: white;" data-action="reativar-turma" data-id="${t.id}">Reativar</button>` : ''}
                             </div>
                         </div>`}).join('') || '<p class="col-span-full text-center py-10 text-stone-500">Nenhuma turma encontrada.</p>'}
                     </div>
@@ -3233,8 +3241,7 @@
                                     ${professores.filter(p => p.status === 'ativo').sort((a, b) => a.name.localeCompare(b.name)).map(p => 
                                         `<option value="${p.name}">${p.name}</option>`
                                     ).join('')}
-                                </select>
-                            </div>
+                                
                             ` : ''}
                         </div>
                         <div class="text-right">
@@ -3265,8 +3272,7 @@
                                 <option value="12">12</option>
                                 <option value="24">24</option>
                                 <option value="48">48</option>
-                            </select>
-                        </div>
+                            
                         <div class="flex items-center gap-4">
                             <span class="text-sm text-stone-600" id="vips-info">Mostrando 0 de 0</span>
                             <div class="flex items-center gap-2">
@@ -3410,8 +3416,7 @@
                         <select id="teacher-filter" class="grade-select text-sm py-1.5 px-2">
                             <option value="all">Todos</option>
                             ${teacherOptions}
-                        </select>
-                    </div>
+                        
                     <div class="flex items-center gap-2 ml-4">
                         <input type="checkbox" id="show-vagas-only" class="rounded border-stone-300 text-emerald-600 focus:ring-emerald-500">
                         <label for="show-vagas-only" class="text-sm font-medium text-stone-700">Mostrar apenas vagas</label>
@@ -4719,8 +4724,7 @@
                                     <option value="date" ${entradasSortOrder === 'date' ? 'selected' : ''}>Data</option>
                                     <option value="amountDesc" ${entradasSortOrder === 'amountDesc' ? 'selected' : ''}>Maior Valor</option>
                                     <option value="amountAsc" ${entradasSortOrder === 'amountAsc' ? 'selected' : ''}>Menor Valor</option>
-                                </select>
-                            </div>
+                                
                             <div class="flex items-center gap-2">
                                 <label class="text-sm text-stone-600">Pagamento:</label>
                                 <select onchange="setEntradasPaymentFilter(this.value)" class="px-3 py-1.5 rounded-lg border border-stone-300 text-sm">
@@ -4896,15 +4900,13 @@
                                             <option value="evento">Evento</option>
                                             <option value="investimento">Investimento</option>
                                             <option value="outros">Outros</option>
-                                        </select>
-                                    </div>
+                                        
                                     <div>
                                         <label class="block text-sm font-medium text-stone-700 mb-1">Status</label>
                                         <select id="entrada-status" class="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
                                             <option value="received">Recebido</option>
                                             <option value="pending">Pendente</option>
-                                        </select>
-                                    </div>
+                                        
                                 </div>
                                 <input type="hidden" id="entrada-student" value="">
                                 <div>
@@ -4922,29 +4924,33 @@
             `;
         }
 
+        let currentCollabFilter = 'todos';
+
         function renderColaboradoresSection() {
             document.getElementById('main-title').textContent = 'Gestão de Colaboradores';
-            document.getElementById('main-description').textContent = 'Adicione, edite e defina as permissões de cada colaborador.';
+            document.getElementById('main-description').textContent = 'Gerencie os colaboradores para controle interno.';
 
-            const roleLabels = {
-                'admin': { label: 'Admin', color: 'bg-purple-100 text-purple-800' },
-                'teacher': { label: 'Professor', color: 'bg-blue-100 text-blue-800' },
-                'teachertn': { label: 'Professor TN', color: 'bg-teal-100 text-teal-800' },
-                'coord': { label: 'Coordenador', color: 'bg-green-100 text-green-800' },
-                'superv': { label: 'Supervisor', color: 'bg-yellow-100 text-yellow-800' },
-                'estagiario': { label: 'Estagiário', color: 'bg-orange-100 text-orange-800' },
-                'comercial': { label: 'Comercial', color: 'bg-pink-100 text-pink-800' },
-                'designer': { label: 'Designer', color: 'bg-indigo-100 text-indigo-800' }
-            };
-
-            const sortedCollaborators = [...collaborators]
+            let sortedCollaborators = [...collaborators]
                 .filter(c => c && c.name && c.role !== 'teacher' && c.role !== 'teachertn')
                 .sort((a, b) => (a.name || '').localeCompare(b.name || '', 'pt-BR', { sensitivity: 'base' }));
 
+            if (currentCollabFilter === 'contratado') {
+                sortedCollaborators = sortedCollaborators.filter(c => c.status !== 'demitido');
+            } else if (currentCollabFilter === 'desligado') {
+                sortedCollaborators = sortedCollaborators.filter(c => c.status === 'demitido');
+            }
+
             contentArea.innerHTML = `
                 <section id="colaboradores-section" class="bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden">
-                    <div class="px-4 py-3 border-b border-stone-200 flex justify-between items-center">
-                        <span class="text-sm text-stone-600">${sortedCollaborators.length} colaborador${sortedCollaborators.length !== 1 ? 'es' : ''}</span>
+                    <div class="px-4 py-3 border-b border-stone-200 flex flex-wrap justify-between items-center gap-2">
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm text-stone-600">${sortedCollaborators.length} colaborador${sortedCollaborators.length !== 1 ? 'es' : ''}</span>
+                            <div class="flex gap-1 ml-2">
+                                <button class="text-xs py-1 px-2.5 rounded-lg border transition-colors ${currentCollabFilter === 'todos' ? 'bg-stone-800 text-white border-stone-800' : 'border-stone-300 text-stone-600 hover:bg-stone-50'}" onclick="filterCollaborators('todos')">Todos</button>
+                                <button class="text-xs py-1 px-2.5 rounded-lg border transition-colors ${currentCollabFilter === 'contratado' ? 'bg-green-600 text-white border-green-600' : 'border-stone-300 text-stone-600 hover:bg-stone-50'}" onclick="filterCollaborators('contratado')">Contratados</button>
+                                <button class="text-xs py-1 px-2.5 rounded-lg border transition-colors ${currentCollabFilter === 'desligado' ? 'bg-red-600 text-white border-red-600' : 'border-stone-300 text-stone-600 hover:bg-stone-50'}" onclick="filterCollaborators('desligado')">Desligados</button>
+                            </div>
+                        </div>
                         <div class="flex gap-2">
                             <button class="text-sm py-1.5 px-3 border border-stone-300 rounded-lg hover:bg-stone-50 transition-colors" onclick="exportColaboradoresToExcel()">
                                 <svg class="inline-block w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
@@ -4964,22 +4970,21 @@
                                 <tr>
                                     <th class="px-3 py-2 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Nome</th>
                                     <th class="px-3 py-2 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">E-mail</th>
-                                    <th class="px-3 py-2 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Role</th>
+                                    <th class="px-3 py-2 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Cargo</th>
                                     <th class="px-3 py-2 text-center text-xs font-semibold text-stone-600 uppercase tracking-wider">Situação</th>
                                     <th class="px-3 py-2 text-center text-xs font-semibold text-stone-600 uppercase tracking-wider">Ações</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-stone-100">
                                 ${sortedCollaborators.map(c => {
-                                    const roleInfo = roleLabels[c.role] || { label: 'Não definido', color: 'bg-gray-100 text-gray-800' };
                                     return `
                                     <tr class="hover:bg-stone-50 transition-colors">
                                         <td class="px-3 py-2 text-sm font-medium text-stone-800">${c.name}</td>
                                         <td class="px-3 py-2 text-sm text-stone-600">${c.email || '<span class="text-stone-400 italic">-</span>'}</td>
-                                        <td class="px-3 py-2"><span class="px-2 py-0.5 rounded-full text-xs font-semibold ${roleInfo.color}">${roleInfo.label}</span></td>
+                                        <td class="px-3 py-2 text-sm text-stone-700">${c.cargo || '<span class="text-stone-400 italic">-</span>'}</td>
                                         <td class="px-3 py-2 text-center">
                                             ${(() => {
-                                                const statusLabel = c.status === 'demitido' ? 'Demitido' : 'Ativo';
+                                                const statusLabel = c.status === 'demitido' ? 'Desligado' : 'Contratado';
                                                 const statusClass = c.status === 'demitido' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800';
                                                 return `<span class="px-2 py-0.5 rounded-full text-xs font-semibold ${statusClass}">${statusLabel}</span>`;
                                             })()}
@@ -5037,6 +5042,11 @@
             );
         }
         window.deleteCollaboratorSimple = deleteCollaboratorSimple;
+        function filterCollaborators(filter) {
+            currentCollabFilter = filter;
+            renderColaboradoresSection();
+        }
+        window.filterCollaborators = filterCollaborators;
 
 
 
@@ -5115,8 +5125,7 @@
                             <select id="professor-status" class="form-input">
                                 <option value="ativo" ${!professor?.status || professor?.status === 'ativo' ? 'selected' : ''}>Ativo</option>
                                 <option value="inativo" ${professor?.status === 'inativo' ? 'selected' : ''}>Inativo</option>
-                            </select>
-                        </div>
+                            
                         <div>
                             <label class="font-medium text-sm">Tipo de Contrato</label>
                             <select id="professor-contract-type" class="form-input">
@@ -5124,8 +5133,7 @@
                                 <option value="CLT" ${professor?.contractType === 'CLT' ? 'selected' : ''}>CLT</option>
                                 <option value="PJ" ${professor?.contractType === 'PJ' ? 'selected' : ''}>PJ</option>
                                 <option value="Contrato" ${professor?.contractType === 'Contrato' ? 'selected' : ''}>Contrato</option>
-                            </select>
-                        </div>
+                            
                     </div>
 
                     <!-- Datas -->
@@ -5135,7 +5143,7 @@
                             <input type="date" id="professor-hire-date" class="form-input" value="${professor?.hireDate || ''}">
                         </div>
                         <div>
-                            <label class="font-medium text-sm">Data de Demissão</label>
+                            <label class="font-medium text-sm">Data de Desligamento</label>
                             <input type="date" id="professor-termination-date" class="form-input" value="${professor?.terminationDate || ''}">
                         </div>
                     </div>
@@ -5222,17 +5230,11 @@
                 .filter(c => c && c.name && c.role !== 'teacher' && c.role !== 'teachertn')
                 .sort((a, b) => (a.name || '').localeCompare(b.name || '', 'pt-BR', { sensitivity: 'base' }));
 
-            const roleLabels = {
-                'admin': 'Admin', 'teacher': 'Professor', 'teachertn': 'Professor TN',
-                'coord': 'Coordenador', 'superv': 'Supervisor', 'estagiario': 'Estagiário',
-                'comercial': 'Comercial', 'designer': 'Designer'
-            };
-
-            const headers = ['Nome', 'Role', 'Situação', 'Tipo Contrato', 'Data Contratação', 'Data Demissão', 'E-mail', 'Telefone', 'Endereço', 'Dados Bancários', 'Avaliador TN'];
+            const headers = ['Nome', 'Cargo', 'Situação', 'Tipo Contrato', 'Data Contratação', 'Data Desligamento', 'E-mail', 'Telefone', 'Endereço', 'Dados Bancários', 'Avaliador TN'];
             const rows = sortedCollaborators.map(c => [
                 c.name || '',
-                roleLabels[c.role] || c.role || '',
-                c.status === 'demitido' ? 'Demitido' : 'Ativo',
+                c.cargo || '',
+                c.status === 'demitido' ? 'Desligado' : 'Contratado',
                 c.contractType || '',
                 c.hireDate ? formatDateBR(c.hireDate) : '',
                 c.terminationDate ? formatDateBR(c.terminationDate) : '',
@@ -5362,7 +5364,7 @@
 
                 // Ignorar alunos cancelados ou nao renovados
                 const studentStatus = (student.status || '').toLowerCase();
-                if (studentStatus === 'cancelado' || studentStatus === 'nao renovado') return;
+                if (studentStatus === 'cancelado' || studentStatus === 'não renovado' || studentStatus === 'nao renovado') return;
 
                 const attendanceRecord = attendance.find(a => a.id === vip.id);
                 const absences = findConsecutiveAbsences(attendanceRecord, student.id);
@@ -5402,7 +5404,7 @@
 
                     // Ignorar alunos cancelados ou nao renovados
                     const studentStatus = (student.status || '').toLowerCase();
-                    if (studentStatus === 'cancelado' || studentStatus === 'nao renovado') return;
+                    if (studentStatus === 'cancelado' || studentStatus === 'não renovado' || studentStatus === 'nao renovado') return;
 
                     const absences = findConsecutiveAbsences(attendanceRecord, studentId);
 
@@ -5836,8 +5838,7 @@
                         <select id="rechamada-responsible" class="form-input" required>
                             <option value="">-- Selecione --</option>
                             ${teacherOptions}
-                        </select>
-                    </div>
+                        
 
                     <div>
                         <label class="font-medium text-sm">Data do Contato *</label>
@@ -6074,8 +6075,7 @@
                         <select id="edit-rechamada-responsible" class="form-input" required>
                             <option value="">-- Selecione --</option>
                             ${teacherOptions}
-                        </select>
-                    </div>
+                        
 
                     <div>
                         <label class="font-medium text-sm">Data do Contato *</label>
@@ -7368,8 +7368,7 @@
                         <select id="firebase-user-collaborator" class="form-input">
                             <option value="">Nenhum</option>
                             ${collaborators.map(c => `<option value="${c.id}">${c.name}</option>`).join('')}
-                        </select>
-                    </div>
+                        
                     <div class="flex justify-end gap-3 pt-4">
                         <button type="button" class="secondary-btn" onclick="closeFormModal()">Cancelar</button>
                         <button type="submit" class="primary-btn w-auto">Criar Usuário</button>
@@ -7749,8 +7748,7 @@
                                     ${students.filter(s => s.isInfluencer && s.status === 'Ativo').map(inf => 
                                         '<option value="' + inf.id + '" ' + (aluno?.referredByInfluencerId === inf.id ? 'selected' : '') + '>' + inf.name + '</option>'
                                     ).join('')}
-                                </select>
-                            </div>
+                                
                         </div>
                         <div class="grid grid-cols-2 gap-4">
                             <div><label class="font-medium text-sm">Local (Cidade/País)</label><input type="text" id="aluno-local" class="form-input" placeholder="Ex: São Paulo ou Toronto, Canadá" value="${aluno?.local || ''}"></div>
@@ -7794,8 +7792,7 @@
                                     <option value="Ásia" ${aluno?.continente === 'Ásia' ? 'selected' : ''}>Ásia</option>
                                     <option value="África" ${aluno?.continente === 'África' ? 'selected' : ''}>África</option>
                                     <option value="Oceania" ${aluno?.continente === 'Oceania' ? 'selected' : ''}>Oceania</option>
-                                </select>
-                            </div>
+                                
                         </div>
                     </div>
 
@@ -8424,7 +8421,7 @@
             document.getElementById('form-modal-content-area').innerHTML =
                 '<form id="pedagogical-edit-form" class="space-y-4">' +
                     '<input type="hidden" id="ped-aluno-id" value="' + alunoId + '">' +
-                    '<div class="bg-blue-50 p-4 rounded-lg border border-blue-200">' +
+                    '<div>' +
                         '<p class="text-sm text-blue-800"><strong>Aluno:</strong> ' + aluno.name + '</p>' +
                         '<p class="text-sm text-blue-600 mt-1">Você pode editar apenas as informações pedagógicas (níveis cursados e nível atual)</p>' +
                     '</div>' +
@@ -8563,7 +8560,7 @@
             document.getElementById('form-modal-title').textContent = 'Rematrícula de Aluno';
             document.getElementById('form-modal-content-area').innerHTML = `
                 <div class="space-y-4">
-                    <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                    <div>
                         <p class="text-sm text-blue-800 mb-2"><strong>Aluno:</strong> ${aluno.name}</p>
                         <p class="text-sm text-blue-800"><strong>Matrícula Atual:</strong> ${enrollmentInfo}</p>
                     </div>
@@ -8593,8 +8590,7 @@
                                     <option value="">-- Selecione o nível atual --</option>
                                     ${levelOptions}
                                     <option value="${aluno.currentLevel || ''}" ${aluno.currentLevel ? 'selected' : ''}>${aluno.currentLevel || 'Nível não definido'}</option>
-                                </select>
-                            </div>
+                                
 
                             <div>
                                 <label class="block text-sm font-medium text-stone-700 mb-1">
@@ -8603,8 +8599,7 @@
                                 <select id="rematricula-new-level" class="w-full px-3 py-2 border border-stone-300 rounded-lg" onchange="checkForReprovacao()">
                                     <option value="">-- Limpar nível (liberar aluno) --</option>
                                     ${levelOptions}
-                                </select>
-                            </div>
+                                
 
                             <div>
                                 <label class="block text-sm font-medium text-stone-700 mb-1">
@@ -8645,8 +8640,7 @@
                                 <select id="rematricula-payment-method" class="w-full px-3 py-2 border border-stone-300 rounded-lg">
                                     <option value="">-- Sem alteração --</option>
                                     ${paymentOptions}
-                                </select>
-                            </div>
+                                
                         </div>
                     </div>
 
@@ -8939,8 +8933,7 @@
                                     <option value="Quinta" ${turma?.day1 === 'Quinta' ? 'selected' : ''}>Quinta</option>
                                     <option value="Sexta" ${turma?.day1 === 'Sexta' ? 'selected' : ''}>Sexta</option>
                                     <option value="Sábado" ${turma?.day1 === 'Sábado' ? 'selected' : ''}>Sábado</option>
-                                </select>
-                            </div>
+                                
                             <div>
                                 <label class="font-medium text-xs">Horário Início <span class="text-red-500">*</span></label>
                                 <input type="time" id="turma-startTime1" class="form-input" value="${turma?.startTime1 || ''}" required>
@@ -8964,8 +8957,7 @@
                                     <option value="Quinta" ${turma?.day2 === 'Quinta' ? 'selected' : ''}>Quinta</option>
                                     <option value="Sexta" ${turma?.day2 === 'Sexta' ? 'selected' : ''}>Sexta</option>
                                     <option value="Sábado" ${turma?.day2 === 'Sábado' ? 'selected' : ''}>Sábado</option>
-                                </select>
-                            </div>
+                                
                             <div>
                                 <label class="font-medium text-xs">Horário Início</label>
                                 <input type="time" id="turma-startTime2" class="form-input" value="${turma?.startTime2 || ''}">
@@ -8990,8 +8982,7 @@
                                     <option value="Quinta" ${turma?.day3 === 'Quinta' ? 'selected' : ''}>Quinta</option>
                                     <option value="Sexta" ${turma?.day3 === 'Sexta' ? 'selected' : ''}>Sexta</option>
                                     <option value="Sábado" ${turma?.day3 === 'Sábado' ? 'selected' : ''}>Sábado</option>
-                                </select>
-                            </div>
+                                
                             <div>
                                 <label class="font-medium text-xs">Horário Início</label>
                                 <input type="time" id="turma-startTime3" class="form-input" value="${turma?.startTime3 || ''}">
@@ -9278,8 +9269,7 @@
                                     <option value="Quinta" ${vip?.day1 === 'Quinta' ? 'selected' : ''}>Quinta</option>
                                     <option value="Sexta" ${vip?.day1 === 'Sexta' ? 'selected' : ''}>Sexta</option>
                                     <option value="Sábado" ${vip?.day1 === 'Sábado' ? 'selected' : ''}>Sábado</option>
-                                </select>
-                            </div>
+                                
                             <div>
                                 <label class="font-medium text-xs">Horário Início</label>
                                 <input type="time" id="vip-startTime1" class="form-input" value="${vip?.startTime1 || ''}">
@@ -9303,8 +9293,7 @@
                                     <option value="Quinta" ${vip?.day2 === 'Quinta' ? 'selected' : ''}>Quinta</option>
                                     <option value="Sexta" ${vip?.day2 === 'Sexta' ? 'selected' : ''}>Sexta</option>
                                     <option value="Sábado" ${vip?.day2 === 'Sábado' ? 'selected' : ''}>Sábado</option>
-                                </select>
-                            </div>
+                                
                             <div>
                                 <label class="font-medium text-xs">Horário Início</label>
                                 <input type="time" id="vip-startTime2" class="form-input" value="${vip?.startTime2 || ''}">
@@ -9329,8 +9318,7 @@
                                     <option value="Quinta" ${vip?.day3 === 'Quinta' ? 'selected' : ''}>Quinta</option>
                                     <option value="Sexta" ${vip?.day3 === 'Sexta' ? 'selected' : ''}>Sexta</option>
                                     <option value="Sábado" ${vip?.day3 === 'Sábado' ? 'selected' : ''}>Sábado</option>
-                                </select>
-                            </div>
+                                
                             <div>
                                 <label class="font-medium text-xs">Horário Início</label>
                                 <input type="time" id="vip-startTime3" class="form-input" value="${vip?.startTime3 || ''}">
@@ -9845,16 +9833,7 @@
                             <input type="text" class="form-input p-1 text-xs lesson-topic" placeholder="Tema" value="${lessonData?.topic || ''}">
                             <div class="flex gap-1">
                                 <input type="text" class="form-input p-1 text-xs flex-1 lesson-notes" placeholder="Obs" value="${lessonData?.notes || ''}">
-                                <select class="form-input p-1 text-xs bg-stone-100 border-stone-300 rounded" onchange="applyQuickNote(this)" style="width: 28px; padding-right: 2px;">
-                                    <option value="">...</option>
-                                    <option value="O aluno não compareceu à aula previamente agendada.">Não compareceu</option>
-                                    <option value="O aluno informou ausência na aula por motivo de saúde.">Motivo de saúde</option>
-                                    <option value="O aluno informou ausência na aula por motivo de força maior, devidamente comunicada.">Força maior</option>
-                                    <option value="O aluno solicitou o cancelamento da aula próximo ao horário de início.">Cancelou em cima</option>
-                                    <option value="O aluno solicitou o cancelamento da aula com antecedência, permitindo a reorganização da agenda.">Cancelou antecipado</option>
-                                </select>
                             </div>
-                        </div>
                         <div class="grid grid-cols-2 gap-1 text-xs">
                             ${studentsHtml}
                         </div>
@@ -10519,8 +10498,7 @@
                                 <option value="longo-prazo" ${task?.priority === 'longo-prazo' ? 'selected' : ''}>Longo Prazo</option>
                                 <option value="importante" ${task?.priority === 'importante' ? 'selected' : ''}>Importante</option>
                                 <option value="rotina" ${task?.priority === 'rotina' ? 'selected' : ''}>Rotina</option>
-                            </select>
-                        </div>
+                            
                     </div>
                     <div>
                         <label class="font-medium text-sm mb-3 block">Atribuir para (selecione um ou mais)</label>
@@ -10700,22 +10678,6 @@
             const collaborator = collaboratorId ? collaborators.find(c => c.id === collaboratorId) : null;
             document.getElementById('form-modal-title').textContent = collaborator ? "Editar Colaborador" : "Adicionar Novo Colaborador";
 
-            // Roles disponíveis
-            const roles = [
-                { value: 'admin', label: 'Admin (Acesso Total)' },
-                { value: 'teacher', label: 'Professor' },
-                { value: 'teachertn', label: 'Professor TN' },
-                { value: 'coord', label: 'Coordenador' },
-                { value: 'superv', label: 'Supervisor' },
-                { value: 'estagiario', label: 'Estagiário' },
-                { value: 'comercial', label: 'Comercial' },
-                { value: 'designer', label: 'Designer' }
-            ];
-
-            const roleOptions = roles.map(role => 
-                `<option value="${role.value}" ${collaborator?.role === role.value ? 'selected' : ''}>${role.label}</option>`
-            ).join('');
-
             // Páginas disponíveis para seleção de permissões
             const pages = [
                 { key: 'inicio', label: 'Dashboard' },
@@ -10751,21 +10713,18 @@
 
                     <div><label class="font-medium text-sm">Nome Completo <span class="text-red-500">*</span></label><input type="text" id="collaborator-name" class="form-input" required value="${collaborator?.name || ''}"></div>
 
-                    <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                        <label class="font-medium text-sm text-blue-900 mb-2 block">Role de Acesso <span class="text-red-500">*</span></label>
-                        <select id="collaborator-role" class="form-input" required>
-                            <option value="">-- Selecione o role --</option>
-                            ${roleOptions}
-                        </select>
+                    <div>
+                        <label class="font-medium text-sm">Cargo</label>
+                        <input type="text" id="collaborator-cargo" class="form-input" placeholder="Ex: Coordenador Pedagógico, Assistente..." value="${collaborator?.cargo || ''}">
                     </div>
 
                     <!-- Situação Cadastral e Tipo de Contrato -->
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="font-medium text-sm">Situação Cadastral</label>
+                            <label class="font-medium text-sm">Situação</label>
                             <select id="collaborator-status" class="form-input">
-                                <option value="ativo" ${!collaborator?.status || collaborator?.status === 'ativo' ? 'selected' : ''}>Ativo</option>
-                                <option value="demitido" ${collaborator?.status === 'demitido' ? 'selected' : ''}>Demitido</option>
+                                <option value="ativo" ${!collaborator?.status || collaborator?.status === 'ativo' ? 'selected' : ''}>Contratado</option>
+                                <option value="demitido" ${collaborator?.status === 'demitido' ? 'selected' : ''}>Desligado</option>
                             </select>
                         </div>
                         <div>
@@ -10786,7 +10745,7 @@
                             <input type="date" id="collaborator-hire-date" class="form-input" value="${collaborator?.hireDate || ''}">
                         </div>
                         <div>
-                            <label class="font-medium text-sm">Data de Demissão</label>
+                            <label class="font-medium text-sm">Data de Desligamento</label>
                             <input type="date" id="collaborator-termination-date" class="form-input" value="${collaborator?.terminationDate || ''}">
                         </div>
                     </div>
@@ -10883,12 +10842,12 @@
         async function saveCollaborator(event) {
             event.preventDefault();
             const collaboratorId = document.getElementById('collaborator-id').value;
-            const role = document.getElementById('collaborator-role').value;
+            const cargo = document.getElementById('collaborator-cargo')?.value || '';
 
 
             const data = {
                 name: document.getElementById('collaborator-name').value,
-                role: role,
+                cargo: cargo,
                 status: document.getElementById('collaborator-status')?.value || 'ativo',
                 contractType: document.getElementById('collaborator-contract-type')?.value || '',
                 hireDate: document.getElementById('collaborator-hire-date')?.value || '',
@@ -10901,7 +10860,6 @@
             };
 
             if (!data.name) { showErrorMessage("Erro", "O nome do colaborador é obrigatório."); return; }
-            if (!data.role) { showErrorMessage("Erro", "O role de acesso é obrigatório."); return; }
 
             if (window.isDevelopmentMode) {
                 // Modo desenvolvimento (local storage)
@@ -10928,23 +10886,9 @@
                 if (collaboratorId) {
                     const collaboratorRef = doc(db, `artifacts/${appId}/public/data/collaborators`, collaboratorId);
                     await updateDoc(collaboratorRef, data);
-                    await logActivity('editar', 'colaborador', data.name, { cargo: data.role });
+                    await logActivity('editar', 'colaborador', data.name, { cargo: data.cargo });
 
-                    // If collaborator has a Firebase UID, also update the user's role
-                    const collaboratorDoc = await getDoc(collaboratorRef);
-                    const collaboratorData = collaboratorDoc.data();
 
-                    if (collaboratorData.firebaseUid) {
-                        try {
-                            const userRef = doc(db, `artifacts/${appId}/users`, collaboratorData.firebaseUid);
-                            await updateDoc(userRef, { 
-                                role: data.role,
-                                name: data.name
-                            });
-                        } catch (error) {
-                            console.warn('Could not update user role:', error);
-                        }
-                    }
                 } else {
                     const docRef = await addDoc(collection(db, `artifacts/${appId}/public/data/collaborators`), data);
                     savedCollaboratorId = docRef.id;
@@ -11617,8 +11561,7 @@
                         <select id="expense-tipo" class="form-input" required>
                             <option value="variavel" ${!expense?.tipo || expense?.tipo === 'variavel' ? 'selected' : ''}>Variável</option>
                             <option value="fixo" ${expense?.tipo === 'fixo' ? 'selected' : ''}>Fixo</option>
-                        </select>
-                    </div>
+                        
 
                     <div id="due-date-container" class="${expense?.isFixedSalary ? 'hidden' : ''}">
                         <label class="font-medium text-sm">Vencimento</label>
@@ -14358,8 +14301,8 @@
                                 class="px-3 py-2 border border-stone-300 rounded-lg text-sm focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400"
                                 onkeyup="filterAgendamentosTNs()">
                         </div>
-                        <button class="primary-btn flex items-center gap-2" onclick="openAgendamentoTNModal()">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <button class="primary-btn text-sm py-1.5 px-3 flex items-center gap-1.5" onclick="openAgendamentoTNModal()">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                             </svg>
                             Adicionar Agendamento
@@ -14520,8 +14463,7 @@
                         <select id="agendamento-status" 
                             class="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400">
                             ${statusOptionsHtml}
-                        </select>
-                    </div>
+                        
 
                     <div>
                         <label class="block text-sm font-medium text-stone-700 mb-1">Pos-TN</label>
@@ -14531,8 +14473,7 @@
                             <option value="Aguardando Retorno" ${agendamento?.posTN === 'Aguardando Retorno' ? 'selected' : ''}>Aguardando Retorno</option>
                             <option value="Entrar em Contato" ${agendamento?.posTN === 'Entrar em Contato' ? 'selected' : ''}>Entrar em Contato</option>
                             <option value="Matrícula em Andamento" ${agendamento?.posTN === 'Matrícula em Andamento' ? 'selected' : ''}>Matrícula em Andamento</option>
-                        </select>
-                    </div>
+                        
 
                     <div>
                         <label class="block text-sm font-medium text-stone-700 mb-1">Observações</label>
@@ -14716,8 +14657,7 @@
                                     }
                                     return months.join('');
                                 })()}
-                            </select>
-                        </div>
+                            
                         <button class="primary-btn w-auto flex items-center text-sm py-1.5 px-3" data-action="add-tn">
                             <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
@@ -15100,8 +15040,7 @@
                                     `<option value="${c.id}" ${tn?.evaluatorId === c.id ? 'selected' : ''}>${c.name}</option>`
                                 ).join('');
                             })()}
-                        </select>
-                    </div>
+                        
 
                     <div>
                         <label class="font-medium text-sm">Nível Atribuído *</label>
@@ -15110,8 +15049,7 @@
                             ${STANDARD_LEVELS.map(level => 
                                 `<option value="${level}" ${tn?.level === level ? 'selected' : ''}>${level}</option>`
                             ).join('')}
-                        </select>
-                    </div>
+                        
 
                     <div>
                         <label class="font-medium text-sm">Observações</label>
@@ -15828,15 +15766,13 @@
                                         <option value="aula-extra">Aula Extra</option>
                                         <option value="data-comemorativa">Data Comemorativa</option>
                                         <option value="reuniao">Reunião</option>
-                                    </select>
-                                </div>
+                                    
                                 <div>
                                     <label class="font-medium text-sm">Criado por</label>
                                     <select id="event-creator" class="form-input" required>
                                         <option value="">Selecione quem está criando</option>
                                         ${collaborators.map(c => `<option value="${c.id}">${c.name}</option>`).join('')}
-                                    </select>
-                                </div>
+                                    
                                 <div>
                                     <label class="font-medium text-sm">Diz respeito a</label>
                                     <div id="event-concerns" class="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto border border-stone-200 rounded-lg p-3">
@@ -17570,8 +17506,7 @@
                                         <option value="urgent">Urgente</option>
                                         <option value="max">Prioridade Máxima</option>
 
-                                    </select>
-                                </div>
+                                    
                             </div>
                             <div class="mt-6 flex justify-end gap-3">
                                 <button type="button" class="secondary-btn" onclick="closeTaskFormModal()">Cancelar</button>
@@ -17625,8 +17560,7 @@
                                         <option value="urgent">Urgente</option>
                                         <option value="max">Prioridade Máxima</option>
 
-                                    </select>
-                                </div>
+                                    
 
                                 <div class="border-t border-stone-200 pt-4">
                                     <div class="flex justify-between items-center mb-3">
@@ -17705,8 +17639,7 @@
                                         <option value="urgent">Urgente</option>
                                         <option value="max">Prioridade Máxima</option>
 
-                                    </select>
-                                </div>
+                                    
 
                                 <!-- Checklist Items Section (hidden by default) -->
                                 <div id="reminder-checklist-section" class="border-t border-stone-200 pt-4 hidden">
@@ -17756,8 +17689,7 @@
                                         <option value="urgent">Urgente</option>
                                         <option value="max">Prioridade Máxima</option>
 
-                                    </select>
-                                </div>
+                                    
                             </div>
                             <div class="mt-6 flex justify-end gap-3">
                                 <button type="button" class="secondary-btn" onclick="closeAvisoFormModal()">Cancelar</button>
@@ -17782,7 +17714,7 @@
                         <form id="multiple-task-form" onsubmit="saveMultipleTask(event)">
                             <div class="space-y-6">
                                 <!-- People Selection -->
-                                <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                                <div>
                                     <label class="font-medium text-sm text-blue-900 mb-3 block">
                                         Selecione os Colaboradores <span class="text-red-500">*</span>
                                     </label>
@@ -17879,8 +17811,7 @@
                                                 <option value="medium">Média Prioridade</option>
                                                 <option value="urgent">Urgente</option>
                                                 <option value="max">Prioridade Máxima</option>
-                                                    </select>
-                                        </div>
+                                                    
                                     </div>
                                 </div>
 
@@ -21369,17 +21300,19 @@ function openAddChecklistForm() {
             const selectedYear = yearSelect?.value;
 
             window.alunoStartDateFilter = { month: selectedMonth, year: selectedYear };
-            filterAlunosTable();
+            renderAlunosSection();
+            setTimeout(() => {
+                const ms = document.getElementById('aluno-filter-month');
+                const ys = document.getElementById('aluno-filter-year');
+                if (ms) ms.value = selectedMonth;
+                if (ys) ys.value = selectedYear;
+            }, 100);
         }
         window.applyStartDateFilter = applyStartDateFilter;
 
         function clearStartDateFilter() {
-            const monthSelect = document.getElementById('aluno-filter-month');
-            const yearSelect = document.getElementById('aluno-filter-year');
-            if (monthSelect) monthSelect.value = '';
-            if (yearSelect) yearSelect.value = '';
             window.alunoStartDateFilter = { month: '', year: '' };
-            filterAlunosTable();
+            renderAlunosSection();
         }
         window.clearStartDateFilter = clearStartDateFilter;
 
