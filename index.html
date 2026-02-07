@@ -43,69 +43,280 @@
         /* Table container scroll */
         .table-scroll-container { overflow-x: auto; max-width: 100%; }
         .table-scroll-container table { min-width: 600px; }
-        .nav-item.active {
-            background-color: #FFFBEB; /* yellow-50 */
-            color: #F1D24B;
-            font-weight: 600;
+        /* Icon Sidebar */
+        .icon-sidebar {
+            width: 68px;
+            min-width: 68px;
+            background: white;
+            border-right: 1px solid #e7e5e4;
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 40;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 12px 0;
+            overflow: visible;
         }
 
-        /* Submenu styles */
-        .nav-category {
+        .icon-sidebar .sidebar-logo {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #e7e5e4;
+            margin-bottom: 8px;
+        }
+
+        .icon-sidebar .sidebar-divider {
+            width: 36px;
+            height: 1px;
+            background: #e7e5e4;
+            margin: 6px 0;
+        }
+
+        .sidebar-nav-items {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            overflow-y: auto;
+            overflow-x: visible;
+            width: 100%;
+            padding: 0 8px;
+            scrollbar-width: none;
+        }
+        .sidebar-nav-items::-webkit-scrollbar { display: none; }
+
+        .sidebar-icon-btn {
+            position: relative;
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             cursor: pointer;
-            user-select: none;
+            border: none;
+            background: transparent;
+            color: #57534e;
+            transition: all 0.15s ease;
         }
-
-        .nav-category-icon {
-            transition: transform 0.3s ease;
-            display: inline-block;
-            font-size: 1.3rem;
+        .sidebar-icon-btn:hover {
+            background: #f5f5f4;
+            color: #292524;
         }
-
-        .nav-category.expanded .nav-category-icon {
-            transform: rotate(90deg);
+        .sidebar-icon-btn.active {
+            background: #FFFBEB;
+            color: #D4A017;
         }
+        .sidebar-icon-btn svg { width: 22px; height: 22px; }
 
-        .nav-submenu {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.3s ease, opacity 0.3s ease, visibility 0s 0.3s;
+        .sidebar-icon-btn .sidebar-tooltip {
+            position: absolute;
+            left: 56px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #292524;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            white-space: nowrap;
             opacity: 0;
             visibility: hidden;
             pointer-events: none;
-            margin-left: 1.5rem;
-            padding-left: 0.5rem;
-            border-left: 2px solid rgb(229 231 235);
+            transition: opacity 0.15s, visibility 0.15s;
+            z-index: 999;
+        }
+        .sidebar-icon-btn .sidebar-tooltip::before {
+            content: '';
+            position: absolute;
+            right: 100%;
+            top: 50%;
+            transform: translateY(-50%);
+            border: 5px solid transparent;
+            border-right-color: #292524;
+        }
+        .sidebar-icon-btn:hover .sidebar-tooltip {
+            opacity: 1;
+            visibility: visible;
+        }
+        .sidebar-icon-btn.has-submenu:hover .sidebar-tooltip { display: none; }
+
+        .sidebar-category-label {
+            font-size: 0.5rem;
+            font-weight: 700;
+            color: #a8a29e;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-top: 4px;
+            margin-bottom: 2px;
+            text-align: center;
+            width: 100%;
         }
 
-        .nav-submenu.expanded {
-            max-height: 1000px;
+        /* Flyout submenu */
+        .sidebar-flyout {
+            position: absolute;
+            left: 60px;
+            top: 0;
+            background: white;
+            border: 1px solid #e7e5e4;
+            border-radius: 10px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+            padding: 6px;
+            min-width: 180px;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: opacity 0.15s, visibility 0.15s;
+            z-index: 999;
+        }
+        .sidebar-icon-btn:hover .sidebar-flyout {
             opacity: 1;
             visibility: visible;
             pointer-events: auto;
-            transition: max-height 0.3s ease, opacity 0.3s ease, visibility 0s 0s;
         }
 
-        .nav-category.expanded {
-            background-color: rgb(245 245 244);
+        .sidebar-flyout .flyout-label {
+            font-size: 0.65rem;
+            font-weight: 700;
+            color: #a8a29e;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 4px 10px 4px;
+        }
+        .sidebar-flyout .flyout-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 10px;
+            border-radius: 6px;
+            font-size: 0.78rem;
+            font-weight: 500;
+            color: #44403c;
+            cursor: pointer;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+            transition: background 0.12s;
+        }
+        .sidebar-flyout .flyout-item:hover {
+            background: #f5f5f4;
+        }
+        .sidebar-flyout .flyout-item.active {
+            background: #FFFBEB;
+            color: #D4A017;
+        }
+        .sidebar-flyout .flyout-item svg { width: 16px; height: 16px; }
+        .sidebar-flyout .flyout-item.locked {
+            opacity: 0.4;
+            cursor: not-allowed;
         }
 
-        .nav-submenu .nav-item {
-            font-size: 0.85rem;
+        .sidebar-logout {
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            color: #57534e;
+            transition: all 0.15s ease;
+            position: relative;
+            margin-top: 8px;
+        }
+        .sidebar-logout:hover {
+            background: #FEF2F2;
+            color: #DC2626;
+        }
+        .sidebar-logout svg { width: 22px; height: 22px; }
+        .sidebar-logout .sidebar-tooltip {
+            position: absolute;
+            left: 56px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #292524;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: opacity 0.15s, visibility 0.15s;
+            z-index: 999;
+        }
+        .sidebar-logout .sidebar-tooltip::before {
+            content: '';
+            position: absolute;
+            right: 100%;
+            top: 50%;
+            transform: translateY(-50%);
+            border: 5px solid transparent;
+            border-right-color: #292524;
+        }
+        .sidebar-logout:hover .sidebar-tooltip {
+            opacity: 1;
+            visibility: visible;
         }
 
-        .nav-submenu .nav-item svg {
-            width: 16px;
-            height: 16px;
+        .nav-item.active {
+            background-color: #FFFBEB;
+            color: #F1D24B;
+            font-weight: 600;
         }
-
         .nav-item-locked {
             opacity: 0.5;
             cursor: not-allowed;
         }
-
         .lock-icon {
             opacity: 0.6;
             margin-right: 0.5rem;
+        }
+
+        @media (max-width: 768px) {
+            .icon-sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+                flex-direction: row;
+                padding: 8px 12px;
+                overflow-x: auto;
+                overflow-y: visible;
+                border-right: none;
+                border-bottom: 1px solid #e7e5e4;
+            }
+            .icon-sidebar .sidebar-logo { display: none; }
+            .icon-sidebar .sidebar-divider { display: none; }
+            .sidebar-nav-items {
+                flex-direction: row;
+                overflow-x: auto;
+                overflow-y: visible;
+                gap: 4px;
+                padding: 0;
+            }
+            .sidebar-category-label { display: none; }
+            .sidebar-icon-btn { width: 40px; height: 40px; flex-shrink: 0; }
+            .sidebar-icon-btn .sidebar-tooltip { display: none !important; }
+            .sidebar-flyout {
+                left: 0;
+                top: 48px;
+                position: fixed;
+            }
+            .sidebar-logout { margin-top: 0; margin-left: auto; }
+            .sidebar-logout .sidebar-tooltip { display: none !important; }
         }
 
         .menu-divider {
@@ -592,26 +803,20 @@
 
     <div id="hub-view" class="hidden">
         <div id="app-container" class="min-h-screen md:flex bg-stone-50">
-            <aside class="md:w-64 bg-white md:border-r border-b border-stone-200 p-4 md:p-6 flex flex-col h-screen md:fixed md:top-0 md:left-0 md:overflow-y-auto">
-                <div class="mb-4 text-center">
-                    <div>
-                        <img id="profile-picture" src="https://res.cloudinary.com/dqfi22uz0/image/upload/v1749349751/DBB440C2-684E-4DCF-9CD3-B2DDC18F1E53_3_vgocga.jpg" alt="Foto de Perfil" class="w-24 h-24 mx-auto rounded-full object-cover border-4 border-stone-200">
-                    </div>
-                </div>
-                <h1 class="text-xl font-bold text-stone-800 text-center">Hub SLAP</h1>
-                <p id="welcome-message" class="text-center text-sm text-stone-600 mb-6"></p>
-                <nav id="main-navigation" class="space-y-0.5 flex-1 overflow-y-auto">
-                    <!-- Menu items are dynamically generated here -->
+            <aside class="icon-sidebar" id="icon-sidebar">
+                <img id="profile-picture" src="https://res.cloudinary.com/dqfi22uz0/image/upload/v1749349751/DBB440C2-684E-4DCF-9CD3-B2DDC18F1E53_3_vgocga.jpg" alt="Logo" class="sidebar-logo">
+                <div class="sidebar-divider"></div>
+                <p id="welcome-message" class="hidden"></p>
+                <nav id="main-navigation" class="sidebar-nav-items">
                 </nav>
-                <div class="pt-4 border-t border-stone-200 mt-4">
-                    <button id="logout-button" class="nav-item w-full text-left px-4 py-2.5 rounded-lg text-stone-700 hover:bg-red-50 hover:text-red-600 transition-colors flex items-center font-semibold">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-3"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-                        Sair
-                    </button>
-                </div>
+                <div class="sidebar-divider"></div>
+                <button id="logout-button" class="sidebar-logout">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                    <span class="sidebar-tooltip">Sair</span>
+                </button>
             </aside>
 
-            <main class="flex-1 relative md:ml-64">
+            <main class="flex-1 relative md:ml-[68px]">
                 <div class="bg-[#F1D24B] block w-full p-4 sm:p-6 md:p-8 absolute top-0 left-0 right-0 z-10">
                     <div class="flex justify-between items-start">
                         <header id="main-header" class="flex items-center gap-4">
@@ -1869,16 +2074,17 @@
             pendingView.classList.add('flex');
         }
         function setActiveNavItem(element) {
-            // Remove active state from ALL nav items (including INÍCIO)
-            document.querySelectorAll('#main-navigation .nav-item, #main-navigation button[data-target="inicio"]').forEach(item => {
+            document.querySelectorAll('#main-navigation .nav-item, #main-navigation .sidebar-icon-btn, #main-navigation .flyout-item').forEach(item => {
                 item.classList.remove('active');
                 item.style.backgroundColor = '';
                 item.style.color = '';
             }); 
             if (element) {
                 element.classList.add('active');
-                element.style.backgroundColor = '#FFFBEB';
-                element.style.color = '#F1D24B';
+                const parentIcon = element.closest('.sidebar-icon-btn');
+                if (parentIcon) {
+                    parentIcon.classList.add('active');
+                }
             }
         }
         async function handleLogin(event) {
@@ -23647,116 +23853,46 @@ function openAddChecklistForm() {
                 }
             };
 
-            // Função para renderizar item de menu com ou sem cadeado
-            function renderMenuItem(item, isSubItem = false) {
-                const hasAccess = item.roles.includes(currentUserRole);
-                const lockedClass = !hasAccess ? 'nav-item-locked' : '';
-                const displayIcon = !hasAccess ? lockIcon : item.icon;
-                const indent = isSubItem ? 'pl-4' : 'px-4';
-
-                return `<button data-target="${item.key}" class="nav-item w-full text-left ${indent} py-2 rounded-lg flex items-center font-medium text-[0.7rem] tracking-wider hover:bg-stone-100 transition-colors ${lockedClass}" ${!hasAccess ? 'disabled' : ''}>${displayIcon}${item.label}</button>`;
+            function stripMr3(iconHtml) {
+                return iconHtml.replace(/class="mr-3"/g, '').replace(/class="mr-3 /g, 'class="');
             }
 
-            // Construir HTML do menu
+            function buildFlyoutItems(items) {
+                return items.map(item => {
+                    const hasAccess = item.roles.includes(currentUserRole);
+                    const icon = hasAccess ? stripMr3(item.icon) : lockIcon;
+                    return `<button data-target="${item.key}" class="flyout-item nav-item ${!hasAccess ? 'locked' : ''}" ${!hasAccess ? 'disabled' : ''}>${icon}<span>${item.label}</span></button>`;
+                }).join('');
+            }
+
             let menuHTML = '';
 
-            // Linha divisória
-            menuHTML += `
-                <div class="px-4 pt-2 pb-3">
-                    <div class="border-b border-stone-200"></div>
-                </div>
-            `;
+            menuHTML += `<button data-target="inicio" class="sidebar-icon-btn nav-item" title="Início">
+                ${stripMr3(menuStructure.inicio.icon)}
+                <span class="sidebar-tooltip">Início</span>
+            </button>`;
 
-            // Início (sempre acessível)
-            menuHTML += `<button data-target="inicio" class="nav-item w-full text-left px-4 py-1.5 rounded-lg flex items-center font-medium text-sm uppercase tracking-wider hover:bg-stone-100 transition-colors"><span class="nav-category-icon mr-3">›</span>${menuStructure.inicio.label}</button>`;
+            menuHTML += '<div class="sidebar-divider"></div>';
 
-            // Geral
-            menuHTML += `
-                <div class="nav-category px-4 py-1.5 rounded-lg flex items-center font-medium text-sm uppercase tracking-wider hover:bg-stone-100 transition-colors" data-category="geral">
-                    <span class="nav-category-icon mr-3">›</span>
-                    ${menuStructure.geral.label}
-                </div>
-                <div class="nav-submenu" data-submenu="geral">
-                    ${menuStructure.geral.items.map(item => renderMenuItem(item, true)).join('')}
-                </div>
-            `;
+            const categories = ['geral', 'administrativo', 'pedagogico', 'comercial', 'direcao'];
+            categories.forEach((catKey, idx) => {
+                const cat = menuStructure[catKey];
+                if (!cat) return;
 
-            // Administrativo
-            menuHTML += `
-                <div class="nav-category px-4 py-1.5 rounded-lg flex items-center font-medium text-sm uppercase tracking-wider hover:bg-stone-100 transition-colors" data-category="administrativo">
-                    <span class="nav-category-icon mr-3">›</span>
-                    ${menuStructure.administrativo.label}
-                </div>
-                <div class="nav-submenu" data-submenu="administrativo">
-                    ${menuStructure.administrativo.items.map(item => renderMenuItem(item, true)).join('')}
-                </div>
-            `;
+                menuHTML += `<div class="sidebar-icon-btn has-submenu" title="${cat.label}">
+                    ${stripMr3(cat.icon)}
+                    <div class="sidebar-flyout">
+                        <div class="flyout-label">${cat.label}</div>
+                        ${buildFlyoutItems(cat.items)}
+                    </div>
+                </div>`;
 
-            // Pedagógico
-            menuHTML += `
-                <div class="nav-category px-4 py-1.5 rounded-lg flex items-center font-medium text-sm uppercase tracking-wider hover:bg-stone-100 transition-colors" data-category="pedagogico">
-                    <span class="nav-category-icon mr-3">›</span>
-                    ${menuStructure.pedagogico.label}
-                </div>
-                <div class="nav-submenu" data-submenu="pedagogico">
-                    ${menuStructure.pedagogico.items.map(item => renderMenuItem(item, true)).join('')}
-                </div>
-            `;
-
-            // Comercial
-            menuHTML += `
-                <div class="nav-category px-4 py-1.5 rounded-lg flex items-center font-medium text-sm uppercase tracking-wider hover:bg-stone-100 transition-colors" data-category="comercial">
-                    <span class="nav-category-icon mr-3">›</span>
-                    ${menuStructure.comercial.label}
-                </div>
-                <div class="nav-submenu" data-submenu="comercial">
-                    ${menuStructure.comercial.items.map(item => renderMenuItem(item, true)).join('')}
-                </div>
-            `;
-
-            // Direção
-            menuHTML += `
-                <div class="nav-category px-4 py-1.5 rounded-lg flex items-center font-medium text-sm uppercase tracking-wider hover:bg-stone-100 transition-colors" data-category="direcao">
-                    <span class="nav-category-icon mr-3">›</span>
-                    ${menuStructure.direcao.label}
-                </div>
-                <div class="nav-submenu" data-submenu="direcao">
-                    ${menuStructure.direcao.items.map(item => renderMenuItem(item, true)).join('')}
-                </div>
-            `;
-
-            mainNav.innerHTML = menuHTML;
-
-            // Event listeners para expandir/retrair categorias
-            document.querySelectorAll('.nav-category').forEach(category => {
-                category.addEventListener('click', function() {
-                    const categoryName = this.dataset.category;
-                    const submenu = document.querySelector(`[data-submenu="${categoryName}"]`);
-                    const isExpanded = this.classList.contains('expanded');
-
-                    // Fechar todos os outros menus primeiro (accordion behavior)
-                    document.querySelectorAll('.nav-category').forEach(cat => {
-                        if (cat !== this) {
-                            cat.classList.remove('expanded');
-                        }
-                    });
-                    document.querySelectorAll('.nav-submenu').forEach(sub => {
-                        if (sub !== submenu) {
-                            sub.classList.remove('expanded');
-                        }
-                    });
-
-                    // Toggle expansão do menu clicado
-                    if (!isExpanded) {
-                        this.classList.add('expanded');
-                        submenu.classList.add('expanded');
-                    } else {
-                        this.classList.remove('expanded');
-                        submenu.classList.remove('expanded');
-                    }
-                });
+                if (idx < categories.length - 1) {
+                    menuHTML += '<div class="sidebar-divider"></div>';
+                }
             });
 
+            mainNav.innerHTML = menuHTML;
         }
 
 
