@@ -4000,6 +4000,10 @@
 
                 // For fixed salaries, always show in current selected month
                 if (exp.isFixedSalary && dueDate) {
+                    // Verificar se este mês está excluído
+                    if (exp.excludedMonths && exp.excludedMonths[currentMonthKey]) {
+                        return null;
+                    }
                     // Para despesas fixas, verificar paidMonths do mês atual
                     const monthPayment = exp.paidMonths && exp.paidMonths[currentMonthKey];
                     return { 
@@ -5302,7 +5306,8 @@
                             <select id="professor-status" class="form-input">
                                 <option value="ativo" ${!professor?.status || professor?.status === 'ativo' ? 'selected' : ''}>Ativo</option>
                                 <option value="inativo" ${professor?.status === 'inativo' ? 'selected' : ''}>Inativo</option>
-                            
+                            </select>
+                        </div>
                         <div>
                             <label class="font-medium text-sm">Tipo de Contrato</label>
                             <select id="professor-contract-type" class="form-input">
@@ -5310,7 +5315,8 @@
                                 <option value="CLT" ${professor?.contractType === 'CLT' ? 'selected' : ''}>CLT</option>
                                 <option value="PJ" ${professor?.contractType === 'PJ' ? 'selected' : ''}>PJ</option>
                                 <option value="Contrato" ${professor?.contractType === 'Contrato' ? 'selected' : ''}>Contrato</option>
-                            
+                            </select>
+                        </div>
                     </div>
 
                     <!-- Datas -->
@@ -5690,7 +5696,7 @@
                             <select 
                                 id="rechamada-teacher-filter" 
                                 class="form-input !w-auto min-w-[200px]"
-                                onchange="window.currentRechamadaTeacherFilter = this.value; window.currentRechamadaPage = 1; setTimeout(() => renderRechamadaSection(), 0);"
+                                onchange="window.currentRechamadaTeacherFilter = this.value; window.currentRechamadaPage = 1; window.cachedRechamadaData = null; renderRechamadaSection();"
                             >
                                 <option value="todos" ${window.currentRechamadaTeacherFilter === 'todos' ? 'selected' : ''}>Todos os professores</option>
                                 ${uniqueTeachers.map(teacher => 
@@ -5699,7 +5705,7 @@
                             </select>
                             ${window.currentRechamadaTeacherFilter !== 'todos' ? `
                                 <button 
-                                    onclick="window.currentRechamadaTeacherFilter = 'todos'; window.currentRechamadaPage = 1; setTimeout(() => renderRechamadaSection(), 0);"
+                                    onclick="window.currentRechamadaTeacherFilter = 'todos'; window.currentRechamadaPage = 1; window.cachedRechamadaData = null; renderRechamadaSection();"
                                     class="text-sm text-blue-600 hover:text-blue-800 underline"
                                 >
                                     Limpar filtro
@@ -5886,59 +5892,7 @@
                                 <span class="text-sm text-stone-500">${rechamadas.length} registro${rechamadas.length !== 1 ? 's' : ''}</span>
                             </div>
                             <p class="text-sm text-stone-500 mb-4">Todas as rechamadas cadastradas no sistema, incluindo de VIPs/turmas finalizados ou excluídos.</p>
-                            <div class="overflow-x-auto">
-                                <table class="data-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Aluno</th>
-                                            <th>Professor</th>
-                                            <th>Aulas</th>
-                                            <th>Data Contato</th>
-                                            <th>Resultado</th>
-                                            <th>Ações</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        ${rechamadas.sort((a, b) => new Date(b.contactDate) - new Date(a.contactDate)).map(r => {
-                                            const student = students.find(s => s.id === r.studentId);
-                                            const studentName = student?.name || r.studentName || 'Aluno não encontrado';
-                                            const isExpired = isRechamadaExpired(r.contactDate);
-                                            return `
-                                            <tr class="${isExpired ? 'opacity-50' : ''}">
-                                                <td class="font-semibold">${studentName}</td>
-                                                <td>${r.teacherName || 'N/A'}</td>
-                                                <td class="text-center">
-                                                    <span class="font-semibold text-red-600">Aula ${r.lessons?.replace('+', ' + ') || 'N/A'}</span>
-                                                </td>
-                                                <td>${formatDateBR(r.contactDate)}</td>
-                                                <td>
-                                                    <span class="inline-block px-2 py-1 text-xs rounded font-semibold ${
-                                                        r.result === 'sucesso' ? 'bg-green-100 text-green-700' :
-                                                        r.result === 'nao_atendeu' ? 'bg-yellow-100 text-yellow-700' :
-                                                        r.result === 'desistencia' ? 'bg-red-100 text-red-700' :
-                                                        'bg-stone-100 text-stone-700'
-                                                    }">
-                                                        ${r.result === 'sucesso' ? 'Sucesso' :
-                                                          r.result === 'nao_atendeu' ? 'Não Atendeu' :
-                                                          r.result === 'desistencia' ? 'Desistência' :
-                                                          r.result || 'N/A'}
-                                                    </span>
-                                                    ${isExpired ? '<span class="ml-2 text-xs text-stone-400">(expirado)</span>' : ''}
-                                                </td>
-                                                <td>
-                                                    <button 
-                                                        data-action="ver-detalhes-rechamada"
-                                                        data-rechamada-id="${r.id}"
-                                                        class="text-blue-600 hover:text-blue-800 text-sm underline"
-                                                    >
-                                                        Ver/Editar
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        `}).join('')}
-                                    </tbody>
-                                </table>
-                            </div>
+                            <div id="rechamadas-history-container"></div>
                         </div>
                     ` : ''}
                 </section>
@@ -5947,6 +5901,122 @@
 
             `;
         }
+
+
+        window.currentRechamadaHistoryPage = 1;
+        const RECHAMADA_HISTORY_PER_PAGE = 10;
+
+        function renderRechamadaHistory() {
+            const container = document.getElementById('rechamadas-history-container');
+            if (!container || rechamadas.length === 0) return;
+
+            const sorted = [...rechamadas].sort((a, b) => new Date(b.contactDate) - new Date(a.contactDate));
+            const totalItems = sorted.length;
+            const totalPages = Math.ceil(totalItems / RECHAMADA_HISTORY_PER_PAGE);
+            const currentPage = Math.min(window.currentRechamadaHistoryPage || 1, totalPages);
+            window.currentRechamadaHistoryPage = currentPage;
+            const startIdx = (currentPage - 1) * RECHAMADA_HISTORY_PER_PAGE;
+            const endIdx = Math.min(startIdx + RECHAMADA_HISTORY_PER_PAGE, totalItems);
+            const pageItems = sorted.slice(startIdx, endIdx);
+
+            const rows = pageItems.map(r => {
+                const student = students.find(s => s.id === r.studentId);
+                const studentName = student?.name || r.studentName || 'Aluno não encontrado';
+                const isExpired = isRechamadaExpired(r.contactDate);
+                return `
+                    <tr class="${isExpired ? 'opacity-50' : ''}">
+                        <td class="font-semibold">${studentName}</td>
+                        <td>${r.teacherName || 'N/A'}</td>
+                        <td class="text-center">
+                            <span class="font-semibold text-red-600">Aula ${r.lessons?.replace('+', ' + ') || 'N/A'}</span>
+                        </td>
+                        <td>${formatDateBR(r.contactDate)}</td>
+                        <td>
+                            <span class="inline-block px-2 py-1 text-xs rounded font-semibold ${
+                                r.result === 'sucesso' ? 'bg-green-100 text-green-700' :
+                                r.result === 'nao_atendeu' ? 'bg-yellow-100 text-yellow-700' :
+                                r.result === 'desistencia' ? 'bg-red-100 text-red-700' :
+                                'bg-stone-100 text-stone-700'
+                            }">
+                                ${r.result === 'sucesso' ? 'Sucesso' :
+                                  r.result === 'nao_atendeu' ? 'Não Atendeu' :
+                                  r.result === 'desistencia' ? 'Desistência' :
+                                  r.result || 'N/A'}
+                            </span>
+                            ${isExpired ? '<span class="ml-2 text-xs text-stone-400">(expirado)</span>' : ''}
+                        </td>
+                        <td>
+                            <button 
+                                data-action="ver-detalhes-rechamada"
+                                data-rechamada-id="${r.id}"
+                                class="text-blue-600 hover:text-blue-800 text-sm underline"
+                            >
+                                Ver/Editar
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            let paginationHTML = '';
+            if (totalPages > 1) {
+                paginationHTML = `
+                    <div class="flex items-center justify-between mt-4 px-2">
+                        <span class="text-sm text-stone-500">Mostrando ${startIdx + 1}-${endIdx} de ${totalItems}</span>
+                        <div class="flex gap-1">
+                            <button onclick="goToRechamadaHistoryPage(1)" class="px-2 py-1 text-xs rounded ${currentPage === 1 ? 'text-stone-300 cursor-not-allowed' : 'text-stone-600 hover:bg-stone-100'}" ${currentPage === 1 ? 'disabled' : ''}>
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/></svg>
+                            </button>
+                            <button onclick="goToRechamadaHistoryPage(${currentPage - 1})" class="px-2 py-1 text-xs rounded ${currentPage === 1 ? 'text-stone-300 cursor-not-allowed' : 'text-stone-600 hover:bg-stone-100'}" ${currentPage === 1 ? 'disabled' : ''}>
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                            </button>
+                            ${(() => {
+                                let pages = '';
+                                let start = Math.max(1, currentPage - 2);
+                                let end = Math.min(totalPages, start + 4);
+                                if (end - start < 4) start = Math.max(1, end - 4);
+                                for (let i = start; i <= end; i++) {
+                                    pages += `<button onclick="goToRechamadaHistoryPage(${i})" class="px-3 py-1 text-xs rounded font-medium ${i === currentPage ? 'bg-amber-100 text-amber-700' : 'text-stone-600 hover:bg-stone-100'}">${i}</button>`;
+                                }
+                                return pages;
+                            })()}
+                            <button onclick="goToRechamadaHistoryPage(${currentPage + 1})" class="px-2 py-1 text-xs rounded ${currentPage === totalPages ? 'text-stone-300 cursor-not-allowed' : 'text-stone-600 hover:bg-stone-100'}" ${currentPage === totalPages ? 'disabled' : ''}>
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                            </button>
+                            <button onclick="goToRechamadaHistoryPage(${totalPages})" class="px-2 py-1 text-xs rounded ${currentPage === totalPages ? 'text-stone-300 cursor-not-allowed' : 'text-stone-600 hover:bg-stone-100'}" ${currentPage === totalPages ? 'disabled' : ''}>
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+
+            container.innerHTML = `
+                <div class="overflow-x-auto">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Aluno</th>
+                                <th>Professor</th>
+                                <th>Aulas</th>
+                                <th>Data Contato</th>
+                                <th>Resultado</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                </div>
+                ${paginationHTML}
+            `;
+        }
+        window.renderRechamadaHistory = renderRechamadaHistory;
+
+        function goToRechamadaHistoryPage(page) {
+            window.currentRechamadaHistoryPage = page;
+            renderRechamadaHistory();
+        }
+        window.goToRechamadaHistoryPage = goToRechamadaHistoryPage;
 
         function goToRechamadaPage(page) {
             window.currentRechamadaPage = page;
@@ -6719,6 +6789,69 @@
                         </div>
                     </div>
 
+                    <!-- Médias de Desempenho nos Testes - Card Largo -->
+                    <div class="bg-white p-5 rounded-lg border border-stone-200 mb-6">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center">
+                                <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="text-base font-semibold text-stone-800">Médias de Desempenho nos Testes</h3>
+                                <p class="text-xs text-stone-500">${allGrades.length} nota${allGrades.length !== 1 ? 's' : ''} registrada${allGrades.length !== 1 ? 's' : ''}</p>
+                            </div>
+                        </div>
+                        ${allGrades.length > 0 ? `
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div class="p-4 bg-gradient-to-br from-indigo-50 to-indigo-100/50 rounded-xl border border-indigo-200/60">
+                                <div class="flex items-center justify-between mb-2">
+                                    <p class="text-sm font-medium text-indigo-700">Midterm</p>
+                                    <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                </div>
+                                <p class="text-2xl font-bold text-stone-800">${avgMidterm.toFixed(1)}</p>
+                                <p class="text-xs text-indigo-600 mt-1">de 20 pontos</p>
+                                <div class="mt-2 w-full bg-indigo-200/50 rounded-full h-2 overflow-hidden">
+                                    <div class="bg-indigo-500 h-2 rounded-full transition-all" style="width: ${Math.min(100, (avgMidterm / 20) * 100)}%"></div>
+                                </div>
+                            </div>
+                            <div class="p-4 bg-gradient-to-br from-sky-50 to-sky-100/50 rounded-xl border border-sky-200/60">
+                                <div class="flex items-center justify-between mb-2">
+                                    <p class="text-sm font-medium text-sky-700">Listening</p>
+                                    <svg class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/></svg>
+                                </div>
+                                <p class="text-2xl font-bold text-stone-800">${avgListening.toFixed(1)}</p>
+                                <p class="text-xs text-sky-600 mt-1">de 20 pontos</p>
+                                <div class="mt-2 w-full bg-sky-200/50 rounded-full h-2 overflow-hidden">
+                                    <div class="bg-sky-500 h-2 rounded-full transition-all" style="width: ${Math.min(100, (avgListening / 20) * 100)}%"></div>
+                                </div>
+                            </div>
+                            <div class="p-4 bg-gradient-to-br from-teal-50 to-teal-100/50 rounded-xl border border-teal-200/60">
+                                <div class="flex items-center justify-between mb-2">
+                                    <p class="text-sm font-medium text-teal-700">Grammar</p>
+                                    <svg class="w-4 h-4 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                                </div>
+                                <p class="text-2xl font-bold text-stone-800">${avgGrammar.toFixed(1)}</p>
+                                <p class="text-xs text-teal-600 mt-1">de 20 pontos</p>
+                                <div class="mt-2 w-full bg-teal-200/50 rounded-full h-2 overflow-hidden">
+                                    <div class="bg-teal-500 h-2 rounded-full transition-all" style="width: ${Math.min(100, (avgGrammar / 20) * 100)}%"></div>
+                                </div>
+                            </div>
+                            <div class="p-4 bg-gradient-to-br from-pink-50 to-pink-100/50 rounded-xl border border-pink-200/60">
+                                <div class="flex items-center justify-between mb-2">
+                                    <p class="text-sm font-medium text-pink-700">Oral</p>
+                                    <svg class="w-4 h-4 text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>
+                                </div>
+                                <p class="text-2xl font-bold text-stone-800">${avgOral.toFixed(1)}</p>
+                                <p class="text-xs text-pink-600 mt-1">de 20 pontos</p>
+                                <div class="mt-2 w-full bg-pink-200/50 rounded-full h-2 overflow-hidden">
+                                    <div class="bg-pink-500 h-2 rounded-full transition-all" style="width: ${Math.min(100, (avgOral / 20) * 100)}%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        ` : '<div class="text-center py-6 text-stone-500 text-sm bg-stone-50 rounded-lg">Nenhuma nota registrada nos testes</div>'}
+                    </div>
+
                     <!-- Tabelas de Assiduidade -->
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <!-- Assiduidade por VIP -->
@@ -7046,56 +7179,7 @@
                             ` : '<div class="text-center py-8 text-stone-500">Nenhum professor com alunos cadastrados</div>'}
                         </div>
 
-                        <!-- Médias de Notas dos Testes -->
-                        <div class="bg-white p-3 rounded-lg border border-stone-200">
-                            <h3 class="text-sm font-semibold text-stone-800 mb-2">Médias de Desempenho nos Testes</h3>
-                            <div class="grid grid-cols-2 gap-2">
-                                <!-- Midterm Test -->
-                                <div class="p-2 bg-gradient-to-br from-stone-50 to-stone-100 rounded border border-stone-200 transition-all hover:border-[#F1D24B]">
-                                    <div class="flex items-center justify-between mb-1">
-                                        <p class="text-xs font-medium text-stone-700">Midterm</p>
-                                        <p class="text-sm font-bold text-stone-800">${avgMidterm.toFixed(1)}</p>
-                                    </div>
-                                    <div class="w-full bg-stone-200 rounded-full h-1 overflow-hidden">
-                                        <div class="bg-indigo-500 h-1 rounded-full" style="width: ${Math.min(100, (avgMidterm / 20) * 100)}%"></div>
-                                    </div>
-                                </div>
 
-                                <!-- Listening Test -->
-                                <div class="p-2 bg-gradient-to-br from-stone-50 to-stone-100 rounded border border-stone-200 transition-all hover:border-[#F1D24B]">
-                                    <div class="flex items-center justify-between mb-1">
-                                        <p class="text-xs font-medium text-stone-700">Listening</p>
-                                        <p class="text-sm font-bold text-stone-800">${avgListening.toFixed(1)}</p>
-                                    </div>
-                                    <div class="w-full bg-stone-200 rounded-full h-1 overflow-hidden">
-                                        <div class="bg-sky-500 h-1 rounded-full" style="width: ${Math.min(100, (avgListening / 20) * 100)}%"></div>
-                                    </div>
-                                </div>
-
-                                <!-- Grammar Test -->
-                                <div class="p-2 bg-gradient-to-br from-stone-50 to-stone-100 rounded border border-stone-200 transition-all hover:border-[#F1D24B]">
-                                    <div class="flex items-center justify-between mb-1">
-                                        <p class="text-xs font-medium text-stone-700">Grammar</p>
-                                        <p class="text-sm font-bold text-stone-800">${avgGrammar.toFixed(1)}</p>
-                                    </div>
-                                    <div class="w-full bg-stone-200 rounded-full h-1 overflow-hidden">
-                                        <div class="bg-teal-500 h-1 rounded-full" style="width: ${Math.min(100, (avgGrammar / 20) * 100)}%"></div>
-                                    </div>
-                                </div>
-
-                                <!-- Oral Test -->
-                                <div class="p-2 bg-gradient-to-br from-stone-50 to-stone-100 rounded border border-stone-200 transition-all hover:border-[#F1D24B]">
-                                    <div class="flex items-center justify-between mb-1">
-                                        <p class="text-xs font-medium text-stone-700">Oral</p>
-                                        <p class="text-sm font-bold text-stone-800">${avgOral.toFixed(1)}</p>
-                                    </div>
-                                    <div class="w-full bg-stone-200 rounded-full h-1 overflow-hidden">
-                                        <div class="bg-pink-500 h-1 rounded-full" style="width: ${Math.min(100, (avgOral / 20) * 100)}%"></div>
-                                    </div>
-                                </div>
-                            </div>
-                            ${allGrades.length === 0 ? '<div class="text-center py-3 mt-2 text-stone-500 text-xs bg-stone-50 rounded">Nenhuma nota registrada</div>' : ''}
-                        </div>
                     </div>
                 </section>
             `;
@@ -11897,10 +11981,63 @@
             } catch (error) { console.error("Error saving expense:", error); showErrorMessage("Erro", "Falha ao salvar despesa."); }
         }
         async function deleteExpense(expenseId) {
-            if (!confirm('Tem certeza que deseja excluir esta despesa?')) return;
+            const expense = expenses.find(e => e.id === expenseId);
+            if (!expense) return;
+
+            const isFixed = expense.isFixedSalary || expense.tipo === 'fixo';
+            const currentMonthKey = selectedFolhaYear + '-' + String(selectedFolhaMonth + 1).padStart(2, '0');
+
+            if (isFixed) {
+                const choice = await new Promise(resolve => {
+                    const modal = document.createElement('div');
+                    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+                    modal.innerHTML = `
+                        <div class="bg-white rounded-xl p-6 max-w-md mx-4 shadow-xl">
+                            <h3 class="text-lg font-bold text-stone-800 mb-2">Excluir despesa fixa</h3>
+                            <p class="text-sm text-stone-600 mb-4">Como deseja excluir "<strong>${expense.description}</strong>"?</p>
+                            <div class="flex flex-col gap-2">
+                                <button id="delete-this-month" class="secondary-btn text-sm py-2">Remover apenas deste mês (${currentMonthKey})</button>
+                                <button id="delete-all" class="danger-btn text-sm py-2">Excluir de todos os meses</button>
+                                <button id="delete-cancel" class="text-sm py-2 text-stone-500 hover:text-stone-700">Cancelar</button>
+                            </div>
+                        </div>
+                    `;
+                    document.body.appendChild(modal);
+                    modal.querySelector('#delete-this-month').onclick = () => { document.body.removeChild(modal); resolve('this-month'); };
+                    modal.querySelector('#delete-all').onclick = () => { document.body.removeChild(modal); resolve('all'); };
+                    modal.querySelector('#delete-cancel').onclick = () => { document.body.removeChild(modal); resolve('cancel'); };
+                });
+
+                if (choice === 'cancel') return;
+
+                if (choice === 'this-month') {
+                    try {
+                        const excludedMonths = expense.excludedMonths || {};
+                        excludedMonths[currentMonthKey] = true;
+
+                        if (window.isDevelopmentMode) {
+                            const idx = expenses.findIndex(e => e.id === expenseId);
+                            if (idx !== -1) {
+                                expenses[idx].excludedMonths = excludedMonths;
+                                localStorage.setItem('expenses', JSON.stringify(expenses));
+                            }
+                        } else if (window.firebaseConnected && window.db) {
+                            await updateDoc(doc(db, `artifacts/${appId}/public/data/expenses`, expenseId), { excludedMonths });
+                            await logActivity('excluir_mes', 'despesa', expense.description, { month: currentMonthKey });
+                        }
+                        showSuccessMessage("Sucesso!", `"${expense.description}" removida do mês ${currentMonthKey}.`);
+                        renderFolhaPagamentoSection();
+                    } catch (error) {
+                        console.error("Error excluding expense from month:", error);
+                        showErrorMessage("Erro", "Não foi possível remover a despesa deste mês.");
+                    }
+                    return;
+                }
+            }
+
+            if (!confirm('Tem certeza que deseja excluir esta despesa de TODOS os meses?')) return;
 
             try {
-                const expense = expenses.find(e => e.id === expenseId);
                 if (window.isDevelopmentMode) {
                     expenses = expenses.filter(e => e.id !== expenseId);
                     localStorage.setItem('expenses', JSON.stringify(expenses));
@@ -14292,33 +14429,33 @@
                     : '';
 
                 return `
-                    <div class="base-card !p-4 flex items-start gap-4 hover:shadow-md transition-shadow">
-                        <div class="status-tag status-${actionColor} !py-2 !px-2 flex-shrink-0">
+                    <div class="base-card !p-3 flex items-start gap-3 hover:shadow-md transition-shadow">
+                        <div class="status-tag status-${actionColor} !py-1.5 !px-1.5 flex-shrink-0">
                             ${actionIcon}
                         </div>
                         <div class="flex-1 min-w-0">
                             <div class="flex items-start justify-between gap-2 mb-1">
                                 <div class="flex-1">
-                                    <p class="font-bold text-stone-800">
+                                    <p class="font-bold text-stone-800 text-sm">
                                         ${log.userName} 
                                         <span class="font-normal">${log.action} ${log.targetType}</span>
                                     </p>
-                                    <p class="text-stone-600 mt-1">
+                                    <p class="text-stone-600 text-sm">
                                         <span class="font-semibold">${log.targetName}</span>
                                     </p>
                                 </div>
                                 <div class="text-right flex-shrink-0">
-                                    <p class="text-sm text-stone-500">${formatTimestamp(log.timestamp)}</p>
-                                    <p class="text-xs text-stone-400 mt-1">${log.userRole}</p>
+                                    <p class="text-xs text-stone-500">${formatTimestamp(log.timestamp)}</p>
+                                    <p class="text-xs text-stone-400">${log.userRole}</p>
                                 </div>
                             </div>
-                            ${detailsText ? `<p class="text-sm text-stone-500 mt-2">${detailsText}</p>` : ''}
+                            ${detailsText ? `<p class="text-xs text-stone-500 mt-1">${detailsText}</p>` : ''}
                         </div>
                     </div>
                 `;
             }).join('') : `
-                <div class="text-center p-12 bg-stone-50 rounded-lg">
-                    <svg class="w-16 h-16 mx-auto mb-4 text-stone-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="text-center p-8 bg-stone-50 rounded-lg">
+                    <svg class="w-12 h-12 mx-auto mb-3 text-stone-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                     </svg>
                     <p class="text-stone-500 text-lg">Nenhuma atividade registrada nos últimos 5 dias.</p>
@@ -14338,15 +14475,15 @@
                 }
 
                 paginationHTML = `
-                    <div class="flex items-center justify-between mt-6 pt-6 border-t border-stone-200">
-                        <div class="text-sm text-stone-600">
+                    <div class="flex items-center justify-between mt-4 pt-4 border-t border-stone-200">
+                        <div class="text-xs text-stone-600">
                             Mostrando ${startIndex + 1}-${Math.min(endIndex, totalLogs)} de ${totalLogs} registros
                         </div>
                         <div class="flex items-center gap-2">
                             <button 
                                 onclick="currentLogsPage = Math.max(1, currentLogsPage - 1); renderLogsAtividadesSection();"
                                 ${currentLogsPage === 1 ? 'disabled' : ''}
-                                class="px-3 py-1 rounded border border-stone-300 bg-white hover:bg-stone-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                class="px-2 py-1 text-xs rounded border border-stone-300 bg-white hover:bg-stone-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                             >
                                 Anterior
                             </button>
@@ -14357,7 +14494,7 @@
                                 return `
                                     <button 
                                         onclick="currentLogsPage = ${page}; renderLogsAtividadesSection();"
-                                        class="px-3 py-1 rounded border ${page === currentLogsPage 
+                                        class="px-2 py-1 text-xs rounded border ${page === currentLogsPage 
                                             ? 'bg-blue-500 text-white border-blue-500' 
                                             : 'border-stone-300 bg-white hover:bg-stone-50'} transition-colors"
                                     >
@@ -14368,7 +14505,7 @@
                             <button 
                                 onclick="currentLogsPage = Math.min(${totalPages}, currentLogsPage + 1); renderLogsAtividadesSection();"
                                 ${currentLogsPage === totalPages ? 'disabled' : ''}
-                                class="px-3 py-1 rounded border border-stone-300 bg-white hover:bg-stone-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                class="px-2 py-1 text-xs rounded border border-stone-300 bg-white hover:bg-stone-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                             >
                                 Próxima
                             </button>
@@ -14380,9 +14517,9 @@
             contentArea.innerHTML = `
                 <section id="logs-atividades-section">
                     <div class="mb-6">
-                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                            <p class="text-sm text-blue-800">
-                                <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                            <p class="text-xs text-blue-800">
+                                <svg class="w-4 h-4 inline mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                 </svg>
                                 <strong>Sistema de Auditoria:</strong> Todas as ações são registradas automaticamente. 
@@ -14391,11 +14528,11 @@
                         </div>
                     </div>
 
-                    <div class="mb-6 flex items-center gap-4">
+                    <div class="mb-4 flex items-center gap-3">
                         <label class="text-sm font-semibold text-stone-700">Filtrar por colaborador:</label>
                         <select 
                             id="logs-collaborator-filter" 
-                            class="form-input !w-auto min-w-[200px]"
+                            class="form-input !w-auto min-w-[200px] text-sm py-1.5"
                             onchange="changeLogsCollaboratorFilter(this.value);"
                         >
                             <option value="todos" ${currentLogsCollaboratorFilter === 'todos' ? 'selected' : ''}>Todos os colaboradores</option>
@@ -14421,7 +14558,7 @@
                         ${totalPages > 1 ? `<span class="text-sm text-stone-500">Página ${currentLogsPage} de ${totalPages}</span>` : ''}
                     </div>
 
-                    <div class="space-y-3">
+                    <div class="space-y-2">
                         ${logsHTML}
                     </div>
 
