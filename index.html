@@ -2062,7 +2062,13 @@
         }
         async function handleSignUp(event) { event.preventDefault(); const name = event.target.name.value; const email = event.target.email.value; const password = event.target.password.value; try { const cred = await createUserWithEmailAndPassword(auth, email, password); await updateProfile(cred.user, { displayName: name }); await setDoc(doc(db, "users", cred.user.uid), { name, email, role: "pending", createdAt: serverTimestamp() }); await signOut(auth); showSuccessMessage("Cadastro Concluído!", "Sua conta foi criada. Aguarde aprovação de um administrador para acessar."); } catch (error) { showErrorMessage("Erro", "Erro ao criar conta. Verifique o e-mail e a senha."); } }
         async function handleLogout() { 
-            await signOut(auth);
+            try {
+                if (auth && !window.isDevelopmentMode) {
+                    await signOut(auth);
+                }
+            } catch(e) {
+                console.warn('Logout Firebase error (ignored):', e);
+            }
             currentUser = null;
             currentUserRole = null;
             currentUserName = null;
