@@ -3588,19 +3588,26 @@
             if (!isTeacher) {
                 const teacherOptions = activeTeachers.map((p, idx) => `<option value="${p.name}" ${idx === 0 ? 'selected' : ''}>${p.name}</option>`).join('');
                 filterHtml = `
-                    <div class="grade-select-container flex-grow">
-                        <label for="teacher-filter" class="block text-sm font-medium text-stone-700 mb-1">Filtrar por professor:</label>
-                        <select id="teacher-filter" class="grade-select text-sm py-1.5 px-2">
-                            <option value="all">Todos</option>
-                            ${teacherOptions}
-                        
-                    <div class="flex items-center gap-2 ml-4">
-                        <input type="checkbox" id="show-vagas-only" class="rounded border-stone-300 text-emerald-600 focus:ring-emerald-500">
-                        <label for="show-vagas-only" class="text-sm font-medium text-stone-700">Mostrar apenas vagas</label>
-                    </div>
-                    <div class="flex items-center gap-2 ml-4">
-                        <input type="checkbox" id="show-breaks-only" class="rounded border-stone-300 text-amber-600 focus:ring-amber-500">
-                        <label for="show-breaks-only" class="text-sm font-medium text-stone-700">Mostrar apenas breaks</label>
+                    <div class="flex items-center gap-4 flex-wrap flex-grow">
+                        <div class="grade-select-container">
+                            <label for="teacher-filter" class="block text-xs font-medium text-stone-500 mb-0.5">Professor</label>
+                            <select id="teacher-filter" class="grade-select text-sm py-1.5 px-2">
+                                <option value="all">Todos</option>
+                                ${teacherOptions}
+                            </select>
+                        </div>
+                        <div class="flex items-center gap-3 bg-stone-50 rounded-lg px-3 py-2 border border-stone-200">
+                            <span class="text-xs font-medium text-stone-500 mr-1">Filtros:</span>
+                            <label for="show-vagas-only" class="flex items-center gap-1.5 cursor-pointer">
+                                <input type="checkbox" id="show-vagas-only" class="rounded border-stone-300 text-emerald-600 focus:ring-emerald-500 w-3.5 h-3.5">
+                                <span class="text-xs font-medium text-stone-700">Apenas vagas</span>
+                            </label>
+                            <div class="w-px h-4 bg-stone-300"></div>
+                            <label for="show-breaks-only" class="flex items-center gap-1.5 cursor-pointer">
+                                <input type="checkbox" id="show-breaks-only" class="rounded border-stone-300 text-amber-600 focus:ring-amber-500 w-3.5 h-3.5">
+                                <span class="text-xs font-medium text-stone-700">Apenas breaks</span>
+                            </label>
+                        </div>
                     </div>
                 `;
             }
@@ -6990,11 +6997,16 @@
                         </div>
                     </div>
 
-                    <!-- Grid com Níveis e Horários -->
-                    <div class="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
-                        <!-- Alunos por Nível -->
-                        <div class="bg-white p-3 rounded-lg border border-stone-200">
-                            <h3 class="text-sm font-semibold text-stone-800 mb-2">Alunos Cursando por Nível</h3>
+                    <!-- Alunos Cursando por Nível - Card Largo -->
+                    <div class="bg-white p-5 rounded-lg border border-stone-200 mb-4 mt-4">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center">
+                                <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                                </svg>
+                            </div>
+                            <h3 class="text-base font-semibold text-stone-800">Alunos Cursando por Nível</h3>
+                        </div>
                             ${(() => {
                                 const levelDistribution = {};
                                 let totalStudents = 0;
@@ -7014,7 +7026,7 @@
 
                                 return `
                                     <div style="max-height: 280px; overflow-y: auto;">
-                                        <div class="grid grid-cols-2 gap-1">
+                                        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
                                             ${STANDARD_LEVELS.map(level => {
                                                 const count = levelDistribution[level];
                                                 const percentage = totalStudents > 0 ? (count / totalStudents) * 100 : 0;
@@ -7052,11 +7064,18 @@
                                     </div>
                                 `;
                             })()}
-                        </div>
+                    </div>
 
-                        <!-- Horários Mais Ocupados -->
-                        <div class="bg-white p-3 rounded-lg border border-stone-200">
-                            <h3 class="text-sm font-semibold text-stone-800 mb-2">Horários Mais Ocupados</h3>
+                    <!-- Horários Mais Ocupados - Card Largo -->
+                    <div class="bg-white p-5 rounded-lg border border-stone-200 mb-4">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center">
+                                <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                            </div>
+                            <h3 class="text-base font-semibold text-stone-800">Horários Mais Ocupados</h3>
+                        </div>
                             ${(() => {
                                 const hourStudents = {}; // Mapeia hora -> Set de IDs únicos de alunos
                                 const uniqueVips = new Set(); // Rastreia alunos VIP únicos
@@ -7108,7 +7127,7 @@
 
                                 return sortedHours.length > 0 ? `
                                     <div style="max-height: 280px; overflow-y: auto;">
-                                        <div class="grid grid-cols-2 gap-1">
+                                        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
                                             ${sortedHours.map(([hour, count]) => {
                                                 const percentage = totalStudents > 0 ? (count / totalStudents) * 100 : 0;
                                                 return `
@@ -7138,10 +7157,9 @@
                                     </div>
                                 ` : '<div class="text-center py-8 text-stone-500">Nenhum horário na grade</div>';
                             })()}
-                        </div>
                     </div>
 
-                    <!-- Grid com Alunos por Professor e Médias de Testes -->
+                    <!-- Grid com Alunos por Professor -->
                     <div class="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
                         <!-- Alunos por Professor -->
                         <div class="bg-white p-3 rounded-lg border border-stone-200">
@@ -16486,7 +16504,7 @@
 
 
 
-                    const descriptionHtml = processo.description ? `<p class="text-sm text-stone-600 mb-3">${processo.description}</p>` : '';
+                    const descriptionHtml = processo.description ? `<p class="text-xs text-stone-600 mb-2">${processo.description}</p>` : '';
 
 
                     const stepsCount = processo.steps?.length || 0;
@@ -16653,15 +16671,15 @@
                     ` : '';
 
                     return `
-                        <div class="base-card hover:shadow-lg transition-shadow cursor-pointer" data-action="view-processo" data-id="${processo.id}">
-                            <div class="flex justify-between items-start mb-3">
-                                <h3 class="text-lg font-bold text-stone-800 flex-grow">${processo.name}</h3>
+                        <div class="base-card !p-3 hover:shadow-lg transition-shadow cursor-pointer" data-action="view-processo" data-id="${processo.id}">
+                            <div class="flex justify-between items-start mb-1.5">
+                                <h3 class="text-sm font-bold text-stone-800 flex-grow">${processo.name}</h3>
                                 ${editButtons}
                             </div>
                             ${descriptionHtml}
                             ${setorTagsHtml}
-                            <div class="flex items-center gap-2 text-sm text-stone-500">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div class="flex items-center gap-1.5 text-xs text-stone-500">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
                                 </svg>
                                 <span>${stepsCount} passo${stepsText}</span>
@@ -16939,22 +16957,22 @@
                         <p class="text-xs text-stone-500 mt-1">Adicione pelo menos 1 passo para este processo</p>
 
                         <!-- Sticky Add Buttons -->
-                        <div class="sticky bottom-4 mt-4 flex justify-center gap-3 bg-white/95 backdrop-blur-sm py-3 px-4 rounded-lg shadow-lg border border-stone-200">
-                            <button type="button" class="primary-btn shadow-lg flex items-center gap-2" onclick="addStepToForm('passo')">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="sticky bottom-4 mt-4 flex justify-center gap-2 bg-white/95 backdrop-blur-sm py-2 px-3 rounded-lg shadow-lg border border-stone-200">
+                            <button type="button" class="primary-btn shadow-lg flex items-center gap-1 text-xs py-1.5 px-2.5" onclick="addStepToForm('passo')">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                                 </svg>
                                 Adicionar Passo
                             </button>
-                            <button type="button" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 transition-colors" onclick="addStepToForm('instrucao')">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <button type="button" class="bg-blue-500 hover:bg-blue-600 text-white px-2.5 py-1.5 rounded-lg shadow-lg flex items-center gap-1 text-xs transition-colors" onclick="addStepToForm('instrucao')">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                 </svg>
                                 Adicionar Instrução
                             </button>
-                            <div class="border-l border-stone-300 h-8 mx-2"></div>
-                            <button type="button" class="secondary-btn shadow-lg" data-action="close-modal">Cancelar</button>
-                            <button type="submit" class="primary-btn shadow-lg">Salvar Processo</button>
+                            <div class="border-l border-stone-300 h-6 mx-1"></div>
+                            <button type="button" class="secondary-btn shadow-lg text-xs py-1.5 px-2.5" data-action="close-modal">Cancelar</button>
+                            <button type="submit" class="primary-btn shadow-lg text-xs py-1.5 px-2.5">Salvar Processo</button>
                         </div>
                     </div>
 
