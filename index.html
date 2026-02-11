@@ -5645,13 +5645,10 @@
                     console.log('Rechamada - Professores normalizados:', availableTeachers.map(t => normalizeTeacherName(t)));
                 }
             } else {
-                // Admin, pedagógico, ap, am podem filtrar
                 filteredStudents = window.currentRechamadaTeacherFilter === 'todos' 
                     ? studentsWithConsecutiveAbsences 
                     : studentsWithConsecutiveAbsences.filter(s => {
-                        const teacherName = (s.teacher || '').trim().toLowerCase();
-                        const filterName = (window.currentRechamadaTeacherFilter || '').trim().toLowerCase();
-                        return teacherName === filterName;
+                        return normalizeTeacherName(s.teacher) === normalizeTeacherName(window.currentRechamadaTeacherFilter);
                     });
             }
 
@@ -5701,10 +5698,12 @@
                                 class="form-input !w-auto min-w-[200px]"
                                 onchange="applyRechamadaFilter(this.value);"
                             >
-                                <option value="todos" ${window.currentRechamadaTeacherFilter === 'todos' ? 'selected' : ''}>Todos os professores</option>
-                                ${uniqueTeachers.map(teacher => 
-                                    `<option value="${teacher}" ${window.currentRechamadaTeacherFilter === teacher ? 'selected' : ''}>${teacher}</option>`
-                                ).join('')}
+                                <option value="todos" ${window.currentRechamadaTeacherFilter === 'todos' ? 'selected' : ''}>Todos os professores (${studentsWithConsecutiveAbsences.length})</option>
+                                ${uniqueTeachers.map(teacher => {
+                                    const count = studentsWithConsecutiveAbsences.filter(s => normalizeTeacherName(s.teacher) === normalizeTeacherName(teacher)).length;
+                                    const isSelected = window.currentRechamadaTeacherFilter === teacher;
+                                    return `<option value="${teacher}" ${isSelected ? 'selected' : ''}>${teacher} (${count})</option>`;
+                                }).join('')}
                             </select>
                             ${window.currentRechamadaTeacherFilter !== 'todos' ? `
                                 <button 
@@ -6034,10 +6033,17 @@
         window.goToRechamadaPage = goToRechamadaPage;
 
         window.applyRechamadaFilter = function(value) {
+            console.log('Rechamada - Filtro aplicado:', value);
             window.currentRechamadaTeacherFilter = value;
             window.currentRechamadaPage = 1;
             window.cachedRechamadaData = null;
             renderRechamadaSection();
+            setTimeout(() => {
+                const select = document.getElementById('rechamada-teacher-filter');
+                if (select && select.value !== value) {
+                    select.value = value;
+                }
+            }, 100);
         };
 
         // Fast re-render using cached data (no recalculation)
