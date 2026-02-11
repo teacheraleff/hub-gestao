@@ -444,7 +444,7 @@
         /* --- Calendar Styles --- */
         .calendar-container { max-width: 1200px; margin: 0 auto; }
         .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
-        .calendar-nav-btn { background-color: #f3f4f6; border: 1px solid #d1d5db; padding: 0.5rem 1rem; border-radius: 0.375rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .calendar-nav-btn { background-color: #f3f4f6; border: 1px solid #d1d5db; padding: 0.375rem 0.625rem; border-radius: 0.375rem; font-weight: 600; font-size: 0.8rem; cursor: pointer; transition: all 0.2s; }
         .calendar-nav-btn:hover { background-color: #e5e7eb; }
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; background-color: #e5e7eb; border-radius: 0.5rem; overflow: hidden; }
         .calendar-day-header { background-color: #f9fafb; padding: 1rem; text-align: center; font-weight: 700; color: #44403c; }
@@ -7047,11 +7047,12 @@
 
                                                 return `
                                                     <div class="p-2 bg-gradient-to-br from-stone-50 to-stone-100 rounded border border-stone-200 transition-all hover:border-[#F1D24B]">
-                                                        <div class="flex items-center justify-between mb-1">
-                                                            <p class="text-xs font-medium text-stone-700">${level}</p>
-                                                            <p class="text-sm font-bold text-stone-800">${count}</p>
+                                                        <p class="text-xs font-medium text-stone-700 uppercase tracking-wide mb-1">${level}</p>
+                                                        <div class="flex items-baseline gap-2 mb-1">
+                                                            <p class="text-2xl font-bold text-stone-800">${count}</p>
+                                                            <p class="text-xs font-medium text-stone-600">(${percentage.toFixed(1)}%)</p>
                                                         </div>
-                                                        <div class="w-full bg-stone-200 rounded-full h-1 overflow-hidden">
+                                                        <div class="w-full bg-stone-200 rounded-full h-1.5 overflow-hidden">
                                                             <div class="${barColor} h-1 rounded-full" style="width: ${Math.min(100, percentage)}%"></div>
                                                         </div>
                                                     </div>
@@ -7159,45 +7160,43 @@
                             })()}
                     </div>
 
-                    <!-- Grid com Alunos por Professor -->
-                    <div class="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
-                        <!-- Alunos por Professor -->
-                        <div class="bg-white p-3 rounded-lg border border-stone-200">
-                            <h3 class="text-sm font-semibold text-stone-800 mb-2">Alunos por Professor</h3>
-                            ${teacherStats.length > 0 ? `
-                                <div style="max-height: 250px; overflow-y: auto;">
-                                    <div class="space-y-1">
-                                        ${teacherStats.map((teacher, index) => {
-                                            const vipPercentage = teacher.total > 0 ? (teacher.vipStudents / teacher.total) * 100 : 0;
-                                            const turmaPercentage = teacher.total > 0 ? (teacher.turmaStudents / teacher.total) * 100 : 0;
-                                            const isTopTeacher = index < 3;
+                    <!-- Alunos por Professor - Card Largo -->
+                    <div class="bg-white p-5 rounded-lg border border-stone-200 mb-4">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center">
+                                <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                </svg>
+                            </div>
+                            <h3 class="text-base font-semibold text-stone-800">Alunos por Professor</h3>
+                        </div>
+                        ${teacherStats.length > 0 ? `
+                            <div style="max-height: 280px; overflow-y: auto;">
+                                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                                    ${teacherStats.map((teacher, index) => {
+                                        const isTopTeacher = index < 3;
+                                        const maxTotal = teacherStats.length > 0 ? teacherStats[0].total : 1;
+                                        const percentage = maxTotal > 0 ? (teacher.total / maxTotal) * 100 : 0;
 
-                                            return `
-                                                <div class="p-2 bg-stone-50 rounded border border-stone-200 transition-all hover:border-[#F1D24B]">
-                                                    <div class="flex items-center justify-between">
-                                                        <div class="flex items-center gap-1">
-                                                            ${isTopTeacher ? `<svg class="w-3 h-3 text-yellow-500" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>` : ''}
-                                                            <span class="text-xs font-medium text-stone-700">${teacher.name}</span>
-                                                        </div>
-                                                        <div class="flex items-center gap-1">
-                                                            ${teacher.vipCount > 0 ? `<span class="px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded text-xs font-bold">${teacher.vipCount}V</span>` : ''}
-                                                            ${teacher.turmaCount > 0 ? `<span class="px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded text-xs font-bold">${teacher.turmaCount}T</span>` : ''}
-                                                            <span class="px-1.5 py-0.5 bg-stone-200 text-stone-800 rounded text-xs font-bold">${teacher.total}</span>
-                                                        </div>
-                                                    </div>
-                                                    <div class="w-full bg-stone-200 rounded-full h-1 overflow-hidden flex mt-1">
-                                                        ${teacher.vipStudents > 0 ? `<div class="bg-amber-500 h-1" style="width: ${vipPercentage}%"></div>` : ''}
-                                                        ${teacher.turmaStudents > 0 ? `<div class="bg-purple-500 h-1" style="width: ${turmaPercentage}%"></div>` : ''}
+                                        return `
+                                            <div class="p-2 bg-gradient-to-br from-stone-50 to-stone-100 rounded border border-stone-200 transition-all hover:border-[#F1D24B]">
+                                                <p class="text-xs font-medium text-stone-700 uppercase tracking-wide mb-1 truncate">${isTopTeacher ? '⭐ ' : ''}${teacher.name}</p>
+                                                <div class="flex items-baseline gap-2 mb-1">
+                                                    <p class="text-2xl font-bold text-stone-800">${teacher.total}</p>
+                                                    <div class="flex gap-1">
+                                                        ${teacher.vipCount > 0 ? `<span class="px-1 py-0.5 bg-amber-100 text-amber-700 rounded text-xs font-bold">${teacher.vipCount}V</span>` : ''}
+                                                        ${teacher.turmaCount > 0 ? `<span class="px-1 py-0.5 bg-purple-100 text-purple-700 rounded text-xs font-bold">${teacher.turmaCount}T</span>` : ''}
                                                     </div>
                                                 </div>
-                                            `;
-                                        }).join('')}
-                                    </div>
+                                                <div class="w-full bg-stone-200 rounded-full h-1.5 overflow-hidden">
+                                                    <div class="bg-indigo-500 h-1 rounded-full transition-all duration-300" style="width: ${Math.min(100, percentage)}%"></div>
+                                                </div>
+                                            </div>
+                                        `;
+                                    }).join('')}
                                 </div>
-                            ` : '<div class="text-center py-8 text-stone-500">Nenhum professor com alunos cadastrados</div>'}
-                        </div>
-
-
+                            </div>
+                        ` : '<div class="text-center py-8 text-stone-500">Nenhum professor com alunos cadastrados</div>'}
                     </div>
                 </section>
             `;
@@ -12215,13 +12214,13 @@
                 paidAmount = Number(expense.paidMonths[currentMonthKey].paidAmount || 0);
                 payments = expense.paidMonths[currentMonthKey].payments || [];
                 if (payments.length === 0 && paidAmount > 0) {
-                    payments = [{ amount: paidAmount, date: expense.paidMonths[currentMonthKey].paidAt }];
+                    payments = [{ amount: paidAmount, date: expense.paidMonths[currentMonthKey].paidAt || new Date().toISOString() }];
                 }
             } else if (!isFixedExpense) {
                 paidAmount = Number(expense.paidAmount || 0);
                 payments = expense.payments || [];
                 if (payments.length === 0 && paidAmount > 0) {
-                    payments = [{ amount: paidAmount, date: expense.paidAt }];
+                    payments = [{ amount: paidAmount, date: expense.paidAt || new Date().toISOString() }];
                 }
             }
 
@@ -12312,18 +12311,26 @@
 
                         if (isFixedExpense) {
                             const paidMonths = { ...(expense.paidMonths || {}) };
+                            const sanitizedFixedPayments = newPayments.map(p => ({
+                                amount: Number(p.amount) || 0,
+                                date: p.date || new Date().toISOString()
+                            }));
                             paidMonths[currentMonthKey] = {
                                 isPaid: nowFullyPaid,
                                 paidAmount: newTotalPaid,
-                                payments: newPayments,
+                                payments: sanitizedFixedPayments,
                                 paidAt: new Date().toISOString()
                             };
                             await updateDoc(expenseRef, { paidMonths: paidMonths });
                         } else {
+                            const sanitizedPayments = newPayments.map(p => ({
+                                amount: Number(p.amount) || 0,
+                                date: p.date || new Date().toISOString()
+                            }));
                             await updateDoc(expenseRef, { 
                                 isPaid: nowFullyPaid,
                                 paidAmount: newTotalPaid,
-                                payments: newPayments,
+                                payments: sanitizedPayments,
                                 paidAt: new Date().toISOString()
                             });
                         }
@@ -14230,7 +14237,7 @@
                 const birthDate = parseBirthDate(birthDateStr);
                 const day = birthDate.getDate();
                 if (selectedMonth === currentMonth) {
-                    if (day === currentDay) return { text: '🎉 HOJE!', class: 'bg-green-500 text-white animate-pulse' };
+                    if (day === currentDay) return { text: 'HOJE!', class: 'bg-green-500 text-white animate-pulse' };
                     if (day > currentDay) return { text: `Em ${day - currentDay} dia(s)`, class: 'bg-blue-100 text-blue-800' };
                     return { text: 'Já passou', class: 'bg-stone-100 text-stone-500' };
                 }
@@ -16022,15 +16029,14 @@
                         </div>
                         <div class="flex items-center gap-3">
                             <select id="calendar-filter-collaborator" class="form-input !w-auto" onchange="renderCalendar()">
-                                <option value="">Todos os eventos</option>
                                 ${collaborators.map(c => `<option value="${c.id}">${c.name}</option>`).join('')}
                             </select>
-                            <button class="primary-btn w-auto" data-action="add-calendar-event">
-                                <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            ${!['teacher','teachertn'].includes(currentUserRole) ? \`<button class="primary-btn w-auto text-xs py-1.5 px-2.5" data-action="add-calendar-event">
+                                <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
                                 </svg>
                                 Adicionar Evento
-                            </button>
+                            </button>\` : ''}
                         </div>
                     </div>
                     <div class="calendar-grid" id="calendar-grid">
@@ -16098,13 +16104,15 @@
                                         <option value="aula-extra">Aula Extra</option>
                                         <option value="data-comemorativa">Data Comemorativa</option>
                                         <option value="reuniao">Reunião</option>
-                                    
+                                    </select>
+                                </div>
                                 <div>
                                     <label class="font-medium text-sm">Criado por</label>
                                     <select id="event-creator" class="form-input" required>
                                         <option value="">Selecione quem está criando</option>
                                         ${collaborators.map(c => `<option value="${c.id}">${c.name}</option>`).join('')}
-                                    
+                                    </select>
+                                </div>
                                 <div>
                                     <label class="font-medium text-sm">Diz respeito a</label>
                                     <div id="event-concerns" class="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto border border-stone-200 rounded-lg p-3">
@@ -16673,7 +16681,7 @@
                     return `
                         <div class="base-card !p-3 hover:shadow-lg transition-shadow cursor-pointer" data-action="view-processo" data-id="${processo.id}">
                             <div class="flex justify-between items-start mb-1.5">
-                                <h3 class="text-sm font-bold text-stone-800 flex-grow">${processo.name}</h3>
+                                <h3 class="text-base font-bold text-stone-800 flex-grow">${processo.name}</h3>
                                 ${editButtons}
                             </div>
                             ${descriptionHtml}
