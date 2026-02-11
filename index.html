@@ -5497,6 +5497,9 @@
             document.getElementById('main-title').textContent = 'Rechamada';
             document.getElementById('main-description').textContent = 'Alunos com faltas consecutivas desde 01/10/2025 - Entre em contato para apoio.';
 
+            if (!window.currentRechamadaTeacherFilter) window.currentRechamadaTeacherFilter = 'todos';
+            if (!window.currentRechamadaPage) window.currentRechamadaPage = 1;
+
             const contentArea = document.getElementById('content-area');
             const cutoffDate = new Date('2025-10-01');
 
@@ -5627,18 +5630,17 @@
             let filteredStudents;
 
             if (currentUserRole === 'teacher' || currentUserRole === 'teachertn') {
-                // Professores veem apenas seus próprios alunos
-                // Comparação case-insensitive e trim para evitar problemas com espaços
+                const normalizedUser = normalizeTeacherName(currentUserName);
                 filteredStudents = studentsWithConsecutiveAbsences.filter(s => {
-                    const teacherName = (s.teacher || '').trim().toLowerCase();
-                    const userName = (currentUserName || '').trim().toLowerCase();
-                    return teacherName === userName;
+                    return normalizeTeacherName(s.teacher) === normalizedUser;
                 });
 
-                // Debug: mostrar quantos alunos foram encontrados
-                console.log(`Professor ${currentUserName} vendo ${filteredStudents.length} rechamadas de um total de ${studentsWithConsecutiveAbsences.length}`);
+                console.log('Rechamada - Professor logado:', currentUserName, '| Normalizado:', normalizedUser);
+                console.log('Rechamada - Total rechamadas:', studentsWithConsecutiveAbsences.length, '| Filtradas para professor:', filteredStudents.length);
                 if (filteredStudents.length === 0 && studentsWithConsecutiveAbsences.length > 0) {
-                    console.log('Professores disponíveis:', [...new Set(studentsWithConsecutiveAbsences.map(s => s.teacher))]);
+                    const availableTeachers = [...new Set(studentsWithConsecutiveAbsences.map(s => s.teacher))];
+                    console.log('Rechamada - Professores nos dados:', availableTeachers);
+                    console.log('Rechamada - Professores normalizados:', availableTeachers.map(t => normalizeTeacherName(t)));
                 }
             } else {
                 // Admin, pedagógico, ap, am podem filtrar
@@ -5703,7 +5705,7 @@
                             <select 
                                 id="rechamada-teacher-filter" 
                                 class="form-input !w-auto min-w-[200px]"
-                                onchange="window.currentRechamadaTeacherFilter = this.value; window.currentRechamadaPage = 1; window.cachedRechamadaData = null; renderRechamadaSection();"
+                                onchange="applyRechamadaFilter(this.value);"
                             >
                                 <option value="todos" ${window.currentRechamadaTeacherFilter === 'todos' ? 'selected' : ''}>Todos os professores</option>
                                 ${uniqueTeachers.map(teacher => 
@@ -5917,7 +5919,13 @@
             const container = document.getElementById('rechamadas-history-container');
             if (!container || rechamadas.length === 0) return;
 
-            const sorted = [...rechamadas].sort((a, b) => new Date(b.contactDate) - new Date(a.contactDate));
+            let filteredRechamadas = [...rechamadas];
+            if (currentUserRole === 'teacher' || currentUserRole === 'teachertn') {
+                const normalizedUser = normalizeTeacherName(currentUserName);
+                filteredRechamadas = filteredRechamadas.filter(r => normalizeTeacherName(r.teacherName) === normalizedUser);
+            }
+
+            const sorted = filteredRechamadas.sort((a, b) => new Date(b.contactDate) - new Date(a.contactDate));
             const totalItems = sorted.length;
             const totalPages = Math.ceil(totalItems / RECHAMADA_HISTORY_PER_PAGE);
             const currentPage = Math.min(window.currentRechamadaHistoryPage || 1, totalPages);
@@ -6035,6 +6043,13 @@
             }
         }
         window.goToRechamadaPage = goToRechamadaPage;
+
+        window.applyRechamadaFilter = function(value) {
+            window.currentRechamadaTeacherFilter = value;
+            window.currentRechamadaPage = 1;
+            window.cachedRechamadaData = null;
+            renderRechamadaSection();
+        };
 
         // Fast re-render using cached data (no recalculation)
         function renderRechamadaListOnly() {
