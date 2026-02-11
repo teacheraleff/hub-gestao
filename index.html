@@ -5628,29 +5628,11 @@
 
             // Filtrar por professor se selecionado OU se usuário for professor (ver apenas seus alunos)
             let filteredStudents;
-            const isTeacherRole = (currentUserRole === 'teacher' || currentUserRole === 'teachertn');
-            const normalizedUser = normalizeTeacherName(currentUserName);
-            const isRegisteredTeacher = professores.some(p => normalizeTeacherName(p.name) === normalizedUser);
-
-            if (isTeacherRole || isRegisteredTeacher) {
-                filteredStudents = studentsWithConsecutiveAbsences.filter(s => {
-                    return normalizeTeacherName(s.teacher) === normalizedUser;
+            filteredStudents = window.currentRechamadaTeacherFilter === 'todos' 
+                ? studentsWithConsecutiveAbsences 
+                : studentsWithConsecutiveAbsences.filter(s => {
+                    return normalizeTeacherName(s.teacher) === normalizeTeacherName(window.currentRechamadaTeacherFilter);
                 });
-
-                console.log('Rechamada - Professor logado:', currentUserName, '| Role:', currentUserRole, '| Normalizado:', normalizedUser, '| isRegisteredTeacher:', isRegisteredTeacher);
-                console.log('Rechamada - Total rechamadas:', studentsWithConsecutiveAbsences.length, '| Filtradas para professor:', filteredStudents.length);
-                if (filteredStudents.length === 0 && studentsWithConsecutiveAbsences.length > 0) {
-                    const availableTeachers = [...new Set(studentsWithConsecutiveAbsences.map(s => s.teacher))];
-                    console.log('Rechamada - Professores nos dados:', availableTeachers);
-                    console.log('Rechamada - Professores normalizados:', availableTeachers.map(t => normalizeTeacherName(t)));
-                }
-            } else {
-                filteredStudents = window.currentRechamadaTeacherFilter === 'todos' 
-                    ? studentsWithConsecutiveAbsences 
-                    : studentsWithConsecutiveAbsences.filter(s => {
-                        return normalizeTeacherName(s.teacher) === normalizeTeacherName(window.currentRechamadaTeacherFilter);
-                    });
-            }
 
             // Ordenar por data da primeira falta (mais recente primeiro)
             filteredStudents.sort((a, b) => new Date(b.firstDate) - new Date(a.firstDate));
@@ -5690,7 +5672,7 @@
                         </div>
                     </div>
 
-                                        ${uniqueTeachers.length > 0 && !isTeacherRole && !isRegisteredTeacher ? `
+                                        ${uniqueTeachers.length > 0 ? `
                         <div class="mb-6 flex items-center gap-4">
                             <label class="text-sm font-semibold text-stone-700">Filtrar por professor:</label>
                             <select 
@@ -5716,16 +5698,7 @@
                         </div>
                     ` : ''}
 
-                    ${currentUserRole === 'teacher' ? `
-                        <div class="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-                            <p class="text-sm text-blue-800">
-                                <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                </svg>
-                                Você está vendo apenas os alunos sob sua responsabilidade.
-                            </p>
-                        </div>
-                    ` : ''}
+                    
 
                     <div class="mb-4">
                         <h3 class="text-lg font-bold text-stone-800">
@@ -5874,22 +5847,7 @@
                         ` : ''}
                     `}
 
-                    <!-- Historical Rechamadas Section -->
-                    ${rechamadas.length > 0 ? `
-                        <div class="mt-10 pt-6 border-t-2 border-stone-200">
-                            <div class="flex items-center justify-between mb-4">
-                                <h3 class="text-lg font-bold text-stone-800 flex items-center gap-2">
-                                    <svg class="w-5 h-5 text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                    </svg>
-                                    Histórico de Rechamadas Registradas
-                                </h3>
-                                <span class="text-sm text-stone-500">${rechamadas.length} registro${rechamadas.length !== 1 ? 's' : ''}</span>
-                            </div>
-                            <p class="text-sm text-stone-500 mb-4">Todas as rechamadas cadastradas no sistema, incluindo de VIPs/turmas finalizados ou excluídos.</p>
-                            <div id="rechamadas-history-container"></div>
-                        </div>
-                    ` : ''}
+
                 </section>
 
 
