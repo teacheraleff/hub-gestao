@@ -24078,12 +24078,13 @@ function openAddChecklistForm() {
                 const cat = menuStructure[catKey];
                 if (!cat) return;
 
+                const accessibleItems = cat.items.filter(item => item.roles.includes(currentUserRole));
+                if (accessibleItems.length === 0) return;
+
                 menuHTML += `<div class="sidebar-cat-label">${cat.label}</div>`;
                 menuHTML += '<div class="sidebar-icon-group">';
 
-                cat.items.forEach(item => {
-                    const hasAccess = item.roles.includes(currentUserRole);
-                    if (!hasAccess) return;
+                accessibleItems.forEach(item => {
                     const icon = stripMr3(item.icon);
                     menuHTML += `<button data-target="${item.key}" class="sidebar-icon-btn nav-item" title="${item.label}">
                         ${icon}
