@@ -20636,8 +20636,8 @@ function openAddChecklistForm() {
                             type: 'normal',
                             status: 'pending',
                             createdAt: new Date().toISOString(),
-                            createdBy: currentUser?.displayName || 'Admin',
-                            createdByEmail: currentUser?.email || ''
+                            createdBy: currentUserName || 'Admin',
+                            createdByEmail: window.currentCollaborator?.email || ''
                         };
 
                         await addDoc(collection(db, `artifacts/${appId}/public/data/tasks`), taskData);
@@ -20682,8 +20682,8 @@ function openAddChecklistForm() {
                             checklistItems: checklistItems,
                             status: 'pending',
                             createdAt: new Date().toISOString(),
-                            createdBy: currentUser?.displayName || 'Admin',
-                            createdByEmail: currentUser?.email || ''
+                            createdBy: currentUserName || 'Admin',
+                            createdByEmail: window.currentCollaborator?.email || ''
                         };
 
                         await addDoc(collection(db, `artifacts/${appId}/public/data/tasks`), checklistData);
@@ -20712,8 +20712,8 @@ function openAddChecklistForm() {
                                 urgency: urgency,
                                 status: 'pending',
                                 createdAt: new Date().toISOString(),
-                                createdBy: currentUser?.displayName || 'Admin',
-                                createdByEmail: currentUser?.email || ''
+                                createdBy: currentUserName || 'Admin',
+                                createdByEmail: window.currentCollaborator?.email || ''
                             };
 
                             await addDoc(collection(db, `artifacts/${appId}/public/data/tasks`), lembreteData);
@@ -20760,8 +20760,8 @@ function openAddChecklistForm() {
                                 urgency: urgency,
                                 status: 'pending',
                                 createdAt: new Date().toISOString(),
-                                createdBy: currentUser?.displayName || 'Admin',
-                                createdByEmail: currentUser?.email || ''
+                                createdBy: currentUserName || 'Admin',
+                                createdByEmail: window.currentCollaborator?.email || ''
                             };
 
                             await addDoc(collection(db, `artifacts/${appId}/public/data/tasks`), lembreteData);
@@ -20784,8 +20784,8 @@ function openAddChecklistForm() {
                             type: 'aviso',
                             read: false,
                             createdAt: new Date().toISOString(),
-                            createdBy: currentUser?.displayName || 'Admin',
-                            createdByEmail: currentUser?.email || ''
+                            createdBy: currentUserName || 'Admin',
+                            createdByEmail: window.currentCollaborator?.email || ''
                         };
 
                         await addDoc(collection(db, `artifacts/${appId}/public/data/tasks`), avisoData);
@@ -21282,7 +21282,7 @@ function openAddChecklistForm() {
                         content: guidelineData.content || '',
                         category: guidelineData.category || 'geral',
                         createdAt: new Date().toISOString(),
-                        createdBy: currentUser
+                        createdBy: currentUserName || 'Admin'
                     };
 
                     if (!db) {
