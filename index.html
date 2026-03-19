@@ -3225,6 +3225,11 @@
                                 return '';
                             })() : ''}
                             ${!isFinalizado ? statusTag : ''}
+                            ${vipRecord && !isFinalizado && (!vipRecord.day1 || !vipRecord.startTime1) ? `
+                                <div class="mt-2 flex items-center gap-2 bg-amber-50 border border-amber-300 rounded-lg px-3 py-2">
+                                    <svg width="15" height="15" fill="none" stroke="#D97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" class="flex-shrink-0"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                                    <span class="text-xs font-semibold text-amber-800">Dias e horários não configurados</span>
+                                </div>` : ''}
                         </div>
                     </div>
                     <div class="mt-auto pt-4 border-t ${borderColor} flex flex-wrap gap-2">
@@ -6490,45 +6495,75 @@
 
             const contentArea = document.getElementById('content-area');
 
-            // Coletar todas as intercorrências de todos os registros de attendance
+            // Calcular intercorrências retroativamente a partir dos dados reais de aulas e dias configurados
             const todasIntercorrencias = [];
+            const DAY_NAMES = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
 
             attendance.forEach(record => {
-                if (!record.intercorrencias || record.intercorrencias.length === 0) return;
+                if (!record.lessons || Object.keys(record.lessons).length === 0) return;
 
                 const turma = turmas.find(t => t.id === record.id);
                 const vipRecord = vips.find(v => v.id === record.id);
 
                 let unitName = 'Desconhecido';
                 let unitType = 'desconhecido';
-                let studentName = '';
+                let unit = null;
 
                 if (turma) {
                     unitName = turma.name;
                     unitType = 'turma';
+                    unit = turma;
                 } else if (vipRecord) {
-                    const st = students.find(s => s.id === vipRecord.studentId);
-                    studentName = vipRecord.studentName || (st ? st.name : 'Desconhecido');
-                    unitName = studentName;
+                    unitName = vipRecord.studentName || 'Desconhecido';
                     unitType = 'vip';
+                    unit = vipRecord;
                 }
 
-                record.intercorrencias.forEach(ic => {
-                    todasIntercorrencias.push({
-                        ...ic,
-                        unitId: record.id,
-                        unitName,
-                        unitType,
-                        studentName: unitType === 'vip' ? unitName : ''
+                if (!unit || !unit.day1) return; // sem dias configurados, não há como detectar
+
+                // Montar lista de weekdays permitidos
+                const allowedWeekdays = [unit.day1, unit.day2, unit.day3]
+                    .filter(Boolean)
+                    .map(d => dayNameToWeekday(d))
+                    .filter(n => n >= 0);
+                if (allowedWeekdays.length === 0) return;
+
+                // Mapa de intercorrências já salvas para enriquecer com detectedBy/detectedAt
+                const savedMap = {};
+                if (record.intercorrencias) {
+                    record.intercorrencias.forEach(ic => {
+                        savedMap[`${ic.lessonNumber}_${ic.lessonDate}`] = ic;
                     });
+                }
+
+                // Verificar cada aula com data preenchida
+                Object.entries(record.lessons).forEach(([lessonKey, lessonData]) => {
+                    if (!lessonData || !lessonData.date) return;
+                    const [ly, lm, ld] = lessonData.date.split('-').map(Number);
+                    const dow = new Date(ly, lm - 1, ld).getDay();
+                    if (!allowedWeekdays.includes(dow)) {
+                        const lessonNumber = parseInt(lessonKey);
+                        const savedIc = savedMap[`${lessonNumber}_${lessonData.date}`];
+                        todasIntercorrencias.push({
+                            unitId: record.id,
+                            unitName,
+                            unitType,
+                            lessonNumber,
+                            lessonDate: lessonData.date,
+                            actualDay: DAY_NAMES[dow],
+                            expectedDays: allowedWeekdays.map(n => DAY_NAMES[n]),
+                            detectedBy: savedIc?.detectedBy || null,
+                            detectedAt: savedIc?.detectedAt || null
+                        });
+                    }
                 });
             });
 
-            // Ordenar por data de aula (mais recentes primeiro)
+            // Ordenar por nome da unidade e número de aula
             todasIntercorrencias.sort((a, b) => {
-                if (b.lessonDate > a.lessonDate) return 1;
-                if (b.lessonDate < a.lessonDate) return -1;
-                return 0;
+                if (a.unitName < b.unitName) return -1;
+                if (a.unitName > b.unitName) return 1;
+                return a.lessonNumber - b.lessonNumber;
             });
 
             const formatExpectedDays = (days) => Array.isArray(days) ? days.join(', ') : days;
@@ -6550,8 +6585,8 @@
                         <td class="py-3 px-4 text-center">
                             <span class="px-2 py-0.5 bg-green-100 text-green-700 rounded font-medium text-xs">${formatExpectedDays(ic.expectedDays)}</span>
                         </td>
-                        <td class="py-3 px-4 text-stone-500 text-xs">${ic.detectedBy || '-'}</td>
-                        <td class="py-3 px-4 text-stone-400 text-xs">${detectedAt}</td>
+                        <td class="py-3 px-4 text-xs">${ic.detectedBy ? `<span class="text-stone-500">${ic.detectedBy}</span>` : `<span class="text-stone-400 italic">Retroativo</span>`}</td>
+                        <td class="py-3 px-4 text-stone-400 text-xs">${detectedAt !== '-' ? detectedAt : `<span class="italic">—</span>`}</td>
                     </tr>
                 `;
             }).join('');
@@ -9753,11 +9788,11 @@
                         <select id="vip-level" class="form-input"><option value="">Sem nível definido</option>${levelOptions}</select>
                         <input type="text" id="vip-level-custom" class="form-input mt-2 hidden" placeholder="Digite o nível personalizado">
                     </div>
-                    <div class="border border-stone-200 rounded-lg p-4 bg-stone-50">
-                        <h4 class="font-semibold text-sm text-stone-700 mb-3">Dia 1 <span class="text-stone-400 text-xs">(opcional)</span></h4>
+                    <div class="border border-amber-300 rounded-lg p-4 bg-amber-50">
+                        <h4 class="font-semibold text-sm text-amber-800 mb-3">Dia 1 <span class="text-red-500">*</span> <span class="text-amber-600 text-xs font-normal">(obrigatório)</span></h4>
                         <div class="grid grid-cols-3 gap-4">
                             <div>
-                                <label class="font-medium text-xs">Dia da Semana</label>
+                                <label class="font-medium text-xs">Dia da Semana <span class="text-red-500">*</span></label>
                                 <select id="vip-day1" class="form-input">
                                     <option value="">Selecione</option>
                                     <option value="Segunda" ${vip?.day1 === 'Segunda' ? 'selected' : ''}>Segunda</option>
@@ -9768,11 +9803,11 @@
                                     <option value="Sábado" ${vip?.day1 === 'Sábado' ? 'selected' : ''}>Sábado</option>
                                 
                             <div>
-                                <label class="font-medium text-xs">Horário Início</label>
+                                <label class="font-medium text-xs">Horário Início <span class="text-red-500">*</span></label>
                                 <input type="time" id="vip-startTime1" class="form-input" value="${vip?.startTime1 || ''}">
                             </div>
                             <div>
-                                <label class="font-medium text-xs">Horário Fim</label>
+                                <label class="font-medium text-xs">Horário Fim <span class="text-red-500">*</span></label>
                                 <input type="time" id="vip-endTime1" class="form-input" value="${vip?.endTime1 || ''}">
                             </div>
                         </div>
@@ -10019,10 +10054,16 @@
                 : levelSelect.value;
 
             // Validação de campos obrigatórios
+            const day1 = document.getElementById('vip-day1').value;
+            const startTime1 = document.getElementById('vip-startTime1').value;
+            const endTime1 = document.getElementById('vip-endTime1').value;
             const missingFields = [];
             if (!studentId || !studentName) missingFields.push('Aluno VIP');
             if (!startDate) missingFields.push('Data de Início');
             if (!endDate) missingFields.push('Data de Finalização');
+            if (!day1) missingFields.push('Dia 1 — Dia da Semana');
+            if (!startTime1) missingFields.push('Dia 1 — Horário Início');
+            if (!endTime1) missingFields.push('Dia 1 — Horário Fim');
 
             if (missingFields.length > 0) {
                 const errorDiv = document.getElementById('vip-student-error');
@@ -10050,9 +10091,9 @@
                 teacherId: selectedTeacherOption.value || null,
                 teacherName: selectedTeacherOption.getAttribute('data-name') || null,
                 level: levelValue || null,
-                day1: document.getElementById('vip-day1').value || null,
-                startTime1: document.getElementById('vip-startTime1').value || null,
-                endTime1: document.getElementById('vip-endTime1').value || null,
+                day1: day1 || null,
+                startTime1: startTime1 || null,
+                endTime1: endTime1 || null,
                 day2: document.getElementById('vip-day2').value || null,
                 startTime2: document.getElementById('vip-startTime2').value || null,
                 endTime2: document.getElementById('vip-endTime2').value || null,
@@ -10384,8 +10425,8 @@
                 }
                 const dateClass = isOutOfSchedule ? 'border-red-400 bg-red-50' : '';
                 const warningHtml = isOutOfSchedule
-                    ? `<span class="pef-date-warning text-red-500 text-xs font-semibold">⚠️ Fora do dia programado</span>`
-                    : `<span class="pef-date-warning text-red-500 text-xs font-semibold hidden">⚠️ Fora do dia programado</span>`;
+                    ? `<span class="pef-date-warning flex items-center gap-1 text-red-500 text-xs font-semibold"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Fora do dia programado</span>`
+                    : `<span class="pef-date-warning flex items-center gap-1 text-red-500 text-xs font-semibold hidden"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Fora do dia programado</span>`;
 
                 const studentsHtml = turmaStudents.map(student => {
                     const studentStatus = lessonData?.students?.[student.id] || '';
@@ -10435,7 +10476,7 @@
                 <div class="bg-blue-50 border border-blue-200 rounded-lg p-2 mb-3 flex items-center gap-2">
                     <svg width="16" height="16" fill="none" stroke="#3B82F6" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
                     ${startDateInfo}
-                    ${scheduledDates.length > 0 ? `<span class="text-xs text-blue-600 ml-auto">📅 Datas auto-geradas (ignora feriados nacionais)</span>` : ''}
+                    ${scheduledDates.length > 0 ? `<span class="flex items-center gap-1 text-xs text-blue-600 ml-auto"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Datas auto-geradas (ignora feriados nacionais)</span>` : ''}
                 </div>
                 <div class="grid grid-cols-2 gap-4">${lessonsHtml}</div>
                 <div class="sticky bottom-0 left-0 right-0 bg-white border-t-2 border-yellow-400 p-3 mt-3 shadow-lg z-10">
@@ -10503,10 +10544,10 @@
                     isOutOv = !allowedWeekdays.includes(new Date(oy, om - 1, od).getDay());
                 }
                 let bgColor = isOutOv ? 'bg-orange-400' : 'bg-stone-200';
-                let title = `Aula ${i}: ${isOutOv ? '⚠️ Fora do dia programado' : 'Não registrada'}`;
-                if (status === 'P') { bgColor = isOutOv ? 'bg-orange-500' : 'bg-green-500'; title = `Aula ${i}: Presente${isOutOv ? ' ⚠️' : ''}`; }
-                else if (status === 'F') { bgColor = isOutOv ? 'bg-orange-600' : 'bg-red-500'; title = `Aula ${i}: Falta${isOutOv ? ' ⚠️' : ''}`; }
-                else if (status === 'PP') { bgColor = isOutOv ? 'bg-orange-400' : 'bg-amber-400'; title = `Aula ${i}: Presença Parcial${isOutOv ? ' ⚠️' : ''}`; }
+                let title = `Aula ${i}: ${isOutOv ? '! Fora do dia programado' : 'Não registrada'}`;
+                if (status === 'P') { bgColor = isOutOv ? 'bg-orange-500' : 'bg-green-500'; title = `Aula ${i}: Presente${isOutOv ? ' (fora do dia)' : ''}`; }
+                else if (status === 'F') { bgColor = isOutOv ? 'bg-orange-600' : 'bg-red-500'; title = `Aula ${i}: Falta${isOutOv ? ' (fora do dia)' : ''}`; }
+                else if (status === 'PP') { bgColor = isOutOv ? 'bg-orange-400' : 'bg-amber-400'; title = `Aula ${i}: Presença Parcial${isOutOv ? ' (fora do dia)' : ''}`; }
                 overviewHtml += `<div class="w-7 h-7 ${bgColor} rounded cursor-pointer hover:scale-110 transition-transform" title="${title}" onclick="document.getElementById('lesson-row-${vipId}-${i}').scrollIntoView({behavior:'smooth',block:'center'})"><span class="text-[10px] text-white font-bold flex items-center justify-center h-full">${isOutOv ? '!' : i}</span></div>`;
             }
 
@@ -10527,8 +10568,8 @@
                 }
                 const dateClass = isOutOfSchedule ? 'border-red-400 bg-red-50' : '';
                 const warningHtml = isOutOfSchedule
-                    ? `<span class="pef-date-warning text-red-500 text-xs font-semibold">⚠️ Fora do dia programado</span>`
-                    : `<span class="pef-date-warning text-red-500 text-xs font-semibold hidden">⚠️ Fora do dia programado</span>`;
+                    ? `<span class="pef-date-warning flex items-center gap-1 text-red-500 text-xs font-semibold"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Fora do dia programado</span>`
+                    : `<span class="pef-date-warning flex items-center gap-1 text-red-500 text-xs font-semibold hidden"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Fora do dia programado</span>`;
 
                 const studentHtml = `
                     <div class="pef-student-attendance-row" data-student-id="${student.id}">
@@ -10579,7 +10620,7 @@
                 <div class="bg-blue-50 border border-blue-200 rounded-lg p-2 mb-3 flex items-center gap-2 flex-wrap">
                     <svg width="16" height="16" fill="none" stroke="#3B82F6" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
                     ${startDateInfoVip}
-                    ${scheduledDates.length > 0 ? `<span class="text-xs text-blue-600 ml-auto">📅 Datas auto-geradas (ignora feriados nacionais)</span>` : ''}
+                    ${scheduledDates.length > 0 ? `<span class="flex items-center gap-1 text-xs text-blue-600 ml-auto"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Datas auto-geradas (ignora feriados nacionais)</span>` : ''}
                 </div>
                 <div class="bg-stone-50 rounded-lg p-3 mb-4 border border-stone-200">
                     <div class="flex items-center justify-between mb-2">
@@ -10588,7 +10629,7 @@
                             <span class="flex items-center gap-1"><span class="w-3 h-3 bg-green-500 rounded"></span> ${presencas}P</span>
                             <span class="flex items-center gap-1"><span class="w-3 h-3 bg-red-500 rounded"></span> ${faltas}F</span>
                             <span class="flex items-center gap-1"><span class="w-3 h-3 bg-amber-400 rounded"></span> ${parciais}PP</span>
-                            <span class="flex items-center gap-1"><span class="w-3 h-3 bg-orange-400 rounded"></span> ⚠️ Intercorrência</span>
+                            <span class="flex items-center gap-1"><span class="w-3 h-3 bg-orange-400 rounded"></span> <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Intercorrência</span>
                             <span class="flex items-center gap-1"><span class="w-3 h-3 bg-stone-200 rounded"></span> ${pendentes}</span>
                         </div>
                     </div>
@@ -24977,7 +25018,7 @@ function openAddChecklistForm() {
                         { key: 'grade', label: 'Grade', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" x2="16" y1="2" y2="6"></line><line x1="8" x2="8" y1="2" y2="6"></line><line x1="3" x2="21" y1="10" y2="10"></line></svg>', roles: ['admin', 'teacher', 'teachertn', 'coord', 'superv', 'estagiario', 'comercial'] },
                         { key: 'calendario', label: 'Calendário', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>', roles: ['admin', 'teacher', 'teachertn', 'coord', 'superv', 'estagiario', 'comercial'] },
                         { key: 'rechamada', label: 'Rechamada', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>', roles: ['admin', 'teacher', 'teachertn', 'coord', 'superv', 'estagiario', 'comercial'] },
-                        { key: 'intercorrencias-pedagogicas', label: 'Intercorrências', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>', roles: ['admin', 'teacher', 'teachertn', 'coord', 'superv'] }
+                        { key: 'intercorrencias-pedagogicas', label: 'Intercorrências', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>', roles: ['admin', 'coord', 'superv'] }
                     ]
                 },
                 comercial: {
@@ -25383,7 +25424,7 @@ function openAddChecklistForm() {
                 'grade': ['admin', 'teacher', 'teachertn', 'coord', 'superv', 'estagiario', 'comercial'],
                 'calendario': ['admin', 'teacher', 'teachertn', 'coord', 'superv', 'estagiario', 'comercial'],
                 'rechamada': ['admin', 'teacher', 'teachertn', 'coord', 'superv', 'estagiario', 'comercial'],
-                'intercorrencias-pedagogicas': ['admin', 'teacher', 'teachertn', 'coord', 'superv'],
+                'intercorrencias-pedagogicas': ['admin', 'coord', 'superv'],
                 'kpis-pedagogico': ['admin', 'coord', 'superv', 'comercial'],
                 'agendamentos-tns': ['admin', 'teachertn', 'coord', 'superv', 'estagiario', 'comercial'],
                 'gestao-tns': ['admin', 'teachertn', 'coord', 'superv', 'estagiario', 'comercial'],
