@@ -821,7 +821,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, updateProfile, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+        import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, updateProfile, signInAnonymously, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
         import { getFirestore, collection, onSnapshot, addDoc, doc, deleteDoc, serverTimestamp, query, setDoc, getDoc, updateDoc, orderBy, limit, where, arrayUnion, arrayRemove, getDocs, writeBatch, deleteField } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-storage.js";
 
@@ -952,6 +952,12 @@
                 },
                 'kpis-pedagogico': {
                     label: 'KPIs pedagógicos',
+                    actions: {
+                        'full_access': { label: 'Acesso total', default: false }
+                    }
+                },
+                'intercorrencias-pedagogicas': {
+                    label: 'Intercorrências Pedagógicas',
                     actions: {
                         'full_access': { label: 'Acesso total', default: false }
                     }
@@ -2015,6 +2021,9 @@
                             <label for="login-password" class="sr-only">Senha</label>
                             <input id="login-password" name="password" type="password" autocomplete="current-password" required class="form-input" placeholder="Senha">
                         </div>
+                        <div class="text-center">
+                            <button type="button" onclick="showForgotPasswordView()" class="text-xs text-stone-500 hover:text-stone-700 underline underline-offset-2">Esqueci minha senha</button>
+                        </div>
                         <p id="login-error" class="text-sm text-red-600 text-center"></p>
                         <div>
                             <button type="submit" class="primary-btn full-width">Entrar</button>
@@ -2028,6 +2037,60 @@
             `;
             document.getElementById('login-form').addEventListener('submit', handleLogin);
         }
+
+        function showForgotPasswordView() {
+            const loginView = document.getElementById('login-view');
+            loginView.innerHTML = `
+                <div class="w-full max-w-md p-8 space-y-6 bg-white rounded-xl shadow-lg">
+                    <div class="text-center">
+                        <img src="https://res.cloudinary.com/dqfi22uz0/image/upload/v1749349751/DBB440C2-684E-4DCF-9CD3-B2DDC18F1E53_3_vgocga.jpg" alt="Logo SLAP" class="w-24 h-auto mx-auto rounded-lg mb-4">
+                        <h2 class="text-2xl font-bold text-stone-900">Recuperar senha</h2>
+                        <p class="mt-2 text-sm text-stone-600">Informe seu e-mail cadastrado e enviaremos um link para redefinir sua senha.</p>
+                    </div>
+                    <form id="reset-form" class="space-y-4">
+                        <div>
+                            <label for="reset-email" class="sr-only">E-mail</label>
+                            <input id="reset-email" type="email" autocomplete="email" required class="form-input" placeholder="Endereço de e-mail">
+                        </div>
+                        <p id="reset-msg" class="text-sm text-center hidden"></p>
+                        <button type="submit" class="primary-btn full-width">Enviar link de recuperação</button>
+                    </form>
+                    <div class="text-center">
+                        <button onclick="showLoginView()" class="text-sm text-stone-500 hover:text-stone-700 underline underline-offset-2">← Voltar para o login</button>
+                    </div>
+                </div>
+            `;
+            document.getElementById('reset-form').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const email = document.getElementById('reset-email').value.trim();
+                const msg = document.getElementById('reset-msg');
+                const btn = e.target.querySelector('button[type="submit"]');
+                btn.disabled = true;
+                btn.textContent = 'Enviando...';
+                msg.className = 'text-sm text-center';
+                msg.classList.remove('hidden');
+                try {
+                    await sendPasswordResetEmail(auth, email);
+                    msg.classList.add('text-green-600');
+                    msg.classList.remove('text-red-600');
+                    msg.textContent = 'Link enviado! Verifique sua caixa de entrada (e o spam).';
+                    btn.textContent = 'Link enviado';
+                } catch (err) {
+                    btn.disabled = false;
+                    btn.textContent = 'Enviar link de recuperação';
+                    msg.classList.add('text-red-600');
+                    msg.classList.remove('text-green-600');
+                    if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-email') {
+                        msg.textContent = 'E-mail não encontrado. Verifique o endereço informado.';
+                    } else {
+                        msg.textContent = 'Erro ao enviar. Tente novamente em instantes.';
+                    }
+                }
+            });
+        }
+
+        window.showForgotPasswordView = showForgotPasswordView;
+        window.showLoginView = showLoginView;
 
         function showHubView() { 
             loginView.classList.add('hidden');
@@ -6421,6 +6484,132 @@
             }
         }
 
+        function renderIntercorrenciasPedagogicasSection() {
+            document.getElementById('main-title').textContent = 'Intercorrências Pedagógicas';
+            document.getElementById('main-description').textContent = 'Aulas registradas fora dos dias programados para alunos VIP e turmas.';
+
+            const contentArea = document.getElementById('content-area');
+
+            // Coletar todas as intercorrências de todos os registros de attendance
+            const todasIntercorrencias = [];
+
+            attendance.forEach(record => {
+                if (!record.intercorrencias || record.intercorrencias.length === 0) return;
+
+                const turma = turmas.find(t => t.id === record.id);
+                const vipRecord = vips.find(v => v.id === record.id);
+
+                let unitName = 'Desconhecido';
+                let unitType = 'desconhecido';
+                let studentName = '';
+
+                if (turma) {
+                    unitName = turma.name;
+                    unitType = 'turma';
+                } else if (vipRecord) {
+                    const st = students.find(s => s.id === vipRecord.studentId);
+                    studentName = vipRecord.studentName || (st ? st.name : 'Desconhecido');
+                    unitName = studentName;
+                    unitType = 'vip';
+                }
+
+                record.intercorrencias.forEach(ic => {
+                    todasIntercorrencias.push({
+                        ...ic,
+                        unitId: record.id,
+                        unitName,
+                        unitType,
+                        studentName: unitType === 'vip' ? unitName : ''
+                    });
+                });
+            });
+
+            // Ordenar por data de aula (mais recentes primeiro)
+            todasIntercorrencias.sort((a, b) => {
+                if (b.lessonDate > a.lessonDate) return 1;
+                if (b.lessonDate < a.lessonDate) return -1;
+                return 0;
+            });
+
+            const formatExpectedDays = (days) => Array.isArray(days) ? days.join(', ') : days;
+
+            const rows = todasIntercorrencias.map(ic => {
+                const typeTag = ic.unitType === 'vip'
+                    ? `<span class="px-2 py-0.5 text-xs rounded-full font-semibold bg-purple-100 text-purple-700">VIP</span>`
+                    : `<span class="px-2 py-0.5 text-xs rounded-full font-semibold bg-blue-100 text-blue-700">Turma</span>`;
+                const detectedAt = ic.detectedAt ? new Date(ic.detectedAt).toLocaleDateString('pt-BR') : '-';
+                return `
+                    <tr class="border-b border-stone-100 hover:bg-amber-50 transition-colors">
+                        <td class="py-3 px-4">${typeTag}</td>
+                        <td class="py-3 px-4 font-medium text-stone-800">${ic.unitName}</td>
+                        <td class="py-3 px-4 text-center font-bold text-stone-700">${ic.lessonNumber}</td>
+                        <td class="py-3 px-4 text-center text-stone-700">${formatDateBR(ic.lessonDate)}</td>
+                        <td class="py-3 px-4 text-center">
+                            <span class="px-2 py-0.5 bg-red-100 text-red-700 rounded font-medium text-xs">${ic.actualDay}</span>
+                        </td>
+                        <td class="py-3 px-4 text-center">
+                            <span class="px-2 py-0.5 bg-green-100 text-green-700 rounded font-medium text-xs">${formatExpectedDays(ic.expectedDays)}</span>
+                        </td>
+                        <td class="py-3 px-4 text-stone-500 text-xs">${ic.detectedBy || '-'}</td>
+                        <td class="py-3 px-4 text-stone-400 text-xs">${detectedAt}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            const emptyState = `
+                <tr>
+                    <td colspan="8" class="py-12 text-center text-stone-500">
+                        <div class="flex flex-col items-center gap-2">
+                            <svg width="40" height="40" fill="none" stroke="#10B981" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            <p class="font-medium text-stone-700">Nenhuma intercorrência registrada</p>
+                            <p class="text-sm">Todas as aulas estão sendo registradas nos dias programados.</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+
+            contentArea.innerHTML = `
+                <div id="intercorrencias-pedagogicas-section">
+                    <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6 flex items-start gap-3">
+                        <svg width="20" height="20" fill="none" stroke="#D97706" stroke-width="2" viewBox="0 0 24 24" class="mt-0.5 shrink-0"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/></svg>
+                        <div>
+                            <p class="font-semibold text-amber-800">O que são intercorrências pedagógicas?</p>
+                            <p class="text-sm text-amber-700 mt-1">São aulas registradas na PEF em dias que <strong>não fazem parte do cronograma</strong> do aluno ou turma. Por exemplo, se um aluno tem aula toda segunda e quarta, mas o professor registrou uma aula numa sexta, isso é uma intercorrência — pode indicar reposição ou reagendamento não comunicado à coordenação.</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-lg font-bold text-stone-800">
+                            Aulas fora do cronograma
+                            ${todasIntercorrencias.length > 0 ? `<span class="ml-2 px-2 py-0.5 bg-red-500 text-white text-sm rounded-full">${todasIntercorrencias.length}</span>` : ''}
+                        </h2>
+                    </div>
+
+                    <div class="bg-white border border-stone-200 rounded-xl shadow-sm overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm">
+                                <thead class="bg-stone-50 border-b border-stone-200">
+                                    <tr>
+                                        <th class="py-3 px-4 text-left text-xs font-semibold text-stone-600 uppercase">Tipo</th>
+                                        <th class="py-3 px-4 text-left text-xs font-semibold text-stone-600 uppercase">Aluno / Turma</th>
+                                        <th class="py-3 px-4 text-center text-xs font-semibold text-stone-600 uppercase">Aula Nº</th>
+                                        <th class="py-3 px-4 text-center text-xs font-semibold text-stone-600 uppercase">Data da Aula</th>
+                                        <th class="py-3 px-4 text-center text-xs font-semibold text-stone-600 uppercase">Dia Registrado</th>
+                                        <th class="py-3 px-4 text-center text-xs font-semibold text-stone-600 uppercase">Dias Programados</th>
+                                        <th class="py-3 px-4 text-left text-xs font-semibold text-stone-600 uppercase">Detectado por</th>
+                                        <th class="py-3 px-4 text-left text-xs font-semibold text-stone-600 uppercase">Em</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${todasIntercorrencias.length > 0 ? rows : emptyState}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
         function renderKPIsPedagogicoSection() {
             document.getElementById('main-title').textContent = 'KPIs';
             document.getElementById('main-description').textContent = 'Métricas e indicadores pedagógicos para acompanhamento.';
@@ -10024,6 +10213,82 @@
 
 
 
+        // ---- PEF HELPERS: Feriados nacionais, geração de datas e verificação de dia ----
+        function dayNameToWeekday(dayName) {
+            const map = { 'Domingo': 0, 'Segunda': 1, 'Terça': 2, 'Quarta': 3, 'Quinta': 4, 'Sexta': 5, 'Sábado': 6 };
+            return map[dayName] !== undefined ? map[dayName] : -1;
+        }
+
+        function calcularPascoa(year) {
+            const a = year % 19, b = Math.floor(year / 100), c = year % 100;
+            const d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25);
+            const g = Math.floor((b - f + 1) / 3), h = (19 * a + b - d - g + 15) % 30;
+            const i = Math.floor(c / 4), k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7;
+            const m = Math.floor((a + 11 * h + 22 * l) / 451);
+            const month = Math.floor((h + l - 7 * m + 114) / 31);
+            const day = ((h + l - 7 * m + 114) % 31) + 1;
+            return new Date(year, month - 1, day);
+        }
+
+        function getFeriadosBrasileiros(year) {
+            const feriados = new Set();
+            const add = (y, m, d) => { const dt = new Date(y, m - 1, d); feriados.add(dt.toISOString().split('T')[0]); };
+            add(year, 1, 1); add(year, 4, 21); add(year, 5, 1); add(year, 9, 7);
+            add(year, 10, 12); add(year, 11, 2); add(year, 11, 15); add(year, 11, 20); add(year, 12, 25);
+            const pascoa = calcularPascoa(year);
+            const sextaSanta = new Date(pascoa); sextaSanta.setDate(pascoa.getDate() - 2);
+            feriados.add(sextaSanta.toISOString().split('T')[0]);
+            return feriados;
+        }
+
+        const FERIADOS_CACHE = {};
+        function isFeriadoNacional(dateStr) {
+            const year = parseInt(dateStr.split('-')[0]);
+            if (!FERIADOS_CACHE[year]) FERIADOS_CACHE[year] = getFeriadosBrasileiros(year);
+            return FERIADOS_CACHE[year].has(dateStr);
+        }
+
+        function gerarDatasAgendadas(startDateStr, weekdays, count = 36) {
+            if (!startDateStr || !weekdays || weekdays.length === 0) return [];
+            const [y, m, d] = startDateStr.split('-').map(Number);
+            let current = new Date(y, m - 1, d);
+            const dates = [];
+            let attempts = 0;
+            while (dates.length < count && attempts < 600) {
+                attempts++;
+                const dow = current.getDay();
+                const dateStr = current.getFullYear() + '-' +
+                    String(current.getMonth() + 1).padStart(2, '0') + '-' +
+                    String(current.getDate()).padStart(2, '0');
+                if (weekdays.includes(dow) && !isFeriadoNacional(dateStr)) {
+                    dates.push(dateStr);
+                }
+                current.setDate(current.getDate() + 1);
+            }
+            return dates;
+        }
+
+        function checkLessonDateSchedule(inputEl, allowedDaysStr) {
+            if (!inputEl.value || !allowedDaysStr) return;
+            const allowedDays = allowedDaysStr.split(',').map(Number).filter(n => !isNaN(n));
+            if (allowedDays.length === 0) return;
+            const [y, m, d] = inputEl.value.split('-').map(Number);
+            const dow = new Date(y, m - 1, d).getDay();
+            const isOut = !allowedDays.includes(dow);
+            const warningEl = inputEl.parentElement.querySelector('.pef-date-warning');
+            if (isOut) {
+                inputEl.classList.add('border-red-400', 'bg-red-50');
+                inputEl.classList.remove('border-stone-200');
+                if (warningEl) warningEl.classList.remove('hidden');
+            } else {
+                inputEl.classList.remove('border-red-400', 'bg-red-50');
+                inputEl.classList.add('border-stone-200');
+                if (warningEl) warningEl.classList.add('hidden');
+            }
+        }
+        window.checkLessonDateSchedule = checkLessonDateSchedule;
+        // ---- FIM PEF HELPERS ----
+
         function openTurmaPefModal(turmaId) {
             const turma = turmas.find(t => t.id === turmaId);
             if (!turma) { showErrorMessage("Erro", "Turma não encontrada."); return; }
@@ -10090,27 +10355,37 @@
 
             const unitAttendance = attendance.find(a => a.id === turmaId);
 
-            // Obter dias da semana permitidos para esta turma
-            const allowedWeekdays = [];
-            if (turma.day1?.weekday !== undefined && turma.day1?.weekday !== null && turma.day1?.weekday !== '') {
-                allowedWeekdays.push(parseInt(turma.day1.weekday));
-            }
-            if (turma.day2?.weekday !== undefined && turma.day2?.weekday !== null && turma.day2?.weekday !== '') {
-                allowedWeekdays.push(parseInt(turma.day2.weekday));
-            }
-            if (turma.day3?.weekday !== undefined && turma.day3?.weekday !== null && turma.day3?.weekday !== '') {
-                allowedWeekdays.push(parseInt(turma.day3.weekday));
-            }
-
-            // Não é mais necessário gerar lista de datas - usando input type="date"
+            // Obter dias da semana permitidos para esta turma (day1/day2/day3 são strings como "Segunda")
+            const allowedWeekdays = [turma.day1, turma.day2, turma.day3]
+                .filter(d => d)
+                .map(d => dayNameToWeekday(d))
+                .filter(n => n >= 0);
 
             const dayNames = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
             const allowedDayNames = allowedWeekdays.length > 0 ? allowedWeekdays.map(d => dayNames[d]).join(', ') : 'todos os dias';
 
+            // Gerar datas agendadas (36 aulas) com base na data de início
+            const scheduledDates = gerarDatasAgendadas(turma.startDate || '', allowedWeekdays, 36);
+            const allowedDaysAttr = allowedWeekdays.join(',');
+
             let lessonsHtml = '';
-            for (let i = 1; i <= 40; i++) {
+            for (let i = 1; i <= 36; i++) {
                 const lessonData = unitAttendance?.lessons?.[i];
-                const lessonDate = lessonData?.date || '';
+                const savedDate = lessonData?.date || '';
+                const autoDate = scheduledDates[i - 1] || '';
+                const lessonDate = savedDate || autoDate;
+
+                // Verificar se a data está fora do dia programado
+                let isOutOfSchedule = false;
+                if (lessonDate && allowedWeekdays.length > 0) {
+                    const [ly, lm, ld] = lessonDate.split('-').map(Number);
+                    const dow = new Date(ly, lm - 1, ld).getDay();
+                    isOutOfSchedule = !allowedWeekdays.includes(dow);
+                }
+                const dateClass = isOutOfSchedule ? 'border-red-400 bg-red-50' : '';
+                const warningHtml = isOutOfSchedule
+                    ? `<span class="pef-date-warning text-red-500 text-xs font-semibold">⚠️ Fora do dia programado</span>`
+                    : `<span class="pef-date-warning text-red-500 text-xs font-semibold hidden">⚠️ Fora do dia programado</span>`;
 
                 const studentsHtml = turmaStudents.map(student => {
                     const studentStatus = lessonData?.students?.[student.id] || '';
@@ -10135,7 +10410,8 @@
                     <div class="border border-stone-200 rounded-lg p-2" id="lesson-row-${turmaId}-${i}" data-lesson-number="${i}">
                         <div class="flex items-center gap-2 mb-2 pb-1 border-b border-stone-100">
                             <span class="font-bold text-stone-800 text-xs px-2 py-0.5 rounded" style="background-color: #F1D24B;">Aula ${i}</span>
-                            <input type="date" class="form-input p-1 text-xs lesson-date flex-1" value="${lessonDate}" data-allowed-days="${allowedWeekdays.join(',')}">
+                            <input type="date" class="form-input p-1 text-xs lesson-date flex-1 ${dateClass}" value="${lessonDate}" data-allowed-days="${allowedDaysAttr}" onchange="checkLessonDateSchedule(this, '${allowedDaysAttr}')">
+                            ${warningHtml}
                         </div>
                         <div class="grid grid-cols-2 gap-1 mb-2">
                             <input type="text" class="form-input p-1 text-xs lesson-topic" placeholder="Tema" value="${lessonData?.topic || ''}">
@@ -10146,15 +10422,24 @@
                         </div>
                     </div>
                 `;
-                if (isEvenLesson && i < 40) {
+                if (isEvenLesson && i < 36) {
                     lessonsHtml += '<div class="col-span-2 border-b border-stone-200 my-1"></div>';
                 }
             }
 
+            const startDateInfo = turma.startDate
+                ? `<span class="text-xs text-stone-500">Início: <strong>${formatDateBR(turma.startDate)}</strong> · Dias: <strong>${allowedDayNames}</strong></span>`
+                : `<span class="text-xs text-stone-500">Dias: <strong>${allowedDayNames}</strong></span>`;
+
             modalContentArea.innerHTML = `
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-2 mb-3 flex items-center gap-2">
+                    <svg width="16" height="16" fill="none" stroke="#3B82F6" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+                    ${startDateInfo}
+                    ${scheduledDates.length > 0 ? `<span class="text-xs text-blue-600 ml-auto">📅 Datas auto-geradas (ignora feriados nacionais)</span>` : ''}
+                </div>
                 <div class="grid grid-cols-2 gap-4">${lessonsHtml}</div>
                 <div class="sticky bottom-0 left-0 right-0 bg-white border-t-2 border-yellow-400 p-3 mt-3 shadow-lg z-10">
-                    <button class="primary-btn w-full" data-action="save-all-pef-lessons" data-unit-id="${turmaId}" data-pef-type="turma">
+                    <button class="primary-btn w-full" data-action="save-all-pef-lessons" data-unit-id="${turmaId}" data-pef-type="turma" data-allowed-days="${allowedDaysAttr}">
                         💾 Salvar Todas as Aulas
                     </button>
                 </div>
@@ -10191,37 +10476,59 @@
 
             const unitAttendance = attendance.find(a => a.id === vipId);
 
-            // Obter dias da semana permitidos para este VIP
-            const allowedWeekdays = [];
-            if (vip.day1?.weekday) allowedWeekdays.push(parseInt(vip.day1.weekday));
-            if (vip.day2?.weekday) allowedWeekdays.push(parseInt(vip.day2.weekday));
-            if (vip.day3?.weekday) allowedWeekdays.push(parseInt(vip.day3.weekday));
-
-            // Não é mais necessário gerar lista de datas - usando input type="date"
+            // Obter dias da semana permitidos para este VIP (day1/day2/day3 são strings como "Segunda")
+            const allowedWeekdays = [vip.day1, vip.day2, vip.day3]
+                .filter(d => d)
+                .map(d => dayNameToWeekday(d))
+                .filter(n => n >= 0);
 
             const dayNames = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
             const allowedDayNames = allowedWeekdays.length > 0 ? allowedWeekdays.map(d => dayNames[d]).join(', ') : 'todos os dias';
+            const allowedDaysAttr = allowedWeekdays.join(',');
 
-            // Gerar overview de 40 caixinhas coloridas
+            // Gerar datas agendadas (36 aulas) com base na data de início do VIP
+            const scheduledDates = gerarDatasAgendadas(vip.startDate || '', allowedWeekdays, 36);
+
+            // Gerar overview de 36 caixinhas coloridas
             let overviewHtml = '';
-            for (let i = 1; i <= 40; i++) {
+            for (let i = 1; i <= 36; i++) {
                 const lessonData = unitAttendance?.lessons?.[i];
                 const status = lessonData?.students?.[student.id] || '';
-                let bgColor = 'bg-stone-200'; // Cinza - não dada
-                let title = `Aula ${i}: Não registrada`;
-                if (status === 'P') { bgColor = 'bg-green-500'; title = `Aula ${i}: Presente`; }
-                else if (status === 'F') { bgColor = 'bg-red-500'; title = `Aula ${i}: Falta`; }
-                else if (status === 'PP') { bgColor = 'bg-amber-400'; title = `Aula ${i}: Presença Parcial`; }
-                overviewHtml += `<div class="w-7 h-7 ${bgColor} rounded cursor-pointer hover:scale-110 transition-transform" title="${title}" onclick="document.getElementById('lesson-row-${vipId}-${i}').scrollIntoView({behavior:'smooth',block:'center'})"><span class="text-[10px] text-white font-bold flex items-center justify-center h-full">${i}</span></div>`;
+                const savedDate = lessonData?.date || '';
+                const autoDate = scheduledDates[i - 1] || '';
+                const lessonDateForOverview = savedDate || autoDate;
+                let isOutOv = false;
+                if (lessonDateForOverview && allowedWeekdays.length > 0) {
+                    const [oy, om, od] = lessonDateForOverview.split('-').map(Number);
+                    isOutOv = !allowedWeekdays.includes(new Date(oy, om - 1, od).getDay());
+                }
+                let bgColor = isOutOv ? 'bg-orange-400' : 'bg-stone-200';
+                let title = `Aula ${i}: ${isOutOv ? '⚠️ Fora do dia programado' : 'Não registrada'}`;
+                if (status === 'P') { bgColor = isOutOv ? 'bg-orange-500' : 'bg-green-500'; title = `Aula ${i}: Presente${isOutOv ? ' ⚠️' : ''}`; }
+                else if (status === 'F') { bgColor = isOutOv ? 'bg-orange-600' : 'bg-red-500'; title = `Aula ${i}: Falta${isOutOv ? ' ⚠️' : ''}`; }
+                else if (status === 'PP') { bgColor = isOutOv ? 'bg-orange-400' : 'bg-amber-400'; title = `Aula ${i}: Presença Parcial${isOutOv ? ' ⚠️' : ''}`; }
+                overviewHtml += `<div class="w-7 h-7 ${bgColor} rounded cursor-pointer hover:scale-110 transition-transform" title="${title}" onclick="document.getElementById('lesson-row-${vipId}-${i}').scrollIntoView({behavior:'smooth',block:'center'})"><span class="text-[10px] text-white font-bold flex items-center justify-center h-full">${isOutOv ? '!' : i}</span></div>`;
             }
 
             let lessonsHtml = '';
-            for (let i = 1; i <= 40; i++) {
+            for (let i = 1; i <= 36; i++) {
                 const lessonData = unitAttendance?.lessons?.[i];
-                const lessonDate = lessonData?.date || '';
+                const savedDate = lessonData?.date || '';
+                const autoDate = scheduledDates[i - 1] || '';
+                const lessonDate = savedDate || autoDate;
                 const lessonNotes = lessonData?.notes || '';
                 const lessonTopic = lessonData?.topic || '';
                 const studentStatus = lessonData?.students?.[student.id] || '';
+
+                let isOutOfSchedule = false;
+                if (lessonDate && allowedWeekdays.length > 0) {
+                    const [ly, lm, ld] = lessonDate.split('-').map(Number);
+                    isOutOfSchedule = !allowedWeekdays.includes(new Date(ly, lm - 1, ld).getDay());
+                }
+                const dateClass = isOutOfSchedule ? 'border-red-400 bg-red-50' : '';
+                const warningHtml = isOutOfSchedule
+                    ? `<span class="pef-date-warning text-red-500 text-xs font-semibold">⚠️ Fora do dia programado</span>`
+                    : `<span class="pef-date-warning text-red-500 text-xs font-semibold hidden">⚠️ Fora do dia programado</span>`;
 
                 const studentHtml = `
                     <div class="pef-student-attendance-row" data-student-id="${student.id}">
@@ -10237,9 +10544,10 @@
                 const isEvenLesson = i % 2 === 0;
                 lessonsHtml += `
                     <div class="border border-stone-200 rounded-lg p-2" id="lesson-row-${vipId}-${i}" data-lesson-number="${i}">
-                        <div class="flex items-center gap-2 mb-2 pb-2 border-b border-stone-100">
+                        <div class="flex items-center gap-2 mb-2 pb-2 border-b border-stone-100 flex-wrap">
                             <span class="font-bold text-stone-800 text-xs px-2 py-0.5 rounded" style="background-color: #F1D24B;">Aula ${i}</span>
-                            <input type="date" class="form-input p-1 text-xs lesson-date flex-1" value="${lessonDate}" data-allowed-days="${allowedWeekdays.join(',')}">
+                            <input type="date" class="form-input p-1 text-xs lesson-date flex-1 ${dateClass}" value="${lessonDate}" data-allowed-days="${allowedDaysAttr}" onchange="checkLessonDateSchedule(this, '${allowedDaysAttr}')">
+                            ${warningHtml}
                         </div>
                         <div class="space-y-1">
                             <input type="text" class="form-input p-1 text-xs w-full lesson-topic" placeholder="Tema" value="${lessonTopic}">
@@ -10248,14 +10556,14 @@
                         </div>
                     </div>
                 `;
-                if (isEvenLesson && i < 40) {
+                if (isEvenLesson && i < 36) {
                     lessonsHtml += '<div class="col-span-2 border-b border-stone-200 my-1"></div>';
                 }
             }
 
             // Contar estatísticas
             let presencas = 0, faltas = 0, parciais = 0, pendentes = 0;
-            for (let i = 1; i <= 40; i++) {
+            for (let i = 1; i <= 36; i++) {
                 const status = unitAttendance?.lessons?.[i]?.students?.[student.id] || '';
                 if (status === 'P') presencas++;
                 else if (status === 'F') faltas++;
@@ -10263,22 +10571,32 @@
                 else pendentes++;
             }
 
+            const startDateInfoVip = vip.startDate
+                ? `<span class="text-xs text-stone-500">Início: <strong>${formatDateBR(vip.startDate)}</strong> · Dias: <strong>${allowedDayNames}</strong></span>`
+                : `<span class="text-xs text-stone-500">Dias: <strong>${allowedDayNames}</strong></span>`;
+
             modalContentArea.innerHTML = `
-                <div class="bg-stone-50 rounded-lg p-3 mb-6 border border-stone-200">
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-2 mb-3 flex items-center gap-2 flex-wrap">
+                    <svg width="16" height="16" fill="none" stroke="#3B82F6" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+                    ${startDateInfoVip}
+                    ${scheduledDates.length > 0 ? `<span class="text-xs text-blue-600 ml-auto">📅 Datas auto-geradas (ignora feriados nacionais)</span>` : ''}
+                </div>
+                <div class="bg-stone-50 rounded-lg p-3 mb-4 border border-stone-200">
                     <div class="flex items-center justify-between mb-2">
-                        <span class="text-xs font-medium text-stone-600 uppercase">Visão Geral das Aulas</span>
+                        <span class="text-xs font-medium text-stone-600 uppercase">Visão Geral (36 aulas)</span>
                         <div class="flex gap-3 text-xs">
                             <span class="flex items-center gap-1"><span class="w-3 h-3 bg-green-500 rounded"></span> ${presencas}P</span>
                             <span class="flex items-center gap-1"><span class="w-3 h-3 bg-red-500 rounded"></span> ${faltas}F</span>
                             <span class="flex items-center gap-1"><span class="w-3 h-3 bg-amber-400 rounded"></span> ${parciais}PP</span>
+                            <span class="flex items-center gap-1"><span class="w-3 h-3 bg-orange-400 rounded"></span> ⚠️ Intercorrência</span>
                             <span class="flex items-center gap-1"><span class="w-3 h-3 bg-stone-200 rounded"></span> ${pendentes}</span>
                         </div>
                     </div>
-                    <div class="grid grid-cols-20 gap-1" style="grid-template-columns: repeat(20, 1fr);">${overviewHtml}</div>
+                    <div class="grid gap-1" style="grid-template-columns: repeat(18, 1fr);">${overviewHtml}</div>
                 </div>
                 <div class="grid grid-cols-2 gap-4">${lessonsHtml}</div>
                 <div class="sticky bottom-0 left-0 right-0 bg-white border-t-2 border-yellow-400 p-3 mt-3 shadow-lg z-10">
-                    <button class="primary-btn w-full" data-action="save-all-pef-lessons" data-unit-id="${vipId}" data-pef-type="vip">
+                    <button class="primary-btn w-full" data-action="save-all-pef-lessons" data-unit-id="${vipId}" data-pef-type="vip" data-allowed-days="${allowedDaysAttr}">
                         💾 Salvar Todas as Aulas
                     </button>
                 </div>
@@ -10312,8 +10630,15 @@
                 }
 
                 let savedCount = 0;
-                const totalLessons = 40;
+                const totalLessons = 36;
                 const lessonsToSave = {};
+                const intercorrencias = [];
+
+                // Obter dias permitidos do botão de salvar
+                const saveAllowedDaysStr = saveButton ? (saveButton.dataset.allowedDays || '') : '';
+                const saveAllowedDays = saveAllowedDaysStr
+                    ? saveAllowedDaysStr.split(',').map(Number).filter(n => !isNaN(n))
+                    : [];
 
                 // Process all lessons and collect data
                 for (let lessonNumber = 1; lessonNumber <= totalLessons; lessonNumber++) {
@@ -10337,6 +10662,23 @@
                         }
                     });
 
+                    // Detectar intercorrência: data em dia fora do programado
+                    if (saveAllowedDays.length > 0) {
+                        const [dy, dm, dd] = date.split('-').map(Number);
+                        const dow = new Date(dy, dm - 1, dd).getDay();
+                        if (!saveAllowedDays.includes(dow)) {
+                            const dayNames = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+                            intercorrencias.push({
+                                lessonNumber: lessonNumber,
+                                lessonDate: date,
+                                actualDay: dayNames[dow],
+                                expectedDays: saveAllowedDays.map(n => dayNames[n]),
+                                detectedAt: new Date().toISOString(),
+                                detectedBy: window.currentCollaborator?.name || currentUserName || 'Desconhecido'
+                            });
+                        }
+                    }
+
                     // Collect lesson data
                     lessonsToSave[lessonNumber] = {
                         date: date,
@@ -10359,23 +10701,26 @@
                 // Update local data
                 let attendanceIndex = attendance.findIndex(a => a.id === unitId);
                 if (attendanceIndex === -1) {
-                    attendance.push({ id: unitId, lessons: lessonsToSave });
+                    attendance.push({ id: unitId, lessons: lessonsToSave, intercorrencias: intercorrencias });
                     attendanceIndex = attendance.length - 1;
                 } else {
                     attendance[attendanceIndex].lessons = lessonsToSave;
+                    attendance[attendanceIndex].intercorrencias = intercorrencias;
                 }
 
                 // Save to storage (Firebase or localStorage)
                 if (window.isDevelopmentMode) {
                     localStorage.setItem('attendance', JSON.stringify(attendance));
                     playSuccessSound();
-                    showSuccessMessage("Sucesso!", `${savedCount} aulas salvas com sucesso.`);
+                    const intercMsg = intercorrencias.length > 0 ? ` (${intercorrencias.length} intercorrência(s) detectada(s))` : '';
+                    showSuccessMessage("Sucesso!", `${savedCount} aulas salvas com sucesso.${intercMsg}`);
                 } else {
                     // Save to Firebase - single operation with all lessons
                     const attendanceRef = doc(db, `artifacts/${appId}/public/data/attendance`, unitId);
                     await setDoc(attendanceRef, {
                         id: unitId,
-                        lessons: lessonsToSave
+                        lessons: lessonsToSave,
+                        intercorrencias: intercorrencias
                     }, { merge: true });
 
                     // Log activity
@@ -10386,11 +10731,13 @@
 
                     await logActivity('salvar_pef', targetType, targetName, {
                         quantidadeAulas: savedCount,
-                        salvamentoEmLote: true
+                        salvamentoEmLote: true,
+                        intercorrencias: intercorrencias.length
                     });
 
                     playSuccessSound();
-                    showSuccessMessage("Sucesso!", `${savedCount} aulas salvas com sucesso.`);
+                    const intercMsg = intercorrencias.length > 0 ? ` (${intercorrencias.length} intercorrência(s) detectada(s))` : '';
+                    showSuccessMessage("Sucesso!", `${savedCount} aulas salvas com sucesso.${intercMsg}`);
                 }
 
             } catch (error) {
@@ -10799,12 +11146,14 @@
                             <label class="font-medium text-sm">Prioridade/Tag</label>
                             <select id="task-priority" class="form-input">
                                 <option value="">Sem tag</option>
-                                <option value="urgente" ${task?.priority === 'urgente' ? 'selected' : ''}>Urgente</option>
-                                <option value="prioridade" ${task?.priority === 'prioridade' ? 'selected' : ''}>Prioridade</option>
-                                <option value="curto-prazo" ${task?.priority === 'curto-prazo' ? 'selected' : ''}>Curto Prazo</option>
-                                <option value="longo-prazo" ${task?.priority === 'longo-prazo' ? 'selected' : ''}>Longo Prazo</option>
-                                <option value="importante" ${task?.priority === 'importante' ? 'selected' : ''}>Importante</option>
-                                <option value="rotina" ${task?.priority === 'rotina' ? 'selected' : ''}>Rotina</option>
+                                <option value="urgente" ${task?.priority === 'urgente' ? 'selected' : ''}>🔴 Urgente</option>
+                                <option value="prioridade" ${task?.priority === 'prioridade' ? 'selected' : ''}>⭐ Prioridade</option>
+                                <option value="curto-prazo" ${task?.priority === 'curto-prazo' ? 'selected' : ''}>⏱ Curto Prazo</option>
+                                <option value="longo-prazo" ${task?.priority === 'longo-prazo' ? 'selected' : ''}>📅 Longo Prazo</option>
+                                <option value="importante" ${task?.priority === 'importante' ? 'selected' : ''}>💜 Importante</option>
+                                <option value="rotina" ${task?.priority === 'rotina' ? 'selected' : ''}>🔄 Rotina</option>
+                                <option value="lembrete" ${task?.priority === 'lembrete' ? 'selected' : ''}>🔔 Lembrete</option>
+                                <option value="aviso" ${task?.priority === 'aviso' ? 'selected' : ''}>📢 Aviso</option>
                             
                     </div>
                     <div>
@@ -10826,7 +11175,7 @@
             if (!task) return;
 
             const deadlineDate = new Date(task.deadline + 'T00:00:00');
-            const isOverdue = !task.completed && deadlineDate < new Date();
+            const isOverdue = !task.completed && !task.completedByUser && deadlineDate < new Date();
             const deadlineClass = isOverdue ? 'text-red-600' : 'text-stone-600';
             const formattedDate = formatDateBR(task.deadline);
 
@@ -10862,6 +11211,16 @@
                     text: 'Rotina', 
                     class: 'bg-gray-100 text-gray-800',
                     icon: '<svg class="w-4 h-4 mr-1.5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4V2A10 10 0 0 0 2 12H4A8 8 0 0 1 12 4Z"/></svg>'
+                },
+                'lembrete': {
+                    text: 'Lembrete',
+                    class: 'bg-orange-100 text-orange-800',
+                    icon: '<svg class="w-4 h-4 mr-1.5" viewBox="0 0 24 24" fill="currentColor"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>'
+                },
+                'aviso': {
+                    text: 'Aviso',
+                    class: 'bg-blue-100 text-blue-800',
+                    icon: '<svg class="w-4 h-4 mr-1.5" viewBox="0 0 24 24" fill="currentColor"><path d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"/></svg>'
                 }
             };
             const priorityTag = task.priority && priorityTagsMap[task.priority] ? 
@@ -10903,6 +11262,32 @@
                     </div>
                     ` : ''}
 
+                    ${(task.assignedTo || []).includes(currentUserName) ? `
+                    <div class="bg-stone-50 rounded-lg p-3 border border-stone-200">
+                        <h4 class="font-semibold text-stone-700 text-sm mb-2">📎 Link de Entrega</h4>
+                        <div class="flex gap-2">
+                            <input type="text" id="task-delivery-link-input" class="form-input flex-1 text-sm" placeholder="Cole o link da entrega aqui..." value="${task.deliveryLink || ''}">
+                            <button onclick="saveTaskDeliveryLink('${task.id}')" class="secondary-btn w-auto text-sm">Salvar</button>
+                        </div>
+                    </div>
+                    ` : task.deliveryLink ? `
+                    <div class="bg-green-50 border border-green-200 rounded-lg p-3">
+                        <h4 class="font-semibold text-stone-700 text-sm mb-1">📎 Link de Entrega</h4>
+                        <a href="${task.deliveryLink}" target="_blank" class="text-blue-600 hover:underline text-sm break-all">${task.deliveryLink}</a>
+                    </div>
+                    ` : ''}
+
+                    <div class="border border-stone-200 rounded-lg p-3">
+                        <h4 class="font-semibold text-stone-700 text-sm mb-3">💬 Mensagens</h4>
+                        <div id="task-chat-messages" class="space-y-2 max-h-52 overflow-y-auto mb-3 pr-1">
+                            ${renderMessagesHTML(task.messages || [])}
+                        </div>
+                        <div class="flex gap-2">
+                            <input type="text" id="task-chat-input" class="form-input flex-1 text-sm" placeholder="Escreva uma mensagem..." onkeydown="if(event.key==='Enter'){sendTaskMessage('${task.id}')}">
+                            <button onclick="sendTaskMessage('${task.id}')" class="primary-btn w-auto text-sm">Enviar</button>
+                        </div>
+                    </div>
+
                     <div class="border-t pt-4 flex justify-between items-center">
                         <div class="flex items-center gap-6">
                             <label class="flex items-center gap-2 cursor-pointer" title="Marcar como lido">
@@ -10933,6 +11318,70 @@
             `;
             document.getElementById('form-modal').classList.add('visible');
         }
+
+        function renderMessagesHTML(messages) {
+            if (!messages || messages.length === 0) {
+                return '<p class="text-stone-400 text-sm text-center py-3">Nenhuma mensagem ainda.</p>';
+            }
+            const sorted = [...messages].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+            return sorted.map(msg => {
+                const isMe = msg.author === currentUserName || (msg.authorEmail && msg.authorEmail === (window.currentCollaborator?.email || ''));
+                const time = msg.timestamp ? new Date(msg.timestamp).toLocaleString('pt-BR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'}) : '';
+                return `
+                    <div class="flex ${isMe ? 'justify-end' : 'justify-start'}">
+                        <div class="max-w-xs lg:max-w-sm px-3 py-2 rounded-lg text-sm ${isMe ? 'text-stone-800' : 'bg-stone-100 text-stone-700'}" style="${isMe ? 'background-color:#F1D24B;' : ''}">
+                            ${!isMe ? `<p class="text-xs font-bold mb-1 text-stone-600">${msg.author || 'Usuário'}</p>` : ''}
+                            <p class="break-words">${msg.text}</p>
+                            <p class="text-xs opacity-60 mt-1 text-right">${time}</p>
+                        </div>
+                    </div>`;
+            }).join('');
+        }
+
+        async function sendTaskMessage(taskId) {
+            const input = document.getElementById('task-chat-input');
+            const text = (input?.value || '').trim();
+            if (!text) return;
+            const newMsg = {
+                text,
+                author: currentUserName || 'Usuário',
+                authorEmail: window.currentCollaborator?.email || '',
+                timestamp: new Date().toISOString()
+            };
+            try {
+                const taskRef = doc(db, `artifacts/${appId}/public/data/tasks`, taskId);
+                await updateDoc(taskRef, { messages: arrayUnion(newMsg) });
+                const task = tasks.find(t => t.id === taskId);
+                if (task) {
+                    task.messages = [...(task.messages || []), newMsg];
+                    const chatDiv = document.getElementById('task-chat-messages');
+                    if (chatDiv) {
+                        chatDiv.innerHTML = renderMessagesHTML(task.messages);
+                        chatDiv.scrollTop = chatDiv.scrollHeight;
+                    }
+                }
+                if (input) input.value = '';
+            } catch (err) {
+                console.error('Error sending message:', err);
+                showErrorMessage('Erro', 'Não foi possível enviar a mensagem.');
+            }
+        }
+
+        async function saveTaskDeliveryLink(taskId) {
+            const input = document.getElementById('task-delivery-link-input');
+            const link = (input?.value || '').trim();
+            try {
+                const taskRef = doc(db, `artifacts/${appId}/public/data/tasks`, taskId);
+                await updateDoc(taskRef, { deliveryLink: link });
+                const task = tasks.find(t => t.id === taskId);
+                if (task) task.deliveryLink = link;
+                showSuccessMessage('Pronto!', 'Link de entrega salvo.');
+            } catch (err) {
+                console.error('Error saving delivery link:', err);
+                showErrorMessage('Erro', 'Não foi possível salvar o link.');
+            }
+        }
+
         async function saveTask(event) {
             event.preventDefault();
             const taskId = document.getElementById('task-id').value;
@@ -10998,6 +11447,7 @@
                 { key: 'gestao-tns', label: 'Gestão TNs' },
                 { key: 'rechamada', label: 'Rechamada' },
                 { key: 'kpis-pedagogico', label: 'KPIs' },
+                { key: 'intercorrencias-pedagogicas', label: 'Intercorrências Pedagógicas' },
                 { key: 'logs-atividades', label: 'Logs de Atividades' },
                 { key: 'tasks-prazos', label: 'Tasks' },
                 { key: 'colaboradores', label: 'Colaboradores' },
@@ -14315,10 +14765,9 @@
                 const isSelected = idx === selectedMonth;
                 const isCurrent = idx === currentMonth;
                 return `<button onclick="selectAniversariantesMonth(${idx})" 
-                    class="px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all relative
+                    class="px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all
                         ${isSelected ? 'bg-yellow-400 text-stone-800' : isCurrent ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'}">
-                    ${name}
-                    ${count > 0 ? `<span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">${count}</span>` : ''}
+                    ${name}${count > 0 ? ` <span class="ml-1 inline-flex items-center justify-center px-1.5 py-0.5 rounded-full text-xs font-semibold ${isSelected ? 'bg-white/30 text-stone-800' : 'bg-stone-200 text-stone-600'}">${count}</span>` : ''}
                 </button>`;
             }).join('');
 
@@ -14433,6 +14882,365 @@
                 chevron.classList.toggle('rotate-180');
             }
         }
+        function renderContratosSection() {
+            document.getElementById('main-title').textContent = 'Contratos';
+            document.getElementById('main-description').textContent = 'Preencha e exporte contratos para alunos.';
+            const contentArea = document.getElementById('content-area');
+
+            function numExtenso(val) {
+                if (!val) return '...';
+                const n = Math.round(parseFloat(val.toString().replace(/\./g,'').replace(',','.')) * 100);
+                if (isNaN(n)) return '...';
+                const reais = Math.floor(n / 100), cents = n % 100;
+                const u = ['','um','dois','três','quatro','cinco','seis','sete','oito','nove','dez','onze','doze','treze','quatorze','quinze','dezesseis','dezessete','dezoito','dezenove'];
+                const d = ['','','vinte','trinta','quarenta','cinquenta','sessenta','setenta','oitenta','noventa'];
+                const c = ['','cem','duzentos','trezentos','quatrocentos','quinhentos','seiscentos','setecentos','oitocentos','novecentos'];
+                function g(n) {
+                    if (n <= 0) return '';
+                    if (n <= 19) return u[n];
+                    const ct = Math.floor(n/100), resto = n%100;
+                    if (ct > 0) { if (resto===0) return c[ct]; return c[ct]+' e '+g(resto); }
+                    const dz = Math.floor(n/10), un = n%10;
+                    return d[dz]+(un>0?' e '+u[un]:'');
+                }
+                let out = '';
+                if (reais >= 1000) {
+                    const mil=Math.floor(reais/1000), r=reais%1000;
+                    out=(mil===1?'mil':g(mil)+' mil')+(r>0?' '+(r<100?'e ':'')+g(r):'');
+                } else out = g(reais);
+                out += reais===1?' real':' reais';
+                if (cents>0) out+=' e '+g(cents)+(cents===1?' centavo':' centavos');
+                return out;
+            }
+            function numParc(n) {
+                const m=['','uma','duas','três','quatro','cinco','seis','sete','oito','nove','dez','onze','doze','treze','quatorze','quinze'];
+                return m[parseInt(n)]||String(n);
+            }
+            function dataPtBR(iso) {
+                if (!iso) return '';
+                const meses=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+                const parts = iso.split('-');
+                return parseInt(parts[2])+' de '+meses[parseInt(parts[1])-1]+' de '+parts[0];
+            }
+
+            const templates = {
+                'vip2x':   { label:'VIP 2x — Cartão',   color:'#84C7DF', defaults:{ total:'2.940,00', parcelas:'6', parcela:'490,00', matricula:'70,00', cidade:'Fortaleza/CE' } },
+                'turma2x': { label:'Turma 2x — Cartão',  color:'#B8E0B0', defaults:{ total:'1.710,00', parcelas:'6', parcela:'285,00', matricula:'70,00', cidade:'Goiana/PE'    } },
+                'vipboleto': { label:'VIP 2x — Boleto',  color:'#FFCC80', defaults:{ total:'3.540,00', parcelas:'6', parcela:'590,00', matricula:'70,00', priParcela:'550,00', cidade:'Fortaleza/CE' } }
+            };
+            let sel = 'vip2x';
+
+            function renderForm() {
+                const t = templates[sel];
+                const dv = t.defaults;
+                return '<div class="bg-white rounded-xl shadow-sm border border-stone-200 p-6">' +
+                '<h3 class="text-lg font-semibold text-stone-800 mb-1">'+t.label+'</h3>' +
+                '<p class="text-sm text-stone-500 mb-6">Preencha os dados do contratante e os valores. O contrato completo será gerado para impressão.</p>' +
+                '<form id="contract-form" class="space-y-6" onsubmit="return false;">' +
+                '<div><h4 class="text-sm font-semibold text-stone-600 uppercase tracking-wide mb-3 pb-1 border-b border-stone-100">Dados do Contratante</h4>' +
+                '<div class="grid grid-cols-1 md:grid-cols-2 gap-4">' +
+                '<div class="md:col-span-2"><label class="block text-xs font-medium text-stone-500 mb-1">Nome Completo *</label><input type="text" id="c-nome" class="form-input" placeholder="Nome completo"></div>' +
+                '<div><label class="block text-xs font-medium text-stone-500 mb-1">Estado Civil</label><select id="c-estado-civil" class="form-input"><option value="solteiro(a)">Solteiro(a)</option><option value="casado(a)">Casado(a)</option><option value="divorciado(a)">Divorciado(a)</option><option value="viúvo(a)">Viúvo(a)</option><option value="união estável">União Estável</option></select></div>' +
+                '<div><label class="block text-xs font-medium text-stone-500 mb-1">Data de Nascimento</label><input type="date" id="c-nascimento" class="form-input"></div>' +
+                '<div><label class="block text-xs font-medium text-stone-500 mb-1">CPF *</label><input type="text" id="c-cpf" class="form-input" placeholder="000.000.000-00" maxlength="14"></div>' +
+                '<div><label class="block text-xs font-medium text-stone-500 mb-1">RG</label><input type="text" id="c-rg" class="form-input" placeholder="00.000.000-0"></div>' +
+                '<div class="md:col-span-2"><label class="block text-xs font-medium text-stone-500 mb-1">E-mail</label><input type="email" id="c-email" class="form-input" placeholder="email@exemplo.com"></div>' +
+                '</div></div>' +
+                '<div><h4 class="text-sm font-semibold text-stone-600 uppercase tracking-wide mb-3 pb-1 border-b border-stone-100">Endereço</h4>' +
+                '<div class="grid grid-cols-1 md:grid-cols-3 gap-4">' +
+                '<div class="md:col-span-2"><label class="block text-xs font-medium text-stone-500 mb-1">Rua / Logradouro</label><input type="text" id="c-rua" class="form-input" placeholder="Rua, Av., etc."></div>' +
+                '<div><label class="block text-xs font-medium text-stone-500 mb-1">Número</label><input type="text" id="c-numero" class="form-input" placeholder="Nº"></div>' +
+                '<div><label class="block text-xs font-medium text-stone-500 mb-1">Bairro</label><input type="text" id="c-bairro" class="form-input" placeholder="Bairro"></div>' +
+                '<div><label class="block text-xs font-medium text-stone-500 mb-1">CEP</label><input type="text" id="c-cep" class="form-input" placeholder="00000-000" maxlength="9"></div>' +
+                '<div><label class="block text-xs font-medium text-stone-500 mb-1">Cidade / UF</label><input type="text" id="c-cidade" class="form-input" placeholder="Cidade - UF"></div>' +
+                '</div></div>' +
+                '<div><h4 class="text-sm font-semibold text-stone-600 uppercase tracking-wide mb-3 pb-1 border-b border-stone-100">Valores do Contrato</h4>' +
+                '<div class="grid grid-cols-1 md:grid-cols-2 gap-4">' +
+                '<div><label class="block text-xs font-medium text-stone-500 mb-1">Valor Total do Módulo (R$) *</label><input type="text" id="c-valor-total" class="form-input" value="'+dv.total+'"></div>' +
+                '<div><label class="block text-xs font-medium text-stone-500 mb-1">Número de Parcelas *</label><input type="number" id="c-num-parcelas" class="form-input" value="'+dv.parcelas+'" min="1" max="12"></div>' +
+                '<div><label class="block text-xs font-medium text-stone-500 mb-1">Valor por Parcela (R$) *</label><input type="text" id="c-valor-parcela" class="form-input" value="'+dv.parcela+'"></div>' +
+                '<div><label class="block text-xs font-medium text-stone-500 mb-1">Taxa de Matrícula (R$)</label><input type="text" id="c-matricula" class="form-input" value="'+dv.matricula+'"></div>' +
+                (sel==='vipboleto' ? '<div><label class="block text-xs font-medium text-stone-500 mb-1">Primeira Parcela (R$)</label><input type="text" id="c-pri-parcela" class="form-input" value="'+(dv.priParcela||'550,00')+'"></div>' : '') +
+                '</div></div>' +
+                '<div><h4 class="text-sm font-semibold text-stone-600 uppercase tracking-wide mb-3 pb-1 border-b border-stone-100">Data de Assinatura</h4>' +
+                '<div class="grid grid-cols-1 md:grid-cols-2 gap-4">' +
+                '<div><label class="block text-xs font-medium text-stone-500 mb-1">Data</label><input type="date" id="c-assinatura" class="form-input" value="'+new Date().toISOString().split('T')[0]+'"></div>' +
+                '<div><label class="block text-xs font-medium text-stone-500 mb-1">Cidade (para assinatura)</label><input type="text" id="c-cidade-assinatura" class="form-input" value="'+dv.cidade+'"></div>' +
+                '</div></div>' +
+                '<div class="flex justify-end gap-3 pt-4 border-t border-stone-100">' +
+                '<button type="button" onclick="clearContratoForm()" class="secondary-btn">Limpar</button>' +
+                '<button type="button" onclick="exportContrato()" class="primary-btn flex items-center gap-2">' +
+                '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>' +
+                'Gerar Contrato para Impressão</button></div>' +
+                '</form></div>';
+            }
+
+            function renderTabs() {
+                return Object.entries(templates).map(function(entry) {
+                    const k = entry[0], t = entry[1];
+                    const active = k===sel;
+                    const style = active ? 'background-color:'+t.color+';border-color:'+t.color+';color:#1c1917;' : 'background-color:white;border-color:#e7e5e4;color:#78716c;';
+                    return '<button onclick="selectContractType(\''+k+'\')" id="ctab-'+k+'" class="flex items-center gap-2 px-5 py-2.5 rounded-full font-semibold text-sm transition-all border-2" style="'+style+'">'+
+                    '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>'+
+                    t.label+'</button>';
+                }).join('');
+            }
+
+            contentArea.innerHTML =
+                '<div class="max-w-3xl mx-auto">' +
+                '<div class="mb-6 flex flex-wrap gap-3" id="contract-tabs">' + renderTabs() + '</div>' +
+                '<div id="contract-form-area">' + renderForm() + '</div></div>';
+
+            window.selectContractType = function(type) {
+                sel = type;
+                document.getElementById('contract-tabs').innerHTML = renderTabs();
+                document.getElementById('contract-form-area').innerHTML = renderForm();
+            };
+
+            window.clearContratoForm = function() { document.getElementById('contract-form').reset(); };
+
+            function contractCSS() {
+                return '* { margin:0; padding:0; box-sizing:border-box; } body { font-family: "Times New Roman", Times, serif; font-size: 12pt; color: #000; background: #fff; } .page { padding: 20mm 25mm; max-width: 210mm; margin: 0 auto; } h1 { font-size: 13pt; font-weight: bold; text-align: center; text-transform: uppercase; margin-bottom: 4pt; letter-spacing: 1px; } .section-title { font-size: 11pt; font-weight: bold; text-transform: uppercase; text-align: center; margin: 18pt 0 8pt; } p { margin-bottom: 8pt; text-align: justify; line-height: 1.6; font-size: 11pt; } .indent { text-indent: 1.5cm; } .sig-area { margin-top: 40pt; display: flex; gap: 30pt; justify-content: center; } .sig-box { flex: 1; max-width: 220pt; text-align: center; } .sig-line { border-top: 1px solid #000; margin-top: 40pt; padding-top: 6pt; font-size: 10pt; } .print-btn { display: block; margin: 24pt auto; padding: 10pt 28pt; background: #000; color: #fff; border: none; border-radius: 4pt; cursor: pointer; font-size: 12pt; } @media print { .print-btn { display: none; } .page { padding: 15mm 20mm; } }';
+            }
+
+            window.exportContrato = function() {
+                const get = function(id) { return (document.getElementById(id) ? document.getElementById(id).value : '').trim(); };
+                const nome = get('c-nome');
+                if (!nome) { showErrorMessage('Campo obrigatório','Preencha o nome do contratante.'); return; }
+                const cpf = get('c-cpf');
+                if (!cpf) { showErrorMessage('Campo obrigatório','Preencha o CPF do contratante.'); return; }
+
+                const estadoCivil = get('c-estado-civil') || 'solteiro(a)';
+                const rg = get('c-rg') || '___________';
+                const nascRaw = get('c-nascimento');
+                const nascimento = nascRaw ? formatDateBR(nascRaw) : 'DD/MM/AAAA';
+                const email = get('c-email') || '___________';
+                const rua = get('c-rua') || '___________';
+                const num = get('c-numero') || 's/n';
+                const bairro = get('c-bairro') || '___________';
+                const cep = get('c-cep') || '_____-___';
+                const cidadeEnd = get('c-cidade') || '___________';
+                const valorTotal = get('c-valor-total') || templates[sel].defaults.total;
+                const numParcelas = parseInt(get('c-num-parcelas')) || 6;
+                const valorParcela = get('c-valor-parcela') || templates[sel].defaults.parcela;
+                const taxaMatricula = get('c-matricula') || templates[sel].defaults.matricula;
+                const priParcela = sel === 'vipboleto' ? (get('c-pri-parcela') || templates[sel].defaults.priParcela || '550,00') : '';
+                const vPPE = priParcela ? numExtenso(priParcela) : '';
+                const cidadeAssin = get('c-cidade-assinatura') || templates[sel].defaults.cidade;
+                const assinIso = get('c-assinatura') || new Date().toISOString().split('T')[0];
+                const assinBR = formatDateBR(assinIso);
+                const assinExtensa = dataPtBR(assinIso);
+
+                const vTE = numExtenso(valorTotal);
+                const vPE = numExtenso(valorParcela);
+                const vME = numExtenso(taxaMatricula);
+                const nPE = numParc(numParcelas);
+
+                const partes =
+                    '<p class="indent">'+nome+', '+estadoCivil+', inscrito(a) sob CPF de n&ordm; '+cpf+', RG de n&ordm; '+rg+', nascido(a) em '+nascimento+', com endere&ccedil;o eletr&ocirc;nico '+email+', domiciliado(a) na '+rua+', n&ordm; '+num+' &ndash; '+bairro+', CEP: '+cep+', '+cidadeEnd+', doravante nominado(a) CONTRATANTE, juntamente com</p>'+
+                    '<p class="indent">A pessoa jur&iacute;dica SLAP INGL&Ecirc;S, de nome social SLAP &ndash; SPEAKING LIKE A PRO inscrita sob CNPJ de n&ordm; 45.850.648/0001-95, endere&ccedil;o eletr&ocirc;nico contato@slapingles.com, doravante nominado CONTRATADO celebram este.</p>'+
+                    '<p class="indent">As partes acima identificadas t&ecirc;m, entre si, justo e acertado o presente Contrato de Presta&ccedil;&atilde;o de Servi&ccedil;os de Ensino de L&iacute;ngua Estrangeira, que se reger&aacute; pelas cl&aacute;usulas seguintes e pelas condi&ccedil;&otilde;es descritas no presente.</p>';
+
+                const pagamento =
+                    '<div class="section-title">IV - DO PAGAMENTO</div>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 7&ordf;.</strong> O m&oacute;dulo custa, em sua totalidade, R$ '+valorTotal+' ('+vTE+'), a ser pago em at&eacute; '+numParcelas+' ('+nPE+') parcelas de R$ '+valorParcela+' ('+vPE+') cada. As parcelas dever&atilde;o ser pagas via cart&atilde;o de cr&eacute;dito.</p>'+
+                    '<p class="indent"><strong>Par&aacute;grafo &uacute;nico.</strong> O(A) CONTRATANTE fica ciente que o valor total do m&oacute;dulo ser&aacute; parcelado e tais pagamentos n&atilde;o fazem refer&ecirc;ncia a uma mensalidade.</p>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 8&ordf;.</strong> O(A) CONTRATANTE declara estar ciente e de acordo que, nos pagamentos efetuados por cart&atilde;o de cr&eacute;dito, haver&aacute; repasse das taxas administrativas incidentes sobre a opera&ccedil;&atilde;o, conforme percentuais praticados pela operadora do cart&atilde;o, sendo tais valores informados previamente ao(à) CONTRATANTE.</p>'+
+                    '<p class="indent"><strong>Par&aacute;grafo &uacute;nico.</strong> O(A) CONTRATANTE declara estar ciente de que o valor total informado e pago j&aacute; contempla integralmente as referidas taxas administrativas, n&atilde;o havendo cobran&ccedil;a adicional posterior a esse t&iacute;tulo.</p>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 9&ordf;.</strong> O(A) CONTRATANTE, de in&iacute;cio, dever&aacute; efetuar o pagamento da taxa de matr&iacute;cula no valor de R$ '+taxaMatricula+' ('+vME+'), conforme meio de pagamento acordado com o CONTRATADO, para estar devidamente inscrito(a) no curso.</p>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 10&ordf;.</strong> O pagamento das parcelas dever&aacute; ser efetuado independentemente da presen&ccedil;a do(a) CONTRATANTE nas aulas ao vivo ou gravadas, visto que os materiais pedag&oacute;gicos estar&atilde;o dispon&iacute;veis durante a vig&ecirc;ncia do contrato.</p>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 11&ordf;.</strong> O pagamento n&atilde;o efetuado poder&aacute; acarretar no impedimento do(a) CONTRATANTE de frequentar as aulas ao vivo e de acessar as plataformas disponibilizadas pelo curso.</p>'+
+                    '<div class="section-title">V - DA INADIMPL&Ecirc;NCIA</div>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 12&ordf;.</strong> O(A) CONTRATANTE ter&aacute; todos os seus acessos revogados (aulas gravadas, monitorias, permiss&atilde;o para assistir aulas ao vivo, entre outros) em caso de 30 (trinta) dias completos de inadimpl&ecirc;ncia.</p>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 13&ordf;.</strong> Ficar&aacute; o(a) CONTRATANTE sujeito(a) &agrave; negativa&ccedil;&atilde;o do CPF nos cadastros SPC e Serasa em casos de inadimpl&ecirc;ncia ou qualquer resist&ecirc;ncia de pagamento dos d&eacute;bitos devidos.</p>'+
+                    '<div class="section-title">VI - DA RESCIS&Atilde;O CONTRATUAL</div>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 14&ordf;.</strong> Ap&oacute;s 7 (sete) dias corridos da assinatura do contrato, conforme o C&oacute;digo de Defesa do Consumidor, n&atilde;o ser&aacute; poss&iacute;vel solicitar o cancelamento juntamente com o ressarcimento do valor, pois as parcelas n&atilde;o correspondem a mensalidades ou assinaturas cont&iacute;nuas.</p>';
+
+                const confidencialidade =
+                    '<div class="section-title">XI - DA CONFIDENCIALIDADE</div>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 22&ordf;.</strong> As partes concordam que todas as informa&ccedil;&otilde;es, dados e documentos trocados entre a escola e o(a) aluno(a) durante a vig&ecirc;ncia deste contrato s&atilde;o considerados confidenciais.</p>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 23&ordf;.</strong> A escola se compromete a n&atilde;o divulgar informa&ccedil;&otilde;es pessoais do(a) aluno(a) a terceiros sem o seu consentimento pr&eacute;vio, exceto em situa&ccedil;&otilde;es previstas em lei.</p>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 24&ordf;.</strong> O(A) CONTRATANTE se compromete a manter em sigilo qualquer informa&ccedil;&atilde;o confidencial recebida da escola, incluindo, mas n&atilde;o se limitando a material did&aacute;tico, metodologias de ensino e estrat&eacute;gias pedag&oacute;gicas.</p>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 25&ordf;.</strong> O(A) CONTRATANTE declara que foi devidamente informado(a) sobre a coleta, uso, armazenamento e tratamento de seus dados pessoais, conforme estabelecido na Lei Geral de Prote&ccedil;&atilde;o de Dados (LGPD) &ndash; Lei n&ordm; 13.709/2018.</p>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 26&ordf;.</strong> O CONTRATADO se compromete a tratar os dados pessoais do(a) CONTRATANTE de forma segura e respons&aacute;vel, utilizando-os exclusivamente para fins educacionais, administrativos e de comunica&ccedil;&atilde;o relacionados &agrave; presta&ccedil;&atilde;o dos servi&ccedil;os contratados.</p>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 27&ordf;.</strong> O(A) CONTRATANTE possui o direito de acessar seus dados pessoais, solicitar corre&ccedil;&otilde;es, revogar seu consentimento e requerer a exclus&atilde;o de seus dados, conforme previsto na LGPD.</p>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 28&ordf;.</strong> O CONTRATADO dever&aacute; notificar o(a) CONTRATANTE sobre qualquer incidente de seguran&ccedil;a que possa comprometer a integridade de seus dados pessoais, em conformidade com a LGPD.</p>';
+
+                function condicoesGerais(c31) {
+                    return '<div class="section-title">XII - DAS CONDI&Ccedil;&Otilde;ES GERAIS</div>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 29&ordf;.</strong> O presente instrumento &eacute; celebrado sob a &eacute;gide das normas aplic&aacute;veis aos contratos desta natureza insertas no C&oacute;digo Civil de 2002 e observ&acirc;ncia ao regramento do C&oacute;digo de Defesa do Consumidor vigentes.</p>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 30&ordf;.</strong> Qualquer altera&ccedil;&atilde;o neste contrato dever&aacute; ser formalizada por escrito e assinada por ambas as partes, n&atilde;o sendo aceitas altera&ccedil;&otilde;es verbais.</p>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 31&ordf;.</strong> Em caso de solicita&ccedil;&atilde;o de mudan&ccedil;a de modalidade &ndash; '+c31+' &ndash; cabe ao CONTRATADO avaliar as quest&otilde;es financeiras para que seja efetuado um novo contrato que conste a nova modalidade escolhida e seus respectivos requisitos pelo(a) CONTRATANTE.</p>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 32&ordf;.</strong> Todos os materiais, conte&uacute;dos e recursos pedag&oacute;gicos fornecidos pelo CONTRATADO s&atilde;o protegidos por direitos autorais e n&atilde;o poder&atilde;o ser reproduzidos, distribu&iacute;dos ou utilizados para fins comerciais sem autoriza&ccedil;&atilde;o pr&eacute;via.</p>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 33&ordf;.</strong> O CONTRATADO n&atilde;o se responsabiliza por quaisquer danos diretos ou indiretos que possam ocorrer em decorr&ecirc;ncia da participa&ccedil;&atilde;o do(a) CONTRATANTE nas aulas, exceto aqueles que sejam causados por neglig&ecirc;ncia ou dolo comprovados.</p>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 34&ordf;.</strong> O(A) CONTRATANTE concorda em participar de avalia&ccedil;&otilde;es e fornecer feedback sobre o curso, que poder&atilde;o ser utilizados para melhorias e adapta&ccedil;&otilde;es nos servi&ccedil;os oferecidos.</p>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 35&ordf;.</strong> O(A) CONTRATANTE n&atilde;o poder&aacute; ceder ou transferir seus direitos e obriga&ccedil;&otilde;es previstos neste contrato a terceiros sem a autoriza&ccedil;&atilde;o expressa do CONTRATADO.</p>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 36&ordf;.</strong> A entrega do certificado de conclus&atilde;o ser&aacute; realizada exclusivamente ap&oacute;s a conclus&atilde;o do est&aacute;gio obrigat&oacute;rio pelo(a) CONTRATANTE. Apenas o encerramento dos m&oacute;dulos 1 e 2 n&atilde;o garante a emiss&atilde;o do certificado, sendo este emitido apenas ap&oacute;s a finaliza&ccedil;&atilde;o do est&aacute;gio, comprovado o cumprimento das avalia&ccedil;&otilde;es pedag&oacute;gicas exigidas.</p>'+
+                    '<p class="indent"><strong>Par&aacute;grafo &uacute;nico.</strong> Haver&aacute; exce&ccedil;&atilde;o quando o(a) CONTRATANTE ingressar no curso pelo m&oacute;dulo 2 com o CONTRATADO por meio de teste de nivelamento.</p>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 37&ordf;.</strong> Caso alguma disposi&ccedil;&atilde;o deste contrato seja considerada nula ou inaplic&aacute;vel perante a lei, as demais disposi&ccedil;&otilde;es permanecer&atilde;o em pleno vigor e efeito.</p>';
+                }
+
+                const assinaturas =
+                    '<div class="sig-area">'+
+                    '<div class="sig-box"><div class="sig-line">SLAP INGL&Ecirc;S<br><small>CNPJ 45.850.648/0001-95<br>CONTRATADO</small></div></div>'+
+                    '<div class="sig-box"><div class="sig-line">'+nome+'<br><small>CPF: '+cpf+'<br>CONTRATANTE</small></div></div>'+
+                    '</div>'+
+                    '<div class="sig-area" style="margin-top:32pt;">'+
+                    '<div class="sig-box"><div class="sig-line">Testemunha 1</div></div>'+
+                    '<div class="sig-box"><div class="sig-line">Testemunha 2</div></div>'+
+                    '</div>';
+
+                let body = '';
+
+                if (sel === 'vip2x') {
+                    body =
+                    '<h1>CONTRATO DE PRESTA&Ccedil;&Atilde;O DE SERVI&Ccedil;OS PARA O ENSINO DE L&Iacute;NGUA INGLESA &ndash; VIP II</h1>'+
+                    '<div class="section-title">I - DAS PARTES CONTRATANTES</div>'+partes+
+                    '<div class="section-title">II - DO OBJETO DO CONTRATO</div>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 1&ordf;.</strong> O presente contrato tem como OBJETO a presta&ccedil;&atilde;o, pelo CONTRATADO, ao(à) CONTRATANTE, dos servi&ccedil;os de ensino no idioma ingl&ecirc;s no curso SLAP &ndash; SPEAKING LIKE A PRO conforme os per&iacute;odos e hor&aacute;rios estabelecidos por ambas as partes.</p>'+
+                    '<p class="indent"><strong>Par&aacute;grafo &uacute;nico.</strong> As aulas contratadas ser&atilde;o ministradas apenas em modalidade online.</p>'+
+                    '<div class="section-title">III - DAS AULAS</div>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 2&ordf;.</strong> Ser&atilde;o ministradas duas aulas por semana, exceto em feriados, com at&eacute; 1 (uma) hora de dura&ccedil;&atilde;o por aula, podendo haver altera&ccedil;&atilde;o de instrutor se for considerado necess&aacute;rio pelo CONTRATADO.</p>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 3&ordf;.</strong> Cada m&oacute;dulo contar&aacute; com o total de 36 (trinta e seis) aulas ao vivo de at&eacute; 1 (uma) hora de dura&ccedil;&atilde;o, as quais podem ser no formato de aula comum de introdu&ccedil;&atilde;o a novos conte&uacute;dos, de prepara&ccedil;&atilde;o e apresenta&ccedil;&atilde;o de semin&aacute;rios, de revis&atilde;o de t&oacute;picos, de avalia&ccedil;&otilde;es, entre outros.</p>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 4&ordf;.</strong> Haver&aacute; uma toler&acirc;ncia de 15 (quinze) minutos para o in&iacute;cio das aulas. O instrutor aguardar&aacute; esse tempo para que o(a) aluno(a) junte-se &agrave; aula. Caso o(a) aluno(a) n&atilde;o compare&ccedil;a, a aula ser&aacute; considerada como ministrada.</p>'+
+                    '<p class="indent"><strong>Par&aacute;grafo &uacute;nico.</strong> Em caso de atraso de at&eacute; 15 (quinze) minutos do(a) CONTRATANTE, poder&aacute; esse tempo ser descontado da dura&ccedil;&atilde;o total da aula.</p>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 5&ordf;.</strong> As aulas, ap&oacute;s ministradas, ser&atilde;o disponibilizadas em um link privado para que o(a) aluno(a) tenha a oportunidade de assistir quantas vezes forem necess&aacute;rias durante a vig&ecirc;ncia do contrato, para consolida&ccedil;&atilde;o do conte&uacute;do. No entanto, fica vedado ao(à) aluno(a) o download ou compartilhamento do material, que &eacute; de uso exclusivo do(a) CONTRATANTE, por&eacute;m propriedade intelectual do CONTRATADO.</p>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 6&ordf;.</strong> Ap&oacute;s cada semestre letivo, haver&aacute; um recesso pr&eacute;-determinado pelo CONTRATADO por fins trabalhistas e organizacionais referente aos setores internos, que n&atilde;o acarretar&aacute; em preju&iacute;zo para o(a) CONTRATANTE.</p>'+
+                    '<p class="indent"><strong>Par&aacute;grafo &uacute;nico.</strong> Em caso de solicita&ccedil;&atilde;o para troca de turno, o CONTRATADO considerar&aacute; a disponibilidade de hor&aacute;rios para que o pedido possa ser avaliado. Caso aprovada, tal mudan&ccedil;a poder&aacute; acarretar em altera&ccedil;&atilde;o de instrutor, a depender da grade hor&aacute;ria da escola.</p>'+
+                    pagamento+
+                    '<div class="section-title">VII - DA VIG&Ecirc;NCIA</div>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 15&ordf;.</strong> A vig&ecirc;ncia do presente instrumento ter&aacute; in&iacute;cio a partir da assinatura do(a) CONTRATANTE, e as aulas contratadas dever&atilde;o ser completadas em at&eacute; 6 (seis) meses letivos corridos, excluindo-se os recessos de dezembro e junho, sendo ministradas no decorrer do semestre vigente.</p>'+
+                    '<p class="indent"><strong>Par&aacute;grafo &uacute;nico.</strong> O presente instrumento findar-se-&aacute; automaticamente ap&oacute;s o t&eacute;rmino da 36&ordf; aula contratada ou ap&oacute;s o fim do per&iacute;odo previamente determinado de 6 (seis) meses letivos corridos, independentemente da realiza&ccedil;&atilde;o de todas as 36 aulas.</p>'+
+                    '<div class="section-title">VIII - DOS MATERIAIS</div>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 16&ordf;.</strong> O CONTRATADO poder&aacute; disponibilizar, quando necess&aacute;rio, materiais de estudo, links de exerc&iacute;cios e diversas atividades durante e fora do hor&aacute;rio de aula para que o(a) aluno(a) possa consolidar o conte&uacute;do ministrado pelo instrutor.</p>'+
+                    '<p class="indent"><strong>Par&aacute;grafo &uacute;nico.</strong> O CONTRATADO compromete-se em manter o acesso &agrave;s aulas gravadas do semestre conclu&iacute;do at&eacute; o final do semestre seguinte, salvo em caso de rescis&atilde;o contratual antecipada ou n&atilde;o-renova&ccedil;&atilde;o do(a) CONTRATANTE para um novo semestre letivo.</p>'+
+                    '<div class="section-title">IX - DAS SUBSTITUI&Ccedil;&Otilde;ES E AULAS N&Atilde;O MINISTRADAS</div>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 17&ordf;.</strong> Em caso de doen&ccedil;a ou impossibilidade por for&ccedil;a maior, poder&aacute; o CONTRATADO designar um instrutor substituto para prover as aulas que n&atilde;o poder&atilde;o ser ministradas pelo instrutor regular, para que, assim, o conte&uacute;do program&aacute;tico previsto n&atilde;o atrase.</p>'+
+                    '<p class="indent"><strong>Par&aacute;grafo &uacute;nico.</strong> O CONTRATADO n&atilde;o ser&aacute; responsabilizado por eventuais descumprimentos contratuais decorrentes de for&ccedil;a maior, como desastres naturais, greves, pandemias, entre outros eventos que possam inviabilizar a realiza&ccedil;&atilde;o das aulas por qualquer instrutor do curso.</p>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 18&ordf;.</strong> As aulas que n&atilde;o forem ministradas por instrutor substituto ser&atilde;o remarcadas de acordo com decis&atilde;o do instrutor em conjunto com o(a) aluno(a) para dia e hor&aacute;rio similar aos regulares.</p>'+
+                    '<p class="indent"><strong>Par&aacute;grafo &uacute;nico.</strong> Nos feriados nacionais de Confraterniza&ccedil;&atilde;o Universal (1&ordm; de Janeiro), Paix&atilde;o de Cristo, Tiradentes, Dia Mundial do Trabalho, Independ&ecirc;ncia do Brasil, Nossa Senhora Aparecida, Finados, Proclama&ccedil;&atilde;o da Rep&uacute;blica, Dia Nacional de Zumbi e da Consci&ecirc;ncia Negra e Natal, n&atilde;o ser&atilde;o ministradas aulas, reposi&ccedil;&otilde;es e monitorias, salvo decis&atilde;o do CONTRATADO. Al&eacute;m destes, outros feriados e pontos facultativos podem ser considerados pelo CONTRATADO, a serem previamente comunicados ao(à) CONTRATANTE.</p>'+
+                    '<div class="section-title">X - DAS FALTAS E REPOSI&Ccedil;&Otilde;ES</div>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 19&ordf;.</strong> O(A) CONTRATANTE dever&aacute; avisar ao CONTRATADO com, no m&aacute;ximo, 24 (vinte e quatro) horas de anteced&ecirc;ncia em caso de cancelamento de aula. O n&atilde;o cumprimento deste aviso ser&aacute; considerado como aula ministrada, salvo em casos de for&ccedil;a maior e exce&ccedil;&otilde;es a serem avaliadas pelo CONTRATADO.</p>'+
+                    '<p class="indent"><strong>Par&aacute;grafo &uacute;nico.</strong> Em caso de tratar-se de reposi&ccedil;&atilde;o de aula, e esta for cancelada com menos de 24 (vinte e quatro) horas de anteced&ecirc;ncia, n&atilde;o ser&aacute; realizado novo agendamento, sendo a aula considerada como ministrada.</p>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 20&ordf;.</strong> O(A) CONTRATANTE &eacute; respons&aacute;vel por entrar em contato com o instrutor para solicitar a remarca&ccedil;&atilde;o das aulas n&atilde;o ministradas, conforme disponibilidade. O CONTRATADO avaliar&aacute; a solicita&ccedil;&atilde;o e a disponibilidade de hor&aacute;rios para melhor atender o(a) CONTRATANTE, podendo ser a aula ministrada por outro instrutor.</p>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 21&ordf;.</strong> O(A) CONTRATANTE dever&aacute; seguir o cronograma de aulas estabelecido. Pausas n&atilde;o justificadas durante o semestre podem impactar a continuidade do aprendizado e a progress&atilde;o do(a) aluno(a), sendo de responsabilidade do(a) CONTRATANTE manter a regularidade nas aulas.</p>'+
+                    confidencialidade+condicoesGerais('VIP para TURMA')+
+                    '<div class="section-title">XIII - DO FORO</div>'+
+                    '<p class="indent">Fica eleito o foro da Comarca de Fortaleza/CE para dirimir quaisquer d&uacute;vidas ou lit&iacute;gios oriundos do presente contrato, com ren&uacute;ncia expressa de qualquer outro, por mais privilegiado que seja.</p>'+
+                    '<p class="indent">E, por estarem assim justos e contratados, as partes assinam o presente instrumento em 2 (duas) vias de igual teor e forma, juntamente com 2 (duas) testemunhas, para que produza seus legais efeitos.</p>'+
+                    '<p style="text-align:center;margin-top:16pt;">'+cidadeAssin+', '+assinBR+'</p>'+assinaturas;
+
+                } else if (sel === 'turma2x') {
+                    body =
+                    '<h1>CONTRATO DE PRESTA&Ccedil;&Atilde;O DE SERVI&Ccedil;OS PARA O ENSINO DE L&Iacute;NGUA INGLESA</h1>'+
+                    '<div class="section-title">I - DAS PARTES CONTRATANTES</div>'+partes+
+                    '<div class="section-title">II - DO OBJETO DO CONTRATO</div>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 1&ordf;.</strong> O presente contrato tem como OBJETO a presta&ccedil;&atilde;o, pelo CONTRATADO, ao(à) CONTRATANTE, dos servi&ccedil;os de ensino no idioma ingl&ecirc;s no curso SLAP &ndash; SPEAKING LIKE A PRO conforme os per&iacute;odos e hor&aacute;rios estabelecidos.</p>'+
+                    '<p class="indent"><strong>Par&aacute;grafo &uacute;nico.</strong> As aulas contratadas ser&atilde;o ministradas apenas em modalidade online.</p>'+
+                    '<div class="section-title">III - DAS AULAS</div>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 2&ordf;.</strong> Ser&atilde;o ministradas duas aulas por semana, exceto em feriados, com at&eacute; 1 (uma) hora de dura&ccedil;&atilde;o por aula, podendo haver altera&ccedil;&atilde;o de instrutor se for considerado necess&aacute;rio pelo CONTRATADO.</p>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 3&ordf;.</strong> Cada m&oacute;dulo contar&aacute; com o total de 36 (trinta e seis) aulas ao vivo de at&eacute; 1 (uma) hora de dura&ccedil;&atilde;o, que dever&atilde;o ser completadas em at&eacute; 6 (seis) meses letivos corridos, excluindo-se os recessos de dezembro e junho, que ser&atilde;o ministradas no decorrer do semestre vigente, as quais podem ser no formato de aula comum de introdu&ccedil;&atilde;o a novos conte&uacute;dos, de prepara&ccedil;&atilde;o e apresenta&ccedil;&atilde;o de semin&aacute;rios, de revis&atilde;o de t&oacute;picos, de avalia&ccedil;&otilde;es, entre outros.</p>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 4&ordf;.</strong> Haver&aacute; uma toler&acirc;ncia de 15 (quinze) minutos para o in&iacute;cio das aulas. O instrutor aguardar&aacute; esse tempo para que ao menos 1 (um) aluno junte-se &agrave; aula. Caso nenhum aluno compare&ccedil;a, a aula ser&aacute; considerada como ministrada.</p>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 5&ordf;.</strong> As aulas, ap&oacute;s ministradas, ser&atilde;o disponibilizadas em um link privado para que os alunos tenham a oportunidade de assistir quantas vezes forem necess&aacute;rias durante a vig&ecirc;ncia do contrato, para consolida&ccedil;&atilde;o do conte&uacute;do. No entanto, fica vedado ao(à) aluno(a) o download ou compartilhamento do material, que &eacute; de uso exclusivo do(a) CONTRATANTE, por&eacute;m propriedade intelectual do CONTRATADO.</p>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 6&ordf;.</strong> Ap&oacute;s cada semestre letivo, haver&aacute; um recesso pr&eacute;-determinado pelo CONTRATADO por fins trabalhistas e organizacionais referente aos setores internos, que n&atilde;o acarretar&aacute; em preju&iacute;zo para o(a) CONTRATANTE.</p>'+
+                    '<p class="indent"><strong>Par&aacute;grafo &uacute;nico.</strong> Em caso de solicita&ccedil;&atilde;o para troca de turno ou turma, o CONTRATADO considerar&aacute; as circunst&acirc;ncias de n&iacute;vel lingu&iacute;stico do(a) CONTRATANTE para que o pedido possa ser avaliado. Caso aprovada, tal mudan&ccedil;a poder&aacute; acarretar em altera&ccedil;&atilde;o de hor&aacute;rio ou instrutor, a depender da disponibilidade.</p>'+
+                    pagamento+
+                    '<div class="section-title">VII - DA VIG&Ecirc;NCIA</div>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 15&ordf;.</strong> A vig&ecirc;ncia do presente instrumento ter&aacute; in&iacute;cio a partir da assinatura do(a) CONTRATANTE e findar-se-&aacute; ap&oacute;s a 36&ordf; aula do m&oacute;dulo ser ministrada.</p>'+
+                    '<div class="section-title">VIII - DOS MATERIAIS</div>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 16&ordf;.</strong> O CONTRATADO poder&aacute; disponibilizar, quando necess&aacute;rio, materiais de estudo, links de exerc&iacute;cios e diversas atividades durante e fora do hor&aacute;rio de aula para que os alunos possam consolidar o conte&uacute;do ministrado pelo instrutor.</p>'+
+                    '<p class="indent"><strong>Par&aacute;grafo &uacute;nico.</strong> O CONTRATADO compromete-se em manter o acesso ao(à) CONTRATANTE &agrave;s aulas gravadas do semestre conclu&iacute;do at&eacute; o final do semestre seguinte, salvo em caso de rescis&atilde;o contratual antecipada ou n&atilde;o-renova&ccedil;&atilde;o do(a) CONTRATANTE para um novo semestre letivo.</p>'+
+                    '<div class="section-title">IX - DAS SUBSTITUI&Ccedil;&Otilde;ES E AULAS N&Atilde;O MINISTRADAS</div>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 17&ordf;.</strong> Em caso de doen&ccedil;a ou impossibilidade por for&ccedil;a maior, poder&aacute; o CONTRATADO designar um instrutor substituto para prover as aulas que n&atilde;o poder&atilde;o ser ministradas pelo instrutor regular, para que, assim, o conte&uacute;do program&aacute;tico previsto n&atilde;o atrase.</p>'+
+                    '<p class="indent"><strong>Par&aacute;grafo &uacute;nico.</strong> O CONTRATADO n&atilde;o ser&aacute; responsabilizado por eventuais descumprimentos contratuais decorrentes de for&ccedil;a maior, como desastres naturais, greves, pandemias, entre outros eventos que possam inviabilizar a realiza&ccedil;&atilde;o das aulas por qualquer instrutor do curso.</p>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 18&ordf;.</strong> As aulas que n&atilde;o forem ministradas por instrutor substituto ser&atilde;o remarcadas de acordo com decis&atilde;o do instrutor em conjunto com a turma para dia e hor&aacute;rio similar aos regulares.</p>'+
+                    '<p class="indent"><strong>Par&aacute;grafo &uacute;nico.</strong> Nos feriados nacionais de Confraterniza&ccedil;&atilde;o Universal (1&ordm; de Janeiro), Paix&atilde;o de Cristo, Tiradentes, Dia Mundial do Trabalho, Independ&ecirc;ncia do Brasil, Nossa Senhora Aparecida, Finados, Proclama&ccedil;&atilde;o da Rep&uacute;blica, Dia Nacional de Zumbi e da Consci&ecirc;ncia Negra e Natal, n&atilde;o ser&atilde;o ministradas aulas, reposi&ccedil;&otilde;es e monitorias, salvo decis&atilde;o do CONTRATADO. Al&eacute;m destes, outros feriados e pontos facultativos poder&atilde;o ser considerados pelo CONTRATADO, a serem previamente comunicados ao(à) CONTRATANTE.</p>'+
+                    '<div class="section-title">X - DAS FALTAS E REPOSI&Ccedil;&Otilde;ES</div>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 19&ordf;.</strong> Em caso de falta do(a) CONTRATANTE, n&atilde;o poder&aacute; o(a) aluno(a) remarcar ou reagendar aula com o instrutor, visto que o curso ser&aacute; ministrado impreterivelmente nos hor&aacute;rios e dias previamente acordados. O(A) aluno(a) que porventura vir a faltar a aula por motivos de for&ccedil;a maior poder&aacute; assistir &agrave; grava&ccedil;&atilde;o dela ao acessar a plataforma disponibilizada pelo CONTRATADO.</p>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 20&ordf;.</strong> Aulas at&iacute;picas ou din&acirc;micas que acontecerem durante o semestre, como prepara&ccedil;&otilde;es e apresenta&ccedil;&otilde;es de semin&aacute;rio, revis&otilde;es, conversa&ccedil;&atilde;o, jogos de consolida&ccedil;&atilde;o &ndash; Kahoot e aulas de conte&uacute;do audiovisual, entre outros, n&atilde;o ser&atilde;o reagendadas ou remarcadas caso o(a) CONTRATANTE falte no dia e hor&aacute;rio previsto da turma no qual foi inserido.</p>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 21&ordf;.</strong> A avalia&ccedil;&atilde;o oral realizada por instrutores de ingl&ecirc;s e convidados brasileiros ou estrangeiros n&atilde;o ser&aacute; remarcada gratuitamente, visto que ser&aacute; agendada antecipadamente e acordado um hor&aacute;rio exclusivo com os invitados, podendo a avalia&ccedil;&atilde;o ser reposta mediante pagamento de taxa de R$ 30,00 (trinta reais).</p>'+
+                    confidencialidade+condicoesGerais('TURMA para VIP')+
+                    '<div class="section-title">XIII - DO FORO</div>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 38&ordf;.</strong> As partes elegem o foro da Comarca de Goiana - Pernambuco para dirimir eventuais controv&eacute;rsias decorrentes do presente contrato.</p>'+
+                    '<p style="text-align:center;margin-top:16pt;">'+cidadeAssin+', '+assinExtensa+'</p>'+assinaturas;
+
+                } else {
+                    const vipIaIII =
+                    '<div class="section-title">II - DO OBJETO DO CONTRATO</div>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 1&ordf;.</strong> O presente contrato tem como OBJETO a presta&ccedil;&atilde;o, pelo CONTRATADO, ao(à) CONTRATANTE, dos servi&ccedil;os de ensino no idioma ingl&ecirc;s no curso SLAP &ndash; SPEAKING LIKE A PRO conforme os per&iacute;odos e hor&aacute;rios estabelecidos por ambas as partes.</p>'+
+                    '<p class="indent"><strong>Par&aacute;grafo &uacute;nico.</strong> As aulas contratadas ser&atilde;o ministradas apenas em modalidade online.</p>'+
+                    '<div class="section-title">III - DAS AULAS</div>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 2&ordf;.</strong> Ser&atilde;o ministradas duas aulas por semana, exceto em feriados, com at&eacute; 1 (uma) hora de dura&ccedil;&atilde;o por aula, podendo haver altera&ccedil;&atilde;o de instrutor se for considerado necess&aacute;rio pelo CONTRATADO.</p>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 3&ordf;.</strong> Cada m&oacute;dulo contar&aacute; com o total de 36 (trinta e seis) aulas ao vivo de at&eacute; 1 (uma) hora de dura&ccedil;&atilde;o, as quais podem ser no formato de aula comum de introdu&ccedil;&atilde;o a novos conte&uacute;dos, de prepara&ccedil;&atilde;o e apresenta&ccedil;&atilde;o de semin&aacute;rios, de revis&atilde;o de t&oacute;picos, de avalia&ccedil;&otilde;es, entre outros.</p>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 4&ordf;.</strong> Haver&aacute; uma toler&acirc;ncia de 15 (quinze) minutos para o in&iacute;cio das aulas. O instrutor aguardar&aacute; esse tempo para que o(a) aluno(a) junte-se &agrave; aula. Caso o(a) aluno(a) n&atilde;o compare&ccedil;a, a aula ser&aacute; considerada como ministrada.</p>'+
+                    '<p class="indent"><strong>Par&aacute;grafo &uacute;nico.</strong> Em caso de atraso de at&eacute; 15 (quinze) minutos do(a) CONTRATANTE, poder&aacute; esse tempo ser descontado da dura&ccedil;&atilde;o total da aula.</p>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 5&ordf;.</strong> As aulas, ap&oacute;s ministradas, ser&atilde;o disponibilizadas em um link privado para que o(a) aluno(a) tenha a oportunidade de assistir quantas vezes forem necess&aacute;rias durante a vig&ecirc;ncia do contrato, para consolida&ccedil;&atilde;o do conte&uacute;do. No entanto, fica vedado ao(à) aluno(a) o download ou compartilhamento do material, que &eacute; de uso exclusivo do(a) CONTRATANTE, por&eacute;m propriedade intelectual do CONTRATADO.</p>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 6&ordf;.</strong> Ap&oacute;s cada semestre letivo, haver&aacute; um recesso pr&eacute;-determinado pelo CONTRATADO por fins trabalhistas e organizacionais referente aos setores internos, que n&atilde;o acarretar&aacute; em preju&iacute;zo para o(a) CONTRATANTE.</p>'+
+                    '<p class="indent"><strong>Par&aacute;grafo &uacute;nico.</strong> Em caso de solicita&ccedil;&atilde;o para troca de turno, o CONTRATADO considerar&aacute; a disponibilidade de hor&aacute;rios para que o pedido possa ser avaliado. Caso aprovada, tal mudan&ccedil;a poder&aacute; acarretar em altera&ccedil;&atilde;o de instrutor, a depender da grade hor&aacute;ria da escola.</p>';
+
+                    const boletoPagamento =
+                    '<div class="section-title">IV - DO PAGAMENTO</div>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 7&ordf;.</strong> O m&oacute;dulo custa, em sua totalidade, R$ '+valorTotal+' ('+vTE+'), a ser pago em at&eacute; '+numParcelas+' ('+nPE+') parcelas de R$ '+valorParcela+' ('+vPE+') cada. As parcelas dever&atilde;o ser pagas via boleto banc&aacute;rio ou por outro meio de pagamento acordado com o CONTRATADO.</p>'+
+                    '<p class="indent"><strong>Par&aacute;grafo &uacute;nico.</strong> O(A) CONTRATANTE fica ciente que o valor total do m&oacute;dulo ser&aacute; parcelado e tais pagamentos n&atilde;o fazem refer&ecirc;ncia a uma mensalidade.</p>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 8&ordf;.</strong> O(A) CONTRATANTE, de in&iacute;cio, dever&aacute; efetuar o pagamento da taxa de matr&iacute;cula no valor de R$ '+taxaMatricula+' ('+vME+'), al&eacute;m do pagamento da primeira parcela no valor de R$ '+priParcela+' ('+vPPE+') para estar devidamente inscrito(a) no curso, reconhecendo que esse valor faz parte do pagamento integral do curso.</p>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 9&ordf;.</strong> Em caso de boleto banc&aacute;rio, as parcelas dever&atilde;o ser pagas, impreterivelmente, at&eacute; todo dia 10 (dez) de cada m&ecirc;s, disponibilizado pelo CONTRATADO no endere&ccedil;o eletr&ocirc;nico fornecido pelo(a) CONTRATANTE.</p>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 10&ordf;.</strong> O pagamento dever&aacute; ser efetuado independentemente da presen&ccedil;a do(a) CONTRATANTE nas aulas ao vivo, visto que os materiais pedag&oacute;gicos estar&atilde;o dispon&iacute;veis durante a vig&ecirc;ncia do contrato.</p>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 11&ordf;.</strong> Em caso de boleto banc&aacute;rio, havendo atraso no pagamento da parcela, ser&aacute; gerada uma multa de 2% (dois por cento) referente &agrave; parcela vencida, al&eacute;m de juros de mora de 1% (um por cento).</p>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 12&ordf;.</strong> O pagamento n&atilde;o efetuado at&eacute; a data de vencimento previsto em boleto banc&aacute;rio poder&aacute; acarretar no impedimento do(a) CONTRATANTE de frequentar as aulas ao vivo e de acessar as plataformas disponibilizadas pelo curso.</p>'+
+                    '<div class="section-title">V - DA INADIMPL&Ecirc;NCIA</div>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 13&ordf;.</strong> O(A) CONTRATANTE ter&aacute; todos os seus acessos revogados (aulas gravadas, monitorias, permiss&atilde;o para assistir aulas ao vivo, entre outros) em caso de 30 (trinta) dias completos de inadimpl&ecirc;ncia.</p>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 14&ordf;.</strong> Ficar&aacute; o(a) CONTRATANTE sujeito(a) &agrave; negativa&ccedil;&atilde;o do CPF nos cadastros SPC e Serasa em casos de inadimpl&ecirc;ncia ou qualquer resist&ecirc;ncia de pagamento dos d&eacute;bitos devidos.</p>'+
+                    '<div class="section-title">VI - DA RESCIS&Atilde;O CONTRATUAL</div>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 15&ordf;.</strong> O(A) CONTRATANTE, em caso de rescis&atilde;o contratual antecipada, estar&aacute; obrigado(a) a efetuar o pagamento de 10% (dez por cento) do valor total do curso, desconsiderando-se quaisquer descontos.</p>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 16&ordf;.</strong> Ficar&aacute; o(a) CONTRATANTE isento(a) da multa de rescis&atilde;o contratual apenas se o cancelamento acontecer em at&eacute; 7 (sete) dias ap&oacute;s a assinatura do contrato, como previsto no art. 49 do C&oacute;digo de Defesa do Consumidor.</p>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 17&ordf;.</strong> Caso a rescis&atilde;o contratual ocorra na data de vencimento do boleto do m&ecirc;s vigente ou ap&oacute;s, tendo sido gerado o boleto banc&aacute;rio referente ao pagamento do m&ecirc;s atual, dever&aacute; ser pago o valor da parcela pendente, al&eacute;m do valor da multa de cancelamento.</p>'+
+                    '<div class="section-title">VII - DA VIG&Ecirc;NCIA</div>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 18&ordf;.</strong> A vig&ecirc;ncia do presente instrumento ter&aacute; in&iacute;cio a partir da assinatura do(a) CONTRATANTE, e as aulas contratadas dever&atilde;o ser completadas em at&eacute; 6 (seis) meses letivos corridos, excluindo-se os recessos de dezembro e junho, sendo ministradas no decorrer do semestre vigente, ficando o(a) CONTRATANTE sob pena de multa prevista na Cl&aacute;usula 15&ordf; deste contrato em caso de rescis&atilde;o durante esse per&iacute;odo.</p>'+
+                    '<p class="indent"><strong>Par&aacute;grafo &uacute;nico.</strong> O presente instrumento findar-se-&aacute; automaticamente ap&oacute;s o t&eacute;rmino da 36&ordf; aula contratada ou ap&oacute;s o fim do per&iacute;odo previamente determinado de 6 (seis) meses letivos corridos, independentemente da realiza&ccedil;&atilde;o de todas as 36 aulas.</p>'+
+                    '<div class="section-title">VIII - DOS MATERIAIS</div>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 19&ordf;.</strong> O CONTRATADO poder&aacute; disponibilizar, quando necess&aacute;rio, materiais de estudo, links de exerc&iacute;cios e diversas atividades durante e fora do hor&aacute;rio de aula para que o(a) aluno(a) possa consolidar o conte&uacute;do ministrado pelo instrutor.</p>'+
+                    '<p class="indent"><strong>Par&aacute;grafo &uacute;nico.</strong> O CONTRATADO compromete-se em manter o acesso &agrave;s aulas gravadas do semestre conclu&iacute;do at&eacute; o final do semestre seguinte, salvo em caso de rescis&atilde;o contratual antecipada ou n&atilde;o-renova&ccedil;&atilde;o do(a) CONTRATANTE para um novo semestre letivo.</p>'+
+                    '<div class="section-title">IX - DAS SUBSTITUI&Ccedil;&Otilde;ES E AULAS N&Atilde;O MINISTRADAS</div>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 20&ordf;.</strong> Em caso de doen&ccedil;a ou impossibilidade por for&ccedil;a maior, poder&aacute; o CONTRATADO designar um instrutor substituto para prover as aulas que n&atilde;o poder&atilde;o ser ministradas pelo instrutor regular, para que, assim, o conte&uacute;do program&aacute;tico previsto n&atilde;o atrase.</p>'+
+                    '<p class="indent"><strong>Par&aacute;grafo &uacute;nico.</strong> O CONTRATADO n&atilde;o ser&aacute; responsabilizado por eventuais descumprimentos contratuais decorrentes de for&ccedil;a maior, como desastres naturais, greves, pandemias, entre outros eventos que possam inviabilizar a realiza&ccedil;&atilde;o das aulas por qualquer instrutor do curso.</p>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 21&ordf;.</strong> As aulas que n&atilde;o forem ministradas por instrutor substituto ser&atilde;o remarcadas de acordo com decis&atilde;o do instrutor em conjunto com o(a) aluno(a) para dia e hor&aacute;rio similar aos regulares.</p>'+
+                    '<p class="indent"><strong>Par&aacute;grafo &uacute;nico.</strong> Nos feriados nacionais de Confraterniza&ccedil;&atilde;o Universal (1&ordm; de Janeiro), Paix&atilde;o de Cristo, Tiradentes, Dia Mundial do Trabalho, Independ&ecirc;ncia do Brasil, Nossa Senhora Aparecida, Finados, Proclama&ccedil;&atilde;o da Rep&uacute;blica, Dia Nacional de Zumbi e da Consci&ecirc;ncia Negra e Natal, n&atilde;o ser&atilde;o ministradas aulas, reposi&ccedil;&otilde;es e monitorias, salvo decis&atilde;o do CONTRATADO. Al&eacute;m destes, outros feriados e pontos facultativos podem ser considerados pelo CONTRATADO, a serem previamente comunicados ao(à) CONTRATANTE.</p>'+
+                    '<div class="section-title">X - DAS FALTAS E REPOSI&Ccedil;&Otilde;ES</div>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 22&ordf;.</strong> O(A) CONTRATANTE dever&aacute; avisar ao CONTRATADO com, no m&aacute;ximo, 24 (vinte e quatro) horas de anteced&ecirc;ncia em caso de cancelamento de aula. O n&atilde;o cumprimento deste aviso ser&aacute; considerado como aula ministrada, salvo em casos de for&ccedil;a maior e exce&ccedil;&otilde;es a serem avaliadas pelo CONTRATADO.</p>'+
+                    '<p class="indent"><strong>Par&aacute;grafo &uacute;nico.</strong> Em caso de tratar-se de reposi&ccedil;&atilde;o de aula, e esta for cancelada com menos de 24 (vinte e quatro) horas de anteced&ecirc;ncia, n&atilde;o ser&aacute; realizado novo agendamento, sendo a aula considerada como ministrada.</p>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 23&ordf;.</strong> O(A) CONTRATANTE &eacute; respons&aacute;vel por entrar em contato com o instrutor para solicitar a remarca&ccedil;&atilde;o das aulas n&atilde;o ministradas, conforme disponibilidade. O CONTRATADO avaliar&aacute; a solicita&ccedil;&atilde;o e a disponibilidade de hor&aacute;rios para melhor atender o(a) CONTRATANTE, podendo ser a aula ministrada por outro instrutor.</p>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 24&ordf;.</strong> O(A) CONTRATANTE dever&aacute; seguir o cronograma de aulas estabelecido. Pausas n&atilde;o justificadas durante o semestre podem impactar a continuidade do aprendizado e a progress&atilde;o do(a) aluno(a), sendo de responsabilidade do(a) CONTRATANTE manter a regularidade nas aulas.</p>'+
+                    '<div class="section-title">XI - DA CONFIDENCIALIDADE</div>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 25&ordf;.</strong> As partes concordam que todas as informa&ccedil;&otilde;es, dados e documentos trocados entre a escola e o(a) aluno(a) durante a vig&ecirc;ncia deste contrato s&atilde;o considerados confidenciais.</p>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 26&ordf;.</strong> A escola se compromete a n&atilde;o divulgar informa&ccedil;&otilde;es pessoais do(a) aluno(a) a terceiros sem o seu consentimento pr&eacute;vio, exceto em situa&ccedil;&otilde;es previstas em lei.</p>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 27&ordf;.</strong> O(A) CONTRATANTE se compromete a manter em sigilo qualquer informa&ccedil;&atilde;o confidencial recebida da escola, incluindo, mas n&atilde;o se limitando a material did&aacute;tico, metodologias de ensino e estrat&eacute;gias pedag&oacute;gicas.</p>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 28&ordf;.</strong> O(A) CONTRATANTE declara que foi devidamente informado(a) sobre a coleta, uso, armazenamento e tratamento de seus dados pessoais, conforme estabelecido na Lei Geral de Prote&ccedil;&atilde;o de Dados (LGPD) &ndash; Lei n&ordm; 13.709/2018.</p>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 29&ordf;.</strong> O CONTRATADO se compromete a tratar os dados pessoais do(a) CONTRATANTE de forma segura e respons&aacute;vel, utilizando-os exclusivamente para fins educacionais, administrativos e de comunica&ccedil;&atilde;o relacionados &agrave; presta&ccedil;&atilde;o dos servi&ccedil;os contratados.</p>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 30&ordf;.</strong> O(A) CONTRATANTE possui o direito de acessar seus dados pessoais, solicitar corre&ccedil;&otilde;es, revogar seu consentimento e requerer a exclus&atilde;o de seus dados, conforme previsto na LGPD.</p>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 31&ordf;.</strong> O CONTRATADO dever&aacute; notificar o(a) CONTRATANTE sobre qualquer incidente de seguran&ccedil;a que possa comprometer a integridade de seus dados pessoais, em conformidade com a LGPD.</p>'+
+                    '<div class="section-title">XII - DAS CONDI&Ccedil;&Otilde;ES GERAIS</div>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 32&ordf;.</strong> O presente instrumento &eacute; celebrado sob a &eacute;gide das normas aplic&aacute;veis aos contratos desta natureza insertas no C&oacute;digo Civil de 2002 e observ&acirc;ncia ao regramento do C&oacute;digo de Defesa do Consumidor vigentes.</p>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 33&ordf;.</strong> Qualquer altera&ccedil;&atilde;o neste contrato dever&aacute; ser formalizada por escrito e assinada por ambas as partes, n&atilde;o sendo aceitas altera&ccedil;&otilde;es verbais.</p>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 34&ordf;.</strong> Em caso de solicita&ccedil;&atilde;o de mudan&ccedil;a de modalidade &ndash; VIP para TURMA &ndash; cabe ao CONTRATADO avaliar as quest&otilde;es financeiras para que seja efetuado um novo contrato que conste a nova modalidade escolhida e seus respectivos requisitos pelo(a) CONTRATANTE.</p>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 35&ordf;.</strong> Todos os materiais, conte&uacute;dos e recursos pedag&oacute;gicos fornecidos pelo CONTRATADO s&atilde;o protegidos por direitos autorais e n&atilde;o poder&atilde;o ser reproduzidos, distribu&iacute;dos ou utilizados para fins comerciais sem autoriza&ccedil;&atilde;o pr&eacute;via.</p>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 36&ordf;.</strong> O CONTRATADO n&atilde;o se responsabiliza por quaisquer danos diretos ou indiretos que possam ocorrer em decorr&ecirc;ncia da participa&ccedil;&atilde;o do(a) CONTRATANTE nas aulas, exceto aqueles que sejam causados por neglig&ecirc;ncia ou dolo comprovados.</p>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 37&ordf;.</strong> O(A) CONTRATANTE concorda em participar de avalia&ccedil;&otilde;es e fornecer feedback sobre o curso, que poder&atilde;o ser utilizados para melhorias e adapta&ccedil;&otilde;es nos servi&ccedil;os oferecidos.</p>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 38&ordf;.</strong> O(A) CONTRATANTE n&atilde;o poder&aacute; ceder ou transferir seus direitos e obriga&ccedil;&otilde;es previstos neste contrato a terceiros sem a autoriza&ccedil;&atilde;o expressa do CONTRATADO.</p>'+
+                    '<div class="section-title">XIII - DO FORO</div>'+
+                    '<p class="indent">Fica eleito o foro da Comarca de Fortaleza/CE para dirimir quaisquer d&uacute;vidas ou lit&iacute;gios oriundos do presente contrato, com ren&uacute;ncia expressa de qualquer outro, por mais privilegiado que seja.</p>'+
+                    '<p class="indent">E, por estarem assim justos e contratados, as partes assinam o presente instrumento em 2 (duas) vias de igual teor e forma, juntamente com 2 (duas) testemunhas, para que produza seus legais efeitos.</p>'+
+                    '<p style="text-align:center;margin-top:16pt;">'+cidadeAssin+', '+assinBR+'</p>'+assinaturas;
+
+                    body = '<h1>CONTRATO DE PRESTA&Ccedil;&Atilde;O DE SERVI&Ccedil;OS PARA O ENSINO DE L&Iacute;NGUA INGLESA &ndash; VIP II</h1>'+
+                    '<div class="section-title">I - DAS PARTES CONTRATANTES</div>'+partes+vipIaIII+boletoPagamento;
+                }
+
+                const pw = window.open('', '_blank');
+                pw.document.write('<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Contrato '+templates[sel].label+' - '+nome+'</title><style>'+contractCSS()+'</style></head><body><div class="page">'+body+'<button class="print-btn" onclick="window.print()">Imprimir / Salvar PDF</button></div></body></html>');
+                pw.document.close();
+            };
+        }
+
                 function renderLogsAtividadesSection() {
             document.getElementById('main-title').textContent = 'Logs de Atividades';
             document.getElementById('main-description').textContent = 'Acompanhe todas as ações realizadas no Hub nos últimos 5 dias.';
@@ -17887,18 +18695,6 @@
                                     Checklist
                                 </button>
                                 ` : ''}
-                                <button class="primary-btn" style="background-color: #F97316; color: white;" onmouseover="this.style.backgroundColor='#FF8C00'" onmouseout="this.style.backgroundColor='#FFA500'" onclick="openAddReminderForm()">
-                                    <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
-                                    </svg>
-                                    Lembrete
-                                </button>
-                                <button class="primary-btn" style="background-color: #3B82F6; color: white;" onmouseover="this.style.backgroundColor='#2563EB'" onmouseout="this.style.backgroundColor='#3B82F6'" onclick="openAddAvisoForm()">
-                                    <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"/>
-                                    </svg>
-                                    Aviso
-                                </button>
                             </div>
                             ` : ''}
 
@@ -18135,6 +18931,13 @@
                                         <option value="urgent">Urgente</option>
                                         <option value="max">Prioridade Máxima</option>
                                     </select>
+                                </div>
+                                <div>
+                                    <div class="flex justify-between items-center mb-2">
+                                        <label class="font-medium text-sm">Links Anexados</label>
+                                        <button type="button" class="text-xs font-medium text-blue-600 hover:text-blue-800" onclick="addAvisoLink()">+ Adicionar Link</button>
+                                    </div>
+                                    <div id="aviso-links-container" class="space-y-2"></div>
                                 </div>
                             </div>
                             <div class="mt-6 flex justify-end gap-3">
@@ -18481,7 +19284,7 @@
                     if (t.type === 'checklist' && t.checklistItems) {
                         // For checklists, count each overdue item individually
                         t.checklistItems.forEach(item => {
-                            if (!item.approved && !item.failed) { // Mudar de completed para approved
+                            if (!item.approved && !item.failed && !item.completedByUser) {
                                 const itemDueDate = new Date(item.dueDate + 'T00:00:00');
                                 itemDueDate.setHours(0, 0, 0, 0);
                                 if (itemDueDate < today) {
@@ -18491,7 +19294,7 @@
                         });
                     } else {
                         // For normal tasks, check if the entire task is overdue
-                        if (!t.failed) {
+                        if (!t.failed && !t.completedByUser) {
                             const dueDate = new Date(t.dueDate + 'T00:00:00');
                             dueDate.setHours(0, 0, 0, 0);
                             if (dueDate < today) {
@@ -18799,6 +19602,7 @@
                 pendingTasks = pendingTasks.filter(t => t.urgency && t.urgency !== 'normal');
             } else if (currentTasksFilter === 'atrasadas') {
                 pendingTasks = pendingTasks.filter(t => {
+                    if (t.completedByUser) return false;
                     const dueDate = getTaskDueDate(t);
                     return dueDate && dueDate < today;
                 });
@@ -18844,10 +19648,16 @@
             }
 
             const renderSingleTask = (task) => {
-                const dueDate = new Date(task.dueDate + 'T00:00:00');
-                dueDate.setHours(0, 0, 0, 0);
-                const isOverdue = !task.approved && dueDate < today;
-                const isToday = dueDate.getTime() === today.getTime();
+                // Normalize 'lembrete' type (from Task para Múltiplos) to 'reminder' for consistent rendering
+                if (task.type === 'lembrete') {
+                    task = { ...task, type: 'reminder', reminderMode: task.lembreteMode || task.reminderMode || 'single' };
+                }
+
+                const dueDateStr = task.dueDate || null;
+                const dueDate = dueDateStr ? new Date(dueDateStr + 'T00:00:00') : new Date(NaN);
+                if (!isNaN(dueDate)) dueDate.setHours(0, 0, 0, 0);
+                const isOverdue = !task.approved && !task.completedByUser && !isNaN(dueDate) && dueDate < today;
+                const isToday = !isNaN(dueDate) && dueDate.getTime() === today.getTime();
 
                 // For checklists, render differently
                 if (task.type === 'checklist' && task.checklistItems && task.checklistItems.length > 0) {
@@ -19210,6 +20020,7 @@
                                         ${task.title}
                                     </h4>
                                     ${task.description ? `<p class="text-sm text-stone-600 ${isRead ? 'text-stone-400' : ''}">${task.description}</p>` : ''}
+                                    ${renderTaskLinks(task)}
                                     <div class="flex items-center gap-2 mt-3">
                                         <label class="flex items-center gap-2 cursor-pointer">
                                             <input type="checkbox" 
@@ -19336,6 +20147,7 @@
         let checklistLinkCounter = 0;
         let reminderLinkCounter = 0;
         let multipleTaskLinkCounter = 0;
+        let avisoLinkCounter = 0;
 
         function addTaskLink(name = '', url = '') {
             const id = taskLinkCounter++;
@@ -19497,6 +20309,42 @@
             return links;
         }
 
+        function addAvisoLink(name = '', url = '') {
+            const id = avisoLinkCounter++;
+            const container = document.getElementById('aviso-links-container');
+            if (!container) return;
+            const div = document.createElement('div');
+            div.id = 'aviso-link-' + id;
+            div.className = 'flex gap-2 items-start p-2 bg-stone-50 rounded-lg';
+            div.innerHTML = `
+                <div class="flex-1 space-y-2">
+                    <input type="text" class="form-input aviso-link-name" placeholder="Nome do link (ex: Documento)" value="${name}">
+                    <input type="url" class="form-input aviso-link-url" placeholder="https://..." value="${url}">
+                </div>
+                <button type="button" onclick="removeAvisoLink(${id})" class="p-2 text-red-500 hover:text-red-700">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            `;
+            container.appendChild(div);
+        }
+
+        function removeAvisoLink(id) {
+            const elem = document.getElementById('aviso-link-' + id);
+            if (elem) elem.remove();
+        }
+
+        function getAvisoLinks() {
+            const links = [];
+            document.querySelectorAll('#aviso-links-container > div').forEach(div => {
+                const name = div.querySelector('.aviso-link-name').value.trim();
+                const url = div.querySelector('.aviso-link-url').value.trim();
+                if (url) links.push({ name: name || 'Link', url });
+            });
+            return links;
+        }
+
         // Expose link management functions to global scope for onclick handlers
         window.addTaskLink = addTaskLink;
         window.removeTaskLink = removeTaskLink;
@@ -19506,6 +20354,8 @@
         window.removeReminderLink = removeReminderLink;
         window.addMultipleTaskLink = addMultipleTaskLink;
         window.removeMultipleTaskLink = removeMultipleTaskLink;
+        window.addAvisoLink = addAvisoLink;
+        window.removeAvisoLink = removeAvisoLink;
 
                 function openAddTaskForm() {
             editingTaskId = null;
@@ -19552,7 +20402,7 @@
                 });
 
                 document.getElementById('checklist-form-modal').classList.add('visible');
-            } else if (task.type === 'reminder') {
+            } else if (task.type === 'reminder' || task.type === 'lembrete') {
                 // Lembrete - abre modal de lembrete
                 document.getElementById('reminder-form-title').textContent = 'Editar Lembrete';
                 document.getElementById('reminder-title').value = task.title;
@@ -20087,6 +20937,8 @@ function openAddChecklistForm() {
         function closeAvisoFormModal() {
             document.getElementById('aviso-form-modal').classList.remove('visible');
             editingTaskId = null;
+            const container = document.getElementById('aviso-links-container');
+            if (container) { container.innerHTML = ''; avisoLinkCounter = 0; }
         }
 
         async function handleSubmitAviso() {
@@ -20122,10 +20974,12 @@ function openAddChecklistForm() {
                 return;
             }
 
+            const avisoLinks = getAvisoLinks();
             const avisoData = {
                 title: title,
                 description: description,
                 urgency: urgency,
+                links: avisoLinks,
                 type: 'aviso',
                 personId: avisoPersonId,
                 read: false,
@@ -20258,6 +21112,15 @@ function openAddChecklistForm() {
             document.getElementById('aviso-title').value = task.title || '';
             document.getElementById('aviso-description').value = task.description || '';
             document.getElementById('aviso-urgency').value = task.urgency || 'normal';
+
+            // Load existing links
+            const avisoLinksContainer = document.getElementById('aviso-links-container');
+            if (avisoLinksContainer) {
+                avisoLinksContainer.innerHTML = '';
+                avisoLinkCounter = 0;
+                const existingLinks = task.links || (task.link ? [{ name: 'Documento', url: task.link }] : []);
+                existingLinks.forEach(link => addAvisoLink(link.name || '', link.url || ''));
+            }
 
             document.getElementById('aviso-form-modal').classList.add('visible');
         }
@@ -20894,6 +21757,8 @@ function openAddChecklistForm() {
         window.toggleChecklistUserCompletion = toggleChecklistUserCompletion;
         window.toggleChecklistAdminApproval = toggleChecklistAdminApproval;
         window.toggleChecklistExpand = toggleChecklistExpand;
+        window.sendTaskMessage = sendTaskMessage;
+        window.saveTaskDeliveryLink = saveTaskDeliveryLink;
         window.openAddReminderForm = openAddReminderForm;
         window.closeReminderFormModal = closeReminderFormModal;
         window.openAddAvisoForm = openAddAvisoForm;
@@ -24111,7 +24976,8 @@ function openAddChecklistForm() {
                         { key: 'vips', label: 'VIPs', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20a6 6 0 0 0-12 0"/><circle cx="12" cy="10" r="4"/><circle cx="12" cy="12" r="10"/></svg>', roles: ['admin', 'teacher', 'teachertn', 'coord', 'superv', 'estagiario', 'comercial'] },
                         { key: 'grade', label: 'Grade', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" x2="16" y1="2" y2="6"></line><line x1="8" x2="8" y1="2" y2="6"></line><line x1="3" x2="21" y1="10" y2="10"></line></svg>', roles: ['admin', 'teacher', 'teachertn', 'coord', 'superv', 'estagiario', 'comercial'] },
                         { key: 'calendario', label: 'Calendário', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>', roles: ['admin', 'teacher', 'teachertn', 'coord', 'superv', 'estagiario', 'comercial'] },
-                        { key: 'rechamada', label: 'Rechamada', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>', roles: ['admin', 'teacher', 'teachertn', 'coord', 'superv', 'estagiario', 'comercial'] }
+                        { key: 'rechamada', label: 'Rechamada', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>', roles: ['admin', 'teacher', 'teachertn', 'coord', 'superv', 'estagiario', 'comercial'] },
+                        { key: 'intercorrencias-pedagogicas', label: 'Intercorrências', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>', roles: ['admin', 'teacher', 'teachertn', 'coord', 'superv'] }
                     ]
                 },
                 comercial: {
@@ -24121,7 +24987,7 @@ function openAddChecklistForm() {
                         { key: 'kpis-pedagogico', label: 'KPIs', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>', roles: ['admin', 'coord', 'superv', 'comercial'] },
                         { key: 'agendamentos-tns', label: 'Agendamentos', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>', roles: ['admin', 'teachertn', 'coord', 'superv', 'estagiario', 'comercial'] },
                         { key: 'gestao-tns', label: 'Gestão TNs', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>', roles: ['admin', 'teachertn', 'coord', 'superv', 'estagiario', 'comercial'] },
-                        
+                        { key: 'contratos', label: 'Contratos', icon: '<svg class="mr-3" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/><polyline points="9 9 10 9 11 9"/></svg>', roles: ['admin', 'coord', 'superv', 'comercial'] },
                     ]
                 },
                 direcao: {
@@ -24517,10 +25383,12 @@ function openAddChecklistForm() {
                 'grade': ['admin', 'teacher', 'teachertn', 'coord', 'superv', 'estagiario', 'comercial'],
                 'calendario': ['admin', 'teacher', 'teachertn', 'coord', 'superv', 'estagiario', 'comercial'],
                 'rechamada': ['admin', 'teacher', 'teachertn', 'coord', 'superv', 'estagiario', 'comercial'],
+                'intercorrencias-pedagogicas': ['admin', 'teacher', 'teachertn', 'coord', 'superv'],
                 'kpis-pedagogico': ['admin', 'coord', 'superv', 'comercial'],
                 'agendamentos-tns': ['admin', 'teachertn', 'coord', 'superv', 'estagiario', 'comercial'],
                 'gestao-tns': ['admin', 'teachertn', 'coord', 'superv', 'estagiario', 'comercial'],
                 'gestao-influencia': ['admin', 'coord', 'superv', 'comercial'],
+                'contratos': ['admin', 'coord', 'superv', 'comercial'],
                 'colaboradores': ['admin'],
                 'professores': ['admin', 'coord', 'superv'],
                 'folha-pagamento': ['admin', 'superv'],
@@ -24531,7 +25399,7 @@ function openAddChecklistForm() {
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            const pageRenderers = { 'inicio': renderInicioSection, 'alunos': renderAlunosSection, 'aniversariantes': renderAniversariantesSection, 'turmas': renderTurmasSection, 'vips': renderVipsSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection, 'entradas': renderEntradasSection, 'colaboradores': renderColaboradoresSection, 'professores': renderProfessoresSection, 'calendario': renderCalendarioSection, 'links-uteis': renderLinksUteisSection, 'processos': renderProcessosSection, 'tasks-prazos': renderTasksPrazosSection, 'agendamentos-tns': renderAgendamentosTNsSection, 'gestao-tns': renderGestaoTNsSection, 'gestao-influencia': renderInfluencerManagementSection, 'rechamada': renderRechamadaSection, 'kpis-pedagogico': renderKPIsPedagogicoSection, 'logs-atividades': renderLogsAtividadesSection  };
+            const pageRenderers = { 'inicio': renderInicioSection, 'alunos': renderAlunosSection, 'aniversariantes': renderAniversariantesSection, 'turmas': renderTurmasSection, 'vips': renderVipsSection, 'grade': renderGradeSection, 'folha-pagamento': renderFolhaPagamentoSection, 'entradas': renderEntradasSection, 'colaboradores': renderColaboradoresSection, 'professores': renderProfessoresSection, 'calendario': renderCalendarioSection, 'links-uteis': renderLinksUteisSection, 'processos': renderProcessosSection, 'tasks-prazos': renderTasksPrazosSection, 'agendamentos-tns': renderAgendamentosTNsSection, 'gestao-tns': renderGestaoTNsSection, 'gestao-influencia': renderInfluencerManagementSection, 'rechamada': renderRechamadaSection, 'intercorrencias-pedagogicas': renderIntercorrenciasPedagogicasSection, 'kpis-pedagogico': renderKPIsPedagogicoSection, 'logs-atividades': renderLogsAtividadesSection, 'contratos': renderContratosSection  };
 
             document.body.addEventListener('click', (event) => {
                 // Close modals when clicking overlay or close button
