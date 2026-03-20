@@ -14854,7 +14854,7 @@
                   </div>`;
 
             contentArea.innerHTML = `
-                <div class="space-y-6">
+                <div id="aniversariantes-section" class="space-y-6">
                     ${warningMessage}
 
                     <!-- Month Selector -->
@@ -14911,6 +14911,11 @@
         function searchAniversariantes(query) {
             aniversariantesSearchQuery = query;
             renderAniversariantesSection();
+            const searchInput = document.querySelector('#aniversariantes-section input[type="text"]');
+            if (searchInput) {
+                searchInput.focus();
+                searchInput.setSelectionRange(searchInput.value.length, searchInput.value.length);
+            }
         }
         window.searchAniversariantes = searchAniversariantes;
 
@@ -14965,9 +14970,9 @@
             }
 
             const templates = {
-                'vip2x':   { label:'VIP 2x — Cartão',   color:'#84C7DF', defaults:{ total:'2.940,00', parcelas:'6', parcela:'490,00', matricula:'70,00', cidade:'Fortaleza/CE' } },
-                'turma2x': { label:'Turma 2x — Cartão',  color:'#B8E0B0', defaults:{ total:'1.710,00', parcelas:'6', parcela:'285,00', matricula:'70,00', cidade:'Goiana/PE'    } },
-                'vipboleto': { label:'VIP 2x — Boleto',  color:'#FFCC80', defaults:{ total:'3.540,00', parcelas:'6', parcela:'590,00', matricula:'70,00', priParcela:'550,00', cidade:'Fortaleza/CE' } }
+                'vip2x':   { label:'VIP 2x — Cartão',   color:'#84C7DF', defaults:{ total:'2.940,00', parcelas:'6', parcela:'490,00', matricula:'70,00', aulas:'36', cidade:'Goiana/PE' } },
+                'turma2x': { label:'Turma 2x — Cartão',  color:'#B8E0B0', defaults:{ total:'1.710,00', parcelas:'6', parcela:'285,00', matricula:'70,00', aulas:'36', cidade:'Goiana/PE'    } },
+                'vipboleto': { label:'VIP 2x — Boleto',  color:'#FFCC80', defaults:{ total:'3.540,00', parcelas:'6', parcela:'590,00', matricula:'70,00', priParcela:'550,00', aulas:'36', cidade:'Goiana/PE' } }
             };
             let sel = 'vip2x';
 
@@ -14997,10 +15002,11 @@
                 '</div></div>' +
                 '<div><h4 class="text-sm font-semibold text-stone-600 uppercase tracking-wide mb-3 pb-1 border-b border-stone-100">Valores do Contrato</h4>' +
                 '<div class="grid grid-cols-1 md:grid-cols-2 gap-4">' +
-                '<div><label class="block text-xs font-medium text-stone-500 mb-1">Valor Total do Módulo (R$) *</label><input type="text" id="c-valor-total" class="form-input" value="'+dv.total+'"></div>' +
-                '<div><label class="block text-xs font-medium text-stone-500 mb-1">Número de Parcelas *</label><input type="number" id="c-num-parcelas" class="form-input" value="'+dv.parcelas+'" min="1" max="12"></div>' +
-                '<div><label class="block text-xs font-medium text-stone-500 mb-1">Valor por Parcela (R$) *</label><input type="text" id="c-valor-parcela" class="form-input" value="'+dv.parcela+'"></div>' +
+                '<div><label class="block text-xs font-medium text-stone-500 mb-1">Valor Total do Módulo (R$) *</label><input type="text" id="c-valor-total" class="form-input" value="'+dv.total+'" oninput="calcParcelaContrato()"></div>' +
+                '<div><label class="block text-xs font-medium text-stone-500 mb-1">Número de Parcelas *</label><input type="number" id="c-num-parcelas" class="form-input" value="'+dv.parcelas+'" min="1" max="12" oninput="calcParcelaContrato()"></div>' +
+                '<div><label class="block text-xs font-medium text-stone-500 mb-1">Valor por Parcela (R$) *</label><input type="text" id="c-valor-parcela" class="form-input" value="'+dv.parcela+'" placeholder="Auto-calculado"></div>' +
                 '<div><label class="block text-xs font-medium text-stone-500 mb-1">Taxa de Matrícula (R$)</label><input type="text" id="c-matricula" class="form-input" value="'+dv.matricula+'"></div>' +
+                '<div><label class="block text-xs font-medium text-stone-500 mb-1">Quantidade de Aulas</label><input type="number" id="c-qtd-aulas" class="form-input" value="'+(dv.aulas||'36')+'" min="1" max="200"></div>' +
                 (sel==='vipboleto' ? '<div><label class="block text-xs font-medium text-stone-500 mb-1">Primeira Parcela (R$)</label><input type="text" id="c-pri-parcela" class="form-input" value="'+(dv.priParcela||'550,00')+'"></div>' : '') +
                 '</div></div>' +
                 '<div><h4 class="text-sm font-semibold text-stone-600 uppercase tracking-wide mb-3 pb-1 border-b border-stone-100">Data de Assinatura</h4>' +
@@ -15040,6 +15046,17 @@
 
             window.clearContratoForm = function() { document.getElementById('contract-form').reset(); };
 
+            window.calcParcelaContrato = function() {
+                const totalRaw = (document.getElementById('c-valor-total')?.value || '').replace(/\./g,'').replace(',','.');
+                const total = parseFloat(totalRaw);
+                const parc = parseInt(document.getElementById('c-num-parcelas')?.value) || 0;
+                if (total > 0 && parc > 0) {
+                    const val = (total / parc).toFixed(2).replace('.',',').replace(/(\d)(?=(\d{3})+(?!\d))/g,'$1.');
+                    const el = document.getElementById('c-valor-parcela');
+                    if (el) el.value = val;
+                }
+            };
+
             function contractCSS() {
                 return '* { margin:0; padding:0; box-sizing:border-box; } body { font-family: "Times New Roman", Times, serif; font-size: 12pt; color: #000; background: #fff; } .page { padding: 20mm 25mm; max-width: 210mm; margin: 0 auto; } h1 { font-size: 13pt; font-weight: bold; text-align: center; text-transform: uppercase; margin-bottom: 4pt; letter-spacing: 1px; } .section-title { font-size: 11pt; font-weight: bold; text-transform: uppercase; text-align: center; margin: 18pt 0 8pt; } p { margin-bottom: 8pt; text-align: justify; line-height: 1.6; font-size: 11pt; } .indent { text-indent: 1.5cm; } .sig-area { margin-top: 40pt; display: flex; gap: 30pt; justify-content: center; } .sig-box { flex: 1; max-width: 220pt; text-align: center; } .sig-line { border-top: 1px solid #000; margin-top: 40pt; padding-top: 6pt; font-size: 10pt; } .print-btn { display: block; margin: 24pt auto; padding: 10pt 28pt; background: #000; color: #fff; border: none; border-radius: 4pt; cursor: pointer; font-size: 12pt; } @media print { .print-btn { display: none; } .page { padding: 15mm 20mm; } }';
             }
@@ -15067,6 +15084,17 @@
                 const taxaMatricula = get('c-matricula') || templates[sel].defaults.matricula;
                 const priParcela = sel === 'vipboleto' ? (get('c-pri-parcela') || templates[sel].defaults.priParcela || '550,00') : '';
                 const vPPE = priParcela ? numExtenso(priParcela) : '';
+                const qtdAulas = parseInt(get('c-qtd-aulas')) || 36;
+                function numIntExtenso(n) {
+                    const u=['','um','dois','tr\u00eas','quatro','cinco','seis','sete','oito','nove','dez','onze','doze','treze','quatorze','quinze','dezesseis','dezessete','dezoito','dezenove'];
+                    const d=['','','vinte','trinta','quarenta','cinquenta','sessenta','setenta','oitenta','noventa'];
+                    n=parseInt(n)||0;
+                    if(n<=0)return'zero';
+                    if(n<20)return u[n];
+                    const dz=Math.floor(n/10),un=n%10;
+                    return d[dz]+(un>0?' e '+u[un]:'');
+                }
+                const qtdAulasE = numIntExtenso(qtdAulas);
                 const cidadeAssin = get('c-cidade-assinatura') || templates[sel].defaults.cidade;
                 const assinIso = get('c-assinatura') || new Date().toISOString().split('T')[0];
                 const assinBR = formatDateBR(assinIso);
@@ -15142,7 +15170,7 @@
                     '<p class="indent"><strong>Par&aacute;grafo &uacute;nico.</strong> As aulas contratadas ser&atilde;o ministradas apenas em modalidade online.</p>'+
                     '<div class="section-title">III - DAS AULAS</div>'+
                     '<p class="indent"><strong>Cl&aacute;usula 2&ordf;.</strong> Ser&atilde;o ministradas duas aulas por semana, exceto em feriados, com at&eacute; 1 (uma) hora de dura&ccedil;&atilde;o por aula, podendo haver altera&ccedil;&atilde;o de instrutor se for considerado necess&aacute;rio pelo CONTRATADO.</p>'+
-                    '<p class="indent"><strong>Cl&aacute;usula 3&ordf;.</strong> Cada m&oacute;dulo contar&aacute; com o total de 36 (trinta e seis) aulas ao vivo de at&eacute; 1 (uma) hora de dura&ccedil;&atilde;o, as quais podem ser no formato de aula comum de introdu&ccedil;&atilde;o a novos conte&uacute;dos, de prepara&ccedil;&atilde;o e apresenta&ccedil;&atilde;o de semin&aacute;rios, de revis&atilde;o de t&oacute;picos, de avalia&ccedil;&otilde;es, entre outros.</p>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 3&ordf;.</strong> Cada m&oacute;dulo contar&aacute; com o total de '+qtdAulas+' ('+qtdAulasE+') aulas ao vivo de at&eacute; 1 (uma) hora de dura&ccedil;&atilde;o, as quais podem ser no formato de aula comum de introdu&ccedil;&atilde;o a novos conte&uacute;dos, de prepara&ccedil;&atilde;o e apresenta&ccedil;&atilde;o de semin&aacute;rios, de revis&atilde;o de t&oacute;picos, de avalia&ccedil;&otilde;es, entre outros.</p>'+
                     '<p class="indent"><strong>Cl&aacute;usula 4&ordf;.</strong> Haver&aacute; uma toler&acirc;ncia de 15 (quinze) minutos para o in&iacute;cio das aulas. O instrutor aguardar&aacute; esse tempo para que o(a) aluno(a) junte-se &agrave; aula. Caso o(a) aluno(a) n&atilde;o compare&ccedil;a, a aula ser&aacute; considerada como ministrada.</p>'+
                     '<p class="indent"><strong>Par&aacute;grafo &uacute;nico.</strong> Em caso de atraso de at&eacute; 15 (quinze) minutos do(a) CONTRATANTE, poder&aacute; esse tempo ser descontado da dura&ccedil;&atilde;o total da aula.</p>'+
                     '<p class="indent"><strong>Cl&aacute;usula 5&ordf;.</strong> As aulas, ap&oacute;s ministradas, ser&atilde;o disponibilizadas em um link privado para que o(a) aluno(a) tenha a oportunidade de assistir quantas vezes forem necess&aacute;rias durante a vig&ecirc;ncia do contrato, para consolida&ccedil;&atilde;o do conte&uacute;do. No entanto, fica vedado ao(à) aluno(a) o download ou compartilhamento do material, que &eacute; de uso exclusivo do(a) CONTRATANTE, por&eacute;m propriedade intelectual do CONTRATADO.</p>'+
@@ -15151,7 +15179,7 @@
                     pagamento+
                     '<div class="section-title">VII - DA VIG&Ecirc;NCIA</div>'+
                     '<p class="indent"><strong>Cl&aacute;usula 15&ordf;.</strong> A vig&ecirc;ncia do presente instrumento ter&aacute; in&iacute;cio a partir da assinatura do(a) CONTRATANTE, e as aulas contratadas dever&atilde;o ser completadas em at&eacute; 6 (seis) meses letivos corridos, excluindo-se os recessos de dezembro e junho, sendo ministradas no decorrer do semestre vigente.</p>'+
-                    '<p class="indent"><strong>Par&aacute;grafo &uacute;nico.</strong> O presente instrumento findar-se-&aacute; automaticamente ap&oacute;s o t&eacute;rmino da 36&ordf; aula contratada ou ap&oacute;s o fim do per&iacute;odo previamente determinado de 6 (seis) meses letivos corridos, independentemente da realiza&ccedil;&atilde;o de todas as 36 aulas.</p>'+
+                    '<p class="indent"><strong>Par&aacute;grafo &uacute;nico.</strong> O presente instrumento findar-se-&aacute; automaticamente ap&oacute;s o t&eacute;rmino da '+qtdAulas+'&ordf; aula contratada ou ap&oacute;s o fim do per&iacute;odo previamente determinado de 6 (seis) meses letivos corridos, independentemente da realiza&ccedil;&atilde;o de todas as '+qtdAulas+' aulas.</p>'+
                     '<div class="section-title">VIII - DOS MATERIAIS</div>'+
                     '<p class="indent"><strong>Cl&aacute;usula 16&ordf;.</strong> O CONTRATADO poder&aacute; disponibilizar, quando necess&aacute;rio, materiais de estudo, links de exerc&iacute;cios e diversas atividades durante e fora do hor&aacute;rio de aula para que o(a) aluno(a) possa consolidar o conte&uacute;do ministrado pelo instrutor.</p>'+
                     '<p class="indent"><strong>Par&aacute;grafo &uacute;nico.</strong> O CONTRATADO compromete-se em manter o acesso &agrave;s aulas gravadas do semestre conclu&iacute;do at&eacute; o final do semestre seguinte, salvo em caso de rescis&atilde;o contratual antecipada ou n&atilde;o-renova&ccedil;&atilde;o do(a) CONTRATANTE para um novo semestre letivo.</p>'+
@@ -15167,7 +15195,7 @@
                     '<p class="indent"><strong>Cl&aacute;usula 21&ordf;.</strong> O(A) CONTRATANTE dever&aacute; seguir o cronograma de aulas estabelecido. Pausas n&atilde;o justificadas durante o semestre podem impactar a continuidade do aprendizado e a progress&atilde;o do(a) aluno(a), sendo de responsabilidade do(a) CONTRATANTE manter a regularidade nas aulas.</p>'+
                     confidencialidade+condicoesGerais('VIP para TURMA')+
                     '<div class="section-title">XIII - DO FORO</div>'+
-                    '<p class="indent">Fica eleito o foro da Comarca de Fortaleza/CE para dirimir quaisquer d&uacute;vidas ou lit&iacute;gios oriundos do presente contrato, com ren&uacute;ncia expressa de qualquer outro, por mais privilegiado que seja.</p>'+
+                    '<p class="indent">Fica eleito o foro da Comarca de Goiana/PE para dirimir quaisquer d&uacute;vidas ou lit&iacute;gios oriundos do presente contrato, com ren&uacute;ncia expressa de qualquer outro, por mais privilegiado que seja.</p>'+
                     '<p class="indent">E, por estarem assim justos e contratados, as partes assinam o presente instrumento em 2 (duas) vias de igual teor e forma, juntamente com 2 (duas) testemunhas, para que produza seus legais efeitos.</p>'+
                     '<p style="text-align:center;margin-top:16pt;">'+cidadeAssin+', '+assinBR+'</p>'+assinaturas;
 
@@ -15180,14 +15208,14 @@
                     '<p class="indent"><strong>Par&aacute;grafo &uacute;nico.</strong> As aulas contratadas ser&atilde;o ministradas apenas em modalidade online.</p>'+
                     '<div class="section-title">III - DAS AULAS</div>'+
                     '<p class="indent"><strong>Cl&aacute;usula 2&ordf;.</strong> Ser&atilde;o ministradas duas aulas por semana, exceto em feriados, com at&eacute; 1 (uma) hora de dura&ccedil;&atilde;o por aula, podendo haver altera&ccedil;&atilde;o de instrutor se for considerado necess&aacute;rio pelo CONTRATADO.</p>'+
-                    '<p class="indent"><strong>Cl&aacute;usula 3&ordf;.</strong> Cada m&oacute;dulo contar&aacute; com o total de 36 (trinta e seis) aulas ao vivo de at&eacute; 1 (uma) hora de dura&ccedil;&atilde;o, que dever&atilde;o ser completadas em at&eacute; 6 (seis) meses letivos corridos, excluindo-se os recessos de dezembro e junho, que ser&atilde;o ministradas no decorrer do semestre vigente, as quais podem ser no formato de aula comum de introdu&ccedil;&atilde;o a novos conte&uacute;dos, de prepara&ccedil;&atilde;o e apresenta&ccedil;&atilde;o de semin&aacute;rios, de revis&atilde;o de t&oacute;picos, de avalia&ccedil;&otilde;es, entre outros.</p>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 3&ordf;.</strong> Cada m&oacute;dulo contar&aacute; com o total de '+qtdAulas+' ('+qtdAulasE+') aulas ao vivo de at&eacute; 1 (uma) hora de dura&ccedil;&atilde;o, que dever&atilde;o ser completadas em at&eacute; 6 (seis) meses letivos corridos, excluindo-se os recessos de dezembro e junho, que ser&atilde;o ministradas no decorrer do semestre vigente, as quais podem ser no formato de aula comum de introdu&ccedil;&atilde;o a novos conte&uacute;dos, de prepara&ccedil;&atilde;o e apresenta&ccedil;&atilde;o de semin&aacute;rios, de revis&atilde;o de t&oacute;picos, de avalia&ccedil;&otilde;es, entre outros.</p>'+
                     '<p class="indent"><strong>Cl&aacute;usula 4&ordf;.</strong> Haver&aacute; uma toler&acirc;ncia de 15 (quinze) minutos para o in&iacute;cio das aulas. O instrutor aguardar&aacute; esse tempo para que ao menos 1 (um) aluno junte-se &agrave; aula. Caso nenhum aluno compare&ccedil;a, a aula ser&aacute; considerada como ministrada.</p>'+
                     '<p class="indent"><strong>Cl&aacute;usula 5&ordf;.</strong> As aulas, ap&oacute;s ministradas, ser&atilde;o disponibilizadas em um link privado para que os alunos tenham a oportunidade de assistir quantas vezes forem necess&aacute;rias durante a vig&ecirc;ncia do contrato, para consolida&ccedil;&atilde;o do conte&uacute;do. No entanto, fica vedado ao(à) aluno(a) o download ou compartilhamento do material, que &eacute; de uso exclusivo do(a) CONTRATANTE, por&eacute;m propriedade intelectual do CONTRATADO.</p>'+
                     '<p class="indent"><strong>Cl&aacute;usula 6&ordf;.</strong> Ap&oacute;s cada semestre letivo, haver&aacute; um recesso pr&eacute;-determinado pelo CONTRATADO por fins trabalhistas e organizacionais referente aos setores internos, que n&atilde;o acarretar&aacute; em preju&iacute;zo para o(a) CONTRATANTE.</p>'+
                     '<p class="indent"><strong>Par&aacute;grafo &uacute;nico.</strong> Em caso de solicita&ccedil;&atilde;o para troca de turno ou turma, o CONTRATADO considerar&aacute; as circunst&acirc;ncias de n&iacute;vel lingu&iacute;stico do(a) CONTRATANTE para que o pedido possa ser avaliado. Caso aprovada, tal mudan&ccedil;a poder&aacute; acarretar em altera&ccedil;&atilde;o de hor&aacute;rio ou instrutor, a depender da disponibilidade.</p>'+
                     pagamento+
                     '<div class="section-title">VII - DA VIG&Ecirc;NCIA</div>'+
-                    '<p class="indent"><strong>Cl&aacute;usula 15&ordf;.</strong> A vig&ecirc;ncia do presente instrumento ter&aacute; in&iacute;cio a partir da assinatura do(a) CONTRATANTE e findar-se-&aacute; ap&oacute;s a 36&ordf; aula do m&oacute;dulo ser ministrada.</p>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 15&ordf;.</strong> A vig&ecirc;ncia do presente instrumento ter&aacute; in&iacute;cio a partir da assinatura do(a) CONTRATANTE e findar-se-&aacute; ap&oacute;s a '+qtdAulas+'&ordf; aula do m&oacute;dulo ser ministrada.</p>'+
                     '<div class="section-title">VIII - DOS MATERIAIS</div>'+
                     '<p class="indent"><strong>Cl&aacute;usula 16&ordf;.</strong> O CONTRATADO poder&aacute; disponibilizar, quando necess&aacute;rio, materiais de estudo, links de exerc&iacute;cios e diversas atividades durante e fora do hor&aacute;rio de aula para que os alunos possam consolidar o conte&uacute;do ministrado pelo instrutor.</p>'+
                     '<p class="indent"><strong>Par&aacute;grafo &uacute;nico.</strong> O CONTRATADO compromete-se em manter o acesso ao(à) CONTRATANTE &agrave;s aulas gravadas do semestre conclu&iacute;do at&eacute; o final do semestre seguinte, salvo em caso de rescis&atilde;o contratual antecipada ou n&atilde;o-renova&ccedil;&atilde;o do(a) CONTRATANTE para um novo semestre letivo.</p>'+
@@ -15212,7 +15240,7 @@
                     '<p class="indent"><strong>Par&aacute;grafo &uacute;nico.</strong> As aulas contratadas ser&atilde;o ministradas apenas em modalidade online.</p>'+
                     '<div class="section-title">III - DAS AULAS</div>'+
                     '<p class="indent"><strong>Cl&aacute;usula 2&ordf;.</strong> Ser&atilde;o ministradas duas aulas por semana, exceto em feriados, com at&eacute; 1 (uma) hora de dura&ccedil;&atilde;o por aula, podendo haver altera&ccedil;&atilde;o de instrutor se for considerado necess&aacute;rio pelo CONTRATADO.</p>'+
-                    '<p class="indent"><strong>Cl&aacute;usula 3&ordf;.</strong> Cada m&oacute;dulo contar&aacute; com o total de 36 (trinta e seis) aulas ao vivo de at&eacute; 1 (uma) hora de dura&ccedil;&atilde;o, as quais podem ser no formato de aula comum de introdu&ccedil;&atilde;o a novos conte&uacute;dos, de prepara&ccedil;&atilde;o e apresenta&ccedil;&atilde;o de semin&aacute;rios, de revis&atilde;o de t&oacute;picos, de avalia&ccedil;&otilde;es, entre outros.</p>'+
+                    '<p class="indent"><strong>Cl&aacute;usula 3&ordf;.</strong> Cada m&oacute;dulo contar&aacute; com o total de '+qtdAulas+' ('+qtdAulasE+') aulas ao vivo de at&eacute; 1 (uma) hora de dura&ccedil;&atilde;o, as quais podem ser no formato de aula comum de introdu&ccedil;&atilde;o a novos conte&uacute;dos, de prepara&ccedil;&atilde;o e apresenta&ccedil;&atilde;o de semin&aacute;rios, de revis&atilde;o de t&oacute;picos, de avalia&ccedil;&otilde;es, entre outros.</p>'+
                     '<p class="indent"><strong>Cl&aacute;usula 4&ordf;.</strong> Haver&aacute; uma toler&acirc;ncia de 15 (quinze) minutos para o in&iacute;cio das aulas. O instrutor aguardar&aacute; esse tempo para que o(a) aluno(a) junte-se &agrave; aula. Caso o(a) aluno(a) n&atilde;o compare&ccedil;a, a aula ser&aacute; considerada como ministrada.</p>'+
                     '<p class="indent"><strong>Par&aacute;grafo &uacute;nico.</strong> Em caso de atraso de at&eacute; 15 (quinze) minutos do(a) CONTRATANTE, poder&aacute; esse tempo ser descontado da dura&ccedil;&atilde;o total da aula.</p>'+
                     '<p class="indent"><strong>Cl&aacute;usula 5&ordf;.</strong> As aulas, ap&oacute;s ministradas, ser&atilde;o disponibilizadas em um link privado para que o(a) aluno(a) tenha a oportunidade de assistir quantas vezes forem necess&aacute;rias durante a vig&ecirc;ncia do contrato, para consolida&ccedil;&atilde;o do conte&uacute;do. No entanto, fica vedado ao(à) aluno(a) o download ou compartilhamento do material, que &eacute; de uso exclusivo do(a) CONTRATANTE, por&eacute;m propriedade intelectual do CONTRATADO.</p>'+
@@ -15237,7 +15265,7 @@
                     '<p class="indent"><strong>Cl&aacute;usula 17&ordf;.</strong> Caso a rescis&atilde;o contratual ocorra na data de vencimento do boleto do m&ecirc;s vigente ou ap&oacute;s, tendo sido gerado o boleto banc&aacute;rio referente ao pagamento do m&ecirc;s atual, dever&aacute; ser pago o valor da parcela pendente, al&eacute;m do valor da multa de cancelamento.</p>'+
                     '<div class="section-title">VII - DA VIG&Ecirc;NCIA</div>'+
                     '<p class="indent"><strong>Cl&aacute;usula 18&ordf;.</strong> A vig&ecirc;ncia do presente instrumento ter&aacute; in&iacute;cio a partir da assinatura do(a) CONTRATANTE, e as aulas contratadas dever&atilde;o ser completadas em at&eacute; 6 (seis) meses letivos corridos, excluindo-se os recessos de dezembro e junho, sendo ministradas no decorrer do semestre vigente, ficando o(a) CONTRATANTE sob pena de multa prevista na Cl&aacute;usula 15&ordf; deste contrato em caso de rescis&atilde;o durante esse per&iacute;odo.</p>'+
-                    '<p class="indent"><strong>Par&aacute;grafo &uacute;nico.</strong> O presente instrumento findar-se-&aacute; automaticamente ap&oacute;s o t&eacute;rmino da 36&ordf; aula contratada ou ap&oacute;s o fim do per&iacute;odo previamente determinado de 6 (seis) meses letivos corridos, independentemente da realiza&ccedil;&atilde;o de todas as 36 aulas.</p>'+
+                    '<p class="indent"><strong>Par&aacute;grafo &uacute;nico.</strong> O presente instrumento findar-se-&aacute; automaticamente ap&oacute;s o t&eacute;rmino da '+qtdAulas+'&ordf; aula contratada ou ap&oacute;s o fim do per&iacute;odo previamente determinado de 6 (seis) meses letivos corridos, independentemente da realiza&ccedil;&atilde;o de todas as '+qtdAulas+' aulas.</p>'+
                     '<div class="section-title">VIII - DOS MATERIAIS</div>'+
                     '<p class="indent"><strong>Cl&aacute;usula 19&ordf;.</strong> O CONTRATADO poder&aacute; disponibilizar, quando necess&aacute;rio, materiais de estudo, links de exerc&iacute;cios e diversas atividades durante e fora do hor&aacute;rio de aula para que o(a) aluno(a) possa consolidar o conte&uacute;do ministrado pelo instrutor.</p>'+
                     '<p class="indent"><strong>Par&aacute;grafo &uacute;nico.</strong> O CONTRATADO compromete-se em manter o acesso &agrave;s aulas gravadas do semestre conclu&iacute;do at&eacute; o final do semestre seguinte, salvo em caso de rescis&atilde;o contratual antecipada ou n&atilde;o-renova&ccedil;&atilde;o do(a) CONTRATANTE para um novo semestre letivo.</p>'+
@@ -15268,7 +15296,7 @@
                     '<p class="indent"><strong>Cl&aacute;usula 37&ordf;.</strong> O(A) CONTRATANTE concorda em participar de avalia&ccedil;&otilde;es e fornecer feedback sobre o curso, que poder&atilde;o ser utilizados para melhorias e adapta&ccedil;&otilde;es nos servi&ccedil;os oferecidos.</p>'+
                     '<p class="indent"><strong>Cl&aacute;usula 38&ordf;.</strong> O(A) CONTRATANTE n&atilde;o poder&aacute; ceder ou transferir seus direitos e obriga&ccedil;&otilde;es previstos neste contrato a terceiros sem a autoriza&ccedil;&atilde;o expressa do CONTRATADO.</p>'+
                     '<div class="section-title">XIII - DO FORO</div>'+
-                    '<p class="indent">Fica eleito o foro da Comarca de Fortaleza/CE para dirimir quaisquer d&uacute;vidas ou lit&iacute;gios oriundos do presente contrato, com ren&uacute;ncia expressa de qualquer outro, por mais privilegiado que seja.</p>'+
+                    '<p class="indent">Fica eleito o foro da Comarca de Goiana/PE para dirimir quaisquer d&uacute;vidas ou lit&iacute;gios oriundos do presente contrato, com ren&uacute;ncia expressa de qualquer outro, por mais privilegiado que seja.</p>'+
                     '<p class="indent">E, por estarem assim justos e contratados, as partes assinam o presente instrumento em 2 (duas) vias de igual teor e forma, juntamente com 2 (duas) testemunhas, para que produza seus legais efeitos.</p>'+
                     '<p style="text-align:center;margin-top:16pt;">'+cidadeAssin+', '+assinBR+'</p>'+assinaturas;
 
@@ -15277,7 +15305,7 @@
                 }
 
                 const pw = window.open('', '_blank');
-                pw.document.write('<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Contrato '+templates[sel].label+' - '+nome+'</title><style>'+contractCSS()+'</style></head><body><div class="page">'+body+'<button class="print-btn" onclick="window.print()">Imprimir / Salvar PDF</button></div></body></html>');
+                pw.document.write('<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Contrato '+templates[sel].label+' - '+nome+'</title><style>'+contractCSS()+'</style></head><body><div class="page"><div style="text-align:center;margin-bottom:24pt;"><img src="https://res.cloudinary.com/dqfi22uz0/image/upload/v1751163691/SLAP_TIPO_PRETO_1_xarnpe.png" alt="SLAP Ingl\u00eas" style="max-height:70pt;max-width:250pt;object-fit:contain;"></div>'+body+'<button class="print-btn" onclick="window.print()">Imprimir / Salvar PDF</button></div></body></html>');
                 pw.document.close();
             };
         }
@@ -19737,8 +19765,11 @@
                                         </span>` : ''}
                                     </div>
                                 </div>
-                                ${canManage ? `
                                 <div class="flex gap-2 ml-4">
+                                    <button onclick="event.stopPropagation(); openTaskModal('${task.id}')" class="p-2 text-stone-400 hover:text-blue-600 transition-colors" title="Chat / Mensagens">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                                </button>
+                                ${canManage ? `
                                     <button onclick="event.stopPropagation(); editTask('${task.id}')" 
                                             class="p-2 text-stone-400 hover:text-stone-600 transition-colors"
                                             title="Editar">
@@ -19753,8 +19784,8 @@
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                                         </svg>
                                     </button>
+                                    ` : ''}
                                 </div>
-                                ` : ''}
                             </div>
                             <div class="mt-3">
                                 <button onclick="event.stopPropagation(); toggleChecklistExpand('${task.id}')" 
@@ -19929,8 +19960,11 @@
                                     }).join('')}
                                     </div>
                                 </div>
-                                ${canManage ? `
                                 <div class="flex gap-2 mt-3 pt-3 border-t border-orange-200 justify-end">
+                                    <button onclick="event.stopPropagation(); openTaskModal('${task.id}')" class="p-2 text-stone-400 hover:text-blue-600 transition-colors" title="Chat / Mensagens">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                                </button>
+                                ${canManage ? `
                                     <button onclick="event.stopPropagation(); editTask('${task.id}')" 
                                             class="p-2 text-stone-400 hover:text-stone-600 transition-colors"
                                             title="Editar">
@@ -19945,8 +19979,8 @@
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                                         </svg>
                                     </button>
+                                    ` : ''}
                                 </div>
-                                ` : ''}
 
                             </div>
                         `;
@@ -20155,8 +20189,11 @@
                                     </div>
                                 </div>
                             </div>
-                            ${canManage ? `
                             <div class="flex gap-2 ml-4">
+                                <button onclick="event.stopPropagation(); openTaskModal('${task.id}')" class="p-2 text-stone-400 hover:text-blue-600 transition-colors" title="Chat / Mensagens">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                                </button>
+                                ${canManage ? `
                                 <button onclick="event.stopPropagation(); editTask('${task.id}')" 
                                         class="p-2 text-stone-400 hover:text-stone-600 transition-colors"
                                         title="Editar">
@@ -20171,8 +20208,8 @@
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                                     </svg>
                                 </button>
+                                ` : ''}
                             </div>
-                            ` : ''}
                         </div>
                     </div>
                 `;            };
